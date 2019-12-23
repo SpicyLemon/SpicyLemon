@@ -16,20 +16,20 @@ Hopefully, in most cases, it can just be copied into a project next to the gradl
 In the other cases, hopefully the only customization needed is with a couple variables that are set at the top of the script.
 
 Examples:
-```Shell
+```bash
 ./bootRun.sh
 ```
 Just calls
-```Shell
+```bash
 ./gradlew bootRun
 ```
 
 Arguments can also be supplied just like we're all used to.
-```Shell
+```bash
 ./bootRun.sh arg1 --flag2 argument3 argument4 'arguments "with" fancy stuff.'
 ```
 Will end up running
-```Shell
+```bash
 ./gradlew bootRun -Pargs=arg1,--flag2,argument3,argument4,"arguments \"with\" fancy stuff."
 ```
 
