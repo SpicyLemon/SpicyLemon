@@ -1,6 +1,28 @@
 <html>
-<head><title>Advent Of Code 2018 - ####</title></head>
+<head><title>TODO: SpicyLemon Calculation Template</title></head>
+<!--
+    Calculation Template Usage:
+
+    This header has two <script> sections.
+    The first is transformed into a web worker that will do all the heavy lifting for you.
+    The second is for managing input, output, and the actual page.
+    Functions and variables defined in one section will not be visible in the other.
+
+    I've tried to break things out so that only a few areas need to be created with minimal (or no) changes to the rest.
+    All areas designed for changes are marked with a TODO.
+
+    1.  Copy this template into a new file, and give it an appropriate name.
+    2.  Update the title to describe what this page will be doing.
+    3.  In the HTML at the bottom, create any needed input fields.
+    4.  Write the getInputFromPage function block as needed.
+    5.  Write the parseInput function block as needed.
+    6.  Write the solver function block as needed.
+    7.  Write the populateResults function block as needed.
+
+    Once comfortable, this comment block can probably be deleted too.
+-->
 <script id="solverWorker" type="text/javascript">
+    // The entry point for the worker. When this is called, there's work to do!
     self.onmessage = function(event) {
         var retval = '';
         try {
@@ -13,97 +35,172 @@
         self.postMessage(retval);
     };
 
-    var parseInput = function(input) {
-        var retval = [];
-        input.split(/\s+/).forEach(function(element) {
-            retval.push(element);
-        });
-        return retval;
+    // The function that will call all the needed stuff for doing whatever calculations are needed.
+    // The return value here is sent back to the main part of the script/page.
+    var solver = function(workerInput) {
+        var input = parseInput(workerInput);
+        // TODO: Fill this in appropriately.
+        return input;
     };
 
-    var solver = function(puzzleInput) {
-        return parseInput(puzzleInput);
+    // The function that will parse the provided input as needed.
+    var parseInput = function(workerInput) {
+        // TODO: Fill this in appropriately.
+        return workerInput;
     };
+
 </script>
 <script type="text/javascript">
-    var t0 = null;
-    var timerUpdater = null;
-    var solverWorker = undefined;
+    var t0 = null;                  // The start time of a run.
+    var timerUpdater = null;        // The interval object that will be updating the timer.
+    var solverWorker = undefined;   // The worker object that will be doing the running.
 
+    // Pull the worker script into the page as a blob so we can trick the page into thinking it's something external.
     var solverBlob = new Blob([
         document.querySelector('#solverWorker').textContent
     ], { type: "text/javascript" });
     var solverBlobUrl = window.URL.createObjectURL(solverBlob);
 
-    var updateTime = function() {
-        if (t0) {
-            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
-        } 
-        else {
-            document.getElementById("time").innerHTML = '---';
-        }
+    // Checks if the timer is running.
+    var timerIsRunning = function() {
+        return timerUpdater !== null;
     };
 
+    // Start the timer if it's not already running.
     var startTimer = function() {
-        if (timerUpdater === null) {
+        if (! timerIsRunning()) {
             t0 = performance.now();
             timerUpdater = window.setInterval(updateTime, 250);
+            return true;
         }
-    }
+        console.log("Could not start timer because timer was already running.");
+        return false;
+    };
 
+    // Stop the timer if it's running.
     var stopTimer = function() {
-        if (timerUpdater !== null) {
+        if (timerIsRunning()) {
             window.clearInterval(timerUpdater);
             updateTime();
             timerUpdater = null;
             t0 = null;
+            return true;
         }
-    }
+        console.log("Could not stop timer because timer was not running.");
+        return false;
+    };
 
+    // Checks if the solver worker is running.
+    var workerIsRunning = function() {
+        return typeof(solverWorker) !== "undefined";
+    };
+
+    // Create and start up the solver worker so it can be used.
     var startSolverWorker = function() {
-        if (typeof(solverWorker) === "undefined") {
+        if (! workerIsRunning()) {
             solverWorker = new Worker(solverBlobUrl);
             solverWorker.onmessage = onMessage;
+            return true;
         }
-        else {
-            console.log("Could not start worker because worker was already running.");
-        }
-    }
+        console.log("Could not start worker because worker was already running.");
+        return false;
+    };
 
+    // Stop the solver worker.
     var stopSolverWorker = function() {
-        if (typeof(solverWorker) !== "undefined") {
+        if (workerIsRunning()) {
             solverWorker.terminate();
             solverWorker = undefined;
             console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+            return true;
         }
-    }
-
-    var onMessage = function(event) {
-        document.getElementById("result").innerHTML = event.data;
-        stopTimer();
-        stopSolverWorker();
+        console.log("Could not stop worker because worker was not running.");
+        return false;
     };
 
+    // ESC key to halt worker.
+    window.onkeydown = function(event) {
+        //If it's the escape key, halt the worker.
+        if (event.keyCode === 27 && (timerIsRunning() || workerIsRunning())) {
+            stopTimer();
+            stopSolverWorker();
+            setMessage("Calculation Halted");
+        }
+    };
+
+    // Update the elapsed time on the page.
+    var updateTime = function() {
+        if (t0) {
+            let elapsedTime = performance.now() - t0;
+            document.getElementById("timer").innerHTML = '' + elapsedTime + ' ms';
+            return elapsedTime;
+        }
+        document.getElementById("timer").innerHTML = '---';
+        return -1;
+    };
+
+    // Sets the message on the page.
+    var setMessage = function(message) {
+        var msg = new Date().toLocaleTimeString() + ' - ' + message;
+        document.getElementById("message").innerHTML = msg;
+        console.log(msg);
+        return msg;
+    };
+
+    // Show/hide an area on the page.
+    var showHideArea = function(areaId, buttonId, showText, hideText) {
+        var area = document.getElementById(areaId);
+        var button = document.getElementById(buttonId);
+        if (area.style.display == "") {
+            area.style.display = "none";
+            button.innerHTML = showText;
+        } else {
+            area.style.display = "";
+            button.innerHTML = hideText;
+        }
+    };
+
+    // This gets called when the Calculate button is pressed.
     var runSolver = function() {
         stopTimer();
         stopSolverWorker();
-        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
-        document.getElementById("result").innerHTML = startingString;
-        console.log(startingString);
-        var puzzleInput = document.getElementById("puzzle_input").value;
+        var input = getInputFromPage();
+        setMessage("Calculation Started");
         startSolverWorker();
+        solverWorker.postMessage(input);
         startTimer();
-        solverWorker.postMessage(puzzleInput);
     };
 
-    window.onkeydown = function(event) {
-        //If it's the escape key, halt the worker.
-        if (event.keyCode === 27) {
-            stopTimer();
-            stopSolverWorker();
-            document.getElementById("result").innerHTML = "halted.";
-        }
+    // This gets called when the worker finishes and sends data back.
+    var onMessage = function(event) {
+        setMessage("Calculation Finished");
+        stopTimer();
+        stopSolverWorker();
+        var resultsData = event.data;
+        // Show the show/hide button (hidden at the start), and populate the raw results with the pretty-printed data.
+        document.getElementById("show_hide_raw_results").style.display = "";
+        document.getElementById("raw_results").innerHTML = JSON.stringify(resultsData, undefined, 2);
+        // Create the nice-looking results.
+        populateResults(resultsData);
     };
+
+    // Get the input from the page.
+    // The return value of this is what will be sent to the worker to be parsed and processed.
+    // Let the worker do the bulk of the parsing. Just gather it all up in here.
+    var getInputFromPage = function() {
+        var retval = {};
+        // TODO: Fill this in appropriately.
+        retval.calculation_input = document.getElementById("calculation_input").value;
+        return retval;
+    };
+
+    // Create the content on the page that shows the results.
+    // Input comes from what the worker generated.
+    var populateResults = function(resultsData) {
+        // TODO: Fill this in appropriately.
+        document.getElementById("results").text = resultsData;
+    };
+
 </script>
 <style>
 textarea {
@@ -111,9 +208,19 @@ textarea {
 }
 </style>
 <body>
-<textarea id="puzzle_input" rows="10" cols="100"></textarea><br />
-<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
-<pre id="result"></pre>
-<pre id="time"></pre>
+<!-- TODO: Create this input area appropriately -->
+<textarea id="calculation_input" rows="10" cols="100"></textarea><br />
+<!-- End of input area -->
+<button id="run_solver" type="button" onclick="runSolver(); return false;">Calculate</button>
+<pre id="message"></pre>
+<pre id="timer"></pre>
+<div id="results"></div>
+<button id="show_hide_raw_results"
+        type="button"
+        style="display: none"
+        onclick="showHideArea('result', 'show_hide_raw_results', 'Show Raw Results', 'Hide Raw Results'); return false;">
+    Show Raw Results
+</button>
+<pre id="raw_results" style="display: none"></pre>
 </body>
 </html>
