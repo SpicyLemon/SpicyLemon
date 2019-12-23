@@ -1,2 +1,5 @@
 # VIM temp files
 .*.swp
+
+# Ugh
+.DS_Store
