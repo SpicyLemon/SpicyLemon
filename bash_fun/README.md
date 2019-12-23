@@ -1,0 +1,16 @@
+# SpicyLemon / bash_fun
+This directory contains files and scripts for doing things on a bash command-line.
+
+## Contents
+
+* `bootRun.sh` - A bash script that makes it easier to run the gradle bootRun task with supplied arguments. File is executable.
+* `file-helpers.sh` - A bash file with some functions for doing things with files. File should be sourced, not executed.
+* `generic.sh` - A bash file with a bunch of generic functions for doing bash stuff. File should be sourced, not executed.
+* `git-helpers.sh` - A bash file with a bunch of functions for making git life easier. File should be sourced, not executed.
+* `github.sh` - The beginnings of some functions for interacting with GitHub. File should be sourced, not executed.
+* `gitlab.sh` - A bunch of functions for interacting with GitLab. File can be sourced or executed.
+* `mysql_runner.sh` - A bash script for running stuff on a mysql database with a bunch of defaults handy for me.
+* `psql_runner.sh` - A bash script for running stuff on a postgresql database with a bunch of defaults handy for me.
+* `sagemaker.sh` - A function for making calls to sagemaker. Only tested on one endpoint, though, so your mileage may vary. File is executable.
+* `text-helpers.sh` - A bash file to define a bunch of text manipulation helper functions. File should be sourced, not executed.
+
