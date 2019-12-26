@@ -2,6 +2,7 @@
 # This file contains generic functions for helping do random things that I often need.
 # File contents:
 #   echo_do  -------------------------> Outputs a command in bright white, then executes it.
+#   echo_do_ln  ----------------------> Outputs a command in bright white, then executes it and adds an extra newline to the end.
 #   get_shell_type  ------------------> Gets the type of shell you're in, either "zsh" "bash" or else the process running your shell
 #   kill_sophos  ---------------------> Kills sophos processes and such.
 #   chrome_cors  ---------------------> Opens up a url in Chrome with CORS safety disabled.
@@ -47,26 +48,113 @@ EOF
     exit 1
 fi
 
-# Say you're going to do something, then do it!
-# Usage: echo_do "say -vVictoria -r200 Buu"
+# Output a command, then execute it.
+# Usage: echo_do <command> [<arg1> [<arg2> ...]]
+#   or   echo_do <<< "command string"
+# Examples:
+#   echo_do say -vVictoria -r200 "Buu Whoa"
+#   echo_do <<< "say -vVictoria -r200 \"YEAH BUDDY\""
+# You can technically pipe the commands into echo_do too,
+#   but then you lose the ability to get at the result environment variables.
+# The string used for command display will be stored in ECHO_DO_CMD_STR.
+# stdout results of the command will be stored in ECHO_DO_STDOUT.
+# stderr results of the command will be stored in ECHO_DO_STDERR.
+# The exit code of the command will be stored in ECHO_DO_EXIT_CODE.
+#   and also returned by the function.
+# If no command is provided, this will return with exit code 124
+#   and none of the above variables will be set.
+# If the command is provided as a single string and cannot be parsed,
+#   this will return with exit code 125
 echo_do () {
-    local cmds cmd
+    unset ECHO_DO_CMD_STR ECHO_DO_STDOUT ECHO_DO_STDERR ECHO_DO_EXIT_CODE
+    local cmd_pieces pieces_for_output cmd_piece tmp_stderr tmp_stdout tmp_exit_code
     if [[ -t 0 ]]; then
-        cmds="$( echo -E "$*" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' )"
+        cmd_pieces=( "$@" )
     else
-        cmds="$( cat )"
+        cmd_pieces=( "$( cat - )" )
     fi
-    if [[ -z "$cmds" ]]; then
-        echo "No command provided."
-        return 1
+    if [[ "${#cmd_pieces[@]}" -eq '0' || "${cmd_pieces[@]}" =~ ^[[:space:]]*$ ]]; then
+        return 124
     fi
-    echo "$cmds" | while IFS="" read -r cmd || [ -n "$cmd" ]; do
-        echo -en "\033[1;37m"
-        echo -En "$cmd"
-        echo -e "\033[0m"
-        eval $cmd
-        echo ""
+    if [[ "${#cmd_pieces[@]}" -eq '1' && "${cmd_pieces[@]}" =~ [[:space:]] ]]; then
+        local cmd i c skip q
+        cmd="${cmd_pieces[@]}"
+        if [[ ( "$cmd" =~ ^'"' && "$cmd" =~ '"'$ ) || ( "$cmd" =~ ^"'" && "$cmd" =~ "'"$ ) ]]; then
+            cmd="$( echo -E "$cmd" | sed -E 's/^.//; s/.$//;' )"
+        fi
+        cmd_pieces=()
+        for i in $( seq 0 "$(( $( echo -E "${#cmd}" ) - 1 ))" ); do
+            c="${cmd:$i:1}"
+            if [[ -n "$skip" ]]; then
+                c=
+                skip=
+            elif [[ -n "$q" ]]; then
+                if [[ "$c" == '\' && "$q" == '"' && "${cmd:i+1:1}" == '"' ]]; then
+                    c='"'
+                    skip='Y'
+                elif [[ "$c" == "$q" ]]; then
+                    q=
+                    c=
+                fi
+            elif [[ "$c" == '"' || "$c" == "'" ]]; then
+                q="$c"
+                c=
+            elif [[ "$c" =~ ^[[:space:]]$ ]]; then
+                if [[ -n "$cmd_piece" ]]; then
+                    cmd_pieces+=( "$cmd_piece" )
+                    cmd_piece=
+                fi
+                c=
+            fi
+            cmd_piece="$cmd_piece$c"
+        done
+        if [[ -n "$q" ]]; then
+            return 125
+        fi
+        if [[ -n "$cmd_piece" ]]; then
+            cmd_pieces+=( "$cmd_piece" )
+        fi
+    fi
+    pieces_for_output=()
+    for cmd_piece in "${cmd_pieces[@]}"; do
+        if [[ "$cmd_piece" =~ [[:space:]\'\"] ]]; then
+            pieces_for_output+=( "\"$( echo -E "$cmd_piece" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
+        else
+            pieces_for_output+=( "$cmd_piece" )
+        fi
     done
+    ECHO_DO_CMD_STR="${pieces_for_output[@]}"
+    echo -en "\033[1;37m"
+    echo -En "$ECHO_DO_CMD_STR"
+    echo -e "\033[0m"
+    # echo -en "\033[1;35m"
+    # for c in "${cmd_pieces[@]}"; do echo -E ">$c<"; done
+    # echo -e "\033[0m"
+    tmp_stderr="$( mktemp -t echo_do_stderr )"
+    tmp_stdout="$( mktemp -t echo_do_stdout )"
+    tmp_exit_code="$( mktemp -t echo_do_exit_code )"
+    ( ( "${cmd_pieces[@]}"; echo "$?" > "$tmp_exit_code" ) | tee "$tmp_stdout" ) 3>&1 1>&2 2>&3 | tee "$tmp_stderr"
+    ECHO_DO_STDERR="$( cat "$tmp_stderr" )"
+    ECHO_DO_STDOUT="$( cat "$tmp_stdout" )"
+    ECHO_DO_EXIT_CODE="$( cat "$tmp_exit_code" )"
+    rm "$tmp_stderr"
+    rm "$tmp_stdout"
+    rm "$tmp_exit_code"
+    return "$ECHO_DO_EXIT_CODE"
+}
+
+# Same as echo_do but with an extra line at the end
+echo_do_ln () {
+    local retval
+    if [[ -t 0 ]]; then
+        echo_do "$@"
+        retval=$?
+    else
+        echo_do <<< "$( cat - )"
+        retval=$?
+    fi
+    echo -E ''
+    return "$retval"
 }
 
 get_shell_type () {
