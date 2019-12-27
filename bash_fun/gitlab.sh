@@ -1312,16 +1312,17 @@ __get_gitlab_user_info () {
 # If the file doesn't exist, or is older than a day, or is empty,
 #   the projects info will be refreshed and stored in the file.
 # Otherwise, it's contents will be loaded into the $GITLAB_PROJECTS variable.
-# Usage: __ensure_gitlab_projects <keep quiet>
+# Usage: __ensure_gitlab_projects <keep quiet> <verbose>
 __ensure_gitlab_projects () {
-    local keep_quiet projects_file
+    local keep_quiet verbose projects_file
     keep_quiet="$1"
+    verbose="$2"
     __ensure_temp_dir
     projects_file="$( __get_projects_filename )"
     if [[ ! -f "$projects_file" \
             || $( find "$projects_file" -mtime "+$GITLAB_PROJECTS_MAX_AGE" ) ]] \
             || ! $( grep -q '[^[:space:]]' "$projects_file" ); then
-        __get_gitlab_projects "$keep_quiet"
+        __get_gitlab_projects "$keep_quiet" "$verbose"
         echo -E "$GITLAB_PROJECTS" > "$projects_file"
     else
         GITLAB_PROJECTS="$( cat "$projects_file" )"
@@ -1342,13 +1343,14 @@ __get_projects_filename () {
 }
 
 # Look up info on all available projects. Results are stored in $GITLAB_PROJECTS.
-# Usage: __get_gitlab_projects <keep quiet>
+# Usage: __get_gitlab_projects <keep quiet> <verbose>
 __get_gitlab_projects () {
-    local keep_quiet projects_url page per_page previous_count projects
+    local keep_quiet verbose projects_url page per_page previous_count projects
     keep_quiet="$1"
+    verbose="$2"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab projects... "
     projects_url="$( __get_gitlab_url_projects )?simple=true&membership=true&"
-    projects="$( __get_pages_of_url "$projects_url" )"
+    projects="$( __get_pages_of_url "$projects_url" '' '' "$verbose" )"
     GITLAB_PROJECTS="$projects"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
@@ -1714,33 +1716,39 @@ __filter_jobs_by_type () {
 # The url is required, and must end in either a ? or a &.
 # page count max is optional. Default is 9999. It is forced to be between 1 and 9999 (inclusive).
 # per page is optional. Default is 100. It is forced to be between 1 and 100 (inclusive).
-# Usage: __get_pages_of_url <url> [<page count max>] [<per page>]
+# Usage: __get_pages_of_url <url> [<page count max>] [<per page>] [<verbose>]
 __get_pages_of_url () {
-    local url page_count_max per_page results page previous_count full_url page_data
+    local url page_count_max per_page verbose results page previous_count full_url page_data
     url="$1"
     page_count_max="$( __clamp "$2" "1" "9999" "9999" )"
     per_page="$( __clamp "$3" "1" "100" "100" )"
+    verbose="$4"
     if [[ "$url" =~ [^?\&]$ ]]; then
         >&2 echo -E "__get_pages_of_url [$url] must end in either a ? or a & so that the per_page and page parameters can be added."
         return 1
     fi
+    [[ -z "$verbose" ]] || >&2 echo -E "Page Count Max: [$page_count_max], Per Page: [$per_page]"
     results="[]"
     page=1
     previous_count=$per_page
     while [[ "$page" -le "$page_count_max" && "$previous_count" -eq "$per_page" ]]; do
         full_url="${url}per_page=${per_page}&page=${page}"
+        [[ -z "$verbose" ]] || >&2 echo -E -n "Requesting $full_url ... "
         page_data="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$full_url" )"
         if [[ -n "$( echo -E "$page_data" | jq -r ' if type=="array" then "okay" else "" end ' )" ]]; then
             results="$( echo -E "[$results,$page_data]" | jq -c ' add ' )"
             previous_count="$( echo -E "$page_data" | jq ' length ' )"
+            [[ -z "$verbose" ]] || >&2 echo -E "Done. Received $previous_count entries."
         else
-            if [[ -n "$( echo -E "$page_data" | jq -r ' if type != "object" or .message != "403 Forbidden" then "showit" else "" end ' )" ]]; then
+            [[ -z "$verbose" ]] || >&2 echo -e "\033[1;38;5;231;48;5;196m ERROR \033[0m"
+            if [[ -n "$verbose" || -n "$( echo -E "$page_data" | jq -r ' if type != "object" or .message != "403 Forbidden" then "showit" else "" end ' )" ]]; then
                 >&2 echo -E "$full_url -> $page_data"
             fi
             previous_count=0
         fi
         page=$(( page + 1 ))
     done
+    [[ -z "$verbose" ]] || >&2 echo -E "Final result count: $( echo -E "$results" | jq 'length' )."
     echo -E "$results"
 }
 
