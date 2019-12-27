@@ -133,7 +133,7 @@ echo_do () {
     tmp_stderr="$( mktemp -t echo_do_stderr )"
     tmp_stdout="$( mktemp -t echo_do_stdout )"
     tmp_exit_code="$( mktemp -t echo_do_exit_code )"
-    ( ( "${cmd_pieces[@]}"; echo "$?" > "$tmp_exit_code" ) | tee "$tmp_stdout" ) 3>&1 1>&2 2>&3 | tee "$tmp_stderr"
+    { eval "${cmd_pieces[@]}"; echo "$?" > "$tmp_exit_code"; } 2> >( tee "$tmp_stderr" ) 1> >( tee "$tmp_stdout" )
     ECHO_DO_STDERR="$( cat "$tmp_stderr" )"
     ECHO_DO_STDOUT="$( cat "$tmp_stdout" )"
     ECHO_DO_EXIT_CODE="$( cat "$tmp_exit_code" )"

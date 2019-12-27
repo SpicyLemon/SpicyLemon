@@ -117,7 +117,7 @@ __git_echo_do () {
     tmp_stderr="$( mktemp -t echo_do_stderr )"
     tmp_stdout="$( mktemp -t echo_do_stdout )"
     tmp_exit_code="$( mktemp -t echo_do_exit_code )"
-    ( ( "${cmd_pieces[@]}"; echo "$?" > "$tmp_exit_code" ) | tee "$tmp_stdout" ) 3>&1 1>&2 2>&3 | tee "$tmp_stderr"
+    { eval "${cmd_pieces[@]}"; echo "$?" > "$tmp_exit_code"; } 2> >( tee "$tmp_stderr" ) 1> >( tee "$tmp_stdout" )
     ECHO_DO_STDERR="$( cat "$tmp_stderr" )"
     ECHO_DO_STDOUT="$( cat "$tmp_stdout" )"
     ECHO_DO_EXIT_CODE="$( cat "$tmp_exit_code" )"
@@ -311,7 +311,7 @@ master_pull_all () {
         repo_failed=
         cur_branch=
         echo -e "\033[1;36m$repo_index of $repo_count\033[0m - \033[1;33m$repo\033[0m"
-        cd "$repo" || repo_failed='YES'
+        __git_echo_do cd "$repo" || repo_failed='YES'
         if [[ -z "$repo_failed" ]]; then
             cur_branch="$( bn )"
             if [[ "$cur_branch" != 'master' ]]; then
@@ -330,7 +330,7 @@ master_pull_all () {
         fi
     done
     if [[ "$cwd" != "$( pwd )" ]]; then
-        cd "$cwd"
+        __git_echo_do cd "$cwd"
     fi
     if [[ "${#failed_repos[@]}" -gt '0' ]]; then
         echo -e "\033[1;31m${#failed_repos[@]} repo(s) ran into problems:\033[0m"
