@@ -50,8 +50,6 @@ fi
 #   and also returned by this function.
 # If no command is provided, this will return with exit code 124
 #   and none of the above variables will be set.
-# If the command is provided as a single string and cannot be parsed,
-#   this will return with exit code 125
 __git_echo_do () {
     unset ECHO_DO_CMD_PARTS ECHO_DO_CMD_STR ECHO_DO_STDOUT ECHO_DO_STDERR ECHO_DO_STDALL ECHO_DO_EXIT_CODE
     local cmd_pieces pieces_for_output cmd_piece tmp_stderr tmp_stdout tmp_stdall
@@ -63,53 +61,23 @@ __git_echo_do () {
     if [[ "${#cmd_pieces[@]}" -eq '0' || "${cmd_pieces[@]}" =~ ^[[:space:]]*$ ]]; then
         return 124
     fi
-    if [[ "${#cmd_pieces[@]}" -eq '1' && "${cmd_pieces[@]}" =~ [[:space:]] ]]; then
-        local cmd i c skip q
-        cmd="${cmd_pieces[@]}"
-        if [[ ( "$cmd" =~ ^'"' && "$cmd" =~ '"'$ ) || ( "$cmd" =~ ^"'" && "$cmd" =~ "'"$ ) ]]; then
-            cmd="$( echo -E "$cmd" | sed -E 's/^.//; s/.$//;' )"
-        fi
-        cmd_pieces=()
-        for i in $( seq 0 "$(( $( echo -E "${#cmd}" ) - 1 ))" ); do
-            c="${cmd:$i:1}"
-            if [[ -n "$skip" ]]; then
-                c=
-                skip=
-            elif [[ -n "$q" ]]; then
-                if [[ "$c" == '\' && "$q" == '"' && "${cmd:i+1:1}" == '"' ]]; then
-                    c='"'
-                    skip='Y'
-                elif [[ "$c" == "$q" ]]; then
-                    q=
-                    c=
-                fi
-            elif [[ "$c" == '"' || "$c" == "'" ]]; then
-                q="$c"
-                c=
-            elif [[ "$c" =~ ^[[:space:]]$ ]]; then
-                if [[ -n "$cmd_piece" ]]; then
-                    cmd_pieces+=( "$cmd_piece" )
-                    cmd_piece=
-                fi
-                c=
-            fi
-            cmd_piece="$cmd_piece$c"
-        done
-        if [[ -n "$q" ]]; then
-            return 125
-        fi
-        if [[ -n "$cmd_piece" ]]; then
-            cmd_pieces+=( "$cmd_piece" )
-        fi
-    fi
     pieces_for_output=()
-    for cmd_piece in "${cmd_pieces[@]}"; do
-        if [[ "$cmd_piece" =~ [[:space:]\'\"] ]]; then
-            pieces_for_output+=( "\"$( echo -E "$cmd_piece" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
-        else
-            pieces_for_output+=( "$cmd_piece" )
+    if [[ "${#cmd_pieces[@]}" -eq '1' && ( "${cmd_pieces[@]}" =~ [[:space:]\(=] || -z "$( command -v "${cmd_pieces[@]}" )" ) ]]; then
+        [[ $(which -s setopt) ]] && setopt local_options BASH_REMATCH KSH_ARRAYS
+        if [[ "${cmd_pieces[@]}" =~ ^[[:space:]]*([[:alpha:]_][[:alnum:]_]*(\[[[:digit:]]+\])?)=(.*)$ ]]; then
+            cmd_pieces=( "${BASH_REMATCH[1]}=\"$( echo -E "${BASH_REMATCH[3]}" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
         fi
-    done
+        pieces_for_output+=( "${cmd_pieces[@]}" )
+        cmd_pieces=( 'eval' "${cmd_pieces[@]}" )
+    else
+        for cmd_piece in "${cmd_pieces[@]}"; do
+            if [[ "$cmd_piece" =~ [[:space:]\'\"] ]]; then
+                pieces_for_output+=( "\"$( echo -E "$cmd_piece" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
+            else
+                pieces_for_output+=( "$cmd_piece" )
+            fi
+        done
+    fi
     ECHO_DO_CMD_PARTS=( "${cmd_pieces[@]}" )
     ECHO_DO_CMD_STR="${pieces_for_output[@]}"
     echo -en "\033[1;37m"
@@ -118,14 +86,14 @@ __git_echo_do () {
     tmp_stderr="$( mktemp -t git_echo_do_stderr )"
     tmp_stdout="$( mktemp -t git_echo_do_stdout )"
     tmp_stdall="$( mktemp -t git_echo_do_stdall )"
-    { eval "${ECHO_DO_CMD_PARTS[@]}"; ECHO_DO_EXIT_CODE="$?"; } 2> >( tee "$tmp_stderr" | tee -a "$tmp_stdall" ) 1> >( tee "$tmp_stdout" | tee -a "$tmp_stdall" )
+    { "${ECHO_DO_CMD_PARTS[@]}"; ECHO_DO_EXIT_CODE="$?"; } 2> >( tee "$tmp_stderr" | tee -a "$tmp_stdall" ) 1> >( tee "$tmp_stdout" | tee -a "$tmp_stdall" )
     ECHO_DO_STDERR="$( cat "$tmp_stderr" )"
     ECHO_DO_STDOUT="$( cat "$tmp_stdout" )"
     ECHO_DO_STDALL="$( cat "$tmp_stdall" )"
     rm "$tmp_stderr"
     rm "$tmp_stdout"
     rm "$tmp_stdall"
-    echo ''
+    echo -E ''
     return "$ECHO_DO_EXIT_CODE"
 }
 
