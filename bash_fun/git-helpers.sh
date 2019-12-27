@@ -34,39 +34,22 @@ fi
 
 # Output a command, then execute it.
 # Usage: __git_echo_do <command> [<arg1> [<arg2> ...]]
-#   or   __git_echo_do <<< "command string"
 #   or   __git_echo_do "command string"
 # Examples:
 #   __git_echo_do say -vVictoria -r200 "Buu Whoa"
-#   __git_echo_do <<< "say -vVictoria -r200 \"YEAH BUDDY\""
-# You can technically pipe the commands into __git_echo_do too,
-#   but then you lose the ability to get at the result environment variables.
-# The array used to actuall execute the command will be stored in ECHO_DO_CMD_PARTS.
-# The string used for command display will be stored in ECHO_DO_CMD_STR.
-# stdout results of the command will be stored in ECHO_DO_STDOUT.
-# stderr results of the command will be stored in ECHO_DO_STDERR.
-# The combined stdout, stderr content (in original order) will be stored in ECHO_DO_STDALL.
-# The exit code of the command will be stored in ECHO_DO_EXIT_CODE.
-#   and also returned by this function.
+# The exit code of the command will be returned by this function.
 # If no command is provided, this will return with exit code 124
-#   and none of the above variables will be set.
 __git_echo_do () {
-    unset ECHO_DO_CMD_PARTS ECHO_DO_CMD_STR ECHO_DO_STDOUT ECHO_DO_STDERR ECHO_DO_STDALL ECHO_DO_EXIT_CODE
-    local cmd_pieces pieces_for_output cmd_piece tmp_stderr tmp_stdout tmp_stdall
-    if [[ -t 0 ]]; then
-        cmd_pieces=( "$@" )
-    else
-        cmd_pieces=( "$( cat - )" )
+    local cmd_pieces pieces_for_output cmd_piece retval
+    cmd_pieces=()
+    if [[ "$#" > '0' ]]; then
+        cmd_pieces+=( "$@" )
     fi
     if [[ "${#cmd_pieces[@]}" -eq '0' || "${cmd_pieces[@]}" =~ ^[[:space:]]*$ ]]; then
         return 124
     fi
     pieces_for_output=()
     if [[ "${#cmd_pieces[@]}" -eq '1' && ( "${cmd_pieces[@]}" =~ [[:space:]\(=] || -z "$( command -v "${cmd_pieces[@]}" )" ) ]]; then
-        [[ $(which -s setopt) ]] && setopt local_options BASH_REMATCH KSH_ARRAYS
-        if [[ "${cmd_pieces[@]}" =~ ^[[:space:]]*([[:alpha:]_][[:alnum:]_]*(\[[[:digit:]]+\])?)=(.*)$ ]]; then
-            cmd_pieces=( "${BASH_REMATCH[1]}=\"$( echo -E "${BASH_REMATCH[3]}" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
-        fi
         pieces_for_output+=( "${cmd_pieces[@]}" )
         cmd_pieces=( 'eval' "${cmd_pieces[@]}" )
     else
@@ -78,23 +61,13 @@ __git_echo_do () {
             fi
         done
     fi
-    ECHO_DO_CMD_PARTS=( "${cmd_pieces[@]}" )
-    ECHO_DO_CMD_STR="${pieces_for_output[@]}"
     echo -en "\033[1;37m"
-    echo -En "$ECHO_DO_CMD_STR"
+    echo -En "${pieces_for_output[@]}"
     echo -e "\033[0m"
-    tmp_stderr="$( mktemp -t git_echo_do_stderr )"
-    tmp_stdout="$( mktemp -t git_echo_do_stdout )"
-    tmp_stdall="$( mktemp -t git_echo_do_stdall )"
-    { "${ECHO_DO_CMD_PARTS[@]}"; ECHO_DO_EXIT_CODE="$?"; } 2> >( tee "$tmp_stderr" | tee -a "$tmp_stdall" ) 1> >( tee "$tmp_stdout" | tee -a "$tmp_stdall" )
-    ECHO_DO_STDERR="$( cat "$tmp_stderr" )"
-    ECHO_DO_STDOUT="$( cat "$tmp_stdout" )"
-    ECHO_DO_STDALL="$( cat "$tmp_stdall" )"
-    rm "$tmp_stderr"
-    rm "$tmp_stdout"
-    rm "$tmp_stdall"
+    "${cmd_pieces[@]}"
+    retval="$?"
     echo -E ''
-    return "$ECHO_DO_EXIT_CODE"
+    return "$retval"
 }
 
 # Tests if you're in a git folder

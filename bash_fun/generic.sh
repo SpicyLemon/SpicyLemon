@@ -50,13 +50,10 @@ fi
 
 # Output a command, then execute it.
 # Usage: echo_do <command> [<arg1> [<arg2> ...]]
-#   or   echo_do <<< "command string"
 #   or   echo_do "command string"
 # Examples:
 #   echo_do say -vVictoria -r200 "Buu Whoa"
-#   echo_do <<< "say -vVictoria -r200 \"YEAH BUDDY\""
-# You can technically pipe the commands into echo_do too,
-#   but then you lose the ability to get at the result environment variables.
+#   echo_do "say -vVictoria -r200 \"YEAH BUDDY\""
 # The array used to actuall execute the command will be stored in ECHO_DO_CMD_PARTS.
 # The string used for command display will be stored in ECHO_DO_CMD_STR.
 # stdout results of the command will be stored in ECHO_DO_STDOUT.
@@ -69,20 +66,16 @@ fi
 echo_do () {
     unset ECHO_DO_CMD_PARTS ECHO_DO_CMD_STR ECHO_DO_STDOUT ECHO_DO_STDERR ECHO_DO_STDALL ECHO_DO_EXIT_CODE
     local cmd_pieces pieces_for_output cmd_piece tmp_stderr tmp_stdout tmp_stdall
-    if [[ -t 0 ]]; then
-        cmd_pieces=( "$@" )
-    else
-        cmd_pieces=( "$( cat - )" )
+    cmd_pieces=()
+    if [[ "$#" > '0' ]]; then
+        cmd_pieces+=( "$@" )
     fi
     if [[ "${#cmd_pieces[@]}" -eq '0' || "${cmd_pieces[@]}" =~ ^[[:space:]]*$ ]]; then
+        >&2 echo "No command provided to echo_do."
         return 124
     fi
     pieces_for_output=()
     if [[ "${#cmd_pieces[@]}" -eq '1' && ( "${cmd_pieces[@]}" =~ [[:space:]\(=] || -z "$( command -v "${cmd_pieces[@]}" )" ) ]]; then
-        [[ $(which -s setopt) ]] && setopt local_options BASH_REMATCH KSH_ARRAYS
-        if [[ "${cmd_pieces[@]}" =~ ^[[:space:]]*([[:alpha:]_][[:alnum:]_]*(\[[[:digit:]]+\])?)=(.*)$ ]]; then
-            cmd_pieces=( "${BASH_REMATCH[1]}=\"$( echo -E "${BASH_REMATCH[3]}" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
-        fi
         pieces_for_output+=( "${cmd_pieces[@]}" )
         cmd_pieces=( 'eval' "${cmd_pieces[@]}" )
     else
@@ -114,15 +107,18 @@ echo_do () {
 
 debug_echo_do () {
     local retval
-    if [[ -t 0 ]]; then
-        echo_do "$@"
-        retval=$?
-    else
-        echo_do <<< "$( cat - )"
-        retval=$?
-    fi
+    echo_do "$@"
+    retval=$?
+    echo -E '-------------------------------------------'
+    print_echo_do_vars "$retval"
+    return "$retval"
+}
+
+print_echo_do_vars () {
+    local retval
+    retval="$1"
     echo -e  "  ECHO_DO_CMD_STR: [\033[1;37m$ECHO_DO_CMD_STR\033[0m]"
-    echo -E  "         Returned: [$retval]"
+    [[ -n "$retval" ]] && echo -E  "         Returned: [$retval]"
     echo -E  "ECHO_DO_EXIT_CODE: [$ECHO_DO_EXIT_CODE]"
     echo -e  "   ECHO_DO_STDOUT: [\033[1;32m$ECHO_DO_STDOUT\033[0m]"
     echo -e  "   ECHO_DO_STDERR: [\033[1;31m$ECHO_DO_STDERR\033[0m]"
@@ -132,19 +128,13 @@ debug_echo_do () {
         echo -En "[$p]"
     done
     echo -E ''
-    return "$retval"
 }
 
 # Same as echo_do but with an extra line at the end
 echo_do_ln () {
     local retval
-    if [[ -t 0 ]]; then
-        echo_do "$@"
-        retval=$?
-    else
-        echo_do <<< "$( cat - )"
-        retval=$?
-    fi
+    echo_do "$@"
+    retval=$?
     echo -E ''
     return "$retval"
 }
