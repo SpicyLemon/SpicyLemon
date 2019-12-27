@@ -51,3 +51,42 @@ This allows you to put all the input, ouput, parsing and calculation pieces in o
 
 The file has a comment at the top with details on usage.
 
+### [echo_do](https://github.com/SpicyLemon/SpicyLemon/blob/200e222352378578c602039226cdead87b3ba78c/bash_fun/generic.sh#L66)
+
+The `echo_do` bash function will echo a command then execute it.
+
+Features:
+1.  The command being executed is printed in bright white before it is executed.
+    It might be slightly different than the command you provided, but you should still be able to copy/paste it to run it again.
+1.  Command output still goes to your console as it happens.
+1.  The exit code of your command is maintained.
+    For example, if `generic command` returns with an exit code of 3, then `echo_do generic command` will also have an exit code of 3.
+1.  Simple commands can be provided normally but with `echo_do` as the first part of the command.
+    For example: `echo_do git pull`.
+1.  More complex commands can be provided as a string.
+    For example: `echo_do '( echo "stdout"; echo "stderr" >&2; return 3 )'`
+1.  Various aspects of the command and results end up stored in the following environment variables:
+    * `ECHO_DO_CMD_PARTS` - An array containing each element of the command executed.
+    * `ECHO_DO_CMD_STR` - A string containing the command as it appeared in output before being executed.
+    * `ECHO_DO_STDOUT` - A string with just the stdout output of the command.
+    * `ECHO_DO_STDERR` - A string with just the stderr output of the command.
+    * `ECHO_DO_STDALL` - A string with both stdout and stderr output of the command (should match what ends up on your screen).
+    * `ECHO_DO_EXIT_CODE` - The exit code that your command produced.
+      This is the same as `$?` except that it won't change until your next `echo_do`.
+1.  If no command is provided, `echo_do` will have an exit code of 124, and none of the environment variables will be set.
+
+Current drawbacks:
+1.  Temporary files are used to store stdout, stderr, and combined stdout/stderr while the command is running.
+    The contents of the files are then pulled into the appropriatel environment variables and deleted.
+    The `mktemp` command is used to create these files, and only the current user should have read or write access.
+    But still, for a bit, they exist as files.
+1.  Setting variables can be tricky with `echo_do`.
+    Some shells will try to be helpful and alter your command as it comes into `echo_do` as parameters.
+    For example, the command `echo_do foo='bar baz'` will end up being seen as "foo=bar baz".
+    Then, when trying to execute it, it'll get confused when it gets to "baz".
+    To prevent this, you can send the command in a string, e.g. `echo_do "foo='bar baz'"`.
+1.  Putting `echo_do` in a piped command probably won't work as expected.
+    If echo_do is part of the first command, the printed commmand will be part of the output, which probably isn't what you want.
+    If echo_do is in a piped part of the command, the environment variables might not get properly set (due to different shell behaviors).
+    Also, if echo_do is in a piped part of the command, the provided command is what will be receiving the incoming stream.
+
