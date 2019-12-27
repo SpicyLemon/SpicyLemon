@@ -51,23 +51,26 @@ fi
 # Output a command, then execute it.
 # Usage: echo_do <command> [<arg1> [<arg2> ...]]
 #   or   echo_do <<< "command string"
+#   or   echo_do "command string"
 # Examples:
 #   echo_do say -vVictoria -r200 "Buu Whoa"
 #   echo_do <<< "say -vVictoria -r200 \"YEAH BUDDY\""
 # You can technically pipe the commands into echo_do too,
 #   but then you lose the ability to get at the result environment variables.
+# The array used to actuall execute the command will be stored in ECHO_DO_CMD_PARTS.
 # The string used for command display will be stored in ECHO_DO_CMD_STR.
 # stdout results of the command will be stored in ECHO_DO_STDOUT.
 # stderr results of the command will be stored in ECHO_DO_STDERR.
+# The combined stdout, stderr content (in original order) will be stored in ECHO_DO_STDALL.
 # The exit code of the command will be stored in ECHO_DO_EXIT_CODE.
-#   and also returned by the function.
+#   and also returned by this function.
 # If no command is provided, this will return with exit code 124
 #   and none of the above variables will be set.
 # If the command is provided as a single string and cannot be parsed,
 #   this will return with exit code 125
 echo_do () {
-    unset ECHO_DO_CMD_STR ECHO_DO_STDOUT ECHO_DO_STDERR ECHO_DO_EXIT_CODE
-    local cmd_pieces pieces_for_output cmd_piece tmp_stderr tmp_stdout tmp_exit_code
+    unset ECHO_DO_CMD_PARTS ECHO_DO_CMD_STR ECHO_DO_STDOUT ECHO_DO_STDERR ECHO_DO_STDALL ECHO_DO_EXIT_CODE
+    local cmd_pieces pieces_for_output cmd_piece tmp_stderr tmp_stdout tmp_stdall
     if [[ -t 0 ]]; then
         cmd_pieces=( "$@" )
     else
@@ -123,23 +126,21 @@ echo_do () {
             pieces_for_output+=( "$cmd_piece" )
         fi
     done
+    ECHO_DO_CMD_PARTS=( "${cmd_pieces[@]}" )
     ECHO_DO_CMD_STR="${pieces_for_output[@]}"
     echo -en "\033[1;37m"
     echo -En "$ECHO_DO_CMD_STR"
     echo -e "\033[0m"
-    # echo -en "\033[1;35m"
-    # for c in "${cmd_pieces[@]}"; do echo -E ">$c<"; done
-    # echo -e "\033[0m"
     tmp_stderr="$( mktemp -t echo_do_stderr )"
     tmp_stdout="$( mktemp -t echo_do_stdout )"
-    tmp_exit_code="$( mktemp -t echo_do_exit_code )"
-    { eval "${cmd_pieces[@]}"; echo "$?" > "$tmp_exit_code"; } 2> >( tee "$tmp_stderr" ) 1> >( tee "$tmp_stdout" )
+    tmp_stdall="$( mktemp -t echo_do_stdall )"
+    { eval "${ECHO_DO_CMD_PARTS[@]}"; ECHO_DO_EXIT_CODE="$?"; } 2> >( tee "$tmp_stderr" | tee -a "$tmp_stdall" ) 1> >( tee "$tmp_stdout" | tee -a "$tmp_stdall" )
     ECHO_DO_STDERR="$( cat "$tmp_stderr" )"
     ECHO_DO_STDOUT="$( cat "$tmp_stdout" )"
-    ECHO_DO_EXIT_CODE="$( cat "$tmp_exit_code" )"
+    ECHO_DO_STDALL="$( cat "$tmp_stdall" )"
     rm "$tmp_stderr"
     rm "$tmp_stdout"
-    rm "$tmp_exit_code"
+    rm "$tmp_stdall"
     return "$ECHO_DO_EXIT_CODE"
 }
 
