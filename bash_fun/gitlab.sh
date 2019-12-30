@@ -85,7 +85,8 @@ Usage:
         Lists MRs that have been merged.
         Same as the $( __highlight "glmerged" ) function.
 
-    gitlab open $( __glopen_options_display )
+    gitlab open $( __glopen_options_display_1 )
+                $( __glopen_options_display_2 )
         Open the hompeage of a GitLab repo.
         Same as the $( __highlight "glopen" ) function.
 
@@ -1086,11 +1087,14 @@ EOF
     fi
 }
 
-__glopen_options_display () {
-    echo -E -n '[-r [<repo>]|--repo [<repo>]|--select-repo] [-b [<branch]|--branch [<branch>]|--select-branch] [-q|--quiet] [-x|--do-not-open]'
+__glopen_options_display_1 () {
+    echo -E -n '[-r [<repo>]|--repo [<repo>]|--select-repo] [-b [<branch]|--branch [<branch>]|--select-branch]'
+}
+__glopen_options_display_2 () {
+    echo -E -n '[-d [<branch>]|--diff [<branch>]|--select-diff-branch] [-q|--quiet] [-x|--do-not-open]'
 }
 __glopen_auto_options () {
-    echo -E -n "$( __glopen_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( echo -E -n "$( __glopen_options_display_1 ) $( __glopen_options_display_2 )" | __convert_display_options_to_auto_options )"
 }
 glopen () {
     __ensure_gitlab_token || return 1
@@ -1100,7 +1104,8 @@ glopen: GitLab Open
 
 Opens up the webpage of a repo.
 
-glopen $( __glopen_options_display )
+glopen $( __glopen_options_display_1 )
+       $( __glopen_options_display_2 )
 
   The -r <repo> or --repo <repo> option is a way to provide the desired repo.
     If the desired repo cannot be found, you will be prompted to select one.
@@ -1121,13 +1126,21 @@ glopen $( __glopen_options_display )
       will be used in conjuction with the base url for repo y.
       This makes it easier to open your current branch in multiple repos.
   The --select-branch option cause glopen to prompt you to select a specific branch.
+  The -d <branch> or --diff <branch> option indicates that you want to open a diff page (instead of a specific branch page).
+    This option defines the "from" branch for the diff.  The "to" branch is defined by the -b or --branch option behavior.
+    If -d or --diff is provided without a branch, the "from" branch will default to master.
+        The "to" branch is whatever is defined by a -b, --branch, or --select-branch option.
+        If none of those are supplied, the "to" branch will be determined as if the -b option were provided.
+  The --select-diff-branch option causes glopen to prompt you to select a specific "from" branch.
+    It also indicates that you want to open the diff page (instead of the main page).
+    The "to" branch will be determined the same way it would be if the -d or --diff option is supplied.
   The -q or --quiet option suppresses normal terminal output.
   The -x or --do-not-open option will prevent the pages from being opened and only output the info.
     Technically, you can provide both -q and -x, but then nothing will really happen.
 
 EOF
     )"
-    local provided_repos provided_branches option select_repo random_repo use_branch select_branch keep_quiet do_not_open
+    local provided_repos provided_branches option select_repo random_repo use_branch select_branch do_diff diff_branch select_diff_branch keep_quiet do_not_open
     provided_repos=()
     provided_branches=()
     while [[ "$#" -gt '0' ]]; do
@@ -1166,6 +1179,19 @@ EOF
         --select-branch)
             select_branch="YES"
             ;;
+        -d|--diff)
+            do_diff="YES"
+            use_branch="YES"
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                diff_branch="$2"
+                shift
+            fi
+            ;;
+        --select-diff-branch)
+            do_diff="YES"
+            use_branch="YES"
+            select_diff_branch="YES"
+            ;;
         -q|--quiet)
             keep_quiet="YES"
             ;;
@@ -1178,7 +1204,8 @@ EOF
         esac
         shift
     done
-    local in_repo in_branch projects urls messages project_id urls_to_add project project_url project_name project_ssh_url branch url message
+    local in_repo in_branch projects urls messages project_id urls_to_add project project_url \
+          project_name project_ssh_url repo_branches fzf_header branch url message
     __ensure_gitlab_projects "$keep_quiet"
     if [[ -n "$random_repo" ]]; then
         for project_url in $( echo -E "$GITLAB_PROJECTS" | jq -r ' .[] | .web_url ' | sort -R | head -n "$random_repo" ); do
@@ -1195,6 +1222,9 @@ EOF
         >&2 echo -E "GitLab project could not be determined."
         return 1
     fi
+    if [[ -n "$do_diff" && -z "$select_diff_branch" && -z "$diff_branch" ]]; then
+        diff_branch="master"
+    fi
     urls=()
     messages=()
     for project_id in $( echo -E "$projects" | jq -r ' .[] | .id ' ); do
@@ -1203,27 +1233,39 @@ EOF
         project_url="$( echo -E "$project" | jq -r ' .web_url ' )"
         project_name="$( echo -E "$project" | jq -r ' .name ' )"
         project_ssh_url="$( echo -E "$project" | jq -r ' .ssh_url_to_repo ' )"
+        repo_branches=''
+        if [[ -n "$do_diff" && -n "$select_diff_branch" ]]; then
+            repo_branches="$( __get_branches_of_repo "$project_ssh_url" )"
+            diff_branch="$( echo -E "$repo_branches" | fzf --tac --cycle +m --header="$project_name (from)" )"
+        fi
         if [[ -n "$select_branch" || (( -n "$use_branch" && "${#provided_branches[@]}" -eq '0' && -z "$in_branch" )) ]]; then
-            for branch in $( __get_branches_of_repo "$project_ssh_url" | fzf --tac --cycle -m --header="$project_name" ); do
-                url="$project_url/tree/$branch"
+            fzf_header="$project_name"
+            if [[ -n "$do_diff" ]]; then
+                fzf_header="$fzf_header (to)"
+            fi
+            if [[ -z "$repo_branches" ]]; then
+                repo_branches="$( __get_branches_of_repo "$project_ssh_url" )"
+            fi
+            for branch in $( echo -E "$repo_branches" | fzf --tac --cycle -m --header="$fzf_header" ); do
+                url="$( __get_glopen_url "$project_url" "$branch" "$diff_branch" )"
                 urls_to_add+=( "$url" )
-                messages+=( "$branch~in~$project_name:~$url" )
+                messages+=( "$( __get_glopen_message "$project_name" "$url" "$branch" "$diff_branch" )" )
             done
         elif [[ "${#provided_branches[@]}" -gt '0' ]]; then
             for branch in "${provided_branches[@]}"; do
-                url="$project_url/tree/$branch"
+                url="$( __get_glopen_url "$project_url" "$branch" "$diff_branch" )"
                 urls_to_add+=( "$url" )
-                messages+=( "$branch~in~$project_name:~$url" )
+                messages+=( "$( __get_glopen_message "$project_name" "$url" "$branch" "$diff_branch" )" )
             done
         elif [[ -n "$use_branch" && -n "$in_branch" ]]; then
             branch="$in_branch"
-            url="$project_url/tree/$branch"
+            url="$( __get_glopen_url "$project_url" "$branch" "$diff_branch" )"
             urls_to_add+=( "$url" )
-            messages+=( "$branch~in~$project_name:~$url" )
+            messages+=( "$( __get_glopen_message "$project_name" "$url" "$branch" "$diff_branch" )" )
         fi
         if [[ "${#urls_to_add[@]}" -eq 0 ]]; then
             urls_to_add+=( "$project_url" )
-            messages+=( "main page~of~$project_name:~$project_url" )
+            messages+=( "$( __get_glopen_message "$project_name" "$project_url" "" "" )" )
         fi
         urls+=( "${urls_to_add[@]}" )
     done
@@ -1269,6 +1311,21 @@ __highlight () {
 # Usage: __yellow <text>
 __yellow () {
     echo -e -n "\033[1;33m$1\033[0m"
+}
+
+# Joins all provided parameters using the provided delimiter.
+# Usage: string_join <delimiter> [<arg1> [<arg2>... ]]
+__gl_join () {
+    local d retval
+    d="$1"
+    shift
+    retval="$1"
+    shift
+    while [[ "$#" -gt '0' ]]; do
+        retval="${retval}${d}$1"
+        shift
+    done
+    echo -E -n "$retval"
 }
 
 # Makes sure that an option was provided with a flag.
@@ -1426,9 +1483,47 @@ __get_project () {
     __filter_projects '' '' "$*"
 }
 
+# Gets all the branches of a repo.
 # Usage: __get_branches_of_repo <repo ssh url>
 __get_branches_of_repo () {
     git ls-remote "$1" 'refs/heads/*' | sed -E 's#^.*refs/heads/(.+)$#\1#;' | sort --ignore-case
+}
+
+# Creates the desired url for glopen to use.
+# Usage: __get_glopen_url <base url> <branch> <diff_branch>
+__get_glopen_url () {
+    local base_url branch diff_branch
+    base_url="$1"
+    branch="$2"
+    diff_branch="$3"
+    echo -E -n "$base_url"
+    if [[ -n "$branch" ]]; then
+        if [[ -n "$diff_branch" && "$branch" != "$diff_branch" ]]; then
+            echo -E -n "/compare/$diff_branch...$branch"
+        else
+            echo -E -n "/tree/$branch"
+        fi
+    fi
+}
+
+# Usage: <project name> <url> <branch> <diff branch>
+__get_glopen_message () {
+    local project_name url branch diff_branch cols
+    project_name="$1"
+    url="$2"
+    branch="$3"
+    diff_branch="$4"
+    cols=()
+    if [[ -n "$branch" && -n "$diff_branch" && "$branch" != "$diff_branch" ]]; then
+        cols+=( "$diff_branch to $branch" "in" )
+    elif [[ -n "$branch" ]]; then
+        cols+=( "$branch" "in" )
+    else
+        cols+=( "main page" "of" )
+    fi
+    cols+=( "$project_name:" )
+    cols+=( "$url" )
+    __gl_join "~" "${cols[@]}"
 }
 
 # Look up a project name from its id.
