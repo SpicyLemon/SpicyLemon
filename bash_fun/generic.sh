@@ -154,7 +154,7 @@ get_shell_type () {
 # Kills all the sophos stuff
 # Usage: kill_sophos
 kill_sophos () {
-    ps aux | grep sophos | awk '{print $2}' | xargs sudo kill -9
+    sudo ps aux | grep -v ' grep ' | grep -i sophos | awk '{print $2}' | xargs sudo kill -9
 }
 
 # Open up a chrome page with CORS safety disabled.
