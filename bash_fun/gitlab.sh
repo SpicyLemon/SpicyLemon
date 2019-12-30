@@ -440,10 +440,10 @@ EOF
     if [[ "$selected_repo_count" -gt '0' ]]; then
         echo -E ""
         for repo_url in $( echo -E "$projects" | jq -r ' .[] | .ssh_url_to_repo ' ); do
-            cmd="git clone $repo_url"
-            echo -e "\033[1;37m$cmd\033[0m"
+            cmd=( git clone --progress "$repo_url" )
+            echo -e "\033[1;37m${cmd[@]}\033[0m"
             exec 3>&1
-            cmd_output="$( eval "$cmd" 2>&1 | tee >( cat - >&3 ) )"
+            cmd_output="$( "${cmd[@]}" 2>&1 | tee >( cat - >&3 ) )"
             exec 3>&-
             echo -E ""
             if [[ -z "$( echo "$cmd_output" | grep '^fatal:' )" ]]; then
