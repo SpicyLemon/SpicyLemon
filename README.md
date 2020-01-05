@@ -90,3 +90,30 @@ Current drawbacks:
     If echo_do is in a piped part of the command, the environment variables might not get properly set (due to different shell behaviors).
     Also, if echo_do is in a piped part of the command, the provided command is what will be receiving the incoming stream.
 
+### [fzf_wrapper.sh](bash_fun/fzf_wrapper.sh)
+
+The primary purpose of this file is to define the `__fzf_wrapper` function.
+This function adds a `--to-columns` option to [fzf](https://github.com/junegunn/fzf).
+When `--to-columns` is supplied, the string defined by `-d` or `--delimiter` becomes the string given to the `column` command.
+
+For example:
+```bash
+echo -e "a1111~a2~a3~a4\nb1~b222~b3~b4\nc1~c2~c3~c44\n" | __fzf_wrapper --with-nth='1,2,4' --delimiter='~' --to-columns
+```
+will show this:
+```
+c1     c2    c44
+b1     b222  b4
+a1111  a2    a4
+```
+But the selected entry will still be what was originally supplied, e.g. `a1111~a2~a3~a4`.
+
+This is done by wrapping the provided delimiter with a zero-width space to the left of it, and a zero-width non-joiner to the right of it.
+Then the input is sent to the column command using the provided delimiter.
+That is then sent to fzf using a zero-width non-joiner for the `--delimiter` (the rest of the options are unchanged).
+Lastly, the result(s) from fzf are changed back to their original state by replacing the zero-width space,
+followed by spaces, then the zero-width non-joiner, with the original delimiter.
+
+Without the `--to-columns` option, there is no change to the functionality of fzf or any of the provided options.
+As such, it should be safe to `alias fzf=__fzf_wrapper` and not notice any difference except the availability of the `--to-columns` option.
+
