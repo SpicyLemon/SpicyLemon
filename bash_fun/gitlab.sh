@@ -302,11 +302,11 @@ EOF
                         ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
                           .[] |          ( if .approved == true then $box_checked else $box_empty end)
-                                + " ~" + ( .project_name | clean )
-                                + " ~" + ( .author.name | cleanname )
-                                + " ~" + .discussion_stats
-                                + " ~" + ( .title | .[0:80] | clean )
-                                + " ~" + .web_url ' ) \
+                                + "~" + ( .project_name | clean )
+                                + "~" + ( .author.name | cleanname )
+                                + "~" + .discussion_stats
+                                + "~" + ( .title | .[0:80] | clean )
+                                + "~" + .web_url ' ) \
                 | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4,5 --delimiter="~" -m --to-columns )"
             echo -E "$selected_lines" | while read selected_line; do
                 web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '6' )"
@@ -1010,10 +1010,10 @@ EOF
         initial_search="$( echo -E "$GITLAB_PROJECTS" \
                            | jq -r --arg search "$search" 'def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                                         .[] | select( ( .path_with_namespace | contains($search) ) or ( .name_with_namespace | contains($search) ) )
-                                            |          ( .name_with_namespace | clean )
-                                              + " ~" + ( .id | tostring )
-                                              + " ~" + ( .default_branch | clean )
-                                              + " ~" + ( .name | clean ) ' )"
+                                            |         ( .name_with_namespace | clean )
+                                              + "~" + ( .id | tostring )
+                                              + "~" + ( .default_branch // "master" | clean )
+                                              + "~" + ( .name | clean ) ' )"
         search_count="$( echo "$initial_search" | wc -l | sed 's/[^[:digit:]]//g' )"
         if [[ "$search_count" -eq "0" ]]; then
             >&2 echo "No repos found matching [ $search ]."
@@ -1025,10 +1025,10 @@ EOF
     if [[ -z "$selected_repo" ]]; then
         selected_repo="$( echo -E "$GITLAB_PROJECTS" \
                           | jq -r 'def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
-                                    .[] |          ( .name_with_namespace | clean )
-                                          + " ~" + ( .id | tostring )
-                                          + " ~" + ( .default_branch | clean )
-                                          + " ~" + ( .name | clean ) '
+                                    .[] |         ( .name_with_namespace | clean )
+                                          + "~" + ( .id | tostring )
+                                          + "~" + ( .default_branch // "master" | clean )
+                                          + "~" + ( .name | clean ) ' \
                           | __fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" +m --query="$search" --to-columns )"
     fi
     if [[ -z "$selected_repo" ]]; then
@@ -1039,7 +1039,7 @@ EOF
     branch="$( echo -E "$selected_repo" | __gitlab_get_col '~' '3' )"
     repo_name="$( echo -E "$selected_repo" | __gitlab_get_col '~' '4' )"
 
-    [[ -n "$keep_quiet" ]] || echo -e -n "Getting merged MRs for $( __yellow "$repo_name" )... "
+    [[ -n "$keep_quiet" ]] || echo -e -n "Getting merged MRs for $( __yellow "$repo_name" ) ... "
     mrs_url="$( __get_gitlab_url_project_mrs "$repo_id" )?state=merged&target_branch=$branch&"
     mrs="$( __get_pages_of_url "$mrs_url" "$page_max" "$per_page" )"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
@@ -1450,14 +1450,12 @@ __filter_projects () {
 
     if [[ -n "$force_select" || -n "$fzf_search" || "$( echo -E "$projects" | jq ' length ' )" -eq '0' ]]; then
         project_ids="$( echo -E "$GITLAB_PROJECTS" \
-            | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+            | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                       sort_by(.name_with_namespace) | .[]
-                        |                    ( .name_with_namespace | clean )
-                          + "~PROJECT_ID>" + ( .id | tostring ) + "<" ' \
-            | column -s "~" -t \
-            | fzf --tac --cycle --with-nth=1 --delimiter="  +" -m -i --query="$fzf_search" \
-            | grep -E -o 'PROJECT_ID>[^[:space:]]+<' \
-            | sed -E 's/^PROJECT_ID>|<$//g' )"
+                        |         ( .name_with_namespace | clean )
+                          + "~" + ( .id | tostring ) ' \
+            | __fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" -m -i --query="$fzf_search" --to-columns \
+            | __gitlab_get_col '~' '2' )"
         if [[ -n "$project_ids" ]]; then
             for project_id in $( echo -E "$project_ids" ); do
                 project="$( echo -E "$GITLAB_PROJECTS" | jq -c --arg project_id "$project_id" ' .[] | select( .id == ( $project_id | tonumber ) ) ' )"
