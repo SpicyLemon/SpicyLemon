@@ -38,7 +38,7 @@ __fzf_wrapper () {
             ;;
         -d|--delimiter)
             delimiter_flag="$1"
-            if [[ ! "$2" =~ ^- ]]; then
+            if [[ "$2" == '-' || ! "$2" =~ ^- ]]; then
                 delimiter="$2"
                 shift
             fi
