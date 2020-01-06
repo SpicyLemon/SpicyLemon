@@ -26,6 +26,7 @@
 # NOTE: The functions in here rely on the following programs (that you might not have installed yet):
 #   * fzf - Command-line fuzzy finder - https://github.com/junegunn/fzf
 #   * jq - Command-line JSON processor - https://github.com/stedolan/jq
+#   * __fzf_wrapper - A wrapper for fzf that adds a the --to-columns option. It's defined in the fzf_wrapper.sh file in this repo.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -298,18 +299,17 @@ EOF
             selected_lines="$( ( echo -E " ~ Repo~ Author~ Discussions~ Title$( [[ -z "$do_mine" ]] && echo -E " (oldest on top)" )" \
                 && echo -E "$mrs" \
                     | jq -r --arg box_checked '☑' --arg box_empty '☐' \
-                        ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                        ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
                           .[] |          ( if .approved == true then $box_checked else $box_empty end)
                                 + " ~" + ( .project_name | clean )
                                 + " ~" + ( .author.name | cleanname )
                                 + " ~" + .discussion_stats
                                 + " ~" + ( .title | .[0:80] | clean )
-                                + " ~TARGET_URL>" + .web_url + "<" ' ) \
-                | column -s '~' -t \
-                | fzf --tac --header-lines=1 --cycle --with-nth=1,2,3,4,5 --delimiter="   +" -m )"
+                                + " ~" + .web_url ' ) \
+                | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4,5 --delimiter="~" -m --to-columns )"
             echo -E "$selected_lines" | while read selected_line; do
-                web_url=$( echo -E "$selected_line" | grep -E -o 'TARGET_URL>[^[:space:]]+<' | sed -E 's/^TARGET_URL>|<$//g' )
+                web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '6' )"
                 if [[ -n $web_url ]]; then
                     open "$web_url"
                 fi
@@ -554,26 +554,24 @@ EOF
                 | column -s '~' -t
         fi
         if [[ -n "$do_selector" ]]; then
-            local fzf_todo_list selected_lines selected_line todo_id web_url
-            fzf_todo_list=$( echo -E "$GITLAB_TODOS" | jq ' .[] | "ID>" + (.id|tostring) + "< ~" + .project.name + "~" + .target_type + "~" + (.body|.[0:80]|sub("\n";" ")) + "~" + .author.name + "~TARGET_URL>" + .target_url + "<" ' | sed -E 's/^"|"$//g' )
+            local selected_lines selected_line todo_id web_url
             selected_lines="$( ( echo -E ' ID~ Repo~ Type~ Title (oldest at top)~ Author' \
                 && echo -E "$GITLAB_TODOS" \
-                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                               def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
-                              .[] |    "ID>" + ( .id | tostring ) + "< "
+                              .[] |         ( .id | tostring )
                                     + "~" + ( .project.name | clean )
                                     + "~" + ( .target_type | clean )
                                     + "~" + ( .body | .[0:80] | clean )
                                     + "~" + ( .author.name | cleanname )
-                                    + "~TARGET_URL>" + .target_url  + "<" ' ) \
-                | column -s '~' -t \
-                | fzf --tac --header-lines=1 --cycle --with-nth=2,3,4,5 --delimiter="  +" -m )"
+                                    + "~" + .target_url ' ) \
+                | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=2,3,4,5 --delimiter="~" -m --to-columns )"
             echo -E "$selected_lines" | while read selected_line; do
                 if [[ -n "$do_mark_as_done" ]]; then
-                    todo_id=$( echo -E "$selected_line" | grep -E -o 'ID>[[:digit:]]+<' | sed -E 's/^ID>|<$//g' )
+                    todo_id="$( echo -E "$selected_line" | __gitlab_get_col '~' '1' )"
                     __mark_gitlab_todo_as_done "$keep_quiet" "$todo_id"
                 else
-                    web_url=$( echo -E "$selected_line" | grep -E -o 'TARGET_URL>[^[:space:]]+<' | sed -E 's/^TARGET_URL>|<$//g' )
+                    web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '6' )"
                     if [[ -n $web_url ]]; then
                         open "$web_url"
                     fi
@@ -814,21 +812,18 @@ EOF
         if [[ -n "$do_selector" ]]; then
             selected_lines="$( ( echo -E ' Time~ Status~ Type~ Title (newest at top)' \
                 && echo -E "$GITLAB_JOBS" \
-                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                               .[] |         .display_time
                                     + "~" + .status
                                     + "~" + .short_type
                                     + "~" + ( .commit.title | .[0:80] | clean )
-                                    + "~TARGET_URL>" + .web_url + "<" ' ) \
-                | column -s '~' -t \
-                | fzf --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="  +" -m )"
+                                    + "~" + .web_url ' ) \
+                | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="~" -m --to-columns )"
             if [[ -n "$selected_lines" ]]; then
                 echo -E "$selected_lines" | while read selected_line; do
-                    web_url=$( echo -E "$selected_line" | grep -E -o 'TARGET_URL>[^[:space:]]+<' | sed -E 's/^TARGET_URL>|<$//g' )
+                    web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '5' )"
                     if [[ -n $web_url ]]; then
                         open "$web_url"
-                    else
-                        echo -E "Could not find TARGET_URL in '$selected_line'."
                     fi
                 done
             fi
@@ -1013,9 +1008,12 @@ EOF
 
     if [[ -n "$search" ]]; then
         initial_search="$( echo -E "$GITLAB_PROJECTS" \
-                           | jq -r --arg search "$search" ' .[]
-                                            | select( ( .path_with_namespace | contains($search) ) or ( .name_with_namespace | contains($search) ) )
-                                            | .name_with_namespace + "   ID>" + (.id|tostring) + "<   BRANCH>" + .default_branch + "<   NAME>" + .name + "<" ' )"
+                           | jq -r --arg search "$search" 'def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                                        .[] | select( ( .path_with_namespace | contains($search) ) or ( .name_with_namespace | contains($search) ) )
+                                            |          ( .name_with_namespace | clean )
+                                              + " ~" + ( .id | tostring )
+                                              + " ~" + ( .default_branch | clean )
+                                              + " ~" + ( .name | clean ) ' )"
         search_count="$( echo "$initial_search" | wc -l | sed 's/[^[:digit:]]//g' )"
         if [[ "$search_count" -eq "0" ]]; then
             >&2 echo "No repos found matching [ $search ]."
@@ -1026,16 +1024,20 @@ EOF
     fi
     if [[ -z "$selected_repo" ]]; then
         selected_repo="$( echo -E "$GITLAB_PROJECTS" \
-                          | jq -r ' .[] | .name_with_namespace + "   ID>" + (.id|tostring) + "<   BRANCH>" + .default_branch + "<   NAME>" + .name + "<" ' \
-                          | fzf --tac --cycle --with-nth=1 --delimiter="   +" +m --query="$search" )"
+                          | jq -r 'def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                                    .[] |          ( .name_with_namespace | clean )
+                                          + " ~" + ( .id | tostring )
+                                          + " ~" + ( .default_branch | clean )
+                                          + " ~" + ( .name | clean ) '
+                          | __fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" +m --query="$search" --to-columns )"
     fi
     if [[ -z "$selected_repo" ]]; then
         return 0
     fi
 
-    repo_id="$( echo -E "$selected_repo" | grep -E -o ' ID>[[:digit:]]+<' | sed -E 's/[^[:digit:]]//g' )"
-    branch="$( echo -E "$selected_repo" | grep -E -o ' BRANCH>[^[:space:]]+<' | sed -E 's/^ BRANCH>|<$//g' )"
-    repo_name="$( echo -E "$selected_repo" | grep -E -o ' NAME>[^[:space:]]+<' | sed -E 's/^ NAME>|<$//g' )"
+    repo_id="$( echo -E "$selected_repo" | __gitlab_get_col '~' '2' )"
+    branch="$( echo -E "$selected_repo" | __gitlab_get_col '~' '3' )"
+    repo_name="$( echo -E "$selected_repo" | __gitlab_get_col '~' '4' )"
 
     [[ -n "$keep_quiet" ]] || echo -e -n "Getting merged MRs for $( __yellow "$repo_name" )... "
     mrs_url="$( __get_gitlab_url_project_mrs "$repo_id" )?state=merged&target_branch=$branch&"
@@ -1048,7 +1050,7 @@ EOF
     if [[ -z "$keep_quiet" ]]; then
         ( echo -E '┌────▪ ~┌───▪ Merged~┌───▪ Author~┌───▪ Title  (newest at top)~┌───▪ Url' \
             && echo -E "$GITLAB_MERGED_MRS" \
-                | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
                           def cleandate: sub("T"; " ") | sub("\\.\\d\\d\\dZ"; "");
                           [ foreach .[] as $entry (0; .+1; . as $idx | $entry | .index = $idx ) ] | .[]
@@ -1063,7 +1065,7 @@ EOF
     if [[ -n "$do_select" ]]; then
         selected_lines="$( ( echo -E ' ~ Merged~ Author~ Title (newest at top)' \
             && echo -E "$GITLAB_MERGED_MRS" \
-                | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
                           def cleandate: sub("T"; " ") | sub("\\.\\d\\d\\dZ"; "");
                           [ foreach .[] as $entry (0; .+1; . as $idx | $entry | .index = $idx ) ] | .[]
@@ -1071,16 +1073,13 @@ EOF
                               + "~" + ( .merged_at | cleandate )
                               + "~" + ( .author.name | cleanname )
                               + "~" + ( .title | .[0:80] | clean )
-                              + "~" + " TARGET_URL>" + .web_url + "<" ' ) \
-            | column -s '~' -t \
-            | fzf --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="  +" -m )"
+                              + "~" + .web_url ' ) \
+            | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="~" -m --to-columns )"
         if [[ -n "$selected_lines" ]]; then
             echo -E "$selected_lines" | while read selected_line; do
-                web_url="$( echo -E "$selected_line" | grep -E -o 'TARGET_URL>[^[:space:]]+<' | sed -E 's/^TARGET_URL>|<$//g' )"
+                web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '5' )"
                 if [[ -n "$web_url" ]]; then
                     open "$web_url"
-                else
-                    echo -E "Could not find TARGET_URL in '$selected_line'."
                 fi
             done
         fi
@@ -1911,6 +1910,11 @@ __ensure_number_or_default () {
         result="$default"
     fi
     echo -E -n "$result"
+}
+
+# Usage: <do stuff> | __gitlab_get_col <delimiter> <column index>
+__gitlab_get_col () {
+    awk -v d="$1" -v col="$2" '{split($0, a, d); print a[col]}'
 }
 
 # GitLab API documentation: https://docs.gitlab.com/ee/api/api_resources.html
