@@ -240,44 +240,117 @@ pick_a_palette () {
 
 # Convert a date and time into an epoch as milliseconds.
 # Assumes the provided date/time is in your system's local time zone.
-# Usage: to_epoch YYYY-mm-dd HH:MM:SS
+# Usage: to_epoch yyyy-MM-dd [HH:mm[:ss[.nnn]]] [(+|-)dddd]
 #  or    to_epoch now
 to_epoch () {
-    local d t dt
-    d="$1"
-    t="$2"
-    if [[ -z "$d" || "$d" == "-h" || "$d" == "--help" ]]; then
-        echo "Usage: to_epoch yyyy-mm-dd hh:mm:ss"
+    local pieces d t n f tz e
+    if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
+        echo "Usage: to_epoch yyyy-MM-dd [HH:mm[:ss[.nnn]]] [(+|-)dddd]"
         return 0
     fi
-    if [[ "$d" == "now" ]]; then
+    if [[ "$1" == "now" ]]; then
         date '+%s000'
         return 0
     fi
+    pieces=( $( echo -E -n "$@" | tr 'T' ' ' ) )
+    # zsh is 1 indexed, bash is 0.
+    if [[ -n "${pieces[0]}" ]]; then
+        d="${pieces[0]}"
+        t="${pieces[1]}"
+        tz="${pieces[2]}"
+    else
+        d="${pieces[1]}"
+        t="${pieces[2]}"
+        tz="${pieces[3]}"
+    fi
+    d="$( echo -E -n "$d" | tr -c "[:digit:]" "-" )"
+    if [[ "$d" =~ ^[[:digit:]]{2}-[[:digit:]]{2}-[[:digit:]]{4}$ ]]; then
+        pieces=( $( echo -E -n "$d" | tr '-' ' ' ) )
+        if [[ -n "${pieces[0]}" ]]; then
+            d="${pieces[2]}-${pieces[0]}-${pieces[1]}"
+        else
+            d="${pieces[3]}-${pieces[1]}-${pieces[2]}"
+        fi
+    elif [[ ! "$d" =~ ^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}$ ]]; then
+        >&2 echo "Invalid date format [$d]. Use yyyy-MM-dd."
+        return 1
+    fi
+    if [[ "$t" =~ ^[+-] ]]; then
+        tz="$t"
+        t=
+    fi
     if [[ -z "$t" ]]; then
-        dt="$d"
-    else
-        dt="$d $t"
+        t='00:00:00'
+    elif [[ "$t" =~ ^[[:digit:]]{2}:[[:digit:]]{2}$ ]]; then
+        t="$t:00"
+    elif [[ "$t" =~ ^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}\.[[:digit:]]+$ ]]; then
+        pieces=( $( echo -E "$t" | tr '.' ' ' ) )
+        if [[ -n "${pieces[0]}" ]]; then
+            t="${pieces[0]}"
+            n="${pieces[1]}"
+        else
+            t="${pieces[1]}"
+            n="${pieces[2]}"
+        fi
+        n="$( echo -E "$n" | sed -E 's/0+$//' )"
+        if [[ "${#n}" -gt '3' ]]; then
+            f=".$( echo -E -n "$n" | sed -E 's/^...//' )"
+        fi
+    elif [[ ! "$t" =~ ^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}$ ]]; then
+        >&2 echo "Invalid time format [$t]. Use HH:mm[:ss[.nnn]]."
+        return 1
     fi
-    # If it starts with a date and time, get rid of anythings. This way the input is compatible with the output of to_date
-    dt="$( echo -E "$dt" | sed -E 's/^([[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2} [[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}).*$/\1/' )"
-    if [[ "$dt" =~ ^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}[[:space:]][[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}$ ]]; then
-        date -j -f '%F %T' "$dt" '+%s000'
-    else
-        >&2 echo -E "'$dt' -> Invalid format. Use yyyy-mm-dd hh:mm:ss"
+    n="$( echo -E "${n}000" | head -c 3 )"
+    if [[ -z "$tz" ]]; then
+        tz="$( date '+%z' )"
+    elif [[ "$tz" =~ ^[+-][[:digit:]]{2}$ ]]; then
+        tz="${tz}00"
+    elif [[ ! "$tz" =~ ^[+-][[:digit:]]{4}$ ]]; then
+        >&2 echo "Invalid timezone format [$tz]. Use (+|-)dddd."
+        return 1
     fi
+    e="$( date -j -f '%F %T %z' "$d $t $tz" '+%s' )" || return $?
+    echo -E "$( echo -E -n "$e$n" | sed -E 's/^0+//' )$f"
+    return 0
 }
 
 # Convert an epoch as milliseconds into a date and time.
 # Usage: to_date <epoch>
+#  or    to_date now
 to_date () {
-    local e
-    e="$1"
-    if [[ -z "$e" || "$e" == '-h' || "$e" == '--help' ]]; then
+    local str pieces m f e
+    str="$1"
+    if [[ -z "$str" || "$str" == '-h' || "$str" == '--help' ]]; then
         >&2 echo 'Usage: to_date <epoch in milliseconds>';
         return 0
     fi
-    date -r "$(( $e / 1000 ))" '+%F %T %z (%Z)'
+    if [[ "$str" == 'now' ]]; then
+        date '+%F %T %z (%Z)'
+        return 0
+    fi
+    if [[ "$str" =~ ^[[:digit:]]+(\.[[:digit:]]+)$ ]]; then
+        pieces=( $( echo -E -n "$str" | tr '.' ' ' ) )
+        if [[ -n "${pieces[0]}" ]]; then
+            m="${pieces[0]}"
+            f="${pieces[1]}"
+        else
+            m="${pieces[1]}"
+            f="${pieces[2]}"
+        fi
+    elif [[ "$str" =~ ^[[:digit:]]+$ ]]; then
+        m="$str"
+    else
+        >&2 echo "Invalid input: [$str]."
+        return 1
+    fi
+    f="$( echo -E -n "$m" | tail -c 3 )$f"
+    f="$( echo -E -n "$f" | sed -E 's/0+$//' )"
+    if [[ -n "$f" ]]; then
+        f=".$f"
+    fi
+    e="$( echo -E -n "$m" | sed -E 's/...$//' )"
+    date -r "$e" "+%F %T$f %z (%Z)"
+    return 0
 }
 
 # Usage: echo_white <string>
