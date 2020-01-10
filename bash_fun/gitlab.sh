@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script creates some functions that are handing for interacting with GitLab.
+# This script creates some functions that are handy for interacting with GitLab from the command line.
 # File contents:
 #   gitlab  ----> Wrapper function for more easily accessing all the other functionality in here.
 #   gmr  -------> GitLab Merge Requests - For finding merge requests that merit your attention.
@@ -9,6 +9,7 @@
 #   glclean  ---> GitLab Clean - Cleans up all the environment variables used by these functions.
 #   glmerged  --> GitLab Merged - Gets a list of merged MRs in merge order for a repo.
 #   glopen  ----> GitLab Open - Open a repo main page.
+#   gmrignore  -> Manage an project ignore list for gmr --deep.
 #
 # In order to use any of these functions, you will first have to create a GitLab private token.
 #   1) Log into GitLab.
@@ -17,8 +18,22 @@
 #   4) Set the GITLAB_PRIVATE_TOKEN environment variable to the value of that token.
 #       For example, you could put   GITLAB_PRIVATE_TOKEN=123abcABC456-98ZzYy7  in your .bash_profile file
 #       so that it's set every time you open a terminal (use your own actual token of course).
-#   5) Optionally, you can also set the GITLAB_BASE_DIR to your base git directory to help facilitate cloning.
-#       Example:  GITLAB_BASE_DIR="$HOME/git"
+#   5) Optionally, the following optional environment variables can be defined.
+#       GITLAB_BASE_DIR  ----------> The directory where your gitlab repositories are to be stored.
+#                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
+#                                    If not defined, functions that look for it will require it to be provided as input.
+#       GITLAB_CONFIG_DIR  --------> The directory where you'd like to store some configuration information used in these functions.
+#                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
+#                                    If not defined, then, if HOME is defined, "$HOME/.config/gitlab" will be used.
+#                                    If HOME is not defined, then, if GITLAB_BASE_DIR is defined, "$GITLAB_BASE_DIR/.gitlab_config" will be used.
+#                                    If GITLAB_BASE_DIR is not defined either, then any functions that uses configuration information will be unavailable.
+#       GITLAB_TEMP_DIR  ----------> The temporary directory you'd like to use for some randome file storage.
+#                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
+#                                    If not defined, "/tmp/gitlab" will be used.
+#       GITLAB_PROJECTS_MAX_AGE  --> The max age that the projects list can be before it's refreshed when needed.
+#                                    Format is <number>[smhdw] where s -> seconds, m -> minutes, h -> hours, d -> days, w -> weeks.
+#                                    see `man find` in the -atime section for more info.
+#                                    If not defined, the default is '1d'.
 #
 # To make these functions usable in your terminal, use the source command on this file.
 #   For example, you could put  source gitlab.sh  in your .bash_profile file.
@@ -35,17 +50,8 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-# Define the location where some files are used to store info.
-# This way, some stuff can be shared between terminals/environments.
-GITLAB_TEMP_DIR='/tmp/gitlab'
-# Define the max age of the projects.
-# If the projects have not been looked up recently, they will be looked up again.
-# <number>[smhdw] where s -> seconds, m -> minutes, h -> hours, d -> days, w -> weeks
-# see `man find` in the -atime section for more info.
-GITLAB_PROJECTS_MAX_AGE='1d'
-
 __gitlab_options_display () {
-    echo -E -n '(help|merge-requests|clone|todo|jobs|clean|merged-mrs|open)'
+    echo -E -n '(help|merge-requests|ignore-list|clone|todo|jobs|merged-mrs|open|clean)'
 }
 __gitlab_auto_options () {
     echo -E -n "$( __gitlab_options_display | __convert_display_options_to_auto_options )"
@@ -65,6 +71,10 @@ Usage:
         Get information about merge requests.
         Same as the $( __highlight "gmr" ) function.
 
+    gitlab ignore-list $( __gmrignore_options_display )
+        Manage a project ignore list that gmr -d will pay attention to.
+        Same as the $( __highlight "gmrignore" ) function.
+
     gitlab clone $( __glclone_options_display )
         Easily clone repos from GitLab.
         Same as the $( __highlight "glclone" ) function.
@@ -78,10 +88,6 @@ Usage:
         Get information about jobs in GitLab.
         Same as the $( __highlight "gljobs" ) function.
 
-    gitlab clean $( __glclean_options_display )
-        Cleans up environment variables storing GitLab information.
-        Same as the $( __highlight "glclean" ) function.
-
     gitlab merged-mrs $( __glmerged_options_display )
         Lists MRs that have been merged.
         Same as the $( __highlight "glmerged" ) function.
@@ -91,20 +97,25 @@ Usage:
         Open the hompeage of a GitLab repo.
         Same as the $( __highlight "glopen" ) function.
 
+    gitlab clean $( __glclean_options_display )
+        Cleans up environment variables storing GitLab information.
+        Same as the $( __highlight "glclean" ) function.
+
 EOF
     )"
-    local cmd
+    local option cmd
     if [[ -z "$1" ]]; then
         echo -e "$usage"
         return 0
     fi
-    case "$1" in
+    option="$( __to_lowercase "$1" )"
+    case "$option" in
     -h|--help|help)
         echo -e "$usage"
         return 0
         ;;
     mrs|merge-requests|merge|prs|pull-requests|pull)
-        if [[ "$2" == 'requests' ]]; then
+        if [[ "$option" == 'pull' && "$( __to_lowercase "$2" )" == 'requests' ]]; then
             shift
         fi
         cmd='gmr'
@@ -122,13 +133,20 @@ EOF
         cmd='glclean'
         ;;
     merged|merged-mrs)
-        if [[ "$2" == 'mrs' ]]; then
+        if [[ "$option" == 'merged' && "$( __to_lowercase "$2" )" == 'mrs' ]]; then
             shift
         fi
         cmd='glmerged'
         ;;
     open|repo)
         cmd='glopen'
+        ;;
+    ignore|ignore-list)
+        # Allow `gitlab ignore list <command>` to work while also allowing `gitlab ignore list [<state>]` to be the same as `gitlab ignore-list list [<state>]`
+        if [[ "$option" == "ignore" && "$( __to_lowercase "$2" )" == 'list' && -n "$3" ]] && __gmrignore_auto_options | __to_lowercase | grep -q -w "$( __to_lowercase "$3" )"; then
+            shift
+        fi
+        cmd='gmrignore'
         ;;
     *)
         >&2 echo -E "Unknown command: [ $1 ]. Use -h for help."
@@ -140,7 +158,7 @@ EOF
 }
 
 __gmr_options_display () {
-    echo -E -n '[-s|--select] [-r|--refresh] [-d|--deep] [-u|--update] [-q|--quiet] [-m|--mine] [-o|--open-all] [-h|--help]'
+    echo -E -n '[-s|--select] [-r|--refresh] [-d|--deep] [-b|--bypass-ignore] [-u|--update] [-q|--quiet] [-m|--mine] [-o|--open-all] [-h|--help]'
 }
 __gmr_auto_options () {
     echo -E -n "$( __gmr_options_display | __convert_display_options_to_auto_options )"
@@ -163,6 +181,8 @@ Usage: gmr $( __gmr_options_display )
   The -d or --deep option causes gmr to go through each project you can see to check for merge requests that request your approval.
         This will take longer, but might uncover some MRs that do not show up with the simple (-r) lookup.
         If supplied with the -r option, the -r option is ignored.
+  The -b or --bypass-ignore option only makes sense along with the -d or --deep option.
+        It will cause gmr to bypass the ignore list that you have setup using gmrignore.
   The -u or --update option causes gmr to go through the known lists of MRs and remove them if you have approved them.
   The -q or --quiet option suppresses normal terminal output. If used with -s, the selection page will still be displayed.
   The -m or --mine option lists MRs that you created.
@@ -174,35 +194,22 @@ In order to update the list again, do a  gmr --refresh
 
 EOF
     )"
-    local option do_refresh do_update do_deep do_mine do_selector keep_quiet open_all refresh_type filter_type discussion_type mrs todo_count
+    local option do_refresh do_update do_deep bypass_ignore do_mine do_selector keep_quiet open_all refresh_type filter_type discussion_type mrs todo_count
     while [[ "$#" -gt 0 ]]; do
-        option="$( printf %s "$1" | __to_lowercase )"
+        option="$( __to_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
             return 0
             ;;
-        -r|--refresh)
-            do_refresh="YES"
-            ;;
-        -u|--update)
-            do_update="YES"
-            ;;
-        -d|--deep)
-            do_deep="YES"
-            ;;
-        -m|--mine)
-            do_mine="YES"
-            ;;
-        -s|--select)
-            do_selector="YES"
-            ;;
-        -q|--quiet)
-            keep_quiet="YES"
-            ;;
-        -o|--open-all)
-            open_all="YES"
-            ;;
+        -r|--refresh)       do_refresh="YES" ;;
+        -u|--update)        do_update="YES" ;;
+        -d|--deep)          do_deep="YES" ;;
+        -b|--bypass-ignore) bypass_ignore='YES' ;;
+        -m|--mine)          do_mine="YES" ;;
+        -s|--select)        do_selector="YES" ;;
+        -q|--quiet)         keep_quiet="YES" ;;
+        -o|--open-all)      open_all="YES" ;;
         *)
             >&2 echo -E "Unknown option [ $option ]."
             >&2 echo -e "$usage"
@@ -248,15 +255,9 @@ EOF
 
     if [[ -n "$refresh_type" ]]; then
         case "$refresh_type" in
-        "DEEP")
-            __get_my_gitlab_mrs_deep "$keep_quiet"
-            ;;
-        "MINE")
-            __get_gitlab_mrs_i_created "$keep_quiet"
-            ;;
-        *)
-            __get_my_gitlab_mrs "$keep_quiet"
-            ;;
+        "DEEP") __get_my_gitlab_mrs_deep "$keep_quiet" "$bypass_ignore" ;;
+        "MINE") __get_gitlab_mrs_i_created "$keep_quiet" ;;
+        *)      __get_my_gitlab_mrs "$keep_quiet" ;;
         esac
     fi
 
@@ -278,7 +279,7 @@ EOF
             ( echo -E '┌───▪ Repo~┌───▪ Author~┌───▪ Discussions~┌───▪ Title~┌───▪ Url' \
                 && echo -E "$mrs" \
                     | jq -r --arg box_checked '☑' --arg box_empty '☐' \
-                        ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                        ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
                           .[] | .col_head = "├─" + ( if .approved == true then $box_checked else $box_empty end) + " "
                               |         .col_head + ( .project_name | clean )
@@ -366,7 +367,7 @@ EOF
     destination="$GITLAB_BASE_DIR"
     provided_repos=()
     while [[ "$#" -gt 0 ]]; do
-        option="$( printf %s "$1" | __to_lowercase )"
+        option="$( __to_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -498,7 +499,7 @@ EOF
     local do_selector todo_count todo_list keep_quiet do_mark_as_done do_mark_all_as_done
     while [[ "$#" -gt 0 ]]; do
         local option
-        option="$( printf %s "$1" | __to_lowercase )"
+        option="$( __to_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -543,7 +544,7 @@ EOF
         if [[ -z "$keep_quiet" ]]; then
             ( echo -E '┌───▪ Repo~┌───▪ Type~┌───▪ Title~┌───▪ Author~┌───▪ Url' \
                 && echo -E "$GITLAB_TODOS" \
-                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                               def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
                               .[] |    "├─▪ " + ( .project.name | clean )
                                     + "~├─▪ " + ( .target_type | clean )
@@ -634,7 +635,7 @@ EOF
     local option provided_repo provided_branch do_all_branches keep_quiet do_selector open_first provided_page_count do_all_pages no_refresh filter_type all_types
     local repo branch page_count filter_type_with filter_type_base filter_type_msg filtered_list_count header selected_lines selected_line web_url
     while [[ "$#" -gt 0 ]]; do
-        option="$( printf %s "$1" | __to_lowercase )"
+        option="$( __to_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -800,7 +801,7 @@ EOF
             echo -e "$header"
             ( echo -E '┌───▪ Time~┌───▪ Status~┌───▪ Type~┌───▪ title~┌───▪ Url' \
                 && echo -E "$GITLAB_JOBS" \
-                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "");
+                    | jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                               .[] |    "├─▪ " + .display_time
                                     + "~├─▪ " + .status
                                     + "~├─▪ " + .short_type
@@ -865,7 +866,7 @@ EOF
     )"
     local option verbose just_show v
     while [[ "$#" -gt 0 ]]; do
-        option="$( printf %s "$1" | __to_lowercase )"
+        option="$( __to_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -950,7 +951,7 @@ EOF
         shift
     fi
     while [[ "$#" -gt "0" ]]; do
-        option="$( printf %s "$1" | __to_lowercase )"
+        option="$( __to_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -1143,7 +1144,7 @@ EOF
     provided_repos=()
     provided_branches=()
     while [[ "$#" -gt '0' ]]; do
-        option="$( printf %s "$1" | __to_lowercase )"
+        option="$( __to_lowercase "$1" )"
         case "$option" in
         -h|--help)
             echo "$usage"
@@ -1276,21 +1277,314 @@ EOF
     fi
 }
 
-# Makes sure that a GitLab token is set.
-# This must be set outside of this file, and is kind of a secret thing.
-# Usage: __ensure_gitlab_token
-__ensure_gitlab_token () {
-    if [[ -z "$GITLAB_PRIVATE_TOKEN" ]]; then
-        >&2 cat << EOF
-No GITLAB_PRIVATE_TOKEN has been set.
-To create one, go to $( __get_gitlab_base_url )/profile/personal_access_tokens and create one with the "api" scope.
-Then you can set it using
-GITLAB_PRIVATE_TOKEN=whatever-your-token-is
-It is probably best to put that line somewhere so that it will get executed whenever you start your terminal (e.g. .bash_profile)
+
+__gmrignore_options_display () {
+    echo -E -n '[add|remove|update|clear|prune|status|list [<state(s)>]] [-h|--help]'
+}
+__gmrignore_auto_options () {
+    echo -E -n "$( __gmrignore_options_display | __convert_display_options_to_auto_options )"
+}
+gmrignore () {
+    __ensure_gitlab_token || return 1
+    local usage
+    usage="$( cat << EOF
+gmrignore: GitLab Merge Request Ignore (Projects)
+
+Manages an ignore list for projects scanned by gmr.
+
+gmrignore $( __gmrignore_options_display )
+
+  Exactly one of these commands must be provided:
+    add    - Display a list of projects that are not currently ignored and let you select ones to add.
+    remove - Display a list of projects that are currently ignored, and let you select ones to remove from that list.
+    update - Display a list of all projects, let you select ones to become the new ignore list.
+    clear  - Clear the list of ignored projects.
+    prune  - Get rid of the unknown projects.
+                As projects are moved, deleted, or renamed in gitlab, sometimes their id changes.
+                When that happens to a project that's ignored, the new project will not be ignored anymore and the
+                old project id will still be in the ignore list.
+                This command will clear out those old ids.
+                WARNING:
+                    Sometimes communication errors occur with GitLab and not all projects end up being retrieved.
+                    When that happens, a large number of unknown entries will appear.
+                    Once communication is fully restored, though, they'll show up again.
+                    In these cases, you don't want to do a prune or else a lot of ignored projects will show up again.
+    status - Output some consolidated information about what's being ignored.
+    list   - Output repositories according to their state.
+                This command can optionally take in one ore more states.
+                Output will then be limited to the provided states.
+                    Valid states are:  ignored  shown  unknown  all
+                If none are provided, all will be used.
 
 EOF
+)"
+    local option do_add do_remove do_update do_clear do_prune do_status do_list state list_ignored list_shown list_unknown list_all cmd_count
+    while [[ "$#" -gt '0' ]]; do
+        option="$( __to_lowercase "$1" )"
+        case "$option" in
+        h|help|-h|--help)
+            echo "$usage"
+            return 0
+            ;;
+        a|add|-a|--add)         do_add='YES';;
+        r|remove|-r|--remove)   do_remove='YES';;
+        u|update|-u|--update)   do_update='YES';;
+        c|clear|-c|--clear)     do_clear='YES';;
+        p|prune|-p|--prune)     do_prune='YES';;
+        s|status|-s|--status)   do_status='YES';;
+        l|list|-l|--list)
+            do_list='YES'
+            while [[ "$#" -gt '1' ]]; do
+                state="$( __to_lowercase "$2" )"
+                case "$state" in
+                i|ignored)  list_ignored='YES';;
+                s|shown)    list_shown='YES';;
+                u|unknown)  list_unknown='YES';;
+                a|all)      list_all='YES';;
+                *)
+                    >&2 echo "Unknown state [$2]."
+                    return 1
+                    ;;
+                esac
+                shift
+            done
+            ;;
+        *)
+            >&2 echo "Unknown command [$1]."
+            return 1
+            ;;
+        esac
+        shift
+    done
+    cmd_count="$( __count_non_empty "$do_add" "$do_remove" "$do_update" "$do_clear" "$do_prune" "$do_status" "$do_list" )"
+    if [[ "$cmd_count" -eq '0' ]]; then
+        >&2 echo -E "No command provided: $( __gmrignore_auto_options )"
+        return 1
+    elif [[ "$cmd_count" -ge '2' ]]; then
+        >&2 echo -E "Only one command can be provided."
         return 1
     fi
+    if [[ -n "$do_list" ]]; then
+        state_count="$( __count_non_empty "$list_ignored" "$list_shown" "$list_unknown" )"
+        if [[ "$state_count" -eq '0' ]]; then
+            list_all='YES'
+        fi
+    fi
+    __ensure_gl_config_dir || return 1
+    local gmr_ignore_filename
+    gmr_ignore_filename="$( __get_gmr_ignore_filename )"
+    if [[ -n "$do_clear" ]]; then
+        if [[ -f "$gmr_ignore_filename" ]]; then
+            rm "$gmr_ignore_filename"
+        fi
+        if [[ -f "$gmr_ignore_filename" ]]; then
+            >&2 "Unable to clear gitlab ignore list stored in $gmr_ignore_filename."
+            return 1
+        fi
+        echo "gmr ignore list cleared."
+        return 0
+    fi
+    __ensure_gitlab_projects
+    local current_ignore_list ignored shown unknown all_count shown_count ignored_count unknown_count
+    if [[ -f "$gmr_ignore_filename" ]] && grep -q '[^[:space:]]' "$gmr_ignore_filename" && [[ "$( jq -r ' length ' "$gmr_ignore_filename" )" -gt '0' ]]; then
+        current_ignore_list="$( cat "$gmr_ignore_filename" )"
+    else
+        current_ignore_list='[]'
+    fi
+    ignored="$( echo -E "$GITLAB_PROJECTS" | jq -c --argjson ignore_list "$current_ignore_list" ' [ .[] | select( null != ( .id as $id | $ignore_list | index( $id ) ) ) ] ' )"
+    shown="$( echo -E "$GITLAB_PROJECTS" | jq -c --argjson ignore_list "$current_ignore_list" ' [ .[] | select( null == ( .id as $id | $ignore_list | index( $id ) ) ) ] ' )"
+    unknown="$( echo -E "$GITLAB_PROJECTS" | jq -c --argjson ignore_list "$current_ignore_list" ' $ignore_list - [ .[] | .id ] ' )"
+    all_count="$( echo -E "$GITLAB_PROJECTS" | jq ' length ' )"
+    shown_count="$( echo -E "$shown" | jq ' length ' )"
+    ignored_count="$( echo -E "$ignored" | jq ' length ' )"
+    unknown_count="$( echo -E "$unknown" | jq ' length ' )"
+
+    if [[ -n "$do_prune" ]]; then
+        local line_count_max count id just_did_nl yn new_ignore_list
+        if [[ "$unknown_count" -eq '0' ]]; then
+            echo -E "There are no unknown project ids to prune."
+            return 0
+        elif [[ "$unknown_count" -eq '1' ]]; then
+            echo -E "There is 1 unknown project id to prune."
+        else
+            echo -E "There are $unknown_count unknown project ids to prune."
+        fi
+        line_count_max=10
+        count=0
+        for id in $( echo -E "$unknown" | jq -r ' .[] ' ); do
+            echo -E -n "$id"
+            count=$(( count + 1 ))
+            just_did_nl=
+            if [[ "$count" -lt "$unknown_count" ]]; then
+                echo -n ","
+                if [[ "$(( count % line_count_max ))" -eq '0' ]]; then
+                    echo ''
+                    just_did_nl='YES'
+                else
+                    echo -n ' '
+                fi
+            fi
+        done
+        if [[ -z "$just_did_nl" ]]; then
+            echo ''
+        fi
+        echo 'Are you sure you want to prune these ids? [y|N]'
+        read yn
+        if [[ "$yn" =~ ^[Yy]([eE][sS])?$ ]]; then
+            new_ignore_list="$( echo -E "[$current_ignore_list,$unknown]" | jq -c ' .[0] - .[1] | sort | unique ' )"
+            echo -E "$new_ignore_list" > "$gmr_ignore_filename"
+            echo "Ignore list pruned."
+            return 0
+        else
+            echo "Nothing pruned."
+            return 0
+        fi
+    fi
+    if [[ -n "$do_status" ]]; then
+        local report l
+        report=()
+        report+=( "gmr ignore list status:" )
+        report+=( "    Known Projects:   $( printf '%5d' "$all_count" )" )
+        report+=( "    Shown Projects:   $( printf '%5d' "$shown_count" )" )
+        report+=( "    Ignored Projects: $( printf '%5d' "$ignored_count" )" )
+        report+=( "    Unknown Projects: $( printf '%5d' "$unknown_count" )" )
+        for l in "${report[@]}"; do
+            echo -E "$l"
+        done
+        return 0
+    fi
+    if [[ -n "$do_list" ]]; then
+        local report l
+        report=()
+        if [[ -n "$list_shown" || -n "$list_all" ]]; then
+            if [[ "$shown_count" -eq '0' ]]; then
+                report+=( "There are no projects that are shown." )
+            elif [[ "$shown_count" -eq '1' ]]; then
+                report+=( "There is one project that is shown." )
+            else
+                report+=( "There are $shown_count projects that are shown." )
+            fi
+            if [[ "$shown_count" -gt '0' ]]; then
+                report+=( "$( echo -E "$shown" \
+                                | jq -r 'def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                                         sort_by( .name_with_namespace )
+                                         | .[]
+                                         | "  +~" + ( .name_with_namespace | clean ) + "~" + .web_url + "~" + ( .id | tostring ) ' \
+                                | column -s '~' -t )" )
+            fi
+            report+=( '' )
+        fi
+        if [[ -n "$list_ignored" || -n "$list_all" ]]; then
+            if [[ "$ignored_count" -eq '0' ]]; then
+                report+=( "There are no projects that are ignored." )
+            elif [[ "$ignored_count" -eq '1' ]]; then
+                report+=( "There is one project that is ignored." )
+            else
+                report+=( "There are $ignored_count projects that are ignored." )
+            fi
+            if [[ "$ignored_count" -gt '0' ]]; then
+                report+=( "$( echo -E "$ignored" \
+                                | jq -r 'def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                                         sort_by( .name_with_namespace )
+                                         | .[]
+                                         | "  -~" + ( .name_with_namespace | clean ) + "~" + .web_url + "~" + ( .id | tostring ) ' \
+                                | column -s '~' -t )" )
+            fi
+            report+=( '' )
+        fi
+        if [[ -n "$list_unknown" || -n "$list_all" ]]; then
+            if [[ "$unknown_count" -eq '0' ]]; then
+                report+=( "There are no projects that are unknown." )
+            elif [[ "$unknown_count" -eq '1' ]]; then
+                report+=( "There is one project that is unknown." )
+            else
+                report+=( "There are $unknown_count projects that are unknown." )
+            fi
+            if [[ "$unknown_count" -gt '0' ]]; then
+                report+=( "$( echo -E "$unknown" \
+                                | jq -r 'def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                                         sort
+                                         | .[]
+                                         | "  ?~moved renamed or deleted~" + ( . | tostring ) ' \
+                                | column -s '~' -t )" )
+            fi
+            report+=( '' )
+        fi
+        for l in "${report[@]}"; do
+            echo -E "$l"
+        done
+        return 0
+    fi
+    if [[ -n "$do_add" || -n "$do_remove" || -n "$do_update" ]]; then
+        local to_choose_from fzf_header selected selected_count selected_ids selected_names new_ignore_list new_ignore_count report l
+        if [[ -n "$do_add" ]]; then
+            if [[ "$shown_count" -eq '0' ]]; then
+                >&2 echo -E "You do not currently have any shown projects."
+                return 0
+            fi
+            to_choose_from="$shown"
+            fzf_header="Select projects to ignore."
+        elif [[ -n "$do_remove" ]]; then
+            if [[ "$ignored_count" -eq '0' ]]; then
+                >&2 echo -E "You do not currently have any ignored projects."
+                return 0
+            fi
+            to_choose_from="$ignored"
+            fzf_header="Select projects to show again."
+        elif [[ -n "$do_update" ]]; then
+            if [[ "$all_count" -eq '0' ]]; then
+                >&2 echo -E "Your projects list is empty."
+                return 0
+            fi
+            to_choose_from="$GITLAB_PROJECTS"
+            fzf_header="Select projects to ignore."
+        fi
+        selected="$( echo "$to_choose_from" \
+                        | jq -r ' sort_by( .name_with_namespace ) | .[] | ( .id | tostring ) + "~" + .name_with_namespace ' \
+                        | __fzf_wrapper -m --with-nth='2' --to-columns -d '~' --header="$fzf_header" --cycle --tac )"
+        if [[ -z "$selected" ]]; then
+            echo "No selection made. The gmr ignore list is unchanged."
+            return 0
+        fi
+        selected_count="$( echo "$selected" | wc -l | sed -E 's/[^[:digit:]]//g' )"
+        selected_ids="[$( echo "$selected" | __gitlab_get_col '~' '1' | sed -E 's/[^[:digit:]]//g' | tr '\n' ',' | sed -E 's/,$//' )]"
+        selected_names="$( echo "$selected" | __gitlab_get_col '~' '2' )"
+        report=()
+        if [[ -n "$do_add" ]]; then
+            new_ignore_list="$( echo -E "[$current_ignore_list,$selected_ids]" | jq -c ' add | sort | unique ' )"
+            if [[ "$selected_count" -eq '1' ]]; then
+                report+=( "Added $selected_count project to the ignore list." )
+            else
+                report+=( "Added $selected_count projects to the ignore list." )
+            fi
+        elif [[ -n "$do_remove" ]]; then
+            new_ignore_list="$( echo -E "[$current_ignore_list,$selected_ids]" | jq -c ' .[0] - .[1] | sort | unique ' )"
+            if [[ "$selected_count" -eq '1' ]]; then
+                report+=( "Removed $selected_count project from the ignore list." )
+            else
+                report+=( "Removed $selected_count projects from the ignore list." )
+            fi
+        elif [[ -n "$do_update" ]]; then
+            new_ignore_list="$( echo -E "$selected_ids" | jq -c ' sort | unique ' )"
+            if [[ "$selected_count" -eq '1' ]]; then
+                report+=( "Updated the ignore list with $selected_count project." )
+            else
+                report+=( "Updated the ignore list with $selected_count projects." )
+            fi
+        fi
+        if [[ "$selected_count" -le '20' ]]; then
+            report+=( "$( echo -E "$selected_names" | sed 's/^/    /' )" )
+        fi
+        new_ignore_count="$( echo -E "$new_ignore_list" | jq ' length ' )"
+        report+=( "There are $new_ignore_count projects being ignored." )
+        echo -E "$new_ignore_list" > "$gmr_ignore_filename"
+        for l in "${report[@]}"; do
+            echo -E "$l"
+        done
+        return 0
+    fi
+    >&2 echo "Unkown command."
+    return 1
 }
 
 # Usage: <do stuff> | __convert_display_options_to_auto_options
@@ -1340,6 +1634,36 @@ __ensure_option () {
     return 0
 }
 
+# Usage: __count_non_empty <val1> [<val2> [<val3> ...]]
+__count_non_empty () {
+    local count
+    count=0
+    while [[ "$#" -gt '0' ]]; do
+        if [[ -n "$1" ]]; then
+            count=$(( count + 1 ))
+        fi
+        shift
+    done
+    echo -E -n "$count"
+}
+
+# Makes sure that a GitLab token is set.
+# This must be set outside of this file, and is kind of a secret thing.
+# Usage: __ensure_gitlab_token
+__ensure_gitlab_token () {
+    if [[ -z "$GITLAB_PRIVATE_TOKEN" ]]; then
+        >&2 cat << EOF
+No GITLAB_PRIVATE_TOKEN has been set.
+To create one, go to $( __get_gitlab_base_url )/profile/personal_access_tokens and create one with the "api" scope.
+Then you can set it using
+GITLAB_PRIVATE_TOKEN=whatever-your-token-is
+It is probably best to put that line somewhere so that it will get executed whenever you start your terminal (e.g. .bash_profile)
+
+EOF
+        return 1
+    fi
+}
+
 # Makes sure that your GitLab user info has been loaded.
 # If not, it is looked up.
 # Usage: __ensure_gitlab_user_info <keep quiet>
@@ -1363,6 +1687,48 @@ __get_gitlab_user_info () {
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
 
+__get_gl_config_dir () {
+    if [[ -n "$GITLAB_CONFIG_DIR" && "$GITLAB_CONFIG_DIR" =~ ^/ ]]; then
+        echo -E -n "$GITLAB_CONFIG_DIR"
+        return 0
+    elif [[ -n "$HOME" && "$HOME" =~ ^/ ]]; then
+        echo -E -n "$HOME/.config/gitlab"
+        return 0
+    elif [[ -n "$GITLAB_BASE_DIR" && "$GITLAB_BASE_DIR" =~ ^/ ]]; then
+        echo -E -n "$GITLAB_BASE_DIR/.gitlab_config"
+        return 0
+    fi
+    return 1
+}
+
+__ensure_gl_config_dir () {
+    local config_dir
+    config_dir="$( __get_gl_config_dir )"
+    if [[ -z "$config_dir" ]]; then
+        >&2 echo "No configuration directory defined."
+        return 1
+    elif [[ -d "$config_dir" ]]; then
+        return 0
+    fi
+    mkdir -p "$config_dir"
+}
+
+__get_gmr_ignore_filename () {
+    echo -E -n "$( __get_gl_config_dir )/gmr_ignore.json"
+}
+
+__get_gitlab_max_age () {
+    if [[ -n "$GITLAB_PROJECTS_MAX_AGE" ]]; then
+        if [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^[[:digit:]]+[smhdw]$ ]]; then
+            echo -E -n "$GITLAB_PROJECTS_MAX_AGE"
+            return 0
+        else
+            >&2 echo "Invalid GITLAB_PROJECTS_MAX_AGE value [$GITLAB_PROJECTS_MAX_AGE]. Using default of 1d."
+        fi
+    fi
+    echo -E -n '1d'
+}
+
 # Makes sure that the $GITLAB_PROJECTS variable has a value.
 # A temp file is used to store the project info too.
 # If the file doesn't exist, or is older than a day, or is empty,
@@ -1376,7 +1742,7 @@ __ensure_gitlab_projects () {
     __ensure_temp_dir
     projects_file="$( __get_projects_filename )"
     if [[ ! -f "$projects_file" \
-            || $( find "$projects_file" -mtime "+$GITLAB_PROJECTS_MAX_AGE" ) ]] \
+            || $( find "$projects_file" -mtime "+$( __get_gitlab_max_age )" ) ]] \
             || ! $( grep -q '[^[:space:]]' "$projects_file" ); then
         __get_gitlab_projects "$keep_quiet" "$verbose"
         echo -E "$GITLAB_PROJECTS" > "$projects_file"
@@ -1395,7 +1761,7 @@ __delete_projects_file () {
 # Gets the full path and name of the file to store projects info.
 # Usage: __get_projects_filename
 __get_projects_filename () {
-    echo -E -n "$GITLAB_TEMP_DIR/projects.json"
+    echo -E -n "$( __get_gitlab_temp_dir )/projects.json"
 }
 
 # Look up info on all available projects. Results are stored in $GITLAB_PROJECTS.
@@ -1598,15 +1964,32 @@ __get_my_gitlab_mrs () {
 # Do a deep scan to get a full list of all MRs that are available for me to view. Results are put in $GITLAB_MRS.
 # This usually takes a while because it will go through each project and get all MRs for that project (at least one call per project).
 # It will often find more MRs than __get_my_gitlab_mrs though because of a bug in GitLab.
-# Usage: __get_my_gitlab_mrs_deep <keep quiet>
+# Usage: __get_my_gitlab_mrs_deep <keep quiet> <bypass ignore>
 __get_my_gitlab_mrs_deep () {
-    local keep_quiet mrs mr_count project_ids project_count project_index project_id project_name mrs_url project_mrs project_mr_count
+    local keep_quiet bypass_ignore ignore_list ignore_count mrs mr_count project_ids project_count project_index project_id project_name mrs_url project_mrs project_mr_count
     keep_quiet="$1"
-    [[ -n "$keep_quiet" ]] || echo -E "Getting all your open MRs from all of your available projects... "
+    bypass_ignore="$2"
+    ignore_list='[]'
+    if [[ -z "$bypass_ignore" ]]; then
+        local ignore_fn
+        ignore_fn="$( __get_gmr_ignore_filename )"
+        if [[ -r "$ignore_fn" ]] && grep -q '[^[:space:]]' "$ignore_fn"; then
+            ignore_list="$( cat "$ignore_fn" )"
+        fi
+    fi
+    ignore_count="$( echo -E "$ignore_list" | jq ' length ' )"
+    if [[ -z "$keep_quiet" ]]; then
+        echo -E -n "Getting all your open MRs from all of your available projects ... "
+        if [[ "$ignore_count" -gt '0' ]]; then
+            echo -E "Ignoring $ignore_count of them ..."
+        else
+            echo ''
+        fi
+    fi
     mrs="[]"
     mr_count=0
-    project_ids="$( echo -E "$GITLAB_PROJECTS" | jq ' .[] | .id ' )"
-    project_count="$( echo -E "$GITLAB_PROJECTS" | jq ' length ' )"
+    project_ids="$( echo -E "$GITLAB_PROJECTS" | jq --argjson ignore_list "$ignore_list" ' [ .[] | .id ] - $ignore_list | .[] ' )"
+    project_count="$( echo -E "$project_ids" | wc -l | sed -E 's/[^[:digit:]]//g' )"
     project_index=1
     for project_id in $project_ids; do
         project_name="$( __get_project_name "$project_id" )"
@@ -1844,14 +2227,24 @@ __get_pages_of_url () {
     echo -E "$results"
 }
 
+__get_gitlab_temp_dir () {
+    if [[ -n "$GITLAB_TEMP_DIR" && "$GITLAB_TEMP_DIR" =~ ^/ ]]; then
+        echo -E -n "$GITLAB_TEMP_DIR"
+    else
+        echo -E -n '/tmp/gitlab'
+    fi
+}
+
 # Makes sure that the gitlab temp directory exists.
 # Usage: __ensure_temp_dir
 __ensure_temp_dir () {
-    if [[ -f "$GITLAB_TEMP_DIR" ]]; then
-        rm "$GITLAB_TEMP_DIR"
+    local tmp_dir
+    tmp_dir="$( __get_gitlab_temp_dir )"
+    if [[ -f "$tmp_dir" ]]; then
+        rm "$tmp_dir"
     fi
-    if [[ ! -d "$GITLAB_TEMP_DIR" ]]; then
-        mkdir "$GITLAB_TEMP_DIR"
+    if [[ ! -d "$tmp_dir" ]]; then
+        mkdir "$tmp_dir"
     fi
 }
 
@@ -2041,6 +2434,7 @@ if [[ "$sourced" == 'YES' ]]; then
         complete -W "$( __glclean_auto_options )" glclean
         complete -W "$( __glmerged_auto_options )" glmerged
         complete -W "$( __glopen_auto_options )" glopen
+        complete -W "$( __gmrignore_auto_options )" gmrignore
     elif [[ -n "$( type compctl 2>&1 | grep -v 'not found' )" ]]; then
         compctl -x 'p[1]' -k "( $( __gitlab_auto_options ) )" -- gitlab
         compctl -k "( $( __gmr_auto_options ) )" gmr
@@ -2050,6 +2444,7 @@ if [[ "$sourced" == 'YES' ]]; then
         compctl -k "( $( __glclean_auto_options ) )" glclean
         compctl -k "( $( __glmerged_auto_options ) )" glmerged
         compctl -k "( $( __glopen_auto_options ) )" glopen
+        compctl -k "( $( __gmrignore_auto_options ) )" gmrignore
     fi
 else
     if [[ "$#" -gt '0' ]]; then
