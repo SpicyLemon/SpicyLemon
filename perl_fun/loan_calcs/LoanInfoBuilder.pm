@@ -28,6 +28,8 @@
 package LoanInfoBuilder;
 use strict;
 use warnings;
+use Carp;
+use Scalar::Util 'blessed';
 use LoanInfo;
 use Term;
 
@@ -58,7 +60,13 @@ sub withMonthlyPayment {
 sub withTermInYears {
     my $self = shift;
     my $term_in_years = shift;
-    return $self->withTerm(Term->newYears($term_in_years));
+    if (defined $term_in_years) {
+        $self->withTerm(Term->newYears($term_in_years));
+    }
+    else {
+        $self->withTerm(undef);
+    }
+    return $self;
 }
 
 # Usage: $builder->withTermInMonths($term_in_months);
@@ -66,7 +74,13 @@ sub withTermInYears {
 sub withTermInMonths {
     my $self = shift;
     my $term_in_months = shift;
-    return $self->withTerm(Term->newMonths($term_in_months));
+    if (defined $term_in_months) {
+        $self->withTerm(Term->newMonths($term_in_months));
+    }
+    else {
+        $self->withTerm(undef);
+    }
+    return $self;
 }
 
 # Usage: $builder->withTerm(Term->newMonths($term_in_months));
@@ -74,6 +88,9 @@ sub withTermInMonths {
 sub withTerm {
     my $self = shift;
     $self->{term} = shift;
+    if ( defined $self->{term} && ! (blessed $self->{term} && $self->{term}->isa('Term')) ) {
+        croak "Invalid value provided to LoanInfoBuilder withTerm. Value must be Term object.";
+    }
     return $self;
 }
 
@@ -87,13 +104,13 @@ sub withRate {
 # Usage: my $loan_info = $builder->build();
 sub build {
     my $self = shift;
-    my $params = {};
+    my %params = ();
     for my $k (qw( term principal monthly_payment rate )) {
         if (defined $self->{$k}) {
-            $params->{$k} = $self->{$k};
+            $params{$k} = $self->{$k};
         }
     }
-    return LoanInfo->new($params);
+    return LoanInfo->new(\%params);
 }
 
 1;
