@@ -73,7 +73,7 @@ sub calculatePrincipal {
     my $self = shift;
     my $monthly_payment = $self->{monthly_payment};
     my $monthly_rate = $self->{rate} / 12;
-    my $term_in_months = $self->{term}->{term_in_months};
+    my $term_in_months = $self->{term}->inMonths();
     $self->{principal} = $monthly_payment / ( $monthly_rate / ( 1 - ( 1 + $monthly_rate ) ** ( -1 * $term_in_months ) ) );
     $self->{last_calc} = 'principal';
     $self->updateCosts();
@@ -85,7 +85,7 @@ sub calculateMonthlyPayment {
     my $self = shift;
     my $principal = $self->{principal};
     my $monthly_rate = $self->{rate} / 12;
-    my $term_in_months = $self->{term}->{term_in_months};
+    my $term_in_months = $self->{term}->inMonths();
     $self->{monthly_payment} = $principal * $monthly_rate / ( 1 - ( 1 + $monthly_rate ) ** ( -1 * $term_in_months ) );
     $self->{last_calc} = 'monthly_payment';
     $self->updateCosts();
@@ -101,25 +101,79 @@ sub calculateTerm {
     $self->{term} = Term->newMonths(log( $monthly_payment / ( $monthly_payment - $principal * $monthly_rate ) ) / log( 1 + $monthly_rate ));
     $self->{last_calc} = 'term';
     $self->updateCosts();
-    return $self->{term}->{term_in_years};
+    return $self->{term}->inYears();
 }
 
 # Usage: $loan_info->calculateRate();
 sub calculateRate {
     my $self = shift;
-    my $principal = $self->{principal};
-    my $term_in_months = $self->{term}->{term_in_months};
-    my $monthly_payment = $self->{monthly_payment};
-    die "Rate calculation not yet implemented.\n";
     $self->updateCosts();
+    my $target = sprintf("%.3f", $self->{principal});
+    my $actual = '';
+    my @guesses = ();
+    my $max_iterations = 20;
+    my $sign = undef;
+    my $iteration = 0;
+    while ($target ne $actual && $iteration < $max_iterations) {
+        $iteration += 1;
+        my $rate_guess = undef;
+        if (scalar @guesses == 0) {
+            $rate_guess = $self->{total_paid} / $self->{principal} - 1;
+        }
+        elsif (scalar @guesses == 1) {
+            @guesses = sort { $a->{diff_abs} <=> $b->{diff_abs} } @guesses;
+            if ($guesses[0]->{diff} < 0) {
+                $rate_guess = $guesses[0]->{rate} * 0.9;
+            }
+            else {
+                $rate_guess = $guesses[0]->{rate} * 1.1;
+            }
+        }
+        else {
+            my $p = $self->{principal};
+            my $r0 = $guesses[0]->{rate};
+            my $p0 = $guesses[0]->{principal};
+            my $r1 = $guesses[1]->{rate};
+            my $p1 = $guesses[1]->{principal};
+            $rate_guess = ( $r1*($p0-$p) + $r0*($p-$p1) ) / ($p0 - $p1);
+        }
+        my $monthly_rate = $rate_guess / 12;
+        my $principal = sprintf("%.3f", $self->{monthly_payment} / ( $monthly_rate / ( 1 - ( 1 + $monthly_rate ) ** ( -1 * $self->{term}->inMonths() ) ) ));
+        $actual = sprintf("%.3f", $principal);
+        my %guess = (
+            iteration => $iteration,
+            rate => $rate_guess,
+            principal => $principal,
+            diff => $principal - $self->{principal},
+        );
+        $guess{diff_abs} = abs($guess{diff});
+        unshift (@guesses, \%guess);
+    }
+    if ($target ne $actual) {
+        my @message = ('Unable to calculate rate from provided parameters:',
+                       '      Principal: '.$self->{principal},
+                       'Monthly Payment: '.$self->{monthly_payment},
+                       '           Term: '.$self->{term}->toString(),
+                       '--------------------------------------------',
+                       "i\trate\tprincipal\tdiff");
+        push (@message, map { join("\t", ($_->{iteration},
+                                          sprintf("%.6f", $_->{rate}),
+                                          sprintf("%.2f", $_->{principal}),
+                                          sprintf("%.2f", $_->{diff_abs}))) }
+                        sort { $a->{iteration} <=> $b->{iteration} } @guesses );
+        warn join("\n", @message)."\n";
+        exit(2);
+    }
+    $self->{rate} = $guesses[0]->{rate};
     return undef;
 }
 
 # Usage: $loan_info->updateCosts();
 sub updateCosts {
     my $self = shift;
-    $self->{total_paid} = $self->{monthly_payment} * $self->{term}->{term_in_months};
+    $self->{total_paid} = $self->{monthly_payment} * $self->{term}->inMonths();
     $self->{total_interest} = $self->{total_paid} - $self->{principal};
+    $self->{average_interest_per_payment} = $self->{total_interest} / $self->{term}->inMonths();
     return $self;
 }
 
@@ -192,6 +246,7 @@ sub toString {
         divider =>         '--------------------------------',
         total_paid =>      '     Total Paid: ' . sprintf("%.2f", $self->{total_paid}),
         total_interest =>  ' Total Interest: ' . sprintf("%.2f", $self->{total_interest}),
+        ave_int_per_pay => 'Int per payment: ' . sprintf("%.2f", $self->{average_interest_per_payment}),
     );
     my @retval = ();
     for my $k (qw( principal rate term monthly_payment )) {
@@ -203,8 +258,9 @@ sub toString {
     if (defined $bottom_field && exists $lines{$bottom_field}) {
         push (@retval, $lines{$bottom_field});
     }
-    push (@retval, $lines{total_paid});
-    push (@retval, $lines{total_interest});
+    for my $k (qw( total_paid total_interest ave_int_per_pay )) {
+        push (@retval, $lines{$k});
+    }
     return join("\n", @retval)."\n";
 }
 
