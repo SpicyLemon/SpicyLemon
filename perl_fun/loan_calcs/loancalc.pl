@@ -172,7 +172,7 @@ sub parseArgs {
                 push (@problems, "No rate provided after the $arg_in option.");
             }
         }
-        elsif ($arg eq '-t' || $arg eq '--term' || $arg eq '--term-years' $arg eq '--term-in-years' || $arg eq '--term-months' $arg eq '--term-in-months' ) {
+        elsif ($arg eq '-t' || $arg eq '--term' || $arg eq '--term-years' || $arg eq '--term-in-years' || $arg eq '--term-months' || $arg eq '--term-in-months') {
             my $term_in = shift(@args);
             if (defined $term_in && $term_in =~ m{\S}) {
                 my $term = $term_in;
