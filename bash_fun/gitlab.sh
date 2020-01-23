@@ -67,7 +67,8 @@ Usage:
     gitlab help
         Display this message.
 
-    gitlab merge-requests $( __gmr_options_display )
+    gitlab merge-requests $( __gmr_options_display_1 )
+                          $( __gmr_options_display_2 )
         Get information about merge requests.
         Same as the $( __highlight "gmr" ) function.
 
@@ -157,11 +158,14 @@ EOF
     $cmd "$@"
 }
 
-__gmr_options_display () {
-    echo -E -n '[-s|--select] [-r|--refresh] [-d|--deep] [-b|--bypass-ignore] [-u|--update] [-q|--quiet] [-m|--mine] [-o|--open-all] [-h|--help]'
+__gmr_options_display_1 () {
+    echo -E -n '[-r|--refresh] [-d|--deep] [-b|--bypass-ignore] [-i|--include-approved] [-m|--mine]'
+}
+__gmr_options_display_2 () {
+    echo -E -n '[-u|--update] [-q|--quiet] [-s|--select] [-o|--open-all] [-h|--help]'
 }
 __gmr_auto_options () {
-    echo -E -n "$( __gmr_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( echo -E "$( __gmr_options_display_1 ) $( __gmr_options_display_2 )" | __convert_display_options_to_auto_options )"
 }
 gmr () {
     __ensure_gitlab_token || return 1
@@ -171,21 +175,23 @@ gmr: GitLab Merge Requests
 
 Gets information about merge requests you are involved in.
 
-Usage: gmr $( __gmr_options_display )
+Usage: gmr $( __gmr_options_display_1 )
+           $( __gmr_options_display_2 )
 
   With no options, if there is no previous results, new results are looked up.
   With no options, if there ARE previous results, those old results are displayed.
-  The -s or --select option makes gmr prompt you to select entries that will be opened in your browser.
-        You can select multiple entries using the tab key. All selected entries will be opened in your browser.
   The -r or --refresh option causes gmr to reach out to GitLab to get a current list of your MRs (the easy, but incomplete way).
   The -d or --deep option causes gmr to go through each project you can see to check for merge requests that request your approval.
         This will take longer, but might uncover some MRs that do not show up with the simple (-r) lookup.
         If supplied with the -r option, the -r option is ignored.
   The -b or --bypass-ignore option only makes sense along with the -d or --deep option.
         It will cause gmr to bypass the ignore list that you have setup using gmrignore.
-  The -u or --update option causes gmr to go through the known lists of MRs and remove them if you have approved them.
-  The -q or --quiet option suppresses normal terminal output. If used with -s, the selection page will still be displayed.
+  The -i or --include-approved flag tells gmr to also display mrs that you have already approved.
   The -m or --mine option lists MRs that you created.
+  The -u or --update option causes gmr to go through the known lists of MRs and update them with respect to comments and approvals.
+  The -q or --quiet option suppresses normal terminal output. If used with -s, the selection page will still be displayed.
+  The -s or --select option makes gmr prompt you to select entries that will be opened in your browser.
+        You can select multiple entries using the tab key. All selected entries will be opened in your browser.
   The -o or --open-all option causes all MRs to be opened in your browser.
 
 Basically, the first time you run the  gmr  command, you will get a list of MRs (eventually).
@@ -194,7 +200,8 @@ In order to update the list again, do a  gmr --refresh
 
 EOF
     )"
-    local option do_refresh do_update do_deep bypass_ignore do_mine do_selector keep_quiet open_all refresh_type filter_type discussion_type mrs todo_count
+    local option do_refresh do_update do_deep bypass_ignore show_approved do_mine do_selector keep_quiet open_all \
+          refresh_type filter_type discussion_type mrs todo_count
     while [[ "$#" -gt 0 ]]; do
         option="$( __to_lowercase "$1" )"
         case "$option" in
@@ -202,14 +209,15 @@ EOF
             echo -e "$usage"
             return 0
             ;;
-        -r|--refresh)       do_refresh="YES" ;;
-        -u|--update)        do_update="YES" ;;
-        -d|--deep)          do_deep="YES" ;;
-        -b|--bypass-ignore) bypass_ignore='YES' ;;
-        -m|--mine)          do_mine="YES" ;;
-        -s|--select)        do_selector="YES" ;;
-        -q|--quiet)         keep_quiet="YES" ;;
-        -o|--open-all)      open_all="YES" ;;
+        -r|--refresh)           do_refresh="YES" ;;
+        -d|--deep)              do_deep="YES" ;;
+        -b|--bypass-ignore)     bypass_ignore='YES' ;;
+        -i|--include-approved)  show_approved='YES' ;;
+        -m|--mine)              do_mine="YES" ;;
+        -u|--update)            do_update="YES" ;;
+        -q|--quiet)             keep_quiet="YES" ;;
+        -s|--select)            do_selector="YES" ;;
+        -o|--open-all)          open_all="YES" ;;
         *)
             >&2 echo -E "Unknown option [ $option ]."
             >&2 echo -e "$usage"
@@ -220,14 +228,20 @@ EOF
     done
     if [[ -n "$do_deep" && -n "$do_mine" ]]; then
         >&2 echo -E "--deep and --mine are mutually exclusive options. Please only supply one of them."
-        >&2 echo -e "$usage"
         return 0
     fi
-    if [[ -n "$do_refresh" && "$do_update" ]]; then
+    if [[ -n "$do_refresh" && -n "$do_update" ]]; then
         >&2 echo -E "The --refresh option overrides the --update option; --update is being ignored."
+        do_update=
     fi
-    if [[ -n "$do_update" && "$do_mine" ]]; then
-        >&2 echo -E "The --update option is not applicable to the --mine option. You probably want --refresh instead."
+    if [[ -n "$do_mine" && -n "$show_approved" ]]; then
+        >&2 echo -E "The --include-approved option has no meaning with --mine; --include-approved is being ignored."
+        show_approved=
+    fi
+    if [[ -n "$do_update" && -n "$do_mine" ]]; then
+        >&2 echo -E "The --update option has no meaning with --mine; treating it as --refresh instead."
+        do_refresh='YES'
+        do_update=
     fi
 
     if [[ -n "$do_deep" ]]; then
@@ -269,19 +283,40 @@ EOF
         __add_discussion_info_to_mrs "$keep_quiet" "$discussion_type"
     fi
 
-    mrs="$( if [[ -n "$do_mine" ]]; then echo -E "$GITLAB_MRS_BY_ME"; else echo -E "$GITLAB_MRS_TODO"; fi )"
-    todo_count=$( echo -E "$mrs" | jq ' length ' )
+    if [[ -n "$do_mine" ]]; then
+        mrs="$GITLAB_MRS_BY_ME"
+    elif [[ -n "$show_approved" ]]; then
+        mrs="$GITLAB_MRS_TODO"
+    else
+        mrs="$( echo -E "$GITLAB_MRS_TODO" | jq -c ' [ .[] | select(.i_approved == false) ] ' )"
+    fi
+    todo_count="$( echo -E "$mrs" | jq ' length ' )"
     if [[ $todo_count -eq 0 ]]; then
-        [[ -n "$keep_quiet" ]] || echo -E "You have no MRs$( if [[ -z "$do_mine" ]]; then echo -E " to review!!"; else echo -E "."; fi )"
+        if [[ -z "$keep_quiet" ]]; then
+            echo -E -n "You have no"
+            [[ -n "$show_approved" ]] && echo -E -n " open"
+            echo -E -n " MRs"
+            if [[ -z "$do_mine" && -z "$show_approved" ]]; then
+                echo -E " to review!!"
+            else
+                echo -E "."
+            fi
+        fi
     else
         if [[ -z "$keep_quiet" ]]; then
-            echo -E "You have $todo_count MRs$( [[ -z "$do_mine" ]] && echo -E " to review (oldest on top)" )."
+            echo -E -n "You have $todo_count"
+            [[ -n "$show_approved" ]] && echo -E -n " open"
+            echo -E -n " MRs"
+            [[ -z "$do_mine" && -z "$show_approved" ]] && echo -E -n " to review"
+            [[ -z "$do_mine" ]] && echo -E -n " (oldest on top)"
+            echo -E "."
             ( echo -E '┌───▪ Repo~┌───▪ Author~┌───▪ Discussions~┌───▪ Title~┌───▪ Url' \
                 && echo -E "$mrs" \
-                    | jq -r --arg box_checked '☑' --arg box_empty '☐' \
+                    | jq -r --arg box_checked '☑' --arg box_empty '☐' --arg root '√' \
                         ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
-                          .[] | .col_head = "├─" + ( if .approved == true then $box_checked else $box_empty end) + " "
+                          .[] | .col_head = "├" + ( if .i_approved == true then $root else "─" end )
+                                                + ( if .approved == true then $box_checked else $box_empty end) + " "
                               |         .col_head + ( .project_name | clean )
                                 + "~" + .col_head + ( .author.name | cleanname | .[0:20] )
                                 + "~" + .col_head + .discussion_stats
@@ -297,12 +332,13 @@ EOF
         fi
         if [[ -n $do_selector ]]; then
             local selected_lines selected_line web_url
-            selected_lines="$( ( echo -E " ~ Repo~ Author~ Discussions~ Title$( [[ -z "$do_mine" ]] && echo -E " (oldest on top)" )" \
+            selected_lines="$( ( echo -E "  ~ Repo~ Author~ Discussions~ Title$( [[ -z "$do_mine" ]] && echo -E " (oldest on top)" )" \
                 && echo -E "$mrs" \
-                    | jq -r --arg box_checked '☑' --arg box_empty '☐' \
+                    | jq -r --arg box_checked '☑' --arg box_empty '☐' --arg root '√' \
                         ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           def cleanname: sub(" - [sS][oO][fF][iI].*$"; "") | clean;
-                          .[] |          ( if .approved == true then $box_checked else $box_empty end)
+                          .[] |         ( if .i_approved == true then $root else " " end )
+                                      + ( if .approved == true then $box_checked else $box_empty end )
                                 + "~" + ( .project_name | clean )
                                 + "~" + ( .author.name | cleanname )
                                 + "~" + .discussion_stats
@@ -1894,7 +1930,7 @@ __get_glopen_message () {
 __get_project_name () {
     local project_id project_name
     project_id="$1"
-    project_name=$( echo -E "$GITLAB_PROJECTS" | jq " .[] | select(.id==$project_id) | .name " )
+    project_name=$( echo -E "$GITLAB_PROJECTS" | jq -r " .[] | select(.id==$project_id) | .name " )
     echo -E -n "$project_name"
 }
 
@@ -1919,7 +1955,7 @@ __add_project_names_to_mrs_i_created () {
     mr_project_ids="$( echo -E "$GITLAB_MRS_BY_ME" | jq ' [ .[] | .project_id ] | unique | .[] ' )"
     for mr_project_id in $( echo -E "$mr_project_ids" | sed -l '' ); do
         project_name="$( __get_project_name "$mr_project_id" )"
-        GITLAB_MRS_BY_ME="$( echo -E "$GITLAB_MRS_BY_ME" | jq -c " [ .[] | if (.project_id == $mr_project_id) then (.project_name = $project_name) else . end ] " )"
+        GITLAB_MRS_BY_ME="$( echo -E "$GITLAB_MRS_BY_ME" | jq -c " [ .[] | if (.project_id == $mr_project_id) then (.project_name = \"$project_name\") else . end ] " )"
     done
 }
 
@@ -2013,7 +2049,8 @@ __get_my_gitlab_mrs_deep () {
 # Usage: __filter_gitlab_mrs <keep quiet> <filter type>
 # If filter type is "SHORT" then $GITLAB_MRS_TODO is filtered. Otherwise $GITLAB_MRS is filtered.
 __filter_gitlab_mrs () {
-    local keep_quiet filter_type mrs_to_filter mr_count mr_ids mr_index mr_todo_count my_mrs mr_id mr mr_iid mr_project_id mr_project_name mr_approvals keep_mr mr_approved
+    local keep_quiet filter_type mrs_to_filter mr_count mr_ids mr_index mr_todo_count my_mrs \
+          mr_id mr mr_iid mr_project_id mr_project_name mr_approvals mr_state need_to_approve already_approved mr_approved to_add
     keep_quiet="$1"
     filter_type="$2"
     mrs_to_filter="$( if [[ "$filter_type" == "SHORT" ]]; then echo -E "$GITLAB_MRS_TODO"; else echo -E "$GITLAB_MRS"; fi )"
@@ -2030,10 +2067,13 @@ __filter_gitlab_mrs () {
         [[ -n "$keep_quiet" ]] || echo -e -n "\033[1K\rFiltering MRs: ($mr_todo_count) $mr_index/$mr_count - $mr_project_name:$mr_iid "
         mr_approvals="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __get_gitlab_url_project_mr_approvals "$mr_project_id" "$mr_iid" )" )"
         mr_state="$( echo -E "$mr_approvals" | jq -r ' .state ' )"
-        keep_mr="$( echo -E "$mr_approvals" | jq --arg GITLAB_USER_ID "$GITLAB_USER_ID" ' .suggested_approvers[] | select(.id==($GITLAB_USER_ID|tonumber)) | "KEEP" ' )"
-        if [[ -n "$keep_mr" && "$mr_state" == "opened" ]]; then
-            mr_approved="$( echo -E "$mr_approvals" | jq ' .approved ' )"
-            mr="$( echo -E "$mr" | jq -c " .project_name = $mr_project_name | .approved = $mr_approved " )"
+        need_to_approve="$( echo -E "$mr_approvals" | jq -r --arg GITLAB_USER_ID "$GITLAB_USER_ID" ' .suggested_approvers[] | select(.id==($GITLAB_USER_ID|tonumber)) | "YES" ' )"
+        already_approved="$( echo -E "$mr_approvals" | jq -r --arg GITLAB_USER_ID "$GITLAB_USER_ID" ' .approved_by[] | select(.user.id==($GITLAB_USER_ID|tonumber)) | "YES" ' )"
+        if [[ -n "$need_to_approve$already_approved" && "$mr_state" == "opened" ]]; then
+            mr_approved="$( echo -E "$mr_approvals" | jq -r ' if .approved then "YES" else "NO" end ' )"
+            to_add="$( jq -c --arg mr_project_name "$mr_project_name" --arg mr_approved "$mr_approved" --arg already_approved "$already_approved" --null-input \
+                    '{ project_name: $mr_project_name, approved: ($mr_approved == "YES"), i_approved: ($already_approved == "YES") }' )"
+            mr="$( echo -E "$mr" | jq -c --argjson to_add "$to_add" ' . + $to_add ' )"
             my_mrs="$( echo -E "[$my_mrs,[$mr]]" | jq -c ' add ' )"
             mr_todo_count=$(( mr_todo_count + 1 ))
         fi
