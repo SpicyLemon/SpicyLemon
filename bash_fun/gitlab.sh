@@ -9,7 +9,7 @@
 #   glclean  ---> GitLab Clean - Cleans up all the environment variables used by these functions.
 #   glmerged  --> GitLab Merged - Gets a list of merged MRs in merge order for a repo.
 #   glopen  ----> GitLab Open - Open a repo main page.
-#   gmrignore  -> Manage an project ignore list for gmr --deep.
+#   gmrignore  -> Manage a project ignore list for gmr --deep.
 #
 # In order to use any of these functions, you will first have to create a GitLab private token.
 #   1) Log into GitLab.
@@ -1794,6 +1794,11 @@ __delete_projects_file () {
     fi
 }
 
+__force_refresh_projects () {
+    __delete_projects_file
+    __ensure_gitlab_projects
+}
+
 # Gets the full path and name of the file to store projects info.
 # Usage: __get_projects_filename
 __get_projects_filename () {
@@ -1807,7 +1812,7 @@ __get_gitlab_projects () {
     keep_quiet="$1"
     verbose="$2"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab projects... "
-    projects_url="$( __get_gitlab_url_projects )?simple=true&membership=true&"
+    projects_url="$( __get_gitlab_url_projects )?simple=true&membership=true&archived=false&"
     projects="$( __get_pages_of_url "$projects_url" '' '' "$verbose" )"
     GITLAB_PROJECTS="$projects"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
@@ -1837,7 +1842,9 @@ __filter_projects () {
     projects='[]'
     if [[ "${#provided_repos[@]}" -gt '0' ]]; then
         for search in "${provided_repos[@]}"; do
-            project="$( echo -E "$GITLAB_PROJECTS" | jq -c --arg search "$search" ' .[] | select( ( .name | ascii_downcase ) == ( $search | ascii_downcase ) ) ' )"
+            project="$( echo -E "$GITLAB_PROJECTS" | jq -c --arg search "$search" \
+                        ' .[] | select( ( .name | ascii_downcase ) == ( $search | ascii_downcase )
+                                     or ( .path | ascii_downcase ) == ( $search | ascii_downcase ) ) ' )"
             if [[ -n "$project" ]]; then
                 projects="$( echo -E "[$projects,[$project]]" | jq -c ' add ' )"
             else
