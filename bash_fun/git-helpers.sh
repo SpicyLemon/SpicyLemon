@@ -4,6 +4,7 @@
 #   in_git_folder  --------> Helper function for testing if you're currently in a git folder.
 #   gcb  ------------------> Git Change Branch - Select a branch and switch to it.
 #   gcba  -----------------> Git Change Branch (All) - Gets a list of all branches (local and remote) and lets you pick one to checkout.
+#   gcbm  -----------------> Git Change Branch (to) Master - Checkout the master branch.
 #   gdb  ------------------> Git Delete Branches - Select branches that you want to delete, and then deletes them.
 #   bn  -------------------> Branch Name - Outputs your current branch name.
 #   gpm  ------------------> Git Pull Merge (Master) - Pull master and merge it into your branch.
@@ -129,6 +130,16 @@ gcba () {
     fi
 }
 
+# Change your current git branch to master
+# Usage: gcbm
+gcbm () {
+    if in_git_folder; then
+        git checkout master
+    else
+        echo "gcbm => git change branch master. But you aren't in a git directory."
+    fi
+}
+
 # Delete git branches
 # Usage: gdb
 gdb () {
@@ -171,8 +182,8 @@ gpm () {
         __git_echo_do git checkout master \
         && __git_echo_do git pull \
         && __git_echo_do git checkout - \
-        && __git_echo_do git merge master \
-        && __git_echo_do git status
+        && __git_echo_do git merge master
+        __git_echo_do git status
     else
         echo "Not in a git repo."
     fi
