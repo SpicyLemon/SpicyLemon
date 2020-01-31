@@ -33,7 +33,7 @@
 #       GITLAB_PROJECTS_MAX_AGE  --> The max age that the projects list can be before it's refreshed when needed.
 #                                    Format is <number>[smhdw] where s -> seconds, m -> minutes, h -> hours, d -> days, w -> weeks.
 #                                    see `man find` in the -atime section for more info.
-#                                    If not defined, the default is '1d'.
+#                                    If not defined, the default is '23h'.
 #
 # To make these functions usable in your terminal, use the source command on this file.
 #   For example, you could put  source gitlab.sh  in your .bash_profile file.
@@ -1759,10 +1759,10 @@ __get_gitlab_max_age () {
             echo -E -n "$GITLAB_PROJECTS_MAX_AGE"
             return 0
         else
-            >&2 echo "Invalid GITLAB_PROJECTS_MAX_AGE value [$GITLAB_PROJECTS_MAX_AGE]. Using default of 1d."
+            >&2 echo "Invalid GITLAB_PROJECTS_MAX_AGE value [$GITLAB_PROJECTS_MAX_AGE]. Using default of 23h."
         fi
     fi
-    echo -E -n '1d'
+    echo -E -n '23h'
 }
 
 # Makes sure that the $GITLAB_PROJECTS variable has a value.
@@ -2009,7 +2009,7 @@ __get_my_gitlab_mrs () {
 # It will often find more MRs than __get_my_gitlab_mrs though because of a bug in GitLab.
 # Usage: __get_my_gitlab_mrs_deep <keep quiet> <bypass ignore>
 __get_my_gitlab_mrs_deep () {
-    local keep_quiet bypass_ignore ignore_list ignore_count mrs mr_count project_ids project_count project_index project_id project_name mrs_url project_mrs project_mr_count
+    local keep_quiet bypass_ignore ignore_list project_ids project_count mrs mr_count project_index project_id project_name mrs_url project_mrs project_mr_count
     keep_quiet="$1"
     bypass_ignore="$2"
     ignore_list='[]'
@@ -2020,19 +2020,19 @@ __get_my_gitlab_mrs_deep () {
             ignore_list="$( cat "$ignore_fn" )"
         fi
     fi
-    ignore_count="$( echo -E "$ignore_list" | jq ' length ' )"
+    project_ids="$( echo -E "$GITLAB_PROJECTS" | jq --argjson ignore_list "$ignore_list" ' [ .[] | .id ] - $ignore_list | .[] ' )"
+    project_count="$( echo -E "$project_ids" | wc -l | sed -E 's/[^[:digit:]]//g' )"
     if [[ -z "$keep_quiet" ]]; then
-        echo -E -n "Getting all your open MRs from all of your available projects ... "
-        if [[ "$ignore_count" -gt '0' ]]; then
-            echo -E "Ignoring $ignore_count of them ..."
-        else
-            echo ''
+        local all_project_count
+        all_project_count="$( echo -E "$GITLAB_PROJECTS" | jq ' length ' )"
+        echo -E -n "Getting all your open MRs from $project_count projects"
+        if [[ "$project_count" -ne "$all_project_count" ]]; then
+            echo -E -n " (of $all_project_count)"
         fi
+        echo -E '.'
     fi
     mrs="[]"
     mr_count=0
-    project_ids="$( echo -E "$GITLAB_PROJECTS" | jq --argjson ignore_list "$ignore_list" ' [ .[] | .id ] - $ignore_list | .[] ' )"
-    project_count="$( echo -E "$project_ids" | wc -l | sed -E 's/[^[:digit:]]//g' )"
     project_index=1
     for project_id in $project_ids; do
         project_name="$( __get_project_name "$project_id" )"
