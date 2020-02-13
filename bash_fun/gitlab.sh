@@ -1907,7 +1907,7 @@ __get_glopen_url () {
         if [[ -n "$diff_branch" && "$branch" != "$diff_branch" ]]; then
             echo -E -n "/compare/$diff_branch...$branch"
         else
-            echo -E -n "/tree/$branch"
+            echo -E -n "/-/tree/$branch"
         fi
     fi
 }
