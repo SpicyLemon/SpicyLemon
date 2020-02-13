@@ -38,7 +38,8 @@ Usage: ./$script [($(echo_white '-h')|$(echo_white '--host')) <host>] [($(echo_w
         The provided host can reference a kraken environment easily by simply
         supplying the number or the box type and the number.
         e.g.   -h 180   or   -h dev-180
-    The $(echo_white '-p') or $(echo_white '--port') option defines the port. Default is $( echo_green "$DEFAULT_PORT" ).
+    The $(echo_white '-p') or $(echo_white '--port') option defines the port. Default is $( echo_green "$( getDefaultPort )" ).
+        Setting and exporting the $( echo_yellow 'PSQL_RUNNER_DEFAULT_PORT' ) environment variable will override this default.
         If a host is provided, and is detected to be a kraken environment,
         the default port becomes $( echo_green "$DEFAULT_KRAKEN_PORT" ).
     The $(echo_white '-d') or $(echo_white '--db-name') option defines the database name. Default is $( echo_green "$DEFAULT_DB_NAME" ).
@@ -198,6 +199,14 @@ hostForFilename () {
     echo -E -n "$retval"
 }
 
+getDefaultPort () {
+    if [[ -n "$PSQL_RUNNER_DEFAULT_PORT" ]]; then
+        echo -E -n "$PSQL_RUNNER_DEFAULT_PORT"
+    else
+        echo -E -n "$DEFAULT_PORT"
+    fi
+}
+
 THINGS_TO_DO=()
 
 # Handle command line arguments
@@ -289,7 +298,7 @@ if [[ -z "$DB_HOST" ]]; then
     DB_HOST="$DEFAULT_HOST"
 fi
 if [[ -z "$DB_PORT" ]]; then
-    DB_PORT="$DEFAULT_PORT"
+    DB_PORT="$( getDefaultPort )"
 fi
 if [[ -z "$DB_USER" ]]; then
     DB_USER="$DEFAULT_USER"
