@@ -166,7 +166,7 @@ chrome_cors () {
 # Opens up my provenir test page.
 # Usage: provenir_tester
 provenir_tester () {
-    chrome_cors '/Users/dwedul/git/shelter/provenir_testing/sofi_provenir_test_case_generator_v2.html'
+    chrome_cors '/Users/dwedul/git/danny-wedul/provenir_testing/sofi_provenir_test_case_generator_v2.html'
 }
 
 # Creates a horizontal rule with a message in it.
