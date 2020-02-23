@@ -31,6 +31,7 @@
 #   show_colors  ---------------------> Outputs a chunk of color info.
 #   jqq  -----------------------------> Shortcut for jq to output a variable.
 #   tee_pbcopy  ----------------------> Outputs to stdout as well as copy it to the clipboard.
+#   ps_grep  -------------------------> Greps ps with provided input.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -511,6 +512,11 @@ EOF
 # Usage: <do stuff> | tee_pbcopy
 tee_pbcopy () {
     tee >( awk '{if(p) print(l);l=$0;p=1;} END{printf("%s",l);}' | pbcopy )
+}
+
+# Usage: ps_grep <grep parameters>
+ps_grep () {
+    ps aux | grep "$@" | grep -v grep
 }
 
 __get_show_color_str () {
