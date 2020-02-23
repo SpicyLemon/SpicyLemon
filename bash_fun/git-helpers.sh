@@ -88,7 +88,7 @@ gcb () {
         if [[ -n "$1" ]]; then
             selection="$1"
         else
-            selection="$( git branch | fzf +m | sed -E 's/^[* ]+//' )"
+            selection="$( git branch | fzf +m --cycle | sed -E 's/^[* ]+//' )"
         fi
         [[ -n "$selection" ]] && git checkout "$selection"
     else
@@ -110,7 +110,7 @@ gcba () {
             new_branches="$( echo -E "$( echo -E "$local_branches" && echo -E "$local_branches" && echo -E "$remote_branches" )" | sort | uniq -u | sed -E "s#^#  ~$remote~#" )"
             all_branches="$( echo -E "$all_branches" && echo -E "$new_branches" )"
         done
-        selected_entry="$( echo -E "$all_branches" | sort -t '~' -k 3 -k 2 | column -s '~' -t | fzf +m )"
+        selected_entry="$( echo -E "$all_branches" | sort -t '~' -k 3 -k 2 | column -s '~' -t | fzf +m --cycle )"
         if [[ -n "$selected_entry" ]]; then
             remote_and_branch_rx='^[* ] +([^ ]+) +(.+)$'
             just_branch_rx='^[* ] +(.+)$'
