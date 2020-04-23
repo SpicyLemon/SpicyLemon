@@ -8,8 +8,9 @@ This directory contains files and scripts for doing things on a bash command-lin
 * `fzf_wrapper.sh` - A bash function/script that adds some functionality to fzf.
 * `generic.sh` - A bash file with a bunch of generic functions for doing bash stuff. File should be sourced, not executed.
 * `git-helpers.sh` - A bash file with a bunch of functions for making git life easier. File should be sourced, not executed.
+* `/gitlab` - A directory to hold the files containing functionality for interacting with GitLab.
+* `gitlab-setup.sh` - The entry point to the GitLab functionality. Source this in order to add the GitLab functions.
 * `github.sh` - The beginnings of some functions for interacting with GitHub. File should be sourced, not executed.
-* `gitlab.sh` - A bunch of functions for interacting with GitLab. File can be sourced or executed.
 * `mysql_runner.sh` - A bash script for running stuff on a mysql database with a bunch of defaults handy for me.
 * `psql_runner.sh` - A bash script for running stuff on a postgresql database with a bunch of defaults handy for me.
 * `sagemaker.sh` - A function for making calls to sagemaker. Only tested on one endpoint, though, so your mileage may vary. File is executable.
