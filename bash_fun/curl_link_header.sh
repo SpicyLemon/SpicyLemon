@@ -29,8 +29,8 @@ Limitations on curl options:
     Only one -o or --output option can be provided.
     The -O, --remote-name, -J, and --remote-header-name options cannot be used.
     Exactly one url must be supplied, and it must start with either http:// or https://.
-    The provided url cannot include part sets or sequences, e.g. {one,two,three} or [1-10].
-    Similarly, if an output file is provided, it have a # in it (for variable replacement).
+    The provided url cannot include "part sets" or sequences, e.g. {one,two,three} or [1-10].
+    Similarly, if an output file is provided, it cannot have a # in it (used for variable replacement with "part sets" and sequences).
 
 EOF
 }
