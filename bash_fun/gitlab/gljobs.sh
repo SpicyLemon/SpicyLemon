@@ -255,7 +255,7 @@ EOF
                                     + "~" + .short_type
                                     + "~" + ( .commit.title | .[0:80] | clean )
                                     + "~" + .web_url ' ) \
-                | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="~" -m --to-columns )"
+                | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="~" -m --to-columns )"
             if [[ -n "$selected_lines" ]]; then
                 echo -E "$selected_lines" | while read selected_line; do
                     web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '5' )"

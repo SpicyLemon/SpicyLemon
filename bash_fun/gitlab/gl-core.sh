@@ -342,7 +342,7 @@ __filter_projects () {
                       sort_by(.name_with_namespace) | .[]
                         |         ( .name_with_namespace | clean )
                           + "~" + ( .id | tostring ) ' \
-            | __fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" -m -i --query="$fzf_search" --to-columns \
+            | fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" -m -i --query="$fzf_search" --to-columns \
             | __gitlab_get_col '~' '2' )"
         if [[ -n "$project_ids" ]]; then
             for project_id in $( echo -E "$project_ids" ); do

@@ -1,6 +1,6 @@
 #!/bin/bash
 # This file contains a fzf wrapper function that adds some functionality to fzf.
-# It can be sourced to add the __fzf_wrapper function to your environment.
+# It can be sourced to add the fzf_wrapper function to your environment.
 # It can also be executed in place of the fzf command.
 # If you want to set up an alias for either, I suggest sourcing the file and aliasing the function.
 #   It's a little bit faster that way.
@@ -23,7 +23,7 @@ EOF
 }
 
 # The main wrapper command that adds the extra stuff.
-__fzf_wrapper () {
+fzf_wrapper () {
     local fzf_cmd do_columns delimiter_flag delimiter exit_code
     fzf_cmd=( fzf )
     while [[ "$#" -gt '0' ]]; do
@@ -99,5 +99,5 @@ __fzf_zwnj () {
 
 # If this script was not sourced make it do things now.
 if [[ "$sourced" != 'YES' ]]; then
-    cat - | __fzf_wrapper "$@"
+    cat - | fzf_wrapper "$@"
 fi

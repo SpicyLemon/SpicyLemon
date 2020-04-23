@@ -281,7 +281,7 @@ EOF
         fi
         selected="$( echo "$to_choose_from" \
                         | jq -r ' sort_by( .name_with_namespace ) | .[] | ( .id | tostring ) + "~" + .name_with_namespace ' \
-                        | __fzf_wrapper -m --with-nth='2' --to-columns -d '~' --header="$fzf_header" --cycle --tac )"
+                        | fzf_wrapper -m --with-nth='2' --to-columns -d '~' --header="$fzf_header" --cycle --tac )"
         if [[ -z "$selected" ]]; then
             echo "No selection made. The gmr ignore list is unchanged."
             return 0

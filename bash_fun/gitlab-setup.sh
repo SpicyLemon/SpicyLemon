@@ -39,7 +39,7 @@
 # Lastly, these functions rely on the following programs (that you might not have installed yet):
 #   * jq - Command-line JSON processor - https://github.com/stedolan/jq
 #   * fzf - Command-line fuzzy finder - https://github.com/junegunn/fzf
-#   * __fzf_wrapper - A wrapper for fzf that adds a the --to-columns option. It's defined in the fzf_wrapper.sh file in this repo.
+#   * fzf_wrapper - A wrapper for fzf that adds a the --to-columns option. It's defined in the fzf_wrapper.sh file in this repo.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -122,20 +122,20 @@ __gitlab_setup () {
         fi
     done
 
-    # Make sure __fzf_wrapper is available.
-    if ! __i_can __fzf_wrapper; then
-        __if_verbose "$warn" "The __fzf_wrapper function was not found."
+    # Make sure fzf_wrapper is available.
+    if ! __i_can fzf_wrapper; then
+        __if_verbose "$warn" "The fzf_wrapper function was not found."
         # See if we can fix that on our own.
         fzf_wrapper_file="${where_i_am}/fzf_wrapper.sh"
         if [[ -f "$fzf_wrapper_file" ]]; then
             files_to_source+=( "$fzf_wrapper_file" )
-            __if_verbose "$ok" "The file containing the __fzf_wrapper function [$fzf_wrapper_file] exists and will be sourced."
+            __if_verbose "$ok" "The file containing the fzf_wrapper function [$fzf_wrapper_file] exists and will be sourced."
         else
-            problems+=( "Command __fzf_wrapper not found." )
-            __if_verbose "$error" "The file containing the __fzf_wrapper function [$fzf_wrapper_file] was not found either."
+            problems+=( "Command fzf_wrapper not found." )
+            __if_verbose "$error" "The file containing the fzf_wrapper function [$fzf_wrapper_file] was not found either."
         fi
     else
-        __if_verbose "$ok" "The __fzf_wrapper function has already been created."
+        __if_verbose "$ok" "The fzf_wrapper function has already been created."
     fi
 
     __if_verbose "$info" "Done checking on needed external programs and functions."

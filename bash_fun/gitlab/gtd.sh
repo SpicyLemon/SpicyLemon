@@ -120,7 +120,7 @@ EOF
                                     + "~" + ( .body | .[0:80] | clean )
                                     + "~" + ( .author.name | cleanname )
                                     + "~" + .target_url ' ) \
-                | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=2,3,4,5 --delimiter="~" -m --to-columns )"
+                | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=2,3,4,5 --delimiter="~" -m --to-columns )"
             echo -E "$selected_lines" | while read selected_line; do
                 if [[ -n "$do_mark_as_done" ]]; then
                     todo_id="$( echo -E "$selected_line" | __gitlab_get_col '~' '1' )"

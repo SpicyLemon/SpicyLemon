@@ -55,7 +55,7 @@ These GitLab functions depend on the following external programs/functions
 * `grep` - Pattern search. Usually installed by default.
 * `curl` - Url transfer Usually installed by default.
 * `git` - The stupid content tracker. https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
-* `__fzf_wrapper` - Adds column support to `fzf`. Defined in `fzf_wrapper.sh` in the parent directory.
+* `fzf_wrapper` - Adds column support to `fzf`. Defined in `fzf_wrapper.sh` in the parent directory.
 
 ### Invocation:
 

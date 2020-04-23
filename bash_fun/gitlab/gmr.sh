@@ -204,7 +204,7 @@ EOF
                                 + "~" + .discussion_stats
                                 + "~" + ( .title | .[0:80] | clean )
                                 + "~" + .web_url ' ) \
-                | __fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4,5 --delimiter="~" -m --to-columns )"
+                | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4,5 --delimiter="~" -m --to-columns )"
             echo -E "$selected_lines" | while read selected_line; do
                 web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '6' )"
                 if [[ -n $web_url ]]; then
