@@ -80,7 +80,7 @@ gitlab clone --help
 ### Customization
 
 The following environment variables can be defined:
-* `GITLAB_BASE_DIR` -
+* `GITLAB_REPO_DIR` -
   The directory where your Gitlab repositories are to be stored.
   This should be absolute, (starting with a `/`), but it should not end with a `/`.
   If not defined, functions that look for it will require it to be provided as input.
@@ -88,8 +88,8 @@ The following environment variables can be defined:
   The directory where you'd like to store some configuration information used in these functions.
   This should be absolute, (starting with a `/`), but it should not end with a `/`.
   If not defined, then, if `HOME` is defined, `$HOME/.config/gitlab` will be used.
-  If `HOME` is not defined, then, if `GITLAB_BASE_DIR` is defined, `$GITLAB_BASE_DIR/.gitlab_config` will be used.
-  If `GITLAB_BASE_DIR` is not defined either, then any functions that use configuration information will be unavailable.
+  If `HOME` is not defined, then, if `GITLAB_REPO_DIR` is defined, `$GITLAB_REPO_DIR/.gitlab_config` will be used.
+  If `GITLAB_REPO_DIR` is not defined either, then any functions that use configuration information will be unavailable.
   If a config dir can be determined, but it doesn't exist yet, it will be created automatically when needed.
 * `GITLAB_TEMP_DIR` -
   The temporary directory you'd like to use for some random file storage.
