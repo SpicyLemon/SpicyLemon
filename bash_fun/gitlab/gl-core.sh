@@ -17,6 +17,7 @@ $( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SO
 EOF
     exit 1
 fi
+unset sourced
 
 # GitLab API documentation: https://docs.gitlab.com/ee/api/api_resources.html
 

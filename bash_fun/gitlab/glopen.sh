@@ -17,6 +17,7 @@ $( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SO
 EOF
     exit 1
 fi
+unset sourced
 
 __glopen_options_display_1 () {
     echo -E -n '[-r [<repo>]|--repo [<repo>]|--select-repo] [-b [<branch]|--branch [<branch>]|--select-branch]'

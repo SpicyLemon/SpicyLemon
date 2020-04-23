@@ -16,6 +16,7 @@ $( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SO
 EOF
     exit 1
 fi
+unset sourced
 
 __gmrsearch_options_display_behavior_01 () {
     echo -E -n '[-h|--help] [-d|--deep] [-b|--bypass-ignore] [-s|--select] [--json] [--use-last-results] [-v|--verbose]'

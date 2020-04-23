@@ -17,6 +17,7 @@ $( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SO
 EOF
     exit 1
 fi
+unset sourced
 
 __gtd_options_display () {
     echo -E -n '[-s|--select] [-o|--open] [-m|--mark-as-done] [--mark-all-as-done] [-q|--quiet] [-h|--help]'

@@ -17,6 +17,7 @@ $( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SO
 EOF
     exit 1
 fi
+unset sourced
 
 __gitlab_options_display () {
     echo -E -n '(help|merge-requests|mr-search|merged-mrs|ignore-list|clone|open|todo|jobs|clean)'

@@ -17,6 +17,7 @@ $( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SO
 EOF
     exit 1
 fi
+unset sourced
 
 __gmr_options_display_1 () {
     echo -E -n '[-r|--refresh] [-d|--deep] [-b|--bypass-ignore] [-i|--include-approved] [-m|--mine]'
