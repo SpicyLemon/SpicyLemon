@@ -32,6 +32,9 @@
 #   jqq  -----------------------------> Shortcut for jq to output a variable.
 #   tee_pbcopy  ----------------------> Outputs to stdout as well as copy it to the clipboard.
 #   ps_grep  -------------------------> Greps ps with provided input.
+#   i_can  ---------------------------> Tests if a command is available.
+#   can_i  ---------------------------> Outputs results of i_can.
+#   print_args  ----------------------> Outputs all parameters received.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -124,9 +127,25 @@ print_echo_do_vars () {
     echo -e  "   ECHO_DO_STDOUT: [\033[1;32m$ECHO_DO_STDOUT\033[0m]"
     echo -e  "   ECHO_DO_STDERR: [\033[1;31m$ECHO_DO_STDERR\033[0m]"
     echo -e  "   ECHO_DO_STDALL: [\033[1;36m$ECHO_DO_STDALL\033[0m]"
-    echo -En "ECHO_DO_CMD_PARTS: "
+    echo -En "ECHO_DO_CMD_PARTS:"
     for p in "${ECHO_DO_CMD_PARTS[@]}"; do
-        echo -En "[$p]"
+        echo -En " [$p]"
+    done
+    echo -E ''
+}
+
+print_echo_do_vars_wo () {
+    local retval
+    retval="$1"
+    echo -e  "  ECHO_DO_CMD_STR: [$ECHO_DO_CMD_STR]"
+    [[ -n "$retval" ]] && echo -E  "         Returned: [$retval]"
+    echo -E  "ECHO_DO_EXIT_CODE: [$ECHO_DO_EXIT_CODE]"
+    echo -e  "   ECHO_DO_STDOUT: [$ECHO_DO_STDOUT]"
+    echo -e  "   ECHO_DO_STDERR: [$ECHO_DO_STDERR]"
+    echo -e  "   ECHO_DO_STDALL: [$ECHO_DO_STDALL]"
+    echo -En "ECHO_DO_CMD_PARTS:"
+    for p in "${ECHO_DO_CMD_PARTS[@]}"; do
+        echo -En " [$p]"
     done
     echo -E ''
 }
@@ -240,117 +259,146 @@ pick_a_palette () {
 }
 
 # Convert a date and time into an epoch as milliseconds.
-# Assumes the provided date/time is in your system's local time zone.
-# Usage: to_epoch yyyy-MM-dd [HH:mm[:ss[.nnn]]] [(+|-)dddd]
+# Usage: to_epoch yyyy-MM-dd [HH:mm[:ss[.ddd]]] [(+|-)HHmm]
 #  or    to_epoch now
 to_epoch () {
-    local pieces d t n f tz e
+    local pieces the_date the_time the_time_zone s_fractions ms_fractions ms epoch_s epoch_ms
     if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
-        echo "Usage: to_epoch yyyy-MM-dd [HH:mm[:ss[.nnn]]] [(+|-)dddd]"
+        echo "Usage: to_epoch yyyy-MM-dd [HH:mm[:ss[.ddd]]] [(+|-)HHmm]"
         return 0
     fi
     if [[ "$1" == "now" ]]; then
         date '+%s000'
         return 0
     fi
+    # Allow for the input to be in ISO 8601 format where the date and time are combined with a T.
     pieces=( $( echo -E -n "$@" | tr 'T' ' ' ) )
     # zsh is 1 indexed, bash is 0.
     if [[ -n "${pieces[0]}" ]]; then
-        d="${pieces[0]}"
-        t="${pieces[1]}"
-        tz="${pieces[2]}"
+        the_date="${pieces[0]}"
+        the_time="${pieces[1]}"
+        the_time_zone="${pieces[2]}"
     else
-        d="${pieces[1]}"
-        t="${pieces[2]}"
-        tz="${pieces[3]}"
+        the_date="${pieces[1]}"
+        the_time="${pieces[2]}"
+        the_time_zone="${pieces[3]}"
     fi
-    d="$( echo -E -n "$d" | tr -c "[:digit:]" "-" )"
-    if [[ "$d" =~ ^[[:digit:]]{2}-[[:digit:]]{2}-[[:digit:]]{4}$ ]]; then
-        pieces=( $( echo -E -n "$d" | tr '-' ' ' ) )
+    # Since $the_time is optional, if it starts with a + or -,
+    # it's actually the time zone piece.
+    if [[ "$the_time" =~ ^[+-] ]]; then
+        the_time_zone="$the_time"
+        the_time=
+    fi
+    # Try to make $the_date into yyyy-MM-dd format.
+    # Allow for input to be in the formats yyyy, yyyyMM, yyyy-MM, yyyyMMdd, yyyyMM-dd, yyyy-MMdd, yyyy-MM-dd,
+    # or MM-dd-yyyy
+    # or have different delimiters.
+    the_date="$( echo -E -n "$the_date" | tr -c "[:digit:]" "-" )"
+    if [[ "$the_date" =~ ^[[:digit:]]{4}(-?[[:digit:]]{2}){0,2}$ ]]; then
+        the_date="$( echo -E -n "$the_date" | tr -d '-' | sed 's/$/0101/' | head -c 8 | sed -E 's/^(....)(..)(..)$/\1-\2-\3/' )"
+    elif [[ "$the_date" =~ ^[[:digit:]]{2}-[[:digit:]]{2}-[[:digit:]]{4}$ ]]; then
+        pieces=( $( echo -E -n "$the_date" | tr '-' ' ' ) )
         if [[ -n "${pieces[0]}" ]]; then
-            d="${pieces[2]}-${pieces[0]}-${pieces[1]}"
+            the_date="${pieces[2]}-${pieces[0]}-${pieces[1]}"
         else
-            d="${pieces[3]}-${pieces[1]}-${pieces[2]}"
+            the_date="${pieces[3]}-${pieces[1]}-${pieces[2]}"
         fi
-    elif [[ ! "$d" =~ ^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}$ ]]; then
-        >&2 echo "Invalid date format [$d]. Use yyyy-MM-dd."
+    fi
+    if [[ ! "$the_date" =~ ^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}$ ]]; then
+        >&2 echo "Invalid date format [$the_date]. Use yyyy-MM-dd."
         return 1
     fi
-    if [[ "$t" =~ ^[+-] ]]; then
-        tz="$t"
-        t=
-    fi
-    if [[ -z "$t" ]]; then
-        t='00:00:00'
-    elif [[ "$t" =~ ^[[:digit:]]{2}:[[:digit:]]{2}$ ]]; then
-        t="$t:00"
-    elif [[ "$t" =~ ^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}\.[[:digit:]]+$ ]]; then
-        pieces=( $( echo -E "$t" | tr '.' ' ' ) )
+    # Try to make $the_time into HH:mm:ss format and handle any extra precision.
+    # Allow for no time input,
+    # or formats of HH, HHmm, HH:mm, HHmmss, HHmm:ss, HH:mmss, HH:mm:ss
+    # or formats of HHmmss.d+, HHmm:ss.d+, HH:mmss.d+, HH:mm:ss.d+
+    s_fractions=
+    ms_fractions=
+    if [[ -z "$the_time" ]]; then
+        the_time='00:00:00'
+    elif [[ "$the_time" =~ ^[[:digit:]]{2}(:?[[:digit:]]{2}){0,2}$ ]]; then
+        the_time="$( echo -E -n "$the_time" | tr -d ':' | sed 's/$/0000/' | head -c 6 | sed -E 's/^(..)(..)(..)$/\1:\2:\3/' )"
+    elif [[ "$the_time" =~ ^[[:digit:]]{2}:?[[:digit:]]{2}:?[[:digit:]]{2}\.[[:digit:]]+$ ]]; then
+        pieces=( $( echo -E "$the_time" | tr '.' ' ' ) )
         if [[ -n "${pieces[0]}" ]]; then
-            t="${pieces[0]}"
-            n="${pieces[1]}"
+            the_time="${pieces[0]}"
+            s_fractions="${pieces[1]}"
         else
-            t="${pieces[1]}"
-            n="${pieces[2]}"
+            the_time="${pieces[1]}"
+            s_fractions="${pieces[2]}"
         fi
-        n="$( echo -E "$n" | sed -E 's/0+$//' )"
-        if [[ "${#n}" -gt '3' ]]; then
-            f=".$( echo -E -n "$n" | sed -E 's/^...//' )"
+        the_time="$( echo -E -n "$the_time" | tr -d ':' | sed -E 's/^(..)(..)(..)$/\1:\2:\3/' )"
+        s_fractions="$( echo -E "$s_fractions" | sed -E 's/0+$//' )"
+        if [[ "${#s_fractions}" -gt '3' ]]; then
+            ms_fractions=".$( echo -E -n "$s_fractions" | sed -E 's/^...//' )"
         fi
-    elif [[ ! "$t" =~ ^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}$ ]]; then
-        >&2 echo "Invalid time format [$t]. Use HH:mm[:ss[.nnn]]."
+    fi
+    if [[ ! "$the_time" =~ ^[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}$ ]]; then
+        >&2 echo "Invalid time format [$the_time]. Use HH:mm[:ss[.ddd]]."
         return 1
     fi
-    n="$( echo -E "${n}000" | head -c 3 )"
-    if [[ -z "$tz" ]]; then
-        tz="$( date '+%z' )"
-    elif [[ "$tz" =~ ^[+-][[:digit:]]{2}$ ]]; then
-        tz="${tz}00"
-    elif [[ ! "$tz" =~ ^[+-][[:digit:]]{4}$ ]]; then
-        >&2 echo "Invalid timezone format [$tz]. Use (+|-)dddd."
+    # Make sure the milliseconds have exactly three decials by padding the right with zeros if needed.
+    ms="$( echo -E "${s_fractions}000" | head -c 3 )"
+    # Try to make $the_time_zone into (+|-)HHmm format.
+    # Allow for no time zone, (+|-)HH, (+|-)HHmm (+|-)HH:mm
+    if [[ -z "$the_time_zone" ]]; then
+        the_time_zone="$( date '+%z' )"
+    elif [[ "$the_time_zone" =~ ^[+-][[:digit:]]{2}$ ]]; then
+        the_time_zone="${the_time_zone}00"
+    elif [[ "$the_time_zone" =~ ^[+-][[:digit:]]{2}:[[:digit:]]{2}$ ]]; then
+        the_time_zone="$( echo -E -n "$the_time_zone" | tr -d ':' )"
+    fi
+    if [[ ! "$the_time_zone" =~ ^[+-][[:digit:]]{4}$ ]]; then
+        >&2 echo "Invalid timezone format [$the_time_zone]. Use (+|-)HHmm."
         return 1
     fi
-    e="$( date -j -f '%F %T %z' "$d $t $tz" '+%s' )" || return $?
-    echo -E "$( echo -E -n "$e$n" | sed -E 's/^0+//' )$f"
+    # Get the epoch as seconds
+    epoch_s="$( date -j -f '%F %T %z' "$the_date $the_time $the_time_zone" '+%s' )" || return $?
+    # Append the milliseconds and remove any leading zeros.
+    epoch_ms="$( echo -E -n "${epoch_s}${ms}" | sed -E 's/^0+//;' )"
+    # But make sure there's still at least one digit.
+    if [[ -z "$epoch_ms" ]]; then
+        epoch_ms="0"
+    fi
+    echo -E "${epoch_ms}${ms_fractions}"
     return 0
 }
 
 # Convert an epoch as milliseconds into a date and time.
-# Usage: to_date <epoch>
+# Usage: to_date <epoch in milliseconds>
 #  or    to_date now
 to_date () {
-    local str pieces m f e
-    str="$1"
-    if [[ -z "$str" || "$str" == '-h' || "$str" == '--help' ]]; then
+    local input pieces epoch_ms ms_fractions ms s_fractions epoch_s
+    input="$1"
+    if [[ -z "$input" || "$input" == '-h' || "$input" == '--help' ]]; then
         >&2 echo 'Usage: to_date <epoch in milliseconds>';
         return 0
     fi
-    if [[ "$str" == 'now' ]]; then
-        date '+%F %T %z (%Z)'
+    if [[ "$input" == 'now' ]]; then
+        date '+%F %T %z (%Z) %A'
         return 0
     fi
-    if [[ "$str" =~ ^[[:digit:]]+(\.[[:digit:]]+)$ ]]; then
-        pieces=( $( echo -E -n "$str" | tr '.' ' ' ) )
+    # Split out the input into milliseconds and fractional milliseconds
+    if [[ "$input" =~ ^[[:digit:]]+(\.[[:digit:]]+)?$ ]]; then
+        pieces=( $( echo -E -n "$input" | tr '.' ' ' ) )
         if [[ -n "${pieces[0]}" ]]; then
-            m="${pieces[0]}"
-            f="${pieces[1]}"
+            epoch_ms="${pieces[0]}"
+            ms_fractions="${pieces[1]}"
         else
-            m="${pieces[1]}"
-            f="${pieces[2]}"
+            epoch_ms="${pieces[1]}"
+            ms_fractions="${pieces[2]}"
         fi
-    elif [[ "$str" =~ ^[[:digit:]]+$ ]]; then
-        m="$str"
     else
-        >&2 echo "Invalid input: [$str]."
+        >&2 echo "Invalid input: [$input]."
         return 1
     fi
-    f="$( echo -E -n "$m" | tail -c 3 )$f"
-    f="$( echo -E -n "$f" | sed -E 's/0+$//' )"
-    if [[ -n "$f" ]]; then
-        f=".$f"
+    ms="$( echo -E -n "$epoch_ms" | tail -c 3 )"
+    s_fractions="$( echo -E -n "${ms}${ms_fractions}" | sed -E 's/0+$//' )"
+    if [[ -n "$s_fractions" ]]; then
+        s_fractions=".$s_fractions"
     fi
-    e="$( echo -E -n "$m" | sed -E 's/...$//' )"
-    date -r "$e" "+%F %T$f %z (%Z)"
+    epoch_s="$( echo -E -n "$epoch_ms" | sed -E 's/...$//' )"
+    date -r "$epoch_s" "+%F %T${s_fractions} %z (%Z) %A"
     return 0
 }
 
@@ -462,14 +510,18 @@ colorize () {
 }
 
 show_colors () {
-    output=''
+    local output_0 output_1
+    output_0=''
+    output_1=''
     for c in $(seq 0 79); do
         if [[ "$(( c % 10 ))" -eq 0 ]]; then
-            output="$( echo -E "$output" | sed -E 's/~$/\\n/;' )"
+            output_0="$( echo -E "$output_0" | sed -E 's/~$/\\n/;' )"
+            output_1="$( echo -E "$output_1" | sed -E 's/~$/\\n/;' )"
         fi
-        output="$output$( __get_show_color_str "1;$c" "5" )~"
+        output_0="$output_0$( __get_show_color_str "$c" "2" )~"
+        output_1="$output_1$( __get_show_color_str "1;$c" "4" )~"
     done
-    echo -e "$output" | column -s '~' -t
+    { echo -e "$output_0"; echo -e "$output_1"; } | column -s '~' -t
 }
 
 # Just makes it easier to use jq on a variable.
@@ -517,6 +569,42 @@ tee_pbcopy () {
 # Usage: ps_grep <grep parameters>
 ps_grep () {
     ps aux | grep "$@" | grep -v grep
+}
+
+# Usage: if i_can "foo"; then echo "I can totally foo"; else echo "There's no way I can foo."; fi
+i_can () {
+    if [[ "$#" -eq '0' ]]; then
+        return 1
+    fi
+    command -v "$@" > /dev/null 2>&1
+}
+
+can_i () {
+    local c
+    c="$@"
+    if [[ -z "$c" ]]; then
+        echo -E "Usage: can_i <command>"
+        return 2
+    fi
+    if i_can "$c"; then
+        echo -E "I can [$c]."
+        return 0
+    else
+        echo -E "I am unable to [$c]."
+        return 1
+    fi
+}
+
+print_args () {
+    if [[ "$#" -eq '0' ]]; then
+        echo "No arguments provided." >&2
+        return 1
+    fi
+    echo -e "Arguments received:"
+    while [[ "$#" -gt '0' ]]; do
+        printf '[%s]\n' "$1"
+        shift
+    done
 }
 
 __get_show_color_str () {
