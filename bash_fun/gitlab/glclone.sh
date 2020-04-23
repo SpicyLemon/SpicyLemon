@@ -32,14 +32,14 @@ glclone: GitLab Clone
 
 This will look up all the projects you have access to in GitLab, and provide a way for you to select one or more to clone.
 
-If you set the GITLAB_BASE_DIR environment variable to you root git directory,
+If you set the GITLAB_REPO_DIR environment variable to you root git directory,
 new repos will automatically go into that directory regardless of where you are when running the command.
 If that variable is not set, and no -b or --base-dir parameter is provided, the current directory is used.
 
 Usage: glclone $( __glclone_options_display )
 
   The -b <dir> or --base-dir <dir> option will designate the directory to create your repo in.
-        Providing this option overrides the default setting from the GITLAB_BASE_DIR.
+        Providing this option overrides the default setting from the GITLAB_REPO_DIR.
   The -f or --force option will allow cloning into directories already under a git repo.
   The -r or --refresh option will cause your projects to be reloaded.
   The -p or --project option will allow you to supply the project name you are interested in.
@@ -63,7 +63,6 @@ Usage: glclone $( __glclone_options_display )
 EOF
     )"
     local destination provided_repos option use_the_force refresh select_repo
-    destination="$GITLAB_BASE_DIR"
     provided_repos=()
     while [[ "$#" -gt 0 ]]; do
         option="$( __to_lowercase "$1" )"
@@ -105,6 +104,14 @@ EOF
         shift
     done
     local orig_pwd projects selected_repo_count cloned_repo_count repo_url cmd cmd_output new_repo_dir
+    if [[ -z "$destination" ]]; then
+        if [[ -n "$GITLAB_REPO_DIR" ]]; then
+            destination="$GITLAB_REPO_DIR"
+        elif [[ -n "$GITLAB_BASE_DIR" ]]; then
+            # The GITLAB_BASE_DIR variable is deprecated in favor of GITLAB_REPO_DIR.
+            destination="$GITLAB_BASE_DIR"
+        fi
+    fi
     if [[ -n "$destination" ]]; then
         if [[ ! -d "$destination" ]]; then
             >&2 echo -E "Destination directory [$destination] does not exist."

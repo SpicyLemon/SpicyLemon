@@ -10,14 +10,16 @@
 #       For example, you could put   GITLAB_PRIVATE_TOKEN=123abcABC456-98ZzYy7  in your .bash_profile file
 #       so that it's set every time you open a terminal (use your own actual token of course).
 #   5) Optionally, the following optional environment variables can be defined.
-#       GITLAB_BASE_DIR  ----------> The directory where your Gitlab repositories are to be stored.
+#       GITLAB_REPO_DIR  ----------> The directory where your Gitlab repositories are to be stored.
 #                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
 #                                    If not defined, functions that look for it will require it to be provided as input.
+#       GITLAB_BASE_DIR  ----------> This variable has been deprecated in favor of GITLAB_REPO_DIR.
+#                                    Please use that variable instead.
 #       GITLAB_CONFIG_DIR  --------> The directory where you'd like to store some configuration information used in these functions.
 #                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
 #                                    If not defined, then, if HOME is defined, "$HOME/.config/gitlab" will be used.
-#                                    If HOME is not defined, then, if GITLAB_BASE_DIR is defined, "$GITLAB_BASE_DIR/.gitlab_config" will be used.
-#                                    If GITLAB_BASE_DIR is not defined either, then any functions that uses configuration information will be unavailable.
+#                                    If HOME is not defined, then, if GITLAB_REPO_DIR is defined, "$GITLAB_REPO_DIR/.gitlab_config" will be used.
+#                                    If GITLAB_REPO_DIR is not defined either, then any functions that uses configuration information will be unavailable.
 #                                    If a config dir can be determined, but it doesn't exist yet, it will be created automatically when needed.
 #       GITLAB_TEMP_DIR  ----------> The temporary directory you'd like to use for some random file storage.
 #                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
@@ -177,8 +179,23 @@ __gitlab_setup () {
         __if_verbose "$error" "The GITLAB_PRIVATE_TOKEN environment variable is defined, but empty."
     fi
 
-    if [[ -n "$GITLAB_BASE_DIR" ]]; then
-        __if_verbose "$info" "The GITLAB_BASE_DIR environment variable has a value. Making sure it is okay."
+    if [[ -n "$GITLAB_REPO_DIR" ]]; then
+        __if_verbose "$info" "The GITLAB_REPO_DIR environment variable has a value. Making sure it is okay."
+        if [[ ! "$GITLAB_REPO_DIR" =~ ^/ ]]; then
+            problems+=( "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] does not start with a /." )
+            __if_verbose "$error" "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] does not start with a /."
+        elif [[ "$GITLAB_REPO_DIR" =~ /$ ]]; then
+            problems+=( "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] must not end in a /." )
+            __if_verbose "$error" "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] ends in a /."
+        elif [[ ! -d "$GITLAB_REPO_DIR" ]]; then
+            problems+=( "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] references a directory that does not exist." )
+            __if_verbose "$error" "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] is a directory that does not exist."
+        else
+            __if_verbose "$ok" "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] is okay."
+        fi
+    elif [[ -n "$GITLAB_BASE_DIR" ]]; then
+        __if_verbose "$info" "The GITLAB_REPO_DIR environment variable does not have a value, but the GITLAB_BASE_DIR environment variable does. Making sure it is okay."
+        __if_verbose "$warn" "The GITLAB_BASE_DIR environment variable is deprecated. Please set GITLAB_REPO_DIR instead."
         if [[ ! "$GITLAB_BASE_DIR" =~ ^/ ]]; then
             problems+=( "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] does not start with a /." )
             __if_verbose "$error" "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] does not start with a /."
@@ -192,7 +209,7 @@ __gitlab_setup () {
             __if_verbose "$ok" "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] is okay."
         fi
     else
-        __if_verbose "$warn" "The GITLAB_BASE_DIR environment variable is not set. Some functionality might not be available."
+        __if_verbose "$warn" "The GITLAB_REPO_DIR environment variable is not set. Some functionality might not be available."
     fi
 
     if [[ -n "$GITLAB_CONFIG_DIR" ]]; then

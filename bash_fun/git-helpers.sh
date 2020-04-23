@@ -298,7 +298,10 @@ master_pull_all () {
 __git_get_all_repos () {
     local base_dirs repos cwd base_dir repo
     base_dirs=()
-    if [[ -n "$GITLAB_BASE_DIR" && -d "$GITLAB_BASE_DIR" ]]; then
+    if [[ -n "$GITLAB_REPO_DIR" && -d "$GITLAB_REPO_DIR" ]]; then
+        base_dirs+=( "$GITLAB_REPO_DIR" )
+    elif [[ -n "$GITLAB_BASE_DIR" && -d "$GITLAB_BASE_DIR" ]]; then
+        # GITLAB_BASE_DIR is deprecated, use GITLAB_REPO_DIR instead.
         base_dirs+=( "$GITLAB_BASE_DIR" )
     fi
     if [[ -n "$GITHUB_BASE_DIR" && -d "$GITHUB_BASE_DIR" ]]; then

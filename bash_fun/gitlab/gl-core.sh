@@ -227,7 +227,11 @@ __get_gl_config_dir () {
     elif [[ -n "$HOME" && "$HOME" =~ ^/ ]]; then
         echo -E -n "$HOME/.config/gitlab"
         return 0
+    elif [[ -n "$GITLAB_REPO_DIR" && "$GITLAB_REPO_DIR" =~ ^/ ]]; then
+        echo -E -n "$GITLAB_REPO_DIR/.gitlab_config"
+        return 0
     elif [[ -n "$GITLAB_BASE_DIR" && "$GITLAB_BASE_DIR" =~ ^/ ]]; then
+        # The GITLAB_BASE_DIR environment variable is deprecated in favor of GITLAB_REPO_DIR.
         echo -E -n "$GITLAB_BASE_DIR/.gitlab_config"
         return 0
     fi
