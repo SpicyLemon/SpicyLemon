@@ -37,10 +37,9 @@ EOF
 
 # The main wrapper command that adds the extra stuff.
 curl_link_header () {
-    local curl_args curl_arg max_calls delimiter clean_up_header_file calls_made next_link exit_code
+    local curl_args curl_arg max_calls delimiter clean_up_header_file next_link exit_code
     local initial_url url_count header_file output_file output_file_count create_dirs dir_to_create verbose
     curl_args=()
-    calls_made=0
     url_count=0
     output_file_count=0
     while [[ "$#" -gt '0' ]]; do
@@ -172,7 +171,7 @@ curl_link_header () {
         echo -e    '' >&2
     fi
 
-    # Starting up a sub-shell in order to make a function private.
+    # Starting up a sub-shell in order to make a function private that also has access to the variable so far.
     (
         # This function is for actually making the curl call, and getting the next link.
         # It's created inside the subshell to prevent it from being used outside the curl_link_header function.
@@ -204,6 +203,7 @@ curl_link_header () {
         }
 
         # Let's get it started (in here)!
+        calls_made=0
         __curl_link_header_do_curl "$initial_url"
 
         # Keep going until the well runs dry!
@@ -217,6 +217,8 @@ curl_link_header () {
             fi
             __curl_link_header_do_curl "$next_link"
         done
+
+        [[ -n "$verbose" ]] && echo "Made [$calls_made] curl calls." >&2
         # Unfortunately, the subshell makes all variables set inside it, go back to what they used to be when it ends.
         # Fortunatly though, all I want out of here is the exit code! Easy peasy!
         exit "$exit_code"
