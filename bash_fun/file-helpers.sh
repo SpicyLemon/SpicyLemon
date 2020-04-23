@@ -28,6 +28,7 @@ $( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SO
 EOF
     exit 1
 fi
+unset sourced
 
 # Get the full path to a file
 # Usage: fp [file]

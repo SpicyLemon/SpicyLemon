@@ -12,6 +12,7 @@ if [[ "$sourced" == 'YES' ]]; then
     psql_runner () {
         $PSQL_RUNNER_SH "$@"
     }
+    unset sourced
     return 0
 fi
 

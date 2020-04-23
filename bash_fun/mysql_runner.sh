@@ -12,6 +12,7 @@ if [[ "$sourced" == 'YES' ]]; then
     mysql_runner () {
         $MYSQL_RUNNER_SH "$@"
     }
+    unset sourced
     return 0
 fi
 

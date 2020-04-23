@@ -216,3 +216,4 @@ if [[ "$sourced" != 'YES' ]]; then
         echo -E "For Usage: ./$( basename "$0" ) --help"
     fi
 fi
+unset sourced
