@@ -57,12 +57,14 @@ EOF
     exit 1
 fi
 
+unset sourced
+
 # Putting all the setup stuff in a functions so that there aren't left-over variables and stuff.
 # Usage: __gitlab_setup "<my source dir>" "<verbose>"
 __gitlab_setup () {
     local where_i_am
     local gitlab_func_dir gitlab_funcs gitlab_func_file_names
-    local files_to_source problems
+    local files_to_source problems cmd_to_check
     local info ok warn error
     local fzf_wrapper_file entry exit_code can_auto can_complete can_compctl auto_opts_func
     where_i_am="$1"
@@ -113,7 +115,7 @@ __gitlab_setup () {
     fi
 
     # Make sure we can awk, sed, curl, and git
-    for cmd_to_check in 'awk' 'sed' 'curl' 'git'; do
+    for cmd_to_check in 'awk' 'sed' 'curl' 'grep' 'git'; do
         if ! __i_can "$cmd_to_check"; then
             problems+=( "Command $cmd_to_check not found." )
             __if_verbose "$error" "The $cmd_to_check command was not found."
