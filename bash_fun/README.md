@@ -19,3 +19,7 @@ This directory contains files and scripts for doing things on a bash command-lin
 * `sagemaker.sh` - A function for making calls to sagemaker. Only tested on one endpoint, though, so your mileage may vary. File is executable.
 * `text-helpers.sh` - A bash file to define a bunch of text manipulation helper functions. File should be sourced, not executed.
 
+## File Details
+
+TODO
+
