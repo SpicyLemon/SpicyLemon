@@ -113,7 +113,7 @@ EOF
     fi
     __gl_ensure_config_dir || return 1
     local gmr_ignore_filename
-    gmr_ignore_filename="$( __gl_gmr_ignore_filename )"
+    gmr_ignore_filename="$( __gl_config_gmrignore_filename )"
     if [[ -n "$do_clear" ]]; then
         if [[ -f "$gmr_ignore_filename" ]]; then
             rm "$gmr_ignore_filename"

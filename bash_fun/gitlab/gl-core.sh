@@ -227,7 +227,7 @@ __gl_ensure_projects () {
     keep_quiet="$1"
     verbose="$2"
     __gl_ensure_temp_dir
-    projects_file="$( __gl_projects_filename )"
+    projects_file="$( __gl_temp_projects_filename )"
     if [[ ! -f "$projects_file" \
             || $( find "$projects_file" -mtime "+$( __gl_max_age_projects )" ) ]] \
             || ! $( grep -q '[^[:space:]]' "$projects_file" ); then
@@ -251,7 +251,7 @@ __gl_max_age_projects () {
 }
 
 __gl_projects_clear_cache () {
-    projects_file="$( __gl_projects_filename )"
+    projects_file="$( __gl_temp_projects_filename )"
     if [[ -f "$projects_file" ]]; then
         rm "$projects_file"
     fi
@@ -293,7 +293,7 @@ __gl_config_dirname () {
     return 1
 }
 
-__gl_gmr_ignore_filename () {
+__gl_config_gmrignore_filename () {
     echo -E -n "$( __gl_config_dirname )/gmr_ignore.json"
 }
 
@@ -306,8 +306,8 @@ __gl_temp_dirname () {
 }
 
 # Gets the full path and name of the file to store projects info.
-# Usage: __gl_projects_filename
-__gl_projects_filename () {
+# Usage: __gl_temp_projects_filename
+__gl_temp_projects_filename () {
     echo -E -n "$( __gl_temp_dirname )/projects.json"
 }
 
@@ -396,8 +396,8 @@ __gl_project_name () {
 }
 
 # Adds the .project_name parameter to the entries in $GITLAB_MRS_BY_ME.
-# Usage: __gl_add_project_names_to_mrs_i_created
-__gl_add_project_names_to_mrs_i_created () {
+# Usage: __gl_mrs_i_created_add_project_names
+__gl_mrs_i_created_add_project_names () {
     local mr_project_ids mr_project_id project_name
     mr_project_ids="$( echo -E "$GITLAB_MRS_BY_ME" | jq ' [ .[] | .project_id ] | unique | .[] ' )"
     for mr_project_id in $( echo -E "$mr_project_ids" | sed -l '' ); do
@@ -533,7 +533,7 @@ __gl_get_mrs_i_created () {
     mrs_url="$( __gl_url_api_mrs )?scope=created_by_me&state=opened&"
     mrs="$( __gl_get_all_results "$mrs_url" )"
     GITLAB_MRS_BY_ME="$( echo -E "$mrs" | jq -c ' sort_by(.source_branch, .project_id) ' )"
-    __gl_add_project_names_to_mrs_i_created
+    __gl_mrs_i_created_add_project_names
     [[ -n "$keep_quiet" ]] || echo -E "Done."
     __gl_add_approved_status_to_mrs_i_created
 }
@@ -571,7 +571,7 @@ __gl_get_mrs_to_approve_deep () {
     ignore_list='[]'
     if [[ -z "$bypass_ignore" ]]; then
         local ignore_fn
-        ignore_fn="$( __gl_gmr_ignore_filename )"
+        ignore_fn="$( __gl_config_gmrignore_filename )"
         if [[ -r "$ignore_fn" ]] && grep -q '[^[:space:]]' "$ignore_fn"; then
             ignore_list="$( cat "$ignore_fn" )"
         fi
