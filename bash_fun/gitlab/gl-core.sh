@@ -21,6 +21,23 @@ unset sourced
 
 # GitLab API documentation: https://docs.gitlab.com/ee/api/api_resources.html
 
+# Naming conventions:
+# * All functions in here should start with __gl_
+# * Functions names should be all lowercase.
+# * Functions should use snake_case.
+# * Functions starting with "__gl_get_" actually do HTTP GETs against the api.
+# * Functions can only have "_get_" in their name as part of "__gl_get_".
+# * Functions starting with "__gl_post_" actually do HTTP POSTs against the api.
+# * Any function interacting with the gitlab api directly should start with either "__gl_get_" or "__gl_post_".
+#       Exception: If a HTTP method besides GET or POST is used, the function should start with "__gl_{HTTP method}_" (lower-cased).
+# * Functions starting with "__gl_url_" create urls.
+# * Functions starting with "__gl_url_api_" create a url specifically for use with the api.
+# * Functions starting with "__gl_url_web_" create a url specifically for web browser use.
+# * In a function name, "filename" or "dirname" references the name/path of the file or directory,
+#       and "file" or "dir" references the actual file or directory.
+#       Examples: The __gl_ensure_temp_dir function makes sure that the actual temp directory exists.
+#                 The __gl_temp_dirname function returns the path and name of the temp directory.
+
 #
 # Generic Helpers
 #
