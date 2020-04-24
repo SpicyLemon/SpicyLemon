@@ -1,26 +1,17 @@
 Function Renaming Plan
 -----------------------
-Thoughts:
-* All functions in core should start with __gl_
-* Think of different name for __ensure_gitlab_token.
-    The "ensure" part in that function means that if the token isn't available, we should stop.
-    But the "ensure" part in the other functions means fix the problem if there is one.
-* For the functions that make the urls, replace the __get_gitlab part with just __gl_api_
-* Move the glopen url creators down with the other url creators and have them start with __gl_web_
-* The gitlab interaction functions should be the only ones with "get" in them.
-* Data manipulation methods with "get" in them can be changed to use "lookup"
 
 # Generic Helpers
-__highlight                                __gl_highlight
-__yellow                                   __gl_yellow
-__to_lowercase                             __gl_to_lowercase
-__url_encode                               __gl_url_encode
+__highlight                                __gl_bold_white
+__yellow                                   __gl_bold_yellow
+__to_lowercase                             __gl_lowercase
+__url_encode                               __gl_encode_for_url
 __gl_join                                  __gl_join
 __ensure_option                            __gl_require_option
 __count_non_empty                          __gl_count_non_empty
 __clamp                                    __gl_clamp
-__ensure_number_or_default                 __gl_ensure_number_or_default
-__gitlab_get_col                           __gl_get_col
+__ensure_number_or_default                 __gl_number_or_default
+__gitlab_get_col                           __gl_column_value
 __convert_display_options_to_auto_options  __gl_convert_display_options_to_auto_options
 
 # Environment Data Management
@@ -31,24 +22,24 @@ __ensure_gitlab_projects                   __gl_ensure_projects
 __get_gl_config_dir                        __gl_config_dirname
 __get_gmr_ignore_filename                  __gl_gmr_ignore_filename
 __get_gitlab_max_age                       __gl_max_age_projects
-__delete_projects_file                     __gl_clear_projects_cache
-__force_refresh_projects                   __gl_refresh_projects
+__delete_projects_file                     __gl_projects_clear_cache
+__force_refresh_projects                   __gl_projects_refresh_cache
 __get_projects_filename                    __gl_projects_filename
 __get_gitlab_temp_dir                      __gl_temp_dirname
 __ensure_temp_dir                          __gl_ensure_temp_dir
 
 # Data Manipulation
 __filter_projects                          __gl_project_subset
-__get_project                              __gl_project
+__get_project                              __gl_project_by_name
 __get_glopen_url                           __gl_url_web_repo                Move this down below.
 __get_glopen_url_mrs                       __gl_url_web_repo_mrs            Move this down below.
 __get_glopen_url_pipelines                 __gl_url_web_repo_pipelines      Move this down below.
-__get_glopen_message                       __gl_glopen_message
-__get_project_name                         __gl_project_name        Move to be under __gl_project
+__get_glopen_message                       __gl_glopen_create_message_entry
+__get_project_name                         __gl_project_name                Move to be under __gl_project
 __add_project_names_to_mrs_i_created       __gl_add_project_names_to_mrs_i_created
-__filter_gitlab_mrs                        __gl_filter_mrs
-__filter_jobs_by_branch                    __gl_filter_jobs_by_branch
-__filter_jobs_by_type                      __gl_filter_jobs_by_type
+__filter_gitlab_mrs                        __gl_mrs_filter_by_approver
+__filter_jobs_by_branch                    __gl_jobs_filter_by_branch
+__filter_jobs_by_type                      __gl_jobs_filter_by_type
 
 # Gitlab Interaction
 __get_gitlab_user_info                     __gl_get_user_info
@@ -62,8 +53,8 @@ __get_gitlab_todos                         __gl_get_todos
 __get_jobs_for_project                     __gl_get_project_jobs
 __get_pages_of_url                         __gl_get_all_results
 __get_branches_of_repo                     __gl_get_repo_branches
-__mark_gitlab_todo_as_done                 __gl_mark_todo_as_done
-__mark_gitlab_todo_all_as_done             __gl_mark_all_todos_as_done
+__mark_gitlab_todo_as_done                 __gl_post_mark_todo_as_done
+__mark_gitlab_todo_all_as_done             __gl_post_mark_all_todos_as_done
 
 # Gitlab Url Creators.
 __get_gitlab_base_url                      __gl_url_base
