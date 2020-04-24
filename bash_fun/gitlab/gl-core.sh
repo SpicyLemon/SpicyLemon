@@ -238,28 +238,6 @@ __gl_ensure_projects () {
     fi
 }
 
-__gl_config_dirname () {
-    if [[ -n "$GITLAB_CONFIG_DIR" && "$GITLAB_CONFIG_DIR" =~ ^/ ]]; then
-        echo -E -n "$GITLAB_CONFIG_DIR"
-        return 0
-    elif [[ -n "$HOME" && "$HOME" =~ ^/ ]]; then
-        echo -E -n "$HOME/.config/gitlab"
-        return 0
-    elif [[ -n "$GITLAB_REPO_DIR" && "$GITLAB_REPO_DIR" =~ ^/ ]]; then
-        echo -E -n "$GITLAB_REPO_DIR/.gitlab_config"
-        return 0
-    elif [[ -n "$GITLAB_BASE_DIR" && "$GITLAB_BASE_DIR" =~ ^/ ]]; then
-        # The GITLAB_BASE_DIR environment variable is deprecated in favor of GITLAB_REPO_DIR.
-        echo -E -n "$GITLAB_BASE_DIR/.gitlab_config"
-        return 0
-    fi
-    return 1
-}
-
-__gl_gmr_ignore_filename () {
-    echo -E -n "$( __gl_config_dirname )/gmr_ignore.json"
-}
-
 __gl_max_age_projects () {
     if [[ -n "$GITLAB_PROJECTS_MAX_AGE" ]]; then
         if [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
@@ -284,20 +262,6 @@ __gl_projects_refresh_cache () {
     __gl_ensure_projects
 }
 
-# Gets the full path and name of the file to store projects info.
-# Usage: __gl_projects_filename
-__gl_projects_filename () {
-    echo -E -n "$( __gl_temp_dirname )/projects.json"
-}
-
-__gl_temp_dirname () {
-    if [[ -n "$GITLAB_TEMP_DIR" && "$GITLAB_TEMP_DIR" =~ ^/ ]]; then
-        echo -E -n "$GITLAB_TEMP_DIR"
-    else
-        echo -E -n '/tmp/gitlab'
-    fi
-}
-
 # Makes sure that the gitlab temp directory exists.
 # Usage: __gl_ensure_temp_dir
 __gl_ensure_temp_dir () {
@@ -309,6 +273,42 @@ __gl_ensure_temp_dir () {
     if [[ ! -d "$tmp_dir" ]]; then
         mkdir "$tmp_dir"
     fi
+}
+
+__gl_config_dirname () {
+    if [[ -n "$GITLAB_CONFIG_DIR" && "$GITLAB_CONFIG_DIR" =~ ^/ ]]; then
+        echo -E -n "$GITLAB_CONFIG_DIR"
+        return 0
+    elif [[ -n "$HOME" && "$HOME" =~ ^/ ]]; then
+        echo -E -n "$HOME/.config/gitlab"
+        return 0
+    elif [[ -n "$GITLAB_REPO_DIR" && "$GITLAB_REPO_DIR" =~ ^/ ]]; then
+        echo -E -n "$GITLAB_REPO_DIR/.gitlab_config"
+        return 0
+    elif [[ -n "$GITLAB_BASE_DIR" && "$GITLAB_BASE_DIR" =~ ^/ ]]; then
+        # The GITLAB_BASE_DIR environment variable is deprecated in favor of GITLAB_REPO_DIR.
+        echo -E -n "$GITLAB_BASE_DIR/.gitlab_config"
+        return 0
+    fi
+    return 1
+}
+
+__gl_gmr_ignore_filename () {
+    echo -E -n "$( __gl_config_dirname )/gmr_ignore.json"
+}
+
+__gl_temp_dirname () {
+    if [[ -n "$GITLAB_TEMP_DIR" && "$GITLAB_TEMP_DIR" =~ ^/ ]]; then
+        echo -E -n "$GITLAB_TEMP_DIR"
+    else
+        echo -E -n '/tmp/gitlab'
+    fi
+}
+
+# Gets the full path and name of the file to store projects info.
+# Usage: __gl_projects_filename
+__gl_projects_filename () {
+    echo -E -n "$( __gl_temp_dirname )/projects.json"
 }
 
 #
@@ -386,37 +386,24 @@ __gl_project_by_name () {
     __gl_project_subset '' '' "$*"
 }
 
-# Creates the desired url for glopen to use.
-# Usage: __gl_url_web_repo <base url> <branch> <diff_branch>
-__gl_url_web_repo () {
-    local base_url branch diff_branch
-    base_url="$1"
-    branch="$2"
-    diff_branch="$3"
-    echo -E -n "$base_url"
-    if [[ -n "$branch" ]]; then
-        if [[ -n "$diff_branch" && "$branch" != "$diff_branch" ]]; then
-            echo -E -n "/compare/$diff_branch...$branch"
-        else
-            echo -E -n "/-/tree/$branch"
-        fi
-    fi
+# Look up a project name from its id.
+# Usage: __gl_project_name <project id>
+__gl_project_name () {
+    local project_id project_name
+    project_id="$1"
+    project_name=$( echo -E "$GITLAB_PROJECTS" | jq -r " .[] | select(.id==$project_id) | .name " )
+    echo -E -n "$project_name"
 }
 
-# Creates the url for the mrs page of a repo.
-# Usage: __gl_url_web_repo_mrs <base url>
-__gl_url_web_repo_mrs () {
-    local base_url
-    base_url="$1"
-    echo -E -n "$base_url/-/merge_requests"
-}
-
-# Creates the url for the pipelines page of a repo.
-# Usage: __gl_url_web_repo_pipelines <base url>
-__gl_url_web_repo_pipelines () {
-    local base_url
-    base_url="$1"
-    echo -E -n "$base_url/pipelines"
+# Adds the .project_name parameter to the entries in $GITLAB_MRS_BY_ME.
+# Usage: __gl_add_project_names_to_mrs_i_created
+__gl_add_project_names_to_mrs_i_created () {
+    local mr_project_ids mr_project_id project_name
+    mr_project_ids="$( echo -E "$GITLAB_MRS_BY_ME" | jq ' [ .[] | .project_id ] | unique | .[] ' )"
+    for mr_project_id in $( echo -E "$mr_project_ids" | sed -l '' ); do
+        project_name="$( __gl_project_name "$mr_project_id" )"
+        GITLAB_MRS_BY_ME="$( echo -E "$GITLAB_MRS_BY_ME" | jq -c " [ .[] | if (.project_id == $mr_project_id) then (.project_name = \"$project_name\") else . end ] " )"
+    done
 }
 
 # Usage: <project name> <url> <branch> <diff branch> <page name>
@@ -440,26 +427,6 @@ __gl_glopen_create_message_entry () {
     cols+=( "$project_name:" )
     cols+=( "$url" )
     __gl_join "~" "${cols[@]}"
-}
-
-# Look up a project name from its id.
-# Usage: __gl_project_name <project id>
-__gl_project_name () {
-    local project_id project_name
-    project_id="$1"
-    project_name=$( echo -E "$GITLAB_PROJECTS" | jq -r " .[] | select(.id==$project_id) | .name " )
-    echo -E -n "$project_name"
-}
-
-# Adds the .project_name parameter to the entries in $GITLAB_MRS_BY_ME.
-# Usage: __gl_add_project_names_to_mrs_i_created
-__gl_add_project_names_to_mrs_i_created () {
-    local mr_project_ids mr_project_id project_name
-    mr_project_ids="$( echo -E "$GITLAB_MRS_BY_ME" | jq ' [ .[] | .project_id ] | unique | .[] ' )"
-    for mr_project_id in $( echo -E "$mr_project_ids" | sed -l '' ); do
-        project_name="$( __gl_project_name "$mr_project_id" )"
-        GITLAB_MRS_BY_ME="$( echo -E "$GITLAB_MRS_BY_ME" | jq -c " [ .[] | if (.project_id == $mr_project_id) then (.project_name = \"$project_name\") else . end ] " )"
-    done
 }
 
 # Filter either $GITLAB_MRS_TODO or $GITLAB_MRS for only MRs where you are a suggested approver.
@@ -952,4 +919,37 @@ __gl_url_api_todos_mark_as_done () {
 __gl_url_api_todos_mark_all_as_done () {
     __gl_url_api_todos
     echo -E -n "/mark_as_done"
+}
+
+# Creates the desired url for glopen to use.
+# Usage: __gl_url_web_repo <base url> <branch> <diff_branch>
+__gl_url_web_repo () {
+    local base_url branch diff_branch
+    base_url="$1"
+    branch="$2"
+    diff_branch="$3"
+    echo -E -n "$base_url"
+    if [[ -n "$branch" ]]; then
+        if [[ -n "$diff_branch" && "$branch" != "$diff_branch" ]]; then
+            echo -E -n "/compare/$diff_branch...$branch"
+        else
+            echo -E -n "/-/tree/$branch"
+        fi
+    fi
+}
+
+# Creates the url for the mrs page of a repo.
+# Usage: __gl_url_web_repo_mrs <base url>
+__gl_url_web_repo_mrs () {
+    local base_url
+    base_url="$1"
+    echo -E -n "$base_url/-/merge_requests"
+}
+
+# Creates the url for the pipelines page of a repo.
+# Usage: __gl_url_web_repo_pipelines <base url>
+__gl_url_web_repo_pipelines () {
+    local base_url
+    base_url="$1"
+    echo -E -n "$base_url/pipelines"
 }
