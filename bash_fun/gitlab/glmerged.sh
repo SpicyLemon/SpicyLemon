@@ -23,10 +23,10 @@ __glmerged_options_display () {
     echo -E -n '<project> [-n <count>|--count <count>|--all] [-s|--select] [-q|--quiet]'
 }
 __glmerged_auto_options () {
-    echo -E -n "$( __glmerged_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( __glmerged_options_display | __gl_convert_display_options_to_auto_options )"
 }
 glmerged () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 glmerged: Looks up merged MRs for a GitLab repo.
@@ -59,14 +59,14 @@ EOF
         shift
     fi
     while [[ "$#" -gt "0" ]]; do
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
             return 0
             ;;
         -n|--count)
-            __ensure_option "$2" "$option" || return 1
+            __gl_require_option "$2" "$option" || return 1
             if [[ "$2" =~ [^[:digit:]] ]]; then
                 >&2 echo -E "Invalid count [ $count ]."
                 return 1
@@ -113,7 +113,7 @@ EOF
         per_page='20'
     fi
 
-    __ensure_gitlab_projects
+    __gl_ensure_projects
 
     if [[ -n "$search" ]]; then
         initial_search="$( echo -E "$GITLAB_PROJECTS" \
@@ -144,13 +144,13 @@ EOF
         return 0
     fi
 
-    repo_id="$( echo -E "$selected_repo" | __gitlab_get_col '~' '2' )"
-    branch="$( echo -E "$selected_repo" | __gitlab_get_col '~' '3' )"
-    repo_name="$( echo -E "$selected_repo" | __gitlab_get_col '~' '4' )"
+    repo_id="$( echo -E "$selected_repo" | __gl_column_value '~' '2' )"
+    branch="$( echo -E "$selected_repo" | __gl_column_value '~' '3' )"
+    repo_name="$( echo -E "$selected_repo" | __gl_column_value '~' '4' )"
 
-    [[ -n "$keep_quiet" ]] || echo -e -n "Getting merged MRs for $( __yellow "$repo_name" ) ... "
-    mrs_url="$( __get_gitlab_url_project_mrs "$repo_id" )?state=merged&target_branch=$branch&"
-    mrs="$( __get_pages_of_url "$mrs_url" "$page_max" "$per_page" )"
+    [[ -n "$keep_quiet" ]] || echo -e -n "Getting merged MRs for $( __gl_bold_yellow "$repo_name" ) ... "
+    mrs_url="$( __gl_url_api_projects_mrs "$repo_id" )?state=merged&target_branch=$branch&"
+    mrs="$( __gl_get_all_results "$mrs_url" "$page_max" "$per_page" )"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 
     GITLAB_MERGED_MRS="$( echo -E "$mrs" | jq -c --arg res_count "$res_count" ' sort_by(.merged_at) | reverse | .[0:( $res_count | tonumber )] ' )"
@@ -186,7 +186,7 @@ EOF
             | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="~" -m --to-columns )"
         if [[ -n "$selected_lines" ]]; then
             echo -E "$selected_lines" | while read selected_line; do
-                web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '5' )"
+                web_url="$( echo -E "$selected_line" | __gl_column_value '~' '5' )"
                 if [[ -n "$web_url" ]]; then
                     open "$web_url"
                 fi

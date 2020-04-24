@@ -23,7 +23,7 @@ __glclean_options_display () {
     echo -E -n '[-v|--verbose] [-l|--list] [-h|--help]'
 }
 __glclean_auto_options () {
-    echo -E -n "$( __glclean_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( __glclean_options_display | __gl_convert_display_options_to_auto_options )"
 }
 glclean () {
     local vars_to_clean vars_str usage
@@ -53,7 +53,7 @@ EOF
     )"
     local option verbose just_show v
     while [[ "$#" -gt 0 ]]; do
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -74,7 +74,7 @@ EOF
         shift
     done
     if [[ -z "$just_show" ]]; then
-        __delete_projects_file
+        __gl_projects_clear_cache
         if [[ -n "$verbose" ]]; then
             echo "Deleted projects file."
         fi

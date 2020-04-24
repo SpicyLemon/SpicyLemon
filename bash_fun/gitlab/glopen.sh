@@ -26,10 +26,10 @@ __glopen_options_display_2 () {
     echo -E -n '[-d [<branch>]|--diff [<branch>]|--select-diff-branch] [-m|--mrs] [-p|--pipelines] [-q|--quiet] [-x|--do-not-open]'
 }
 __glopen_auto_options () {
-    echo -E -n "$( echo -E -n "$( __glopen_options_display_1 ) $( __glopen_options_display_2 )" | __convert_display_options_to_auto_options )"
+    echo -E -n "$( echo -E -n "$( __glopen_options_display_1 ) $( __glopen_options_display_2 )" | __gl_convert_display_options_to_auto_options )"
 }
 glopen () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 glopen: GitLab Open
@@ -80,7 +80,7 @@ EOF
     provided_repos=()
     provided_branches=()
     while [[ "$#" -gt '0' ]]; do
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         -h|--help)
             echo "$usage"
@@ -148,7 +148,7 @@ EOF
     done
     local in_repo in_branch projects urls messages project_id urls_to_add project project_url \
           project_name project_ssh_url repo_branches fzf_header branch url message
-    __ensure_gitlab_projects "$keep_quiet"
+    __gl_ensure_projects "$keep_quiet"
     if [[ -n "$random_repo" ]]; then
         for project_url in $( echo -E "$GITLAB_PROJECTS" | jq -r ' .[] | .web_url ' | sort -R | head -n "$random_repo" ); do
             open "$project_url"
@@ -159,7 +159,7 @@ EOF
         in_repo="$( basename $( git rev-parse --show-toplevel ) )"
         in_branch="$( git branch | grep '^\*' | sed 's/^\* //' )"
     fi
-    projects="$( __filter_projects "$select_repo" "$in_repo" "$( echo -E "${provided_repos[@]}" )" )"
+    projects="$( __gl_project_subset "$select_repo" "$in_repo" "$( echo -E "${provided_repos[@]}" )" )"
     if [[ "$( echo -E "$projects" | jq ' length ' )" -eq '0' ]]; then
         >&2 echo -E "GitLab project could not be determined."
         return 1
@@ -177,7 +177,7 @@ EOF
         project_ssh_url="$( echo -E "$project" | jq -r ' .ssh_url_to_repo ' )"
         repo_branches=''
         if [[ -n "$do_diff" && -n "$select_diff_branch" ]]; then
-            repo_branches="$( __get_branches_of_repo "$project_ssh_url" )"
+            repo_branches="$( __gl_get_repo_branches "$project_ssh_url" )"
             diff_branch="$( echo -E "$repo_branches" | fzf --tac --cycle +m --header="$project_name (from)" )"
         fi
         if [[ -n "$select_branch" || (( -n "$use_branch" && "${#provided_branches[@]}" -eq '0' && -z "$in_branch" )) ]]; then
@@ -186,39 +186,39 @@ EOF
                 fzf_header="$fzf_header (to)"
             fi
             if [[ -z "$repo_branches" ]]; then
-                repo_branches="$( __get_branches_of_repo "$project_ssh_url" )"
+                repo_branches="$( __gl_get_repo_branches "$project_ssh_url" )"
             fi
             for branch in $( echo -E "$repo_branches" | fzf --tac --cycle -m --header="$fzf_header" ); do
-                url="$( __get_glopen_url "$project_url" "$branch" "$diff_branch" )"
+                url="$( __gl_url_web_repo "$project_url" "$branch" "$diff_branch" )"
                 urls_to_add+=( "$url" )
-                messages+=( "$( __get_glopen_message "$project_name" "$url" "$branch" "$diff_branch" "" )" )
+                messages+=( "$( __gl_glopen_create_message_entry "$project_name" "$url" "$branch" "$diff_branch" "" )" )
             done
         elif [[ "${#provided_branches[@]}" -gt '0' ]]; then
             for branch in "${provided_branches[@]}"; do
-                url="$( __get_glopen_url "$project_url" "$branch" "$diff_branch" )"
+                url="$( __gl_url_web_repo "$project_url" "$branch" "$diff_branch" )"
                 urls_to_add+=( "$url" )
-                messages+=( "$( __get_glopen_message "$project_name" "$url" "$branch" "$diff_branch" "" )" )
+                messages+=( "$( __gl_glopen_create_message_entry "$project_name" "$url" "$branch" "$diff_branch" "" )" )
             done
         elif [[ -n "$use_branch" && -n "$in_branch" ]]; then
             branch="$in_branch"
-            url="$( __get_glopen_url "$project_url" "$branch" "$diff_branch" )"
+            url="$( __gl_url_web_repo "$project_url" "$branch" "$diff_branch" )"
             urls_to_add+=( "$url" )
-            messages+=( "$( __get_glopen_message "$project_name" "$url" "$branch" "$diff_branch" "" )" )
+            messages+=( "$( __gl_glopen_create_message_entry "$project_name" "$url" "$branch" "$diff_branch" "" )" )
         fi
         if [[ -n "$open_mrs" ]]; then
-            url="$( __get_glopen_url_mrs "$project_url" )"
+            url="$( __gl_url_web_repo_mrs "$project_url" )"
             urls_to_add+=( "$url" )
-            messages+=( "$( __get_glopen_message "$project_name" "$url" "" "" "mrs" )" )
+            messages+=( "$( __gl_glopen_create_message_entry "$project_name" "$url" "" "" "mrs" )" )
         fi
         if [[ -n "$open_pipelines" ]]; then
-            url="$( __get_glopen_url_pipelines "$project_url" )"
+            url="$( __gl_url_web_repo_pipelines "$project_url" )"
             urls_to_add+=( "$url" )
-            messages+=( "$( __get_glopen_message "$project_name" "$url" "" "" "pipelines" )" )
+            messages+=( "$( __gl_glopen_create_message_entry "$project_name" "$url" "" "" "pipelines" )" )
         fi
         # If no urls for this project have yet been added to the list, add the main page url.
         if [[ "${#urls_to_add[@]}" -eq 0 ]]; then
             urls_to_add+=( "$project_url" )
-            messages+=( "$( __get_glopen_message "$project_name" "$project_url" "" "" "" )" )
+            messages+=( "$( __gl_glopen_create_message_entry "$project_name" "$project_url" "" "" "" )" )
         fi
         urls+=( "${urls_to_add[@]}" )
     done

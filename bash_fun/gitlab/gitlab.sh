@@ -23,7 +23,7 @@ __gitlab_options_display () {
     echo -E -n '(help|merge-requests|mr-search|merged-mrs|ignore-list|clone|open|todo|jobs|clean)'
 }
 __gitlab_auto_options () {
-    echo -E -n "$( __gitlab_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( __gitlab_options_display | __gl_convert_display_options_to_auto_options )"
 }
 gitlab () {
     local usage
@@ -40,41 +40,41 @@ Usage:
     gitlab merge-requests $( __gmr_options_display_1 )
                           $( __gmr_options_display_2 )
         Get information about merge requests.
-        Same as the $( __highlight "gmr" ) function.
+        Same as the $( __gl_bold_white "gmr" ) function.
 
     gitlab mr-search <options>
         Do a search for merge requests with given criteria.
-        Same as the $( __highlight "gmrsearch" ) function.
+        Same as the $( __gl_bold_white "gmrsearch" ) function.
 
     gitlab merged-mrs $( __glmerged_options_display )
         Lists MRs that have been merged.
-        Same as the $( __highlight "glmerged" ) function.
+        Same as the $( __gl_bold_white "glmerged" ) function.
 
     gitlab ignore-list $( __gmrignore_options_display )
         Manage a project ignore list that gmr -d will pay attention to.
-        Same as the $( __highlight "gmrignore" ) function.
+        Same as the $( __gl_bold_white "gmrignore" ) function.
 
     gitlab clone $( __glclone_options_display )
         Easily clone repos from GitLab.
-        Same as the $( __highlight "glclone" ) function.
+        Same as the $( __gl_bold_white "glclone" ) function.
 
     gitlab open $( __glopen_options_display_1 )
                 $( __glopen_options_display_2 )
         Open various webpages of a GitLab repo.
-        Same as the $( __highlight "glopen" ) function.
+        Same as the $( __gl_bold_white "glopen" ) function.
 
     gitlab todo $( __gtd_options_display )
         Get and manage your GitLab todo list.
-        Same as the $( __highlight "gtd" ) function.
+        Same as the $( __gl_bold_white "gtd" ) function.
 
     gitlab jobs $( __gljobs_options_display_1 )
                 $( __gljobs_options_display_2 )
         Get information about jobs in GitLab.
-        Same as the $( __highlight "gljobs" ) function.
+        Same as the $( __gl_bold_white "gljobs" ) function.
 
     gitlab clean $( __glclean_options_display )
         Cleans up environment variables storing GitLab information.
-        Same as the $( __highlight "glclean" ) function.
+        Same as the $( __gl_bold_white "glclean" ) function.
 
 EOF
     )"
@@ -83,14 +83,14 @@ EOF
         echo -e "$usage"
         return 0
     fi
-    option="$( __to_lowercase "$1" )"
+    option="$( __gl_lowercase "$1" )"
     case "$option" in
     -h|--help|help)
         echo -e "$usage"
         return 0
         ;;
     mrs|merge-requests|merge|prs|pull-requests|pull)
-        if [[ "$option" == 'pull' && "$( __to_lowercase "$2" )" == 'requests' ]]; then
+        if [[ "$option" == 'pull' && "$( __gl_lowercase "$2" )" == 'requests' ]]; then
             shift
         fi
         cmd='gmr'
@@ -108,7 +108,7 @@ EOF
         cmd='glclean'
         ;;
     merged|merged-mrs)
-        if [[ "$option" == 'merged' && "$( __to_lowercase "$2" )" == 'mrs' ]]; then
+        if [[ "$option" == 'merged' && "$( __gl_lowercase "$2" )" == 'mrs' ]]; then
             shift
         fi
         cmd='glmerged'
@@ -118,7 +118,7 @@ EOF
         ;;
     ignore|ignore-list)
         # Allow `gitlab ignore list <command>` to work while also allowing `gitlab ignore list [<state>]` to be the same as `gitlab ignore-list list [<state>]`
-        if [[ "$option" == "ignore" && "$( __to_lowercase "$2" )" == 'list' && -n "$3" ]] && __gmrignore_auto_options | __to_lowercase | grep -q -w "$( __to_lowercase "$3" )"; then
+        if [[ "$option" == "ignore" && "$( __gl_lowercase "$2" )" == 'list' && -n "$3" ]] && __gmrignore_auto_options | __gl_lowercase | grep -q -w "$( __gl_lowercase "$3" )"; then
             shift
         fi
         cmd='gmrignore'

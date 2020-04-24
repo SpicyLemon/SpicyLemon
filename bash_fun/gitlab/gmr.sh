@@ -26,10 +26,10 @@ __gmr_options_display_2 () {
     echo -E -n '[-u|--update] [-q|--quiet] [-s|--select] [-o|--open-all] [-h|--help]'
 }
 __gmr_auto_options () {
-    echo -E -n "$( echo -E "$( __gmr_options_display_1 ) $( __gmr_options_display_2 )" | __convert_display_options_to_auto_options )"
+    echo -E -n "$( echo -E "$( __gmr_options_display_1 ) $( __gmr_options_display_2 )" | __gl_convert_display_options_to_auto_options )"
 }
 gmr () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 gmr: GitLab Merge Requests
@@ -64,7 +64,7 @@ EOF
     local option do_refresh do_update do_deep bypass_ignore show_approved do_mine do_selector keep_quiet open_all \
           refresh_type filter_type discussion_type mrs todo_count
     while [[ "$#" -gt 0 ]]; do
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -125,23 +125,23 @@ EOF
         discussion_type="STANDARD"
     fi
 
-    __ensure_gitlab_user_info "$keep_quiet"
-    __ensure_gitlab_projects "$keep_quiet"
+    __gl_ensure_user_info "$keep_quiet"
+    __gl_ensure_projects "$keep_quiet"
 
     if [[ -n "$refresh_type" ]]; then
         case "$refresh_type" in
-        "DEEP") __get_gitlab_mrs_deep "$keep_quiet" "$bypass_ignore" ;;
-        "MINE") __get_gitlab_mrs_i_created "$keep_quiet" ;;
-        *)      __get_my_gitlab_mrs "$keep_quiet" ;;
+        "DEEP") __gl_get_mrs_to_approve_deep "$keep_quiet" "$bypass_ignore" ;;
+        "MINE") __gl_get_mrs_i_created "$keep_quiet" ;;
+        *)      __gl_get_mrs_to_approve_simple "$keep_quiet" ;;
         esac
     fi
 
     if [[ -n $filter_type ]]; then
-        __filter_gitlab_mrs "$keep_quiet" "$filter_type"
+        __gl_mrs_filter_by_approver "$keep_quiet" "$filter_type"
     fi
 
     if [[ -n "$discussion_type" ]]; then
-        __add_discussion_info_to_mrs "$keep_quiet" "$discussion_type"
+        __gl_add_discussion_info_to_mrs "$keep_quiet" "$discussion_type"
     fi
 
     if [[ -n "$do_mine" ]]; then
@@ -207,7 +207,7 @@ EOF
                                 + "~" + .web_url ' ) \
                 | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4,5 --delimiter="~" -m --to-columns )"
             echo -E "$selected_lines" | while read selected_line; do
-                web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '6' )"
+                web_url="$( echo -E "$selected_line" | __gl_column_value '~' '6' )"
                 if [[ -n $web_url ]]; then
                     open "$web_url"
                 fi

@@ -23,10 +23,10 @@ __glclone_options_display () {
     echo -E -n '[-b <dir>|--base-dir <dir>] [-f|--force] [-r|--refresh] [-h|--help] [-p <project name>|--project <project name>] [-s|--select-project]'
 }
 __glclone_auto_options () {
-    echo -E -n "$( __glclone_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( __glclone_options_display | __gl_convert_display_options_to_auto_options )"
 }
 glclone () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 glclone: GitLab Clone
@@ -66,14 +66,14 @@ EOF
     local destination provided_repos option use_the_force refresh select_repo
     provided_repos=()
     while [[ "$#" -gt 0 ]]; do
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
             return 0
             ;;
         -b|--base-dir)
-            __ensure_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
+            __gl_require_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
             destination="$2"
             shift
             ;;
@@ -136,13 +136,13 @@ EOF
     if [[ -n "$refresh" ]]; then
         GITLAB_USER_ID=''
         GITLAB_USERNAME=''
-        __delete_projects_file
+        __gl_projects_clear_cache
     fi
 
-    __ensure_gitlab_user_info
-    __ensure_gitlab_projects
+    __gl_ensure_user_info
+    __gl_ensure_projects
 
-    projects="$( __filter_projects "$select_repo" '' "$( echo -E "${provided_repos[@]}" )" )"
+    projects="$( __gl_project_subset "$select_repo" '' "$( echo -E "${provided_repos[@]}" )" )"
     selected_repo_count="$( echo -E "$projects" | jq ' length ' )"
 
     cloned_repo_count=0

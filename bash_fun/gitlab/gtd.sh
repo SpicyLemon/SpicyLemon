@@ -23,16 +23,16 @@ __gtd_options_display () {
     echo -E -n '[-s|--select] [-o|--open] [-m|--mark-as-done] [--mark-all-as-done] [-q|--quiet] [-h|--help]'
 }
 __gtd_auto_options () {
-    echo -E -n "$( __gtd_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( __gtd_options_display | __gl_convert_display_options_to_auto_options )"
 }
 gtd () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 gtd: GitLab ToDo List
 
 Gets your GitLab TODO list.
-You must create an api token from your profile in GitLab first. See: $( __get_gitlab_base_url )/profile/personal_access_tokens
+You must create an api token from your profile in GitLab first. See: $( __gl_url_base )/profile/personal_access_tokens
 Then, you must set the token value as the GITLAB_PRIVATE_TOKEN environment variable in your terminal (e.g. in .bash_profile)
 
 Usage: gtd $( __gtd_options_display )
@@ -54,7 +54,7 @@ EOF
     local do_selector todo_count todo_list keep_quiet do_mark_as_done do_mark_all_as_done
     while [[ "$#" -gt 0 ]]; do
         local option
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
@@ -64,7 +64,7 @@ EOF
             do_selector="YES"
             ;;
         -o|--open)
-            open "$( __get_gitlab_base_url )/dashboard/todos"
+            open "$( __gl_url_base )/dashboard/todos"
             ;;
         -m|--mark-as-done)
             do_mark_as_done="YES"
@@ -84,9 +84,9 @@ EOF
         shift
     done
     if [[ -n "$do_mark_all_as_done" ]]; then
-        __mark_gitlab_todo_all_as_done "$keep_quiet"
+        __gl_post_mark_all_todos_as_done "$keep_quiet"
     fi
-    __get_gitlab_todos "$keep_quiet"
+    __gl_get_todos "$keep_quiet"
     todo_count=$( echo -E "$GITLAB_TODOS" | jq ' length ' )
     if [[ $todo_count -eq 0 ]]; then
         [[ -n "$keep_quiet" ]] || echo -E "You have nothing on your ToDo list."
@@ -124,10 +124,10 @@ EOF
                 | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=2,3,4,5 --delimiter="~" -m --to-columns )"
             echo -E "$selected_lines" | while read selected_line; do
                 if [[ -n "$do_mark_as_done" ]]; then
-                    todo_id="$( echo -E "$selected_line" | __gitlab_get_col '~' '1' )"
-                    __mark_gitlab_todo_as_done "$keep_quiet" "$todo_id"
+                    todo_id="$( echo -E "$selected_line" | __gl_column_value '~' '1' )"
+                    __gl_post_mark_todo_as_done "$keep_quiet" "$todo_id"
                 else
-                    web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '6' )"
+                    web_url="$( echo -E "$selected_line" | __gl_column_value '~' '6' )"
                     if [[ -n $web_url ]]; then
                         open "$web_url"
                     fi

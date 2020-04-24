@@ -26,10 +26,10 @@ __gljobs_options_display_2 () {
     echo -E -n '[-p <page count>|--page-count <page count>|-d|--deep] [-x|--no-refresh] [-t <type>|--type <type>|--all-types] [-h|--help]'
 }
 __gljobs_auto_options () {
-    echo -E -n "$( echo -E "$( __gljobs_options_display_1 ) $( __gljobs_options_display_2 )" | __convert_display_options_to_auto_options )"
+    echo -E -n "$( echo -E "$( __gljobs_options_display_1 ) $( __gljobs_options_display_2 )" | __gl_convert_display_options_to_auto_options )"
 }
 gljobs () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 gljobs: GitLab Jobs
@@ -72,19 +72,19 @@ EOF
     local option provided_repo provided_branch do_all_branches keep_quiet do_selector open_first provided_page_count do_all_pages no_refresh filter_type all_types
     local repo branch page_count filter_type_with filter_type_base filter_type_msg filtered_list_count header selected_lines selected_line web_url
     while [[ "$#" -gt 0 ]]; do
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         -h|--help|help)
             echo -e "$usage"
             return 0
             ;;
         -r|--repo)
-            __ensure_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
+            __gl_require_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
             provided_repo="$2"
             shift
             ;;
         -b|--branch)
-            __ensure_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
+            __gl_require_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
             provided_branch="$2"
             shift
             ;;
@@ -101,7 +101,7 @@ EOF
             open_first="YES"
             ;;
         -p|--page-count)
-            __ensure_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
+            __gl_require_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
             provided_page_count="$2"
             shift
             ;;
@@ -115,7 +115,7 @@ EOF
             if [[ -n "${2+z}" && -z "$2" ]]; then
                 all_types="YES"
             else
-                __ensure_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
+                __gl_require_option "$2" "$option" || ( >&2 echo -e "$usage" && return 1 ) || return 1
                 filter_type="$2"
             fi
             shift
@@ -194,13 +194,13 @@ EOF
     fi
 
     if [[ -z "$no_refresh" ]]; then
-        __ensure_gitlab_projects "$keep_quiet"
-        __get_jobs_for_project "$keep_quiet" "$repo" "$page_count" || return 2
+        __gl_ensure_projects "$keep_quiet"
+        __gl_get_project_jobs "$keep_quiet" "$repo" "$page_count" || return 2
         if [[ -n "$branch" ]]; then
-            __filter_jobs_by_branch "$branch"
+            __gl_jobs_filter_by_branch "$branch"
         fi
         if [[ -n "$filter_type" ]]; then
-            __filter_jobs_by_type "$filter_type"
+            __gl_jobs_filter_by_type "$filter_type"
         fi
     fi
     filtered_list_count="$( echo -E "$GITLAB_JOBS" | jq ' length ' )"
@@ -212,13 +212,13 @@ EOF
             filter_type_with="with"
             filter_type_base="$filter_type"
         fi
-        filter_type_msg="$filter_type_with type $( __yellow "$filter_type_base" )"
+        filter_type_msg="$filter_type_with type $( __gl_bold_yellow "$filter_type_base" )"
     fi
     if [[ "$filtered_list_count" -eq "0" ]]; then
         if [[ -z "$keep_quiet" ]]; then
-            header="No $( __yellow "$repo" )"
+            header="No $( __gl_bold_yellow "$repo" )"
             header="$header jobs found"
-            [[ -n "$branch" ]] && header="$header for $( __yellow "$branch" )"
+            [[ -n "$branch" ]] && header="$header for $( __gl_bold_yellow "$branch" )"
             [[ -n "$filter_type_msg" ]] && header="$header $filter_type_msg"
             echo -e "$header"
         fi
@@ -228,11 +228,11 @@ EOF
             open "$( echo -E "$GITLAB_JOBS" | jq -r ' .[0] | .web_url ' )"
         fi
         if [[ -z "$keep_quiet" ]]; then
-            header="$filtered_list_count $( __yellow "$repo" )"
+            header="$filtered_list_count $( __gl_bold_yellow "$repo" )"
             header="$header job"
             [[ "$filtered_list_count" -ne 1 ]] && header="${header}s"
             header="$header found"
-            [[ -n "$branch" ]] && header="$header for $( __yellow "$branch" )"
+            [[ -n "$branch" ]] && header="$header for $( __gl_bold_yellow "$branch" )"
             [[ -n "$filter_type_msg" ]] && header="$header $filter_type_msg"
             header="$header (newest at top): "
             echo -e "$header"
@@ -259,7 +259,7 @@ EOF
                 | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4 --delimiter="~" -m --to-columns )"
             if [[ -n "$selected_lines" ]]; then
                 echo -E "$selected_lines" | while read selected_line; do
-                    web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '5' )"
+                    web_url="$( echo -E "$selected_line" | __gl_column_value '~' '5' )"
                     if [[ -n $web_url ]]; then
                         open "$web_url"
                     fi

@@ -42,31 +42,31 @@ unset sourced
 # Generic Helpers
 #
 
-# Usage: __highlight <text>
-__highlight () {
+# Usage: __gl_bold_white <text>
+__gl_bold_white () {
     echo -e -n "\033[1;37m$1\033[0m"
 }
 
-# Usage: __yellow <text>
-__yellow () {
+# Usage: __gl_bold_yellow <text>
+__gl_bold_yellow () {
     echo -e -n "\033[1;33m$1\033[0m"
 }
 
 # Converts a string to lowercase.
-# Usage: echo 'FOO' | __to_lowercase
-__to_lowercase () {
+# Usage: echo 'FOO' | __gl_lowercase
+__gl_lowercase () {
     if [[ "$#" -gt '0' ]]; then
-        printf '%s' "$*" | __to_lowercase
+        printf '%s' "$*" | __gl_lowercase
         return 0
     fi
     tr "[:upper:]" "[:lower:]"
 }
 
-# Usage: __url_encode "value to encode"
-#  or    <do stuff> | __url_encode
-__url_encode () {
+# Usage: __gl_encode_for_url "value to encode"
+#  or    <do stuff> | __gl_encode_for_url
+__gl_encode_for_url () {
     if [[ "$#" -gt '0' ]]; then
-        printf '%s' "$*" | __url_encode_value
+        printf '%s' "$*" | __gl_encode_for_url
         return 0
     fi
     jq -sRr @uri
@@ -88,8 +88,8 @@ __gl_join () {
 }
 
 # Makes sure that an option was provided with a flag.
-# Usage: __ensure_option "$2" "option name" || echo "bad option."
-__ensure_option () {
+# Usage: __gl_require_option "$2" "option name" || echo "bad option."
+__gl_require_option () {
     local value option
     value="$1"
     option="$2"
@@ -100,8 +100,8 @@ __ensure_option () {
     return 0
 }
 
-# Usage: __count_non_empty <val1> [<val2> [<val3> ...]]
-__count_non_empty () {
+# Usage: __gl_count_non_empty <val1> [<val2> [<val3> ...]]
+__gl_count_non_empty () {
     local count
     count=0
     while [[ "$#" -gt '0' ]]; do
@@ -119,12 +119,12 @@ __count_non_empty () {
 # If the provided value is not a number, then the default is returned.
 # If it's less than the min, the min is returned.
 # If it's less than the max, the max is returned.
-# Usage: __clamp <value> <min> <max> <default>
-__clamp () {
+# Usage: __gl_clamp <value> <min> <max> <default>
+__gl_clamp () {
     local val min max default result
-    val="$( __ensure_number_or_default "$1" "" )"
-    min="$( __ensure_number_or_default "$2" "" )"
-    max="$( __ensure_number_or_default "$3" "" )"
+    val="$( __gl_number_or_default "$1" "" )"
+    min="$( __gl_number_or_default "$2" "" )"
+    max="$( __gl_number_or_default "$3" "" )"
     default="$4"
     if [[ -n "$min" && -n "$max" && "$min" > "$max" ]]; then
         local temp
@@ -145,8 +145,8 @@ __clamp () {
 }
 
 # Makes sure that a provide entry is a whole number (either positive or negative). If not, the provided default is returned.
-# Usage: __ensure_number_or_default <value> <default>
-__ensure_number_or_default () {
+# Usage: __gl_number_or_default <value> <default>
+__gl_number_or_default () {
     local val default result
     val="$1"
     default="$2"
@@ -158,15 +158,15 @@ __ensure_number_or_default () {
     echo -E -n "$result"
 }
 
-# Usage: <do stuff> | __gitlab_get_col <delimiter> <column index>
-__gitlab_get_col () {
+# Usage: <do stuff> | __gl_column_value <delimiter> <column index>
+__gl_column_value () {
     awk -v d="$1" -v col="$2" '{split($0, a, d); print a[col]}'
 }
 
-# Usage: <do stuff> | __convert_display_options_to_auto_options
-__convert_display_options_to_auto_options () {
+# Usage: <do stuff> | __gl_convert_display_options_to_auto_options
+__gl_convert_display_options_to_auto_options () {
     if [[ -n "$1" ]]; then
-        echo -E "$1" | __convert_display_options_to_auto_options
+        echo -E "$1" | __gl_convert_display_options_to_auto_options
         return 0
     fi
     sed -E 's/<[^>]+>//g; s/\[|\]|\(|\)//g; s/\|/ /g; s/[[:space:]][[:space:]]+/ /g; s/^[[:space:]]//; s/[[:space:]]$//;'
@@ -178,12 +178,12 @@ __convert_display_options_to_auto_options () {
 
 # Makes sure that a GitLab token is set.
 # This must be set outside of this file, and is kind of a secret thing.
-# Usage: __ensure_gitlab_token
-__ensure_gitlab_token () {
+# Usage: __gl_require_token
+__gl_require_token () {
     if [[ -z "$GITLAB_PRIVATE_TOKEN" ]]; then
         >&2 cat << EOF
 No GITLAB_PRIVATE_TOKEN has been set.
-To create one, go to $( __get_gitlab_base_url )/profile/personal_access_tokens and create one with the "api" scope.
+To create one, go to $( __gl_url_base )/profile/personal_access_tokens and create one with the "api" scope.
 Then you can set it using
 GITLAB_PRIVATE_TOKEN=whatever-your-token-is
 It is probably best to put that line somewhere so that it will get executed whenever you start your terminal (e.g. .bash_profile)
@@ -195,18 +195,18 @@ EOF
 
 # Makes sure that your GitLab user info has been loaded.
 # If not, it is looked up.
-# Usage: __ensure_gitlab_user_info <keep quiet>
-__ensure_gitlab_user_info () {
+# Usage: __gl_ensure_user_info <keep quiet>
+__gl_ensure_user_info () {
     local keep_quiet
     keep_quiet="$1"
     if [[ -z "$GITLAB_USER_ID" || -z "$GITLAB_USERNAME" ]]; then
-        __get_gitlab_user_info "$keep_quiet"
+        __gl_get_user_info "$keep_quiet"
     fi
 }
 
-__ensure_gl_config_dir () {
+__gl_ensure_config_dir () {
     local config_dir
-    config_dir="$( __get_gl_config_dir )"
+    config_dir="$( __gl_config_dirname )"
     if [[ -z "$config_dir" ]]; then
         >&2 echo "No configuration directory defined."
         return 1
@@ -221,24 +221,24 @@ __ensure_gl_config_dir () {
 # If the file doesn't exist, or is older than a day, or is empty,
 #   the projects info will be refreshed and stored in the file.
 # Otherwise, it's contents will be loaded into the $GITLAB_PROJECTS variable.
-# Usage: __ensure_gitlab_projects <keep quiet> <verbose>
-__ensure_gitlab_projects () {
+# Usage: __gl_ensure_projects <keep quiet> <verbose>
+__gl_ensure_projects () {
     local keep_quiet verbose projects_file
     keep_quiet="$1"
     verbose="$2"
-    __ensure_temp_dir
-    projects_file="$( __get_projects_filename )"
+    __gl_ensure_temp_dir
+    projects_file="$( __gl_projects_filename )"
     if [[ ! -f "$projects_file" \
-            || $( find "$projects_file" -mtime "+$( __get_gitlab_max_age )" ) ]] \
+            || $( find "$projects_file" -mtime "+$( __gl_max_age_projects )" ) ]] \
             || ! $( grep -q '[^[:space:]]' "$projects_file" ); then
-        __get_gitlab_projects "$keep_quiet" "$verbose"
+        __gl_get_projects "$keep_quiet" "$verbose"
         echo -E "$GITLAB_PROJECTS" > "$projects_file"
     else
         GITLAB_PROJECTS="$( cat "$projects_file" )"
     fi
 }
 
-__get_gl_config_dir () {
+__gl_config_dirname () {
     if [[ -n "$GITLAB_CONFIG_DIR" && "$GITLAB_CONFIG_DIR" =~ ^/ ]]; then
         echo -E -n "$GITLAB_CONFIG_DIR"
         return 0
@@ -256,11 +256,11 @@ __get_gl_config_dir () {
     return 1
 }
 
-__get_gmr_ignore_filename () {
-    echo -E -n "$( __get_gl_config_dir )/gmr_ignore.json"
+__gl_gmr_ignore_filename () {
+    echo -E -n "$( __gl_config_dirname )/gmr_ignore.json"
 }
 
-__get_gitlab_max_age () {
+__gl_max_age_projects () {
     if [[ -n "$GITLAB_PROJECTS_MAX_AGE" ]]; then
         if [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
             echo -E -n "$GITLAB_PROJECTS_MAX_AGE"
@@ -272,25 +272,25 @@ __get_gitlab_max_age () {
     echo -E -n '23h'
 }
 
-__delete_projects_file () {
-    projects_file="$( __get_projects_filename )"
+__gl_projects_clear_cache () {
+    projects_file="$( __gl_projects_filename )"
     if [[ -f "$projects_file" ]]; then
         rm "$projects_file"
     fi
 }
 
-__force_refresh_projects () {
-    __delete_projects_file
-    __ensure_gitlab_projects
+__gl_projects_refresh_cache () {
+    __gl_projects_clear_cache
+    __gl_ensure_projects
 }
 
 # Gets the full path and name of the file to store projects info.
-# Usage: __get_projects_filename
-__get_projects_filename () {
-    echo -E -n "$( __get_gitlab_temp_dir )/projects.json"
+# Usage: __gl_projects_filename
+__gl_projects_filename () {
+    echo -E -n "$( __gl_temp_dirname )/projects.json"
 }
 
-__get_gitlab_temp_dir () {
+__gl_temp_dirname () {
     if [[ -n "$GITLAB_TEMP_DIR" && "$GITLAB_TEMP_DIR" =~ ^/ ]]; then
         echo -E -n "$GITLAB_TEMP_DIR"
     else
@@ -299,10 +299,10 @@ __get_gitlab_temp_dir () {
 }
 
 # Makes sure that the gitlab temp directory exists.
-# Usage: __ensure_temp_dir
-__ensure_temp_dir () {
+# Usage: __gl_ensure_temp_dir
+__gl_ensure_temp_dir () {
     local tmp_dir
-    tmp_dir="$( __get_gitlab_temp_dir )"
+    tmp_dir="$( __gl_temp_dirname )"
     if [[ -f "$tmp_dir" ]]; then
         rm "$tmp_dir"
     fi
@@ -323,8 +323,8 @@ __ensure_temp_dir () {
 #   * If no <provided repos> are provided, the <current repo> is looked for.
 #   * If any <provided repos> that aren't found exactly, fzf will prompt the user to select projects.
 #       The projects that weren't found are used as an initial query for fzf.
-# Usage: __filter_projects <force select> <current repo> <provided repos>
-__filter_projects () {
+# Usage: __gl_project_subset <force select> <current repo> <provided repos>
+__gl_project_subset () {
     local force_select current_repo provided_repos projects search project fzf_search project_ids project_id
     force_select="$1"
     current_repo="$2"
@@ -361,7 +361,7 @@ __filter_projects () {
                         |         ( .name_with_namespace | clean )
                           + "~" + ( .id | tostring ) ' \
             | fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" -m -i --query="$fzf_search" --to-columns \
-            | __gitlab_get_col '~' '2' )"
+            | __gl_column_value '~' '2' )"
         if [[ -n "$project_ids" ]]; then
             for project_id in $( echo -E "$project_ids" ); do
                 project="$( echo -E "$GITLAB_PROJECTS" | jq -c --arg project_id "$project_id" ' .[] | select( .id == ( $project_id | tonumber ) ) ' )"
@@ -381,14 +381,14 @@ __filter_projects () {
 
 # This is primarily used for research and testing.
 # It's an easy way to get a project entry from $GITLAB_PROJECTS.
-# Usage: __get_project <repo>
-__get_project () {
-    __filter_projects '' '' "$*"
+# Usage: __gl_project_by_name <repo>
+__gl_project_by_name () {
+    __gl_project_subset '' '' "$*"
 }
 
 # Creates the desired url for glopen to use.
-# Usage: __get_glopen_url <base url> <branch> <diff_branch>
-__get_glopen_url () {
+# Usage: __gl_url_web_repo <base url> <branch> <diff_branch>
+__gl_url_web_repo () {
     local base_url branch diff_branch
     base_url="$1"
     branch="$2"
@@ -404,23 +404,23 @@ __get_glopen_url () {
 }
 
 # Creates the url for the mrs page of a repo.
-# Usage: __get_glopen_url_mrs <base url>
-__get_glopen_url_mrs () {
+# Usage: __gl_url_web_repo_mrs <base url>
+__gl_url_web_repo_mrs () {
     local base_url
     base_url="$1"
     echo -E -n "$base_url/-/merge_requests"
 }
 
 # Creates the url for the pipelines page of a repo.
-# Usage: __get_glopen_url_pipelines <base url>
-__get_glopen_url_pipelines () {
+# Usage: __gl_url_web_repo_pipelines <base url>
+__gl_url_web_repo_pipelines () {
     local base_url
     base_url="$1"
     echo -E -n "$base_url/pipelines"
 }
 
 # Usage: <project name> <url> <branch> <diff branch> <page name>
-__get_glopen_message () {
+__gl_glopen_create_message_entry () {
     local project_name url branch diff_branch page_name cols
     project_name="$1"
     url="$2"
@@ -443,8 +443,8 @@ __get_glopen_message () {
 }
 
 # Look up a project name from its id.
-# Usage: __get_project_name <project id>
-__get_project_name () {
+# Usage: __gl_project_name <project id>
+__gl_project_name () {
     local project_id project_name
     project_id="$1"
     project_name=$( echo -E "$GITLAB_PROJECTS" | jq -r " .[] | select(.id==$project_id) | .name " )
@@ -452,12 +452,12 @@ __get_project_name () {
 }
 
 # Adds the .project_name parameter to the entries in $GITLAB_MRS_BY_ME.
-# Usage: __add_project_names_to_mrs_i_created
-__add_project_names_to_mrs_i_created () {
+# Usage: __gl_add_project_names_to_mrs_i_created
+__gl_add_project_names_to_mrs_i_created () {
     local mr_project_ids mr_project_id project_name
     mr_project_ids="$( echo -E "$GITLAB_MRS_BY_ME" | jq ' [ .[] | .project_id ] | unique | .[] ' )"
     for mr_project_id in $( echo -E "$mr_project_ids" | sed -l '' ); do
-        project_name="$( __get_project_name "$mr_project_id" )"
+        project_name="$( __gl_project_name "$mr_project_id" )"
         GITLAB_MRS_BY_ME="$( echo -E "$GITLAB_MRS_BY_ME" | jq -c " [ .[] | if (.project_id == $mr_project_id) then (.project_name = \"$project_name\") else . end ] " )"
     done
 }
@@ -465,9 +465,9 @@ __add_project_names_to_mrs_i_created () {
 # Filter either $GITLAB_MRS_TODO or $GITLAB_MRS for only MRs where you are a suggested approver.
 # The results are placed in $GIBLAB_MRS_TODO.
 # This basically weeds out any MRs that either you don't need to care about, or you've already approved of.
-# Usage: __filter_gitlab_mrs <keep quiet> <filter type>
+# Usage: __gl_mrs_filter_by_approver <keep quiet> <filter type>
 # If filter type is "SHORT" then $GITLAB_MRS_TODO is filtered. Otherwise $GITLAB_MRS is filtered.
-__filter_gitlab_mrs () {
+__gl_mrs_filter_by_approver () {
     local keep_quiet filter_type mrs_to_filter mr_count mr_ids mr_index mr_todo_count my_mrs \
           mr_id mr mr_iid mr_project_id mr_project_name mr_approvals mr_state need_to_approve already_approved mr_approved to_add
     keep_quiet="$1"
@@ -482,9 +482,9 @@ __filter_gitlab_mrs () {
         mr="$( echo -E "$mrs_to_filter" | jq -c --arg mr_id "$mr_id" ' .[] | select(.id==($mr_id|tonumber)) ' )"
         mr_iid="$( echo -E "$mr" | jq ' .iid ' )"
         mr_project_id="$( echo -E "$mr" | jq ' .project_id ' )"
-        mr_project_name="$( __get_project_name "$mr_project_id" )"
+        mr_project_name="$( __gl_project_name "$mr_project_id" )"
         [[ -n "$keep_quiet" ]] || echo -e -n "\033[1K\rFiltering MRs: ($mr_todo_count) $mr_index/$mr_count - $mr_project_name:$mr_iid "
-        mr_approvals="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __get_gitlab_url_project_mr_approvals "$mr_project_id" "$mr_iid" )" )"
+        mr_approvals="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __gl_url_api_projects_mrs_approvals "$mr_project_id" "$mr_iid" )" )"
         mr_state="$( echo -E "$mr_approvals" | jq -r ' .state ' )"
         need_to_approve="$( echo -E "$mr_approvals" | jq -r --arg GITLAB_USER_ID "$GITLAB_USER_ID" ' .suggested_approvers[] | select(.id==($GITLAB_USER_ID|tonumber)) | "YES" ' )"
         already_approved="$( echo -E "$mr_approvals" | jq -r --arg GITLAB_USER_ID "$GITLAB_USER_ID" ' .approved_by[] | select(.user.id==($GITLAB_USER_ID|tonumber)) | "YES" ' )"
@@ -503,8 +503,8 @@ __filter_gitlab_mrs () {
 }
 
 # Filters the entries in $GITLAB_JOBS to get just the ones applicable to the provided branch name.
-# Usage: __filter_jobs_by_branch <branch name>
-__filter_jobs_by_branch () {
+# Usage: __gl_jobs_filter_by_branch <branch name>
+__gl_jobs_filter_by_branch () {
     local branch_name
     branch_name="$1"
     if [[ -n "$branch_name" ]]; then
@@ -514,8 +514,8 @@ __filter_jobs_by_branch () {
 
 # Filters the entries in $GITLAB_JOBS based on a provided filter on the short_type parameter (added after getting all the jobs).
 # The filter can be the short type to keep (e.g. "build") or the short_type to ignore (e.g. "~sdlc").
-# Usage: __filter_jobs_by_type <filter type>
-__filter_jobs_by_type () {
+# Usage: __gl_jobs_filter_by_type <filter type>
+__gl_jobs_filter_by_type () {
     local filter_type relation
     filter_type="$1"
     relation="=="
@@ -533,63 +533,63 @@ __filter_jobs_by_type () {
 #
 
 # Looks up your GitLab user info. Results are stored in $GITLAB_USER_ID and $GITLAB_USERNAME.
-# Usage: __get_gitlab_user_info <keep quiet>
-__get_gitlab_user_info () {
+# Usage: __gl_get_user_info <keep quiet>
+__gl_get_user_info () {
     local keep_quiet
     keep_quiet="$1"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting your GitLab user id... "
-    GITLAB_USER_INFO="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __get_gitlab_url_user )" )"
+    GITLAB_USER_INFO="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __gl_url_api_user )" )"
     GITLAB_USER_ID="$( echo -E "$GITLAB_USER_INFO" | jq '.id' )"
     GITLAB_USERNAME="$( echo -E "$GITLAB_USER_INFO" | jq '.username' | sed -E 's/^"|"$//g' )"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
 
 # Look up info on all available projects. Results are stored in $GITLAB_PROJECTS.
-# Usage: __get_gitlab_projects <keep quiet> <verbose>
-__get_gitlab_projects () {
+# Usage: __gl_get_projects <keep quiet> <verbose>
+__gl_get_projects () {
     local keep_quiet verbose projects_url page per_page previous_count projects
     keep_quiet="$1"
     verbose="$2"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab projects... "
-    projects_url="$( __get_gitlab_url_projects )?simple=true&membership=true&archived=false&"
-    projects="$( __get_pages_of_url "$projects_url" '' '' "$verbose" )"
+    projects_url="$( __gl_url_api_projects )?simple=true&membership=true&archived=false&"
+    projects="$( __gl_get_all_results "$projects_url" '' '' "$verbose" )"
     GITLAB_PROJECTS="$projects"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
 
 # Gets all the open MRS that you've created. Results are stored in $GITLAB_MRS_BY_ME.
-# Usage: __get_gitlab_mrs_i_created <keep quiet>
-__get_gitlab_mrs_i_created () {
+# Usage: __gl_get_mrs_i_created <keep quiet>
+__gl_get_mrs_i_created () {
     local keep_quiet mrs_url mrs
     keep_quiet="$1"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all open MRs you created... "
-    mrs_url="$( __get_gitlab_url_mrs )?scope=created_by_me&state=opened&"
-    mrs="$( __get_pages_of_url "$mrs_url" )"
+    mrs_url="$( __gl_url_api_mrs )?scope=created_by_me&state=opened&"
+    mrs="$( __gl_get_all_results "$mrs_url" )"
     GITLAB_MRS_BY_ME="$( echo -E "$mrs" | jq -c ' sort_by(.source_branch, .project_id) ' )"
-    __add_project_names_to_mrs_i_created
+    __gl_add_project_names_to_mrs_i_created
     [[ -n "$keep_quiet" ]] || echo -E "Done."
-    __add_approved_status_to_mrs_i_created
+    __gl_add_approved_status_to_mrs_i_created
 }
 
 # Do a superficial search for MRs. Results are put in $GITLAB_MRS.
-# This is a quicker search than __get_gitlab_mrs_deep, but often leaves MRs out of the list because of a bug in GitLab.
-# Usage: __get_my_gitlab_mrs <keep quiet>
-__get_my_gitlab_mrs () {
+# This is a quicker search than __gl_get_mrs_to_approve_deep, but often leaves MRs out of the list because of a bug in GitLab.
+# Usage: __gl_get_mrs_to_approve_simple <keep quiet>
+__gl_get_mrs_to_approve_simple () {
     local keep_quiet mrs_url mrs
     keep_quiet="$1"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your open MRs... "
-    mrs_url="$( __get_gitlab_url_mrs )?scope=all&state=opened&approver_ids\[\]=$GITLAB_USER_ID&"
-    mrs="$( __get_pages_of_url "$mrs_url" )"
+    mrs_url="$( __gl_url_api_mrs )?scope=all&state=opened&approver_ids\[\]=$GITLAB_USER_ID&"
+    mrs="$( __gl_get_all_results "$mrs_url" )"
     GITLAB_MRS="$mrs"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
 
 # Do a deep search for MRs by running the search on each project individually.
-# This will often take a while, but will often find more MRs than __get_my_gitlab_mrs because of bugs in GitLab.
+# This will often take a while, but will often find more MRs than __gl_get_mrs_to_approve_simple because of bugs in GitLab.
 # If a custom query string is provided, then results will be placed in $GITLAB_MRS_DEEP_RESULTS.
 # Otherwise, the search will be for state=opened, and results will be put in $GITLAB_MRS.
-# Usage: __get_gitlab_mrs_deep <keep quiet> <bypass ignore> <query_string> <verbose>
-__get_gitlab_mrs_deep () {
+# Usage: __gl_get_mrs_to_approve_deep <keep quiet> <bypass ignore> <query_string> <verbose>
+__gl_get_mrs_to_approve_deep () {
     local keep_quiet bypass_ignore query_string verbose is_custom_search ignore_list project_ids project_count
     local mrs mr_count project_index project_id project_name mrs_url project_mrs project_mr_count
     keep_quiet="$1"
@@ -604,7 +604,7 @@ __get_gitlab_mrs_deep () {
     ignore_list='[]'
     if [[ -z "$bypass_ignore" ]]; then
         local ignore_fn
-        ignore_fn="$( __get_gmr_ignore_filename )"
+        ignore_fn="$( __gl_gmr_ignore_filename )"
         if [[ -r "$ignore_fn" ]] && grep -q '[^[:space:]]' "$ignore_fn"; then
             ignore_list="$( cat "$ignore_fn" )"
         fi
@@ -629,10 +629,10 @@ __get_gitlab_mrs_deep () {
     mr_count=0
     project_index=1
     for project_id in $project_ids; do
-        project_name="$( __get_project_name "$project_id" )"
+        project_name="$( __gl_project_name "$project_id" )"
         [[ -n "$keep_quiet" ]] || echo -e -n "\033[1K\r($mr_count) $project_index/$project_count - $project_id: $project_name "
-        mrs_url="$( __get_gitlab_url_project_mrs "$project_id" )?${query_string}&"
-        project_mrs="$( __get_pages_of_url "$mrs_url" '' '' "$verbose" )"
+        mrs_url="$( __gl_url_api_projects_mrs "$project_id" )?${query_string}&"
+        project_mrs="$( __gl_get_all_results "$mrs_url" '' '' "$verbose" )"
         project_mr_count="$( echo -E "$project_mrs" | jq ' length ' )"
         if [[ "$project_mr_count" -gt "0" ]]; then
             mrs="$( echo -E "[$mrs,$project_mrs]" | jq -c ' add ')"
@@ -649,8 +649,8 @@ __get_gitlab_mrs_deep () {
 }
 
 # Adds an .approved boolean parameter to each entry in $GITLAB_MRS_BY_ME.
-# Usage: __add_approved_status_to_mrs_i_created <keep quiet>
-__add_approved_status_to_mrs_i_created () {
+# Usage: __gl_add_approved_status_to_mrs_i_created <keep quiet>
+__gl_add_approved_status_to_mrs_i_created () {
     local keep_quiet mr_count mr_ids mr_index my_mrs mr_id mr mr_iid mr_project_id mr_project_name mr_approvals mr_approved
     keep_quiet="$1"
     mr_count="$( echo -E "$GITLAB_MRS_BY_ME" | jq ' length ' )"
@@ -661,9 +661,9 @@ __add_approved_status_to_mrs_i_created () {
         mr="$( echo -E "$GITLAB_MRS_BY_ME" | jq -c --arg mr_id "$mr_id" ' .[] | select(.id==($mr_id|tonumber)) ' )"
         mr_iid="$( echo -E "$mr" | jq ' .iid ' )"
         mr_project_id="$( echo -E "$mr" | jq ' .project_id ' )"
-        mr_project_name="$( __get_project_name "$mr_project_id" )"
+        mr_project_name="$( __gl_project_name "$mr_project_id" )"
         [[ -n "$keep_quiet" ]] || echo -e -n "\033[1K\rGetting approval Status of MRs: $mr_index/$mr_count - $mr_project_name:$mr_iid "
-        mr_approvals="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __get_gitlab_url_project_mr_approvals "$mr_project_id" "$mr_iid" )" )"
+        mr_approvals="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __gl_url_api_projects_mrs_approvals "$mr_project_id" "$mr_iid" )" )"
         mr_approved="$( echo -E "$mr_approvals" | jq ' .approved ' )"
         mr="$( echo -E "$mr" | jq -c " .approved = $mr_approved " )"
         my_mrs="$( echo -E "[$my_mrs,[$mr]]" | jq -c ' add ' )"
@@ -674,9 +674,9 @@ __add_approved_status_to_mrs_i_created () {
 }
 
 # Adds discussion information to either $GITLAB_MRS_BY_ME or $GITLAB_MRS_TODO.
-# Usage: __add_discussion_info_to_mrs <keep quiet> <mr list type>
+# Usage: __gl_add_discussion_info_to_mrs <keep quiet> <mr list type>
 # If mr list type is "MINE" then $GITLAB_MRS_BY_ME is processed, otherwise $GITLAB_MRS_TODO is.
-__add_discussion_info_to_mrs () {
+__gl_add_discussion_info_to_mrs () {
     local keep_quiet mr_list_type mrs_to_do mr_count mr_ids mr_index mr_todo_count my_mrs mr_id mr mr_iid mr_project_id mr_project_name
     local mr_discussions_url mr_discussions mr_discussions_of_interest mr_discussions_resolved mr_discussions_total mr_discussions_notes mr_discussions_stats
     keep_quiet="$1"
@@ -691,10 +691,10 @@ __add_discussion_info_to_mrs () {
         mr=$( echo -E "$mrs_to_do" | jq -c --arg mr_id "$mr_id" ' .[] | select(.id==($mr_id|tonumber)) ' )
         mr_iid=$( echo -E "$mr" | jq ' .iid ' )
         mr_project_id=$( echo -E "$mr" | jq ' .project_id ' )
-        mr_project_name=$( __get_project_name "$mr_project_id" )
+        mr_project_name=$( __gl_project_name "$mr_project_id" )
         [[ -n "$keep_quiet" ]] || echo -e -n "\033[1K\rGetting MR Discussion Info: $mr_index/$mr_count - $mr_project_name:$mr_iid "
-        mr_discussions_url="$( __get_gitlab_url_project_mr_discussions "$mr_project_id" "$mr_iid" )?"
-        mr_discussions="$( __get_pages_of_url "$mr_discussions_url" )"
+        mr_discussions_url="$( __gl_url_api_projects_mrs_discussions "$mr_project_id" "$mr_iid" )?"
+        mr_discussions="$( __gl_get_all_results "$mr_discussions_url" )"
         mr_discussions_of_interest="$( echo -E "$mr_discussions" | jq -c '
                 [ .[]
                     | .resolvable_notes = [ .notes[] | select(.resolvable) ]
@@ -718,20 +718,20 @@ __add_discussion_info_to_mrs () {
 }
 
 # Gets all the entries in your todo list.
-# Usage: __get_gitlab_todos <keep quiet>
-__get_gitlab_todos () {
+# Usage: __gl_get_todos <keep quiet>
+__gl_get_todos () {
     local keep_quiet todos todos_url
     keep_quiet="$1"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting your GitLab ToDo List... "
-    todos_url="$( __get_gitlab_url_todos )?"
-    todos="$( __get_pages_of_url "$todos_url" )"
+    todos_url="$( __gl_url_api_todos )?"
+    todos="$( __gl_get_all_results "$todos_url" )"
     GITLAB_TODOS="$( echo -E "$todos" | jq -c ' sort_by(.created_at) | reverse ' )"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
 
 # Gets all the jobs for the given project.
-# Usage: __get_jobs_for_project <keep quiet> <project name> <page count max>
-__get_jobs_for_project () {
+# Usage: __gl_get_project_jobs <keep quiet> <project name> <page count max>
+__gl_get_project_jobs () {
     local keep_quiet project_name page_count_max project_id jobs_url gl_jobs short_types statuses
     keep_quiet="$1"
     project_name="$2"
@@ -742,8 +742,8 @@ __get_jobs_for_project () {
         return 1
     fi
     [[ -z "$keep_quiet" ]] && echo -E -n "Finding jobs for ($project_id) $project_name... "
-    jobs_url="$( __get_gitlab_url_project_jobs "$project_id" )?"
-    gl_jobs="$( __get_pages_of_url "$jobs_url" "$page_count_max" )"
+    jobs_url="$( __gl_url_api_projects_jobs "$project_id" )?"
+    gl_jobs="$( __gl_get_all_results "$jobs_url" "$page_count_max" )"
     short_types='[{"k":"client","v":2},{"k":"build","v":1},{"k":"sdlc","v":3},{"k":"migrate","v":4}]'
     statuses='["manual","created","pending","started","running","success","canceled","failed","skipped"]'
     GITLAB_JOBS="$( echo -E "$gl_jobs" | jq -c --argjson short_types "$short_types" --argjson statuses "$statuses" '
@@ -770,15 +770,15 @@ __get_jobs_for_project () {
 # The url is required, and must end in either a ? or a &.
 # page count max is optional. Default is 9999. It is forced to be between 1 and 9999 (inclusive).
 # per page is optional. Default is 100. It is forced to be between 1 and 100 (inclusive).
-# Usage: __get_pages_of_url <url> [<page count max>] [<per page>] [<verbose>]
-__get_pages_of_url () {
+# Usage: __gl_get_all_results <url> [<page count max>] [<per page>] [<verbose>]
+__gl_get_all_results () {
     local url page_count_max per_page verbose results page previous_count full_url page_data
     url="$1"
-    page_count_max="$( __clamp "$2" "1" "9999" "9999" )"
-    per_page="$( __clamp "$3" "1" "100" "100" )"
+    page_count_max="$( __gl_clamp "$2" "1" "9999" "9999" )"
+    per_page="$( __gl_clamp "$3" "1" "100" "100" )"
     verbose="$4"
     if [[ "$url" =~ [^?\&]$ ]]; then
-        >&2 echo -E "__get_pages_of_url [$url] must end in either a ? or a & so that the per_page and page parameters can be added."
+        >&2 echo -E "__gl_get_all_results [$url] must end in either a ? or a & so that the per_page and page parameters can be added."
         return 1
     fi
     [[ -z "$verbose" ]] || >&2 echo -E "Page Count Max: [$page_count_max], Per Page: [$per_page]"
@@ -807,19 +807,19 @@ __get_pages_of_url () {
 }
 
 # Gets all the branches of a repo.
-# Usage: __get_branches_of_repo <repo ssh url>
-__get_branches_of_repo () {
+# Usage: __gl_get_repo_branches <repo ssh url>
+__gl_get_repo_branches () {
     git ls-remote "$1" 'refs/heads/*' | sed -E 's#^.*refs/heads/(.+)$#\1#;' | sort --ignore-case
 }
 
 # Marks a give todo item as done.
-# Usage: __mark_gitlab_todo_as_done <keep quiet> <todo id>
-__mark_gitlab_todo_as_done () {
+# Usage: __gl_post_mark_todo_as_done <keep quiet> <todo id>
+__gl_post_mark_todo_as_done () {
     local keep_quiet todo_id marked_todo
     keep_quiet="$1"
     todo_id="$2"
     [[ -n "$keep_quiet" ]] || echo -E -n "Marking off ToDo... "
-    marked_todo="$( curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __get_gitlab_url_todo_mark_as_done "$todo_id" )" )"
+    marked_todo="$( curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __gl_url_api_todos_mark_as_done "$todo_id" )" )"
     if [[ -z "$keep_quiet" ]]; then
         local project_name todo_title
         project_name="$( echo -E "$marked_todo" | jq ' .project.name ' | sed -E 's/^"|"$//g' )"
@@ -829,11 +829,11 @@ __mark_gitlab_todo_as_done () {
 }
 
 # Marks all todo items as done.
-# Usage: __mark_gitlab_todo_all_as_done <keep quiet>
-__mark_gitlab_todo_all_as_done () {
+# Usage: __gl_post_mark_all_todos_as_done <keep quiet>
+__gl_post_mark_all_todos_as_done () {
     local keep_quiet all_done
     keep_quiet="$1"
-    all_done="$( curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __get_gitlab_url_todo_mark_all_as_done )" )"
+    all_done="$( curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$( __gl_url_api_todos_mark_all_as_done )" )"
     [[ -n "$keep_quiet" ]] || echo -E "All TODO items marked as done."
 }
 
@@ -841,22 +841,22 @@ __mark_gitlab_todo_all_as_done () {
 # Gitlab Url Creators.
 #
 
-# Usage: __get_gitlab_base_url
-__get_gitlab_base_url () {
+# Usage: __gl_url_base
+__gl_url_base () {
     echo -E -n 'https://gitlab.com'
 }
 
-# Usage: __get_gitlab_api_v4_url
-__get_gitlab_api_v4_url () {
-    __get_gitlab_base_url
+# Usage: __gl_url_api_v4
+__gl_url_api_v4 () {
+    __gl_url_base
     echo -E -n '/api/v4'
 }
 
-# Usage: __get_gitlab_url_user [<user id>]
-__get_gitlab_url_user () {
+# Usage: __gl_url_api_user [<user id>]
+__gl_url_api_user () {
     local user_id
     user_id="$1"
-    __get_gitlab_api_v4_url
+    __gl_url_api_v4
     echo -E -n '/user'
     if [[ -n "$user_id" ]]; then
         echo -E -n "s/$user_id"
@@ -864,92 +864,92 @@ __get_gitlab_url_user () {
 }
 
 # Usage: __get_gitlab_url_merge_requests
-__get_gitlab_url_mrs () {
-    __get_gitlab_api_v4_url
+__gl_url_api_mrs () {
+    __gl_url_api_v4
     echo -E -n '/merge_requests'
     # Note: This endpoint does not currently have the option to provide any sort of id for more specific information.
 }
 
-# Usage: __get_gitlab_url_projects [<project id>]
-__get_gitlab_url_projects () {
+# Usage: __gl_url_api_projects [<project id>]
+__gl_url_api_projects () {
     local project_id
     project_id="$1"
-    __get_gitlab_api_v4_url
+    __gl_url_api_v4
     echo -E -n '/projects'
     if [[ -n "$project_id" ]]; then
         echo -E -n "/$project_id"
     fi
 }
 
-# Usage: __get_gitlab_url_project_jobs <project id> [<job id>]
-__get_gitlab_url_project_jobs () {
+# Usage: __gl_url_api_projects_jobs <project id> [<job id>]
+__gl_url_api_projects_jobs () {
     local project_id job_id
     project_id="$1"
     job_id="$2"
-    __get_gitlab_url_projects "$project_id"
+    __gl_url_api_projects "$project_id"
     echo -E -n '/jobs'
     if [[ -n "$job_id" ]]; then
         echo -E -n "/$job_id"
     fi
 }
 
-# Usage: __get_gitlab_url_project_jobs_log <project id> <job id>
-__get_gitlab_url_project_jobs_log () {
-    __get_gitlab_url_project_jobs "$1" "$2"
+# Usage: __gl_url_api_projects_jobs_log <project id> <job id>
+__gl_url_api_projects_jobs_log () {
+    __gl_url_api_projects_jobs "$1" "$2"
     echo -E -n '/trace'
 }
 
-# Usage: __get_gitlab_url_project_mrs <project id> [<merge request iid>]
-__get_gitlab_url_project_mrs () {
+# Usage: __gl_url_api_projects_mrs <project id> [<merge request iid>]
+__gl_url_api_projects_mrs () {
     local project_id merge_request_iid
     project_id="$1"
     merge_request_iid="$2"
-    __get_gitlab_url_projects "$project_id"
+    __gl_url_api_projects "$project_id"
     echo -E -n '/merge_requests'
     if [[ -n "$merge_request_iid" ]]; then
         echo -E -n "/$merge_request_iid"
     fi
 }
 
-# Usage: __get_gitlab_url_project_mr_approvals <project id> <merge request iid>
-__get_gitlab_url_project_mr_approvals () {
+# Usage: __gl_url_api_projects_mrs_approvals <project id> <merge request iid>
+__gl_url_api_projects_mrs_approvals () {
     local project_id merge_request_iid
     project_id="$1"
     merge_request_iid="$2"
-    __get_gitlab_url_project_mrs "$project_id" "$merge_request_iid"
+    __gl_url_api_projects_mrs "$project_id" "$merge_request_iid"
     echo -E -n '/approvals'
 }
 
-# Usage: __get_gitlab_url_project_mr_discussions <project id> <merge request iid>
-__get_gitlab_url_project_mr_discussions () {
+# Usage: __gl_url_api_projects_mrs_discussions <project id> <merge request iid>
+__gl_url_api_projects_mrs_discussions () {
     local project_id merge_request_iid
     project_id="$1"
     merge_request_iid="$2"
-    __get_gitlab_url_project_mrs "$project_id" "$merge_request_iid"
+    __gl_url_api_projects_mrs "$project_id" "$merge_request_iid"
     echo -E -n '/discussions'
 }
 
-# Usage: __get_gitlab_url_todos [<todo id>]
-__get_gitlab_url_todos () {
+# Usage: __gl_url_api_todos [<todo id>]
+__gl_url_api_todos () {
     local todo_id
     todo_id="$1"
-    __get_gitlab_api_v4_url
+    __gl_url_api_v4
     echo -E -n '/todos'
     if [[ -n "$todo_id" ]]; then
         echo -E -n "/$todo_id"
     fi
 }
 
-# Usage: __get_gitlab_url_todo_mark_as_done <todo id>
-__get_gitlab_url_todo_mark_as_done () {
+# Usage: __gl_url_api_todos_mark_as_done <todo id>
+__gl_url_api_todos_mark_as_done () {
     local todo_id
     todo_id="$1"
-    __get_gitlab_url_todos "$todo_id"
+    __gl_url_api_todos "$todo_id"
     echo -E -n "/mark_as_done"
 }
 
-# Usage: __get_gitlab_url_todo_mark_all_as_done
-__get_gitlab_url_todo_mark_all_as_done () {
-    __get_gitlab_url_todos
+# Usage: __gl_url_api_todos_mark_all_as_done
+__gl_url_api_todos_mark_all_as_done () {
+    __gl_url_api_todos
     echo -E -n "/mark_as_done"
 }

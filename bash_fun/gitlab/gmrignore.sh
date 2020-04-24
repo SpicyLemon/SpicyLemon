@@ -23,10 +23,10 @@ __gmrignore_options_display () {
     echo -E -n '[add|remove|update|clear|prune|status|list [<state(s)>]] [-h|--help]'
 }
 __gmrignore_auto_options () {
-    echo -E -n "$( __gmrignore_options_display | __convert_display_options_to_auto_options )"
+    echo -E -n "$( __gmrignore_options_display | __gl_convert_display_options_to_auto_options )"
 }
 gmrignore () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 gmrignore: GitLab Merge Request Ignore (Projects)
@@ -61,7 +61,7 @@ EOF
 )"
     local option do_add do_remove do_update do_clear do_prune do_status do_list state list_ignored list_shown list_unknown list_all cmd_count
     while [[ "$#" -gt '0' ]]; do
-        option="$( __to_lowercase "$1" )"
+        option="$( __gl_lowercase "$1" )"
         case "$option" in
         h|help|-h|--help)
             echo "$usage"
@@ -76,7 +76,7 @@ EOF
         l|list|-l|--list)
             do_list='YES'
             while [[ "$#" -gt '1' ]]; do
-                state="$( __to_lowercase "$2" )"
+                state="$( __gl_lowercase "$2" )"
                 case "$state" in
                 i|ignored)  list_ignored='YES';;
                 s|shown)    list_shown='YES';;
@@ -97,7 +97,7 @@ EOF
         esac
         shift
     done
-    cmd_count="$( __count_non_empty "$do_add" "$do_remove" "$do_update" "$do_clear" "$do_prune" "$do_status" "$do_list" )"
+    cmd_count="$( __gl_count_non_empty "$do_add" "$do_remove" "$do_update" "$do_clear" "$do_prune" "$do_status" "$do_list" )"
     if [[ "$cmd_count" -eq '0' ]]; then
         >&2 echo -E "No command provided: $( __gmrignore_auto_options )"
         return 1
@@ -106,14 +106,14 @@ EOF
         return 1
     fi
     if [[ -n "$do_list" ]]; then
-        state_count="$( __count_non_empty "$list_ignored" "$list_shown" "$list_unknown" )"
+        state_count="$( __gl_count_non_empty "$list_ignored" "$list_shown" "$list_unknown" )"
         if [[ "$state_count" -eq '0' ]]; then
             list_all='YES'
         fi
     fi
-    __ensure_gl_config_dir || return 1
+    __gl_ensure_config_dir || return 1
     local gmr_ignore_filename
-    gmr_ignore_filename="$( __get_gmr_ignore_filename )"
+    gmr_ignore_filename="$( __gl_gmr_ignore_filename )"
     if [[ -n "$do_clear" ]]; then
         if [[ -f "$gmr_ignore_filename" ]]; then
             rm "$gmr_ignore_filename"
@@ -125,7 +125,7 @@ EOF
         echo "gmr ignore list cleared."
         return 0
     fi
-    __ensure_gitlab_projects
+    __gl_ensure_projects
     local current_ignore_list ignored shown unknown all_count shown_count ignored_count unknown_count
     if [[ -f "$gmr_ignore_filename" ]] && grep -q '[^[:space:]]' "$gmr_ignore_filename" && [[ "$( jq -r ' length ' "$gmr_ignore_filename" )" -gt '0' ]]; then
         current_ignore_list="$( cat "$gmr_ignore_filename" )"
@@ -288,8 +288,8 @@ EOF
             return 0
         fi
         selected_count="$( echo "$selected" | wc -l | sed -E 's/[^[:digit:]]//g' )"
-        selected_ids="[$( echo "$selected" | __gitlab_get_col '~' '1' | sed -E 's/[^[:digit:]]//g' | tr '\n' ',' | sed -E 's/,$//' )]"
-        selected_names="$( echo "$selected" | __gitlab_get_col '~' '2' )"
+        selected_ids="[$( echo "$selected" | __gl_column_value '~' '1' | sed -E 's/[^[:digit:]]//g' | tr '\n' ',' | sed -E 's/,$//' )]"
+        selected_names="$( echo "$selected" | __gl_column_value '~' '2' )"
         report=()
         if [[ -n "$do_add" ]]; then
             new_ignore_list="$( echo -E "[$current_ignore_list,$selected_ids]" | jq -c ' add | sort | unique ' )"

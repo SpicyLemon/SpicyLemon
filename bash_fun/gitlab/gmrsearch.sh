@@ -71,10 +71,10 @@ __gmrsearch_auto_options () {
                               "$( __gmrsearch_options_display_search_09 )"  \
                               "$( __gmrsearch_options_display_search_10 )"  \
                               "$( __gmrsearch_options_display_expert_01 ) " \
-                            | __convert_display_options_to_auto_options )"
+                            | __gl_convert_display_options_to_auto_options )"
 }
 gmrsearch () {
-    __ensure_gitlab_token || return 1
+    __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
 gmrsearch: Gitlab Merge Request Search
@@ -244,7 +244,7 @@ EOF
     while [[ "$#" -gt '0' ]]; do
         option_raw="$1"
         shift
-        option="$( printf %s "$option_raw" | __to_lowercase | sed 's/_/-/;' )"
+        option="$( printf %s "$option_raw" | __gl_lowercase | sed 's/_/-/;' )"
         option_arg=
         option_arg_2=
         option_arg_raw=
@@ -276,10 +276,10 @@ EOF
             ;;
         # Result control options
         --order-by)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase | sed 's/-/_/g;' )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase | sed 's/-/_/g;' )"
             if [[ "$option_arg" == 'created_at' || "$option_arg" == 'updated_at' ]]; then
                 arg_order_by="$option_arg"
             elif [[ "$option_arg" == 'created' || "$option_arg" == 'updated' ]]; then
@@ -296,10 +296,10 @@ EOF
             arg_order_by="updated_at"
             ;;
         --sort)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" == 'asc' || "$option_arg" == 'desc' ]]; then
                 arg_sort="$option_arg"
             else
@@ -315,10 +315,10 @@ EOF
             ;;
         # Search options
         --state)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" == 'opened' || "$option_arg" == 'closed' || "$option_arg" == 'locked' || "$option_arg" == 'merged' ]]; then
                 arg_state="$option_arg"
             elif [[ "$option_arg" == 'open' ]]; then
@@ -347,10 +347,10 @@ EOF
             arg_state='merged'
             ;;
         --scope)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase | sed 's/-/_/g;' )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase | sed 's/-/_/g;' )"
             if [[ "$option_arg" == 'created_by_me' || "$option_arg" == 'assigned_to_me' || "$option_arg" == 'all' ]]; then
                 arg_scope="$option_arg"
             elif [[ "$option_arg" == 'created' ]]; then
@@ -372,7 +372,7 @@ EOF
             arg_scope='all'
             ;;
         --created-after)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ -z "$2" || "$2" =~ ^- ]]; then
                 option_arg_raw="$1"
                 shift
@@ -396,7 +396,7 @@ EOF
             fi
             ;;
         --created-before)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ -z "$2" || "$2" =~ ^- ]]; then
                 option_arg_raw="$1"
                 shift
@@ -470,7 +470,7 @@ EOF
             fi
             ;;
         --created-on)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ -z "$2" || "$2" =~ ^- ]]; then
                 option_arg_raw="$1"
                 shift
@@ -495,7 +495,7 @@ EOF
             fi
             ;;
         --updated-after)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ -z "$2" || "$2" =~ ^- ]]; then
                 option_arg_raw="$1"
                 shift
@@ -519,7 +519,7 @@ EOF
             fi
             ;;
         --updated-before)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ -z "$2" || "$2" =~ ^- ]]; then
                 option_arg_raw="$1"
                 shift
@@ -593,7 +593,7 @@ EOF
             fi
             ;;
         --updated-on)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ -z "$2" || "$2" =~ ^- ]]; then
                 option_arg_raw="$1"
                 shift
@@ -618,30 +618,30 @@ EOF
             fi
             ;;
         --search)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
             while [[ -n "$1" && ! "$1" =~ ^- ]]; do
                 option_arg_raw="$option_arg_raw $1"
                 shift
             done
-            arg_search="$( printf %s "$option_arg_raw" | __url_encode )"
+            arg_search="$( printf %s "$option_arg_raw" | __gl_encode_for_url )"
             ;;
         --source-branch)
-            __ensure_option "$1" "$option" || return 1
-            arg_source_branch="$( printf %s "$1" | __url_encode )"
+            __gl_require_option "$1" "$option" || return 1
+            arg_source_branch="$( printf %s "$1" | __gl_encode_for_url )"
             shift
             ;;
         --target-branch)
-            __ensure_option "$1" "$option" || return 1
-            arg_target_branch="$( printf %s "$1" | __url_encode )"
+            __gl_require_option "$1" "$option" || return 1
+            arg_target_branch="$( printf %s "$1" | __gl_encode_for_url )"
             shift
             ;;
         --wip)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" == 'yes' || "$option_arg" == 'true' ]]; then
                 arg_wip='yes'
             elif [[ "$option_arg" == 'no' || "$option_arg" == 'false' ]]; then
@@ -652,18 +652,18 @@ EOF
             fi
             ;;
         --author)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ "$1" =~ ^[[:digit:]]+$ ]]; then
                 arg_author_id="$1"
                 arg_author_username=
             else
                 arg_author_id=
-                arg_author_username="$( printf %s "$1" | __url_encode )"
+                arg_author_username="$( printf %s "$1" | __gl_encode_for_url )"
             fi
             shift
             ;;
         --author-id)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             if [[ "$1" =~ ^[[:digit:]]+$ ]]; then
                 arg_author_id="$1"
                 arg_author_username=
@@ -674,16 +674,16 @@ EOF
             shift
             ;;
         --author-username)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             arg_author_id=
-            arg_author_username="$( printf %s "$1" | __url_encode )"
+            arg_author_username="$( printf %s "$1" | __gl_encode_for_url )"
             shift
             ;;
         --assignee-id)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" =~ ^[[:digit:]]+$ ]]; then
                 arg_assignee_id="$option_arg"
             elif [[ "$option_arg" == 'none' ]]; then
@@ -696,10 +696,10 @@ EOF
             fi
             ;;
         --approver-ids)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" =~ ^[[:digit:]]+(,[[:digit:]]+){0,4}$ ]]; then
                 arg_approver_ids="$option_arg"
             elif [[ "$option_arg" == 'none' ]]; then
@@ -712,10 +712,10 @@ EOF
             fi
             ;;
         --approved-by-ids)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" =~ ^[[:digit:]]+(,[[:digit:]]+){0,4}$ ]]; then
                 arg_approved_by_ids="$option_arg"
             elif [[ "$option_arg" == 'none' ]]; then
@@ -728,42 +728,42 @@ EOF
             fi
             ;;
         --labels)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" == 'none' ]]; then
                 arg_labels='None'
             elif [[ "$option_arg" == 'any' ]]; then
                 arg_labels='Any'
             else
-                arg_labels="$( printf %s "$option_arg_raw" | __url_encode )"
+                arg_labels="$( printf %s "$option_arg_raw" | __gl_encode_for_url )"
             fi
             ;;
         --milestone)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" == 'none' ]]; then
                 arg_milestone='None'
             elif [[ "$option_arg" == 'any' ]]; then
                 arg_milestone='Any'
             else
-                arg_milestone="$( printf %s "$option_arg_raw" | __url_encode )"
+                arg_milestone="$( printf %s "$option_arg_raw" | __gl_encode_for_url )"
             fi
             ;;
         --my-reaction-emoji)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" == 'none' ]]; then
                 arg_my_reaction_emoji='None'
             elif [[ "$option_arg" == 'any' ]]; then
                 arg_my_reaction_emoji='Any'
             else
-                arg_my_reaction_emoji="$( printf %s "$option_arg_raw" | __url_encode )"
+                arg_my_reaction_emoji="$( printf %s "$option_arg_raw" | __gl_encode_for_url )"
             fi
             ;;
         # Expert options
@@ -773,7 +773,7 @@ EOF
             else
                 option_arg_raw="$1"
                 shift
-                option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+                option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
                 if [[ "$option_arg" == 'yes' || "$option_arg" == 'true' ]]; then
                     arg_with_labels_details='true'
                 elif [[ "$option_arg" == 'no' || "$option_arg" == 'false' ]]; then
@@ -788,10 +788,10 @@ EOF
             arg_with_labels_details='false'
             ;;
         --view)
-            __ensure_option "$1" "$option" || return 1
+            __gl_require_option "$1" "$option" || return 1
             option_arg_raw="$1"
             shift
-            option_arg="$( printf %s "$option_arg_raw" | __to_lowercase )"
+            option_arg="$( printf %s "$option_arg_raw" | __gl_lowercase )"
             if [[ "$option_arg" == 'simple' ]]; then
                 arg_view="simple"
             elif [[ "$option_arg" == 'normal' ]]; then
@@ -894,10 +894,10 @@ EOF
     local json_results result_count
     if [[ -z "$use_last_results" ]]; then
         if [[ -n "$go_deep" ]]; then
-            __get_gitlab_mrs_deep '' "$bypass_ignore" "$query_string" "$verbose"
+            __gl_get_mrs_to_approve_deep '' "$bypass_ignore" "$query_string" "$verbose"
             GITLAB_MRS_SEARCH_RESULTS="$GITLAB_MRS_DEEP_RESULTS"
         else
-            GITLAB_MRS_SEARCH_RESULTS="$( __get_pages_of_url "$( __get_gitlab_url_mrs )?${query_string}&" '' '' "$verbose" )"
+            GITLAB_MRS_SEARCH_RESULTS="$( __gl_get_all_results "$( __gl_url_api_mrs )?${query_string}&" '' '' "$verbose" )"
         fi
     fi
     json_results="$GITLAB_MRS_SEARCH_RESULTS"
@@ -905,7 +905,7 @@ EOF
     # Add the project name to each result.
     local project_id project_name
     for project_id in $( jq -r ' [ .[] | .project_id ] | unique | .[] ' <<< "$json_results" ); do
-        project_name="$( __get_project_name "$project_id" )"
+        project_name="$( __gl_project_name "$project_id" )"
         json_results="$( jq -c --arg project_id "$project_id" --arg project_name "$project_name" \
                         ' [ .[] | if (.project_id == ($project_id|tonumber)) then (.project_name = $project_name) else . end ] ' <<< "$json_results" )"
     done
@@ -947,7 +947,7 @@ EOF
                     <<< "$json_results" ) \
             | fzf_wrapper --tac --header-lines=1 --cycle --with-nth=1,2,3,4,5 --delimiter="~" -m --to-columns )"
         echo -E "$selected_lines" | while read selected_line; do
-            web_url="$( echo -E "$selected_line" | __gitlab_get_col '~' '6' )"
+            web_url="$( echo -E "$selected_line" | __gl_column_value '~' '6' )"
             if [[ -n $web_url ]]; then
                 open "$web_url"
             fi
