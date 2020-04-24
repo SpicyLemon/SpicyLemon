@@ -35,7 +35,7 @@
 #   i_can  ---------------------------> Tests if a command is available.
 #   can_i  ---------------------------> Outputs results of i_can.
 #   print_args  ----------------------> Outputs all parameters received.
-#
+#   change_word  ---------------------> Changes a word from one thing to another in one or more files.
 
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
@@ -525,6 +525,18 @@ show_colors () {
     { echo -e "$output_0"; echo -e "$output_1"; } | column -s '~' -t
 }
 
+__get_show_color_str () {
+    local code width format
+    code="$1"
+    width="$2"
+    if [[ -n "$width" ]]; then
+        format="%-${width}s"
+    else
+        format="%s"
+    fi
+    colorize "$code" "### $( printf $format $code ) ###"
+}
+
 # Just makes it easier to use jq on a variable.
 # This is basically just a shortcut for  echo <json> | jq <options> <query>
 # If the query is omitted '.' is used.
@@ -608,14 +620,40 @@ print_args () {
     done
 }
 
-__get_show_color_str () {
-    local code width format
-    code="$1"
-    width="$2"
-    if [[ -n "$width" ]]; then
-        format="%-${width}s"
-    else
-        format="%s"
+# Usage: change_word <old word> <new word> <files>
+change_word () {
+    local old_word new_word files file
+    old_word="$1"
+    new_word="$2"
+    shift
+    shift
+    files="$@"
+    if [[ -z "$old_word" || -z "$new_word" || "${#files[@]}" -eq '0' ]]; then
+        echo "Usage: change_word <old word> <new word> <files>"
+        return 0
     fi
-    colorize "$code" "### $( printf $format $code ) ###"
+    if [[ "$old_word" =~ [^[:alnum:][:space:]\-_] ]]; then
+        echo "Only letters, numbers, dashes, underscores and spaces are allowed in the provided words." >&2
+        return 1
+    fi
+    if [[ "$new_word" =~ [^[:alnum:][:space:]\-_] ]]; then
+        echo "Only letters, numbers, dashes, underscores and spaces are allowed in the provided words." >&2
+        return 1
+    fi
+    echo -e "Changing \033[0m \033[1;31m$old_word\033[0m to \033[1;32m$new_word\033[0m"
+    echo -e "In: ${files[@]}"
+    echo ''
+    echo -e "\033[1;37;41m Before: \033[0m"
+    grep -E "\<($old_word|$new_word)\>" *.sh \
+        | GREP_COLOR='1;31' grep --color=always "\<$old_word\>\|$" \
+        | GREP_COLOR='1;32' grep --color=always "\<$new_word\>\|$"
+    echo ''
+    for file in ${files[@]}; do
+        sed -i '' "s/[[:<:]]$old_word[[:>:]]/$new_word/g;" "$file"
+    done
+    echo -e "\033[1;37;42m After: \033[0m"
+    grep -E "\<($old_word|$new_word)\>" *.sh \
+        | GREP_COLOR='1;31' grep --color=always "\<$old_word\>\|$" \
+        | GREP_COLOR='1;32' grep --color=always "\<$new_word\>\|$"
+    echo ''
 }
