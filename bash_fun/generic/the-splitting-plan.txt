@@ -1,0 +1,69 @@
+change_word.sh
+    change_word
+
+chrome_cors.sh
+    chrome_cors
+
+echo_color.sh
+    echo_white
+    echo_red
+    echo_green
+    echo_yellow
+    echo_blue
+    echo_pink
+    echo_teal
+    echo_underline
+    echo_strikethrough
+    echo_reversed
+    echo_bad
+    echo_color
+    colorize
+    show_colors
+    __get_show_color_str    -> rename to __echo_color_get_show_color_string. Or maybe even move it into a "private" thing in show_colors.
+
+echo_do.sh
+    echo_do
+    debug_echo_do
+    print_echo_do_vars
+    print_echo_do_vars_wo
+    echo_do_ln
+
+get_shell_type.sh
+    get_shell_type
+
+hr.sh
+    hr
+    hrr
+    hhr
+    pick_a_palette
+
+i_can.sh
+    i_can
+    can_i
+
+jqq.sh
+    jqq
+
+output-helpers.sh
+    strip_colors
+    to_stdout_and_strip_colors_log
+    to_stderr_and_strip_colors_log
+    tee_pbcopy
+
+print_args.sh
+    print_args
+
+ps_grep.sh
+    ps_grep
+
+to_date.sh
+    to_date
+
+to_epoch.sh
+    to_epoch
+
+kill_sophos.sh
+    kill_sophos
+
+Should be elsewhere:
+    provenir_tester     --> Put in the provenir section of stuff as an executable or something...
