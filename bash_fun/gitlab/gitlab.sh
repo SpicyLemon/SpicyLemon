@@ -123,6 +123,9 @@ EOF
         fi
         cmd='gmrignore'
         ;;
+    mr-search|mrsearch)
+        cmd='gmrsearch'
+        ;;
     *)
         >&2 echo -E "Unknown command: [ $1 ]. Use -h for help."
         return 1
