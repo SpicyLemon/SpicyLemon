@@ -11,22 +11,16 @@ echo_color.sh
     echo_yellow
     echo_blue
     echo_pink
-    echo_teal
+    echo_cyan
     echo_underline
     echo_strikethrough
     echo_reversed
     echo_bad
     echo_color
-    colorize
     show_colors
-    __get_show_color_str    -> rename to __echo_color_get_show_color_string. Or maybe even move it into a "private" thing in show_colors.
 
 echo_do.sh
     echo_do
-    debug_echo_do
-    print_echo_do_vars
-    print_echo_do_vars_wo
-    echo_do_ln
 
 get_shell_type.sh
     get_shell_type
@@ -41,11 +35,22 @@ i_can.sh
     i_can
     can_i
 
+java-switchers.sh
+    java_8_activate
+    java_8_deactivate
+
+join_str.sh
+    join_str
+
 jqq.sh
     jqq
 
+kill_sophos.sh
+    kill_sophos
+
 output-helpers.sh
     strip_colors
+    escape_escapes
     to_stdout_and_strip_colors_log
     to_stderr_and_strip_colors_log
     tee_pbcopy
@@ -62,8 +67,8 @@ to_date.sh
 to_epoch.sh
     to_epoch
 
-kill_sophos.sh
-    kill_sophos
-
 Should be elsewhere:
     provenir_tester     --> Put in the provenir section of stuff as an executable or something...
+
+
+
