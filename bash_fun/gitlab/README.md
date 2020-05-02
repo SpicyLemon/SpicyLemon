@@ -107,3 +107,7 @@ The following environment variables can be defined:
 
 TODO
 
+## Disclaimer
+All of this was developed and tested on a Mac in Bash.
+Some light testing was also done in ZSH.
+
