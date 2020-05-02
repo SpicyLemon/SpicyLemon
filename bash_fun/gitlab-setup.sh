@@ -1,6 +1,6 @@
 #!/bin/bash
 # This file is meant to be sourced.
-# It will import all the functions needed to interact with Gitlab in your terminal.
+# It will import all the functions needed to interact with GitLab in your terminal.
 #
 # In order to use any of these functions, you will first have to create a GitLab private token.
 #   1) Log into GitLab.
@@ -10,7 +10,7 @@
 #       For example, you could put   GITLAB_PRIVATE_TOKEN=123abcABC456-98ZzYy7  in your .bash_profile file
 #       so that it's set every time you open a terminal (use your own actual token of course).
 #   5) Optionally, the following optional environment variables can be defined.
-#       GITLAB_REPO_DIR  ----------> The directory where your Gitlab repositories are to be stored.
+#       GITLAB_REPO_DIR  ----------> The directory where your GitLab repositories are to be stored.
 #                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
 #                                    If not defined, functions that look for it will require it to be provided as input.
 #       GITLAB_BASE_DIR  ----------> This variable has been deprecated in favor of GITLAB_REPO_DIR.
@@ -141,28 +141,28 @@ __gitlab_setup () {
     fi
 
     __if_verbose "$info" "Done checking on needed external programs and functions."
-    __if_verbose "$info" "Checking on source files for Gitlab functions."
+    __if_verbose "$info" "Checking on source files for GitLab functions."
 
     # Make sure the directory with the functions is there.
     if [[ ! -d "$gitlab_func_dir" ]]; then
         problems+=( "Directory not found: $gitlab_func_dir" )
-        __if_verbose "$error" "The Gitlab function directory [$gitlab_func_dir] was not found."
+        __if_verbose "$error" "The GitLab function directory [$gitlab_func_dir] was not found."
     else
-        __if_verbose "$ok" "The Gitlab function directory [$gitlab_func_dir] exists."
+        __if_verbose "$ok" "The GitLab function directory [$gitlab_func_dir] exists."
         # Make sure all the needed files are there too.
         for entry in "${gitlab_func_file_names[@]}"; do
             func_file="${gitlab_func_dir}/${entry}.sh"
             if [[ ! -f "$func_file" ]]; then
                 problems+=( "File not found: $func_file" )
-                __if_verbose "$error" "The Gitlab function file [$func_file] was not found."
+                __if_verbose "$error" "The GitLab function file [$func_file] was not found."
             else
                 files_to_source+=( "$func_file" )
-                __if_verbose "$ok" "The Gitlab function file [$func_file] exists."
+                __if_verbose "$ok" "The GitLab function file [$func_file] exists."
             fi
         done
     fi
 
-    __if_verbose "$info" "Done checking on source files for Gitlab functions."
+    __if_verbose "$info" "Done checking on source files for GitLab functions."
     __if_verbose "$info" "Checking for problems with environment variables."
 
     if [[ -n "$GITLAB_PRIVATE_TOKEN" ]]; then
@@ -264,7 +264,7 @@ __gitlab_setup () {
 
     # If there were problems, yo, output them and quit.
     if [[ "${#problems[@]}" -gt '0' ]]; then
-        >&2 echo -E "Could not set up Gitlab cli functions:"
+        >&2 echo -E "Could not set up GitLab cli functions:"
         for entry in "${problems[@]}"; do
             >&2 echo -E "  $entry"
         done
@@ -312,7 +312,7 @@ __gitlab_setup () {
         can_compctl='YES'
         __if_verbose "$ok" "The [compctl] tab completion program has been detected and will be used."
     else
-        __if_verbose "$warn" "Unable to detect tab completion program. Tab complete will not be available for these Gitlab functions."
+        __if_verbose "$warn" "Unable to detect tab completion program. Tab complete will not be available for these GitLab functions."
     fi
 
     if [[ -n "$can_auto" ]]; then
@@ -358,7 +358,7 @@ __gitlab_setup () {
     __if_verbose "$info" "Doing final checking for problems encountered."
 
     if [[ "${#problems[@]}" -gt '0' ]]; then
-        >&2 echo -E "Error(s) encountered while setting up Gitlab cli functions:"
+        >&2 echo -E "Error(s) encountered while setting up GitLab cli functions:"
         for entry in "${problems[@]}"; do
             >&2 echo -E "  $entry"
         done

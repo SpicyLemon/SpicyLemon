@@ -77,7 +77,7 @@ gmrsearch () {
     __gl_require_token || return 1
     local usage
     usage="$( cat << EOF
-gmrsearch: Gitlab Merge Request Search
+gmrsearch: GitLab Merge Request Search
 
 Search for Merge Requests based on certain criteria.
 

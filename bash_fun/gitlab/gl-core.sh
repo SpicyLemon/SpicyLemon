@@ -496,7 +496,7 @@ __gl_jobs_filter_by_type () {
 }
 
 #
-# Gitlab Interaction
+# GitLab Interaction
 #
 
 # Looks up your GitLab user info. Results are stored in $GITLAB_USER_ID and $GITLAB_USERNAME.
@@ -805,7 +805,7 @@ __gl_post_mark_all_todos_as_done () {
 }
 
 #
-# Gitlab Url Creators.
+# GitLab Url Creators.
 #
 
 # Usage: __gl_url_base

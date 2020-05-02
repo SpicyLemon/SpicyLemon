@@ -81,7 +81,7 @@ gitlab clone --help
 
 The following environment variables can be defined:
 * `GITLAB_REPO_DIR` -
-  The directory where your Gitlab repositories are to be stored.
+  The directory where your GitLab repositories are to be stored.
   This should be absolute, (starting with a `/`), but it should not end with a `/`.
   If not defined, functions that look for it will require it to be provided as input.
 * `GITLAB_CONFIG_DIR` -
