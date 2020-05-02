@@ -131,3 +131,5 @@ EOF
     shift
     $cmd "$@"
 }
+
+return 0

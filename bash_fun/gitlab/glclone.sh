@@ -170,3 +170,5 @@ EOF
         echo -e "\033[1;37mcd $( pwd )\033[0m"
     fi
 }
+
+return 0

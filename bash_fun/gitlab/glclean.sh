@@ -97,3 +97,5 @@ EOF
         echo -E "GitLab-associated variables cleaned."
     fi
 }
+
+return 0

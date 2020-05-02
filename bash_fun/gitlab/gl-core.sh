@@ -953,3 +953,5 @@ __gl_url_web_repo_pipelines () {
     base_url="$1"
     echo -E -n "$base_url/pipelines"
 }
+
+return 0

@@ -327,3 +327,5 @@ EOF
     >&2 echo "Unkown command."
     return 1
 }
+
+return 0

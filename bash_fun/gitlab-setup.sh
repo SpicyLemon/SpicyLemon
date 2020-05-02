@@ -403,3 +403,5 @@ unset -f __gitlab_setup
 unset -f __i_can
 unset -f __if_verbose
 unset GITLAB_SETUP_VERBOSE
+
+return 0
