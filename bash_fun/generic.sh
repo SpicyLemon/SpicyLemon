@@ -2,7 +2,6 @@
 # This file contains generic functions for helping do random things that I often need.
 # File contents:
 #   echo_do  -------------------------> Outputs a command in bright white, then executes it.
-#   echo_do_ln  ----------------------> Outputs a command in bright white, then executes it and adds an extra newline to the end.
 #   get_shell_type  ------------------> Gets the type of shell you're in, either "zsh" "bash" or else the process running your shell
 #   kill_sophos  ---------------------> Kills sophos processes and such.
 #   chrome_cors  ---------------------> Opens up a url in Chrome with CORS safety disabled.
@@ -13,21 +12,22 @@
 #   pick_a_palette  ------------------> Sets the PALETTE environment variable if not already set.
 #   to_epoch  ------------------------> Converts a date in YYYY-mm-dd HH:MM:SS format (using local time zone) to an epoch as milliseconds.
 #   to_date  -------------------------> Converts an epoch as milliseconds into a date.
+#   join_str  ------------------------> Joins a list of parameters using a delimiter.
 #   echo_white  ----------------------> Outputs a message in white.
 #   echo_red  ------------------------> Outputs a message in red.
 #   echo_green  ----------------------> Outputs a message in green.
 #   echo_yellow  ---------------------> Outputs a message in yellow.
 #   echo_blue  -----------------------> Outputs a message in blue.
 #   echo_pink  -----------------------> Outputs a message in pink.
-#   echo_teal  -----------------------> Outputs a message in teal.
+#   echo_cyan  -----------------------> Outputs a message in teal.
 #   echo_underline  ------------------> Outputs an underlined message.
 #   echo_strikethrough  --------------> Outputs a message with strikethrough.
 #   echo_bad  ------------------------> Outputs a message with bright red background and bright white text.
 #   echo_color  ----------------------> Outputs a message using a specific color code.
 #   strip_colors  --------------------> Strips the color stuff from a stream.
+#   escape_escapes  ------------------> Escapes any escape characters in a stream.
 #   to_stdout_and_strip_colors_log  --> Outputs to stdout and logs to a file with color stuff stripped out.
 #   to_stdout_and_strip_colors_log  --> Outputs to stderr and logs to a file with color stuff stripped out.
-#   colorize  ------------------------> Easy way to set the color code for a string.
 #   show_colors  ---------------------> Outputs a chunk of color info.
 #   jqq  -----------------------------> Shortcut for jq to output a variable.
 #   tee_pbcopy  ----------------------> Outputs to stdout as well as copy it to the clipboard.
@@ -36,6 +36,9 @@
 #   can_i  ---------------------------> Outputs results of i_can.
 #   print_args  ----------------------> Outputs all parameters received.
 #   change_word  ---------------------> Changes a word from one thing to another in one or more files.
+#   java_8_activate  -----------------> Exports JAVA_HOME to point to Java 8.
+#   java_8_deactivate  ---------------> Unsets JAVA_HOME.
+#
 
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
@@ -59,105 +62,51 @@ unset sourced
 # Examples:
 #   echo_do say -vVictoria -r200 "Buu Whoa"
 #   echo_do "say -vVictoria -r200 \"YEAH BUDDY\""
-# The array used to actuall execute the command will be stored in ECHO_DO_CMD_PARTS.
-# The string used for command display will be stored in ECHO_DO_CMD_STR.
-# stdout results of the command will be stored in ECHO_DO_STDOUT.
-# stderr results of the command will be stored in ECHO_DO_STDERR.
-# The combined stdout, stderr content (in original order) will be stored in ECHO_DO_STDALL.
-# The exit code of the command will be stored in ECHO_DO_EXIT_CODE.
-#   and also returned by this function.
-# If no command is provided, this will return with exit code 124
-#   and none of the above variables will be set.
+# If no command is provided, this will return with exit code 124.
 echo_do () {
-    unset ECHO_DO_CMD_PARTS ECHO_DO_CMD_STR ECHO_DO_STDOUT ECHO_DO_STDERR ECHO_DO_STDALL ECHO_DO_EXIT_CODE
-    local cmd_pieces pieces_for_output cmd_piece tmp_stderr tmp_stdout tmp_stdall
-    cmd_pieces=()
-    if [[ "$#" > '0' ]]; then
-        cmd_pieces+=( "$@" )
-    fi
-    if [[ "${#cmd_pieces[@]}" -eq '0' || "${cmd_pieces[@]}" =~ ^[[:space:]]*$ ]]; then
-        >&2 echo "No command provided to echo_do."
+    local cmd_pieces pieces_for_output cmd_piece retval
+    # Check for no parameters.
+    # Make sure there's still arguments left to form the command.
+    if [[ "$#" -eq '0' || "$@" =~ ^[[:space:]]*$ ]]; then
+        echo 'No command provided to echo_do.' >&2
         return 124
     fi
-    pieces_for_output=()
-    if [[ "${#cmd_pieces[@]}" -eq '1' && ( "${cmd_pieces[@]}" =~ [[:space:]\(=] || -z "$( command -v "${cmd_pieces[@]}" )" ) ]]; then
-        pieces_for_output+=( "${cmd_pieces[@]}" )
-        cmd_pieces=( 'eval' "${cmd_pieces[@]}" )
+    # Do a little processing on the provided arguments.
+    if [[ "$#" -eq '1' && ( "$@" =~ [[:space:]\(=] || -z "$( command -v "$@" )" ) ]]; then
+        # If there's only 1 argument and
+        #   it contains a space, open parenthesis, or an equals
+        #   or it is not an actual command
+        # then we need to run it using eval.
+        # This primarily allows for setting environment variables using this function.
+        cmd_pieces=( 'eval' "$@" )
+        pieces_for_output=( "$@" )
     else
-        for cmd_piece in "${cmd_pieces[@]}"; do
+        # Otherwise, we can just throw everything into the command pieces as it is.
+        cmd_pieces=( "$@" )
+        # We then need to slightly alter the pieces in order to properly output the command.
+        pieces_for_output=()
+        for cmd_piece in "$@"; do
             if [[ "$cmd_piece" =~ [[:space:]\'\"] ]]; then
+                # If this piece has a space, a single, or double quote, then it needs to be escaped and wrapped.
+                # Escape again all already escaped double quotes, then escape all double quotes.
+                # And put the whole thing in double quotes.
                 pieces_for_output+=( "\"$( echo -E "$cmd_piece" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
             else
+                # Otherwise, no change is needed.
                 pieces_for_output+=( "$cmd_piece" )
             fi
         done
     fi
-    ECHO_DO_CMD_PARTS=( "${cmd_pieces[@]}" )
-    ECHO_DO_CMD_STR="${pieces_for_output[@]}"
+
+    # Show the command string in bold white.
     echo -en "\033[1;37m"
-    echo -En "$ECHO_DO_CMD_STR"
+    echo -En "${pieces_for_output[@]}"
     echo -e "\033[0m"
-    tmp_stderr="$( mktemp -t echo_do_stderr )"
-    tmp_stdout="$( mktemp -t echo_do_stdout )"
-    tmp_stdall="$( mktemp -t echo_do_stdall )"
-    { "${ECHO_DO_CMD_PARTS[@]}"; ECHO_DO_EXIT_CODE="$?"; } 2> >( tee "$tmp_stderr" | tee -a "$tmp_stdall" ) 1> >( tee "$tmp_stdout" | tee -a "$tmp_stdall" )
-    ECHO_DO_STDERR="$( cat "$tmp_stderr" )"
-    ECHO_DO_STDOUT="$( cat "$tmp_stdout" )"
-    ECHO_DO_STDALL="$( cat "$tmp_stdall" )"
-    rm "$tmp_stderr"
-    rm "$tmp_stdout"
-    rm "$tmp_stdall"
-    return "$ECHO_DO_EXIT_CODE"
-}
-
-debug_echo_do () {
-    local retval
-    echo_do "$@"
-    retval=$?
-    echo -E '-------------------------------------------'
-    print_echo_do_vars "$retval"
-    return "$retval"
-}
-
-print_echo_do_vars () {
-    local retval
-    retval="$1"
-    echo -e  "  ECHO_DO_CMD_STR: [\033[1;37m$ECHO_DO_CMD_STR\033[0m]"
-    [[ -n "$retval" ]] && echo -E  "         Returned: [$retval]"
-    echo -E  "ECHO_DO_EXIT_CODE: [$ECHO_DO_EXIT_CODE]"
-    echo -e  "   ECHO_DO_STDOUT: [\033[1;32m$ECHO_DO_STDOUT\033[0m]"
-    echo -e  "   ECHO_DO_STDERR: [\033[1;31m$ECHO_DO_STDERR\033[0m]"
-    echo -e  "   ECHO_DO_STDALL: [\033[1;36m$ECHO_DO_STDALL\033[0m]"
-    echo -En "ECHO_DO_CMD_PARTS:"
-    for p in "${ECHO_DO_CMD_PARTS[@]}"; do
-        echo -En " [$p]"
-    done
-    echo -E ''
-}
-
-print_echo_do_vars_wo () {
-    local retval
-    retval="$1"
-    echo -e  "  ECHO_DO_CMD_STR: [$ECHO_DO_CMD_STR]"
-    [[ -n "$retval" ]] && echo -E  "         Returned: [$retval]"
-    echo -E  "ECHO_DO_EXIT_CODE: [$ECHO_DO_EXIT_CODE]"
-    echo -e  "   ECHO_DO_STDOUT: [$ECHO_DO_STDOUT]"
-    echo -e  "   ECHO_DO_STDERR: [$ECHO_DO_STDERR]"
-    echo -e  "   ECHO_DO_STDALL: [$ECHO_DO_STDALL]"
-    echo -En "ECHO_DO_CMD_PARTS:"
-    for p in "${ECHO_DO_CMD_PARTS[@]}"; do
-        echo -En " [$p]"
-    done
-    echo -E ''
-}
-
-# Same as echo_do but with an extra line at the end
-echo_do_ln () {
-    local retval
-    echo_do "$@"
-    retval=$?
-    echo -E ''
-    return "$retval"
+    # Execute the command.
+    "${cmd_pieces[@]}"
+    retval="$?"
+    echo ''
+    return "$?"
 }
 
 get_shell_type () {
@@ -403,6 +352,21 @@ to_date () {
     return 0
 }
 
+# Joins all provided parameters using the provided delimiter.
+# Usage: join_str <delimiter> [<arg1> [<arg2>... ]]
+join_str () {
+    local d retval
+    d="$1"
+    shift
+    retval="$1"
+    shift
+    while [[ "$#" -gt '0' ]]; do
+        retval="${retval}${d}${1}"
+        shift
+    done
+    printf %s "$retval"
+}
+
 # Usage: echo_white <string>
 echo_white () {
     echo_color '1;37' "$@"
@@ -433,8 +397,8 @@ echo_pink () {
     echo_color '1;35' "$@"
 }
 
-# Usage: echo_teal <string>
-echo_teal () {
+# Usage: echo_cyan <string>
+echo_cyan () {
     echo_color '1;36' "$@"
 }
 
@@ -455,31 +419,63 @@ echo_bad () {
     echo_color '1;38;5;231;48;5;196' "$@"
 }
 
-
-# Usage: echo_color <color code> <message>
+# Usage: echo_color <color code> [-n] <message>
 echo_color () {
-    local c m n r
-    if [[ -n "$1" && "$1" =~ ^[[:digit:]]+(\;[[:digit:]]+)*$ ]]; then
-        c="$1"
+    local code_on debug newline_flag message code_off_parts code_on_part reset_to_default code_off
+    if [[ "$1" =~ ^[[:digit:]]+(\;[[:digit:]]+)*$ ]]; then
+        code_on="$1"
         shift
     else
-        c='0'
+        echo -e "echo_color: Invalid color code: [$1]. Must have format <number>[;<number>[...]]." >&2
+        return 1
     fi
-    if [[ -n "$1" && "$1" == '-n' ]]; then
-        n="$1"
+    if [[ "$1" == '--debug' ]]; then
+        debug='--debug'
         shift
     fi
-    case "$c" in
-        4|7|9) r=$(( c + 20 ));;
-        *) r=0;;
-    esac
-    m="$@"
-    echo -e $n "\033[${c}m${m}\033[${r}m"
+    if [[ "$1" == '-n' ]]; then
+        newline_flag='-n'
+        shift
+    fi
+    message="$@"
+    code_off_parts=()
+    for code_on_part in $( printf %s "$code_on" | tr ';' '\n' ); do
+        case "$code_on_part" in
+        1)              code_off_parts+=( 21 22 );;
+        2|4|7|9)        code_off_parts+=( $(( code_on_part + 20 )) );;
+        3[01234567])    code_off_parts+=( 39 );;
+        4[01234567])    code_off_parts+=( 49 );;
+        *)
+            reset_to_default='YES'
+            break
+            ;;
+        esac
+    done
+    if [[ -n "$reset_to_default" ]]; then
+        code_off='0'
+    else
+        code_off_parts=( $( echo "${code_off_parts[@]}" | tr ' ' '\n' | sort -n -u ) )
+        code_off="$( join_str ';' "${code_off_parts[@]}" )"
+    fi
+    [[ -n "$debug" ]] && { printf '%s' "\033[${code_on}m${message}\033[${code_off}m -> "; echo -e "[\033[${code_on}m${message}\033[${code_off}m]"; } >&2
+    echo -e $newline_flag "\033[${code_on}m${message}\033[${code_off}m"
 }
 
 # Usage: <stuff> | strip_colors
 strip_colors () {
-    sed -E "s/$( echo -e "\033" )\[(;|[[:digit:]])+m//g"
+    if [[ "$#" -gt '0' ]]; then
+        printf %s "$@" | strip_colors
+        return 0
+    fi
+    sed -E "s/$( echo -e "\033" )\[[[:digit:]]+(;[[:digit:]]+)*m//g"
+}
+
+escape_escapes () {
+    if [[ "$#" -gt '0' ]]; then
+        printf %s "$@" | escape_escapes
+        return 0
+    fi
+    sed -E "s/$( echo -e "\033" )/\\\033/g"
 }
 
 # Usage: <stuff> | to_stdout_and_strip_colors_log "logfile"
@@ -502,39 +498,57 @@ to_stderr_and_strip_colors_log () {
     cat - > >( >&2 tee >( strip_colors >> "$1" ) )
 }
 
-colorize () {
-    local code str
-    code="$1"
-    shift
-    str="$*"
-    echo -e "\033[${code}m$str\033[0m"
-}
-
+# Displays some color codes
+# Usage: show_colors
 show_colors () {
-    local output_0 output_1
-    output_0=''
-    output_1=''
-    for c in $(seq 0 79); do
-        if [[ "$(( c % 10 ))" -eq 0 ]]; then
-            output_0="$( echo -E "$output_0" | sed -E 's/~$/\\n/;' )"
-            output_1="$( echo -E "$output_1" | sed -E 's/~$/\\n/;' )"
-        fi
-        output_0="$output_0$( __get_show_color_str "$c" "2" )~"
-        output_1="$output_1$( __get_show_color_str "1;$c" "4" )~"
-    done
-    { echo -e "$output_0"; echo -e "$output_1"; } | column -s '~' -t
-}
-
-__get_show_color_str () {
-    local code width format
-    code="$1"
-    width="$2"
-    if [[ -n "$width" ]]; then
-        format="%-${width}s"
-    else
-        format="%s"
+    local debug verbose codes output
+    if [[ "$1" == '--debug' ]]; then
+        debug='--debug'
+        shift
+    elif [[ "$1" == '-v' || "$1" == '--verbose' ]]; then
+        verbose='-v'
+        shift
     fi
-    colorize "$code" "### $( printf $format $code ) ###"
+    codes=( '1' '2' '4' '7' '9' $( seq 30 37 ) $( seq 40 47 ) )
+    output="$(
+        # Sneaky private function with access to variables from parent function. Teehee.
+        output_section () {
+            local title base_code width padl padr format sub_code code
+            title="$1"
+            base_code="$2"
+            width="$(( ${#base_code} + 2 ))"
+            padl="$( printf "% $(( ( 6 - width ) / 2 ))s" '' )"
+            padr="$( printf "% $(( ( 6 - width + 1 ) / 2 ))s" '' )"
+            format="%-${width}s"
+            printf '%18s' "$title: "
+            for sub_code in "${codes[@]}"; do
+                code="${base_code}${sub_code}"
+                echo -n '['
+                echo_color "$code" $debug -n "###${padl} $( printf $format $code ) ${padr}###"
+                echo -n ']'
+                if [[ "$sub_code" -eq '9' || "$sub_code" -eq '37' || "$sub_code" -eq '47' ]]; then
+                    printf '\n'
+                else
+                    printf %s '  '
+                fi
+            done
+        }
+        output_section "Normal"        ''
+        output_section "Reversed"      '7;'
+        output_section "Bold"          '1;'
+        output_section "Bold Reversed" '1;7;'
+        output_section "Dim"           '2;'
+        output_section "Dim Reversed"  '2;7;'
+    )"
+    if [[ -n "$debug" || -n "$verbose" ]]; then
+        {
+            echo "escaped:"
+            echo -e "$output" | escape_escapes
+            echo ''
+            echo "unescaped:"
+        } >&2
+    fi
+    echo -e "$output"
 }
 
 # Just makes it easier to use jq on a variable.
@@ -656,4 +670,14 @@ change_word () {
         | GREP_COLOR='1;31' grep --color=always "\<$old_word\>\|$" \
         | GREP_COLOR='1;32' grep --color=always "\<$new_word\>\|$"
     echo ''
+}
+
+java_8_activate () {
+    export JAVA_HOME="$( /usr/libexec/java_home -v 1.8 )"
+    echo -E "JAVA_HOME set to \"$JAVA_HOME\"."
+}
+
+java_8_deactivate () {
+    unset JAVA_HOME
+    echo -E "JAVA_HOME unset."
 }
