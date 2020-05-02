@@ -40,6 +40,12 @@
 #   * jq - Command-line JSON processor - https://github.com/stedolan/jq
 #   * fzf - Command-line fuzzy finder - https://github.com/junegunn/fzf
 #   * fzf_wrapper - A wrapper for fzf that adds a the --to-columns option. It's defined in the fzf_wrapper.sh file in this repo.
+# And these, that you probably do have installed:
+#   * awk - Pattern-Directed Scanning and Processing Language
+#   * sed - Stream Editor
+#   * curl - Transfer a URL
+#   * grep - File Pattern Searcher
+#   * git - The Stupid Content Tracker
 #
 
 # Determine if this script was invoked by being executed or sourced.
