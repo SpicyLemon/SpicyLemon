@@ -166,7 +166,7 @@ EOF
                             |    "├─▪ " + ( .index | tostring )
                               + "~├─▪ " + ( .merged_at | cleandate )
                               + "~├─▪ " + ( .author.name | cleanname | .[0:20] )
-                              + "~├─▪ " + ( .title | .[0:40] | clean )
+                              + "~├─▪ " + ( .title | .[0:30] | clean )
                               + "~├─▪ " + .web_url ' ) \
         | sed '$s/├/└/g' \
         | column -s '~' -t
