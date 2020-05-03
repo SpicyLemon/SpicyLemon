@@ -6,12 +6,8 @@ get_shell_type.sh - depends on ps, awk
 hrr.sh - depends on tput
 i_can.sh - depends on NOTHING
 java-switchers.sh - depends on /usr/libexec/java_home
-
-join_str.sh
-    join_str
-
-jqq.sh
-    jqq
+join_str.sh - depends on NOTHING
+jqq.sh - depends on jq
 
 kill_sophos.sh
     kill_sophos
