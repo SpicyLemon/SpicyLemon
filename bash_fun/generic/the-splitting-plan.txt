@@ -9,9 +9,6 @@ java-switchers.sh - depends on /usr/libexec/java_home
 join_str.sh - depends on NOTHING
 jqq.sh - depends on jq
 
-kill_sophos.sh
-    kill_sophos
-
 output-helpers.sh
     strip_colors
     escape_escapes
@@ -33,6 +30,8 @@ to_epoch.sh
 
 Should be elsewhere:
     provenir_tester     --> Put in the provenir section of stuff as an executable or something...
+    kill_sophos     --> No clue where to put this one.
+
 
 
 
