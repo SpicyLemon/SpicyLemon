@@ -1,29 +1,8 @@
 change_word.sh - depends on grep
-    change_word
-
 chrome_cors.sh - depends on open
-    chrome_cors
-
 echo_color.sh - depends on join_str, escape_escapes
-    echo_white
-    echo_red
-    echo_green
-    echo_yellow
-    echo_blue
-    echo_pink
-    echo_cyan
-    echo_underline
-    echo_strikethrough
-    echo_reversed
-    echo_bad
-    echo_color
-    show_colors
-
 echo_do.sh - depends on NOTHING
-    echo_do
-
 get_shell_type.sh - ps, awk
-    get_shell_type
 
 hr.sh
     hr
