@@ -8,19 +8,17 @@ i_can.sh - depends on NOTHING
 java-switchers.sh - depends on /usr/libexec/java_home
 join_str.sh - depends on NOTHING
 jqq.sh - depends on jq
+print_args.sh - depends on NOTHING
 
-output-helpers.sh
+ps_grep.sh
+    ps_grep
+
+stream-helpers.sh
     strip_colors
     escape_escapes
     to_stdout_and_strip_colors_log
     to_stderr_and_strip_colors_log
     tee_pbcopy
-
-print_args.sh
-    print_args
-
-ps_grep.sh
-    ps_grep
 
 to_date.sh
     to_date
@@ -31,6 +29,16 @@ to_epoch.sh
 Should be elsewhere:
     provenir_tester     --> Put in the provenir section of stuff as an executable or something...
     kill_sophos     --> No clue where to put this one.
+
+Todo:
+    Go back through and note some extra dependencies, and maybe, somehow, version stuff.
+    Replace uses of echo with printf.
+    Enhance hrr.sh to use subshells for setting the palette
+    Look into possible enhancements for jqq to allow the query and jq arguments to be in any order.
+    Look into possible enhancemet for jqq to allow just providing the variable name, rather than the entire json content.
+    Additional output helpers for stripping more than just colors.
+        Need to research escape codes more to know exactly what should be stripped.
+
 
 
 
