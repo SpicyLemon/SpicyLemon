@@ -1,7 +1,6 @@
 #!/bin/bash
 # This file contains various functions for printing things to your terminal with colors.
-# This file can be sourced to add the functions to your environment.
-# This file can also be executed to run the echo_color function without adding it to your environment.
+# This file is meant to be sourced to add the functions to your environment.
 #
 # File contents:
 #   echo_color  ----------------------> Outputs a message using a specific color code.
@@ -13,6 +12,16 @@
   || [[ -n "$KSH_VERSION" && $(cd "$(dirname -- "$0")" && printf '%s' "${PWD%/}/")$(basename -- "$0") != "${.sh.file}" ]] \
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
+
+if [[ "$sourced" != 'YES' ]]; then
+    >&2 cat << EOF
+This script is meant to be sourced instead of executed.
+Please run this command to enable the functionality contained in within.
+$( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )\033[0m" )
+EOF
+    exit 1
+fi
+unset sourced
 
 # Usage: echo_color [<color name>|<color code>|-n|-N|--debug] -- <message>
 echo_color () {
@@ -289,11 +298,5 @@ show_colors () {
     fi
     echo -e "$output"
 }
-
-if [[ "$sourced" != 'YES' ]]; then
-    echo_color "$@"
-    exit $?
-fi
-unset sourced
 
 return 0
