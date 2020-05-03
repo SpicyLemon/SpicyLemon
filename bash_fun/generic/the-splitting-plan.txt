@@ -1,10 +1,10 @@
-change_word.sh
+change_word.sh - depends on grep
     change_word
 
-chrome_cors.sh
+chrome_cors.sh - depends on open
     chrome_cors
 
-echo_color.sh
+echo_color.sh - depends on join_str, escape_escapes
     echo_white
     echo_red
     echo_green
@@ -19,10 +19,10 @@ echo_color.sh
     echo_color
     show_colors
 
-echo_do.sh
+echo_do.sh - depends on NOTHING
     echo_do
 
-get_shell_type.sh
+get_shell_type.sh - ps, awk
     get_shell_type
 
 hr.sh
