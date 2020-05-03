@@ -9,22 +9,10 @@ java-switchers.sh - depends on /usr/libexec/java_home
 join_str.sh - depends on NOTHING
 jqq.sh - depends on jq
 print_args.sh - depends on NOTHING
-
-ps_grep.sh
-    ps_grep
-
-stream-helpers.sh
-    strip_colors
-    escape_escapes
-    to_stdout_and_strip_colors_log
-    to_stderr_and_strip_colors_log
-    tee_pbcopy
-
-to_date.sh
-    to_date
-
-to_epoch.sh
-    to_epoch
+ps_grep.sh - depends on head, tail, ps, grep
+stream-helpers.sh - depends on sed, tee, awk, pbcopy
+to_date.sh - depends on date, tail, sed
+to_epoch.sh - depends on date, head, sed
 
 Should be elsewhere:
     provenir_tester     --> Put in the provenir section of stuff as an executable or something...
