@@ -3,8 +3,22 @@
 # This file is meant to be sourced to add the functions to your environment.
 #
 # File contents:
-#   echo_color  ----------------------> Outputs a message using a specific color code.
-#   show_colors  ---------------------> Outputs color names and examples.
+#   echo_color  ------> Outputs a message using a specific color code.
+#   show_colors  -----> Outputs color names and examples.
+#   echo_red  --------> Shortcut for echo_color red --.
+#   echo_green  ------> Shortcut for echo_color green --.
+#   echo_yellow  -----> Shortcut for echo_color yellow --.
+#   echo_blue  -------> Shortcut for echo_color blue --.
+#   echo_cyan  -------> Shortcut for echo_color cyan --.
+#   echo_bold  -------> Shortcut for echo_color bold --.
+#   echo_underline  --> Shortcut for echo_color underline --.
+#   echo_debug  ------> Shortcut for echo_color debug --.
+#   echo_info  -------> Shortcut for echo_color info --.
+#   echo_warn  -------> Shortcut for echo_color warn --.
+#   echo_error  ------> Shortcut for echo_color error --.
+#   echo_success  ----> Shortcut for echo_color success --.
+#   echo_good  -------> Shortcut for echo_color good --.
+#   echo_bad  --------> Shortcut for echo_color bad --.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -23,90 +37,125 @@ EOF
 fi
 unset sourced
 
-# Usage: echo_color [<color name>|<color code>|-n|-N|--debug] -- <message>
 echo_color () {
     local usage
     usage="$( cat << EOF
 echo_color - Makes it easier to output things in colors.
 
-Usage: echo_color [<color name>|<color code>|-n|-N|-d|--debug|--examples] -- <message>
-    <color name> can be one of:
-                    black  red  green  yellow  blue  magenta  cyan  light-gray
-                    dark-gray  light-red  light-green  light-yellow  light-blue  light-magenta  light-cyan  white
-                    bg-black  bg-red  bg-green  bg-yellow  bg-blue  bg-magenta  bg-cyan  bg-light-gray
-                    bg-dark-gray  bg-light-red  bg-light-green  bg-light-yellow  bg-light-blue  bg-light-magenta  bg-light-cyan  bg-white
-                    bold  dim  underline  strikethrough  reversed
-                    success  info  warn  error  good  bad
+Usage: echo_color <paramters> -- <message>
+    Any number of parameters can be provided in any order.
+    The parameters must be followed by a --.
+    Everything that follows the -- is considered part of the message to output.
+
+Valid Parameters: <name> <color code> -n -N --explain --examples
+    <name> can be one of the following:
+            Text (foreground) colors:
+                black      red            blue        green
+                dark-gray  light-red      light-blue  light-green
+                light-gray magenta        cyan        yellow
+                white      light-magenta  light-cyan  light-yellow
+            Background colors:
+                bg-black      bg-red            bg-blue        bg-green
+                bg-dark-gray  bg-light-red      bg-light-blue  bg-light-green
+                bg-light-gray bg-magenta        bg-cyan        bg-yellow
+                bg-white      bg-light-magenta  bg-light-cyan  bg-light-yellow
+            Effects:
+                bold  dim  underline  strikethrough  reversed
+            Special Formats:
+                debug  info  warn  error  success  good  bad
     <color code> can be one or more numerical color code numbers separated by semicolons or spaces.
-                    These values will be formatted correctly and placed between \"<esc>[\" and \"m\" for output.
-                    I have found this page to be a good resource: https://misc.flogisoft.com/bash/tip_colors_and_formatting
+            Values are delimited with semicolons and placed between "<esc>[" and "m" for output.
+            Examples: "31" "38 5 200" "93;41" "2 38;5;141 48;5;230"
+            This page is a good resource: https://misc.flogisoft.com/bash/tip_colors_and_formatting
+            Spaces are converted to semicolons for the actual codes used.
     -n signifies that you do not want a trailing newline added to the output.
     -N signifies that you DO want a trailing newline added to the output. This is the default behavior.
-    --debug will cause extra messages to be sent to stderr that can help with debugging if needed.
-    --examples will cause the other parameters (except --debug) to be ignored, and instead output a set of examples.
+            If both -n and -N are provided, whichever is latest in the paramters is used.
+    --explain will cause the begining and ending escape codes to be output via stderr.
+    --examples will cause the other parameters to be ignored, and instead output a set of examples.
+            See the  show_colors  function.
+
+Examples:
+    > echo_color underline -- "This is underlined."
+    \033[4mThis is underlined\033[24m
+
+    > echo_color bold yellow bg-light-red -- "Would anyone like a hotdog?"
+    \033[1;33;101mWould anyone like a hotdog?\033[21;22;39;49m
+
+    > echo_color light-green -- This is a \$( echo_color reversed -- complex ) message.
+    \033[92mThis is a \033[7mcomplex\033[27m message.\033[39m
+
 EOF
 )"
-    local code_on_parts without_newline debug show_examples message
-    local code_on code_off_parts code_off newline_flag full_output
+    local code_on_parts code_params without_newline explain debug show_examples message
+    local code_on code_off_parts code_off format full_output code_param
     code_on_parts=()
+    code_params=()
     while [[ "$#" -gt '0' && "$1" != '--' ]]; do
         case "$( printf %s "$1" | tr '[:upper:]' '[:lower:]' )" in
         -h|--help|help)
-            echo "$usage"
+            printf '%b\n' "$usage"
             return 0
             ;;
-        black)                  code_on_parts+=( '30' );;
-        red)                    code_on_parts+=( '31' );;
-        green)                  code_on_parts+=( '32' );;
-        yellow)                 code_on_parts+=( '33' );;
-        blue)                   code_on_parts+=( '34' );;
-        magenta|pink)           code_on_parts+=( '35' );;
-        cyan|teal)              code_on_parts+=( '36' );;
-        light-gray|light-grey)  code_on_parts+=( '37' );;
-        dark-gray|dark-grey)                                    code_on_parts+=( '90' );;
-        light-red|bright-red)                                   code_on_parts+=( '91' );;
-        light-green|bright-green)                               code_on_parts+=( '92' );;
-        light-yellow|bright-yellow)                             code_on_parts+=( '93' );;
-        light-blue|bright-blue)                                 code_on_parts+=( '94' );;
-        light-magenta|bright-magenta|light-pink|bright-pink)    code_on_parts+=( '95' );;
-        light-cyan|bright-cyan|light-teal|bright-teal)          code_on_parts+=( '96' );;
-        white)                                                  code_on_parts+=( '97' );;
-        bg-black)                       code_on_parts+=( '40' );;
-        bg-red)                         code_on_parts+=( '41' );;
-        bg-green)                       code_on_parts+=( '42' );;
-        bg-yellow)                      code_on_parts+=( '43' );;
-        bg-blue)                        code_on_parts+=( '44' );;
-        bg-magenta|bg-pink)             code_on_parts+=( '45' );;
-        bg-cyan|bg-teal)                code_on_parts+=( '46' );;
-        bg-light-gray|bg-light-grey)    code_on_parts+=( '47' );;
-        bg-dark-gray|bg-dark-grey)                                          code_on_parts+=( '100' );;
-        bg-light-red|bg-bright-red)                                         code_on_parts+=( '101' );;
-        bg-light-green|bg-bright-green)                                     code_on_parts+=( '102' );;
-        bg-light-yellow|bg-bright-yellow)                                   code_on_parts+=( '103' );;
-        bg-light-blue|bg-bright-blue)                                       code_on_parts+=( '104' );;
-        bg-light-magenta|bg-bright-magenta|bg-light-pink|bg-bright-pink)    code_on_parts+=( '105' );;
-        bg-light-cyan|bg-bright-cyan|bg-light-teal|bg-bright-teal)          code_on_parts+=( '106' );;
-        bg-white)                                                           code_on_parts+=( '107' );;
-        bold)               code_on_parts+=( '1' );;
-        dim)                code_on_parts+=( '2' );;
-        underline)          code_on_parts+=( '4' );;
-        reverse|reversed)   code_on_parts+=( '7' );;
-        strikethrough)      code_on_parts+=( '9' );;
-        success)            code_on_parts+=( '97;42' );;
-        info)               code_on_parts+=( '97;100' );;
-        warn|warning)       code_on_parts+=( '93;100' );;
-        error)              code_on_parts+=( '1;91;100' );;
-        good)               code_on_parts+=( '92;100' );;
-        bad)                code_on_parts+=( '1;97;41' );;
-        -n) without_newline='YES' ;;
-        -N) without_newline= ;;
-        -d|--debug) debug='--debug' ;;
-        --examples) show_examples='--examples' ;;
+        black)                          code_on_parts+=( '30' ); code_params+=( "$1" );;
+        red)                            code_on_parts+=( '31' ); code_params+=( "$1" );;
+        green)                          code_on_parts+=( '32' ); code_params+=( "$1" );;
+        yellow)                         code_on_parts+=( '33' ); code_params+=( "$1" );;
+        blue)                           code_on_parts+=( '34' ); code_params+=( "$1" );;
+        magenta|pink)                   code_on_parts+=( '35' ); code_params+=( "$1" );;
+        cyan|teal)                      code_on_parts+=( '36' ); code_params+=( "$1" );;
+        light-gray|light-grey)          code_on_parts+=( '37' ); code_params+=( "$1" );;
+        dark-gray|dark-grey)            code_on_parts+=( '90' ); code_params+=( "$1" );;
+        light-red|bright-red)           code_on_parts+=( '91' ); code_params+=( "$1" );;
+        light-green|bright-green)       code_on_parts+=( '92' ); code_params+=( "$1" );;
+        light-yellow|bright-yellow)     code_on_parts+=( '93' ); code_params+=( "$1" );;
+        light-blue|bright-blue)         code_on_parts+=( '94' ); code_params+=( "$1" );;
+        light-magenta|bright-magenta)   code_on_parts+=( '95' ); code_params+=( "$1" );;
+        light-pink|bright-pink)         code_on_parts+=( '95' ); code_params+=( "$1" );;
+        light-cyan|bright-cyan)         code_on_parts+=( '96' ); code_params+=( "$1" );;
+        light-teal|bright-teal)         code_on_parts+=( '96' ); code_params+=( "$1" );;
+        white)                          code_on_parts+=( '97' ); code_params+=( "$1" );;
+        bg-black)                           code_on_parts+=( '40' ); code_params+=( "$1" );;
+        bg-red)                             code_on_parts+=( '41' ); code_params+=( "$1" );;
+        bg-green)                           code_on_parts+=( '42' ); code_params+=( "$1" );;
+        bg-yellow)                          code_on_parts+=( '43' ); code_params+=( "$1" );;
+        bg-blue)                            code_on_parts+=( '44' ); code_params+=( "$1" );;
+        bg-magenta|bg-pink)                 code_on_parts+=( '45' ); code_params+=( "$1" );;
+        bg-cyan|bg-teal)                    code_on_parts+=( '46' ); code_params+=( "$1" );;
+        bg-light-gray|bg-light-grey)        code_on_parts+=( '47' ); code_params+=( "$1" );;
+        bg-dark-gray|bg-dark-grey)          code_on_parts+=( '100' ); code_params+=( "$1" );;
+        bg-light-red|bg-bright-red)         code_on_parts+=( '101' ); code_params+=( "$1" );;
+        bg-light-green|bg-bright-green)     code_on_parts+=( '102' ); code_params+=( "$1" );;
+        bg-light-yellow|bg-bright-yellow)   code_on_parts+=( '103' ); code_params+=( "$1" );;
+        bg-light-blue|bg-bright-blue)       code_on_parts+=( '104' ); code_params+=( "$1" );;
+        bg-light-magenta|bg-bright-magenta) code_on_parts+=( '105' ); code_params+=( "$1" );;
+        bg-light-pink|bg-bright-pink)       code_on_parts+=( '105' ); code_params+=( "$1" );;
+        bg-light-cyan|bg-bright-cyan)       code_on_parts+=( '106' ); code_params+=( "$1" );;
+        bg-light-teal|bg-bright-teal)       code_on_parts+=( '106' ); code_params+=( "$1" );;
+        bg-white)                           code_on_parts+=( '107' ); code_params+=( "$1" );;
+        bold)               code_on_parts+=( '1' ); code_params+=( "$1" );;
+        dim)                code_on_parts+=( '2' ); code_params+=( "$1" );;
+        underline)          code_on_parts+=( '4' ); code_params+=( "$1" );;
+        reverse|reversed)   code_on_parts+=( '7' ); code_params+=( "$1" );;
+        strikethrough)      code_on_parts+=( '9' ); code_params+=( "$1" );;
+        debug)          code_on_parts+=( '96;100' );   code_params+=( "$1" );;
+        info)           code_on_parts+=( '97;100' );   code_params+=( "$1" );;
+        warn|warning)   code_on_parts+=( '93;100' );   code_params+=( "$1" );;
+        error)          code_on_parts+=( '1;91;100' ); code_params+=( "$1" );;
+        success)        code_on_parts+=( '92;100' );   code_params+=( "$1" );;
+        good)           code_on_parts+=( '97;42' );    code_params+=( "$1" );;
+        bad)            code_on_parts+=( '1;97;41' );  code_params+=( "$1" );;
+        -n) without_newline='YES';;
+        -N) without_newline=;;
+        --explain) explain='YES';;
+        -d|--debug) debug='--debug';;
+        --examples) show_examples='--examples';;
         *)
             if [[ "$1" =~ ^[[:digit:]]+(([[:space:]]+|\;)[[:digit:]]+)*$ ]]; then
-                code_on_parts+=( "$( printf %s $1 | sed -E 's/[[:space:]]+/;/g' )" )
+                code_on_parts+=( "$( printf %s "$1" | sed -E 's/[[:space:]]+/;/g' )" )
+                code_params+=( "$1" )
             else
-                echo -e "echo_color: Invalid color name or code: [$1]." >&2
+                printf 'echo_color: Invalid parameter: [%s].\n' "$1" >&2
                 return 1
             fi
             ;;
@@ -115,13 +164,13 @@ EOF
     done
 
     if [[ -n "$show_examples" ]]; then
-        [[ "$debug" ]] && echo -E "Showing examples." >&2
+        [[ "$debug" ]] && printf 'Showing examples.\n' >&2
         show_colors $debug
         return 0
     fi
 
     if [[ "$1" != '--' ]]; then
-        echo -E "No '--' separator found." >&2
+        printf 'No -- separator found.\n' >&2
         return 1
     fi
     shift
@@ -132,7 +181,9 @@ EOF
     #   c) It'll make it easier to expand functionality to allow messages to be piped in.
 
     if [[ -n "$without_newline" ]]; then
-        newline_flag='-n'
+        format='%b'
+    else
+        format='%b\n'
     fi
 
     if [[ "${#code_on_parts[@]}" -gt '0' ]]; then
@@ -181,30 +232,54 @@ EOF
         full_output="$message"
     fi
 
-    if [[ -n "$debug" ]]; then
+    if [[ -n "$debug" || -n "$explain" ]]; then
         {
-            printf '  Opening code: [%s].\n' "$code_on"
-            printf '       Message: [%s].\n' "$message"
-            printf '  Closing code: [%s].\n' "$code_off"
-            printf 'Adding newline: [%s].\n' "$( [[ -n "$newline_flag" ]] && echo 'NO' || echo 'yes' )"
-            printf 'Without interpretation: [%s].\n' "$full_output"
-            printf '   With interpretation: [%b].\n' "$full_output"
+            if [[ -n "$debug" ]]; then
+                printf '   Code params:'
+                for code_param in "${code_params[@]}"; do
+                    printf ' [%s]' "$code_param"
+                done
+                printf '\n'
+            fi
+            printf '  Opening code: [%s] -> [\\033[%sm].\n' "$code_on" "$code_on"
+            [[ -n "$debug" ]] && printf '       Message: [%s].\n' "$message"
+            printf '  Closing code: [%s] -> [\\033[%sm].\n' "$code_off" "$code_off"
+            [[ -n "$debug" ]] && printf 'Adding newline: [%s].\n' "$( [[ -n "$without_newline" ]] && printf 'NO' || printf 'yes' )"
+            [[ -n "$debug" ]] && printf '        Format: [%s].\n' "$format"
+            [[ -n "$debug" ]] && printf 'Without interpretation: [%s].\n' "$full_output"
+            [[ -n "$debug" ]] && printf '   With interpretation: [%b].\n' "$full_output"
         } >&2
     fi
-    echo -e $newline_flag "$full_output"
+    printf "$format" "$full_output"
 }
 
 # Displays examples of some color codes
 # Usage: show_colors [-v|--verbose] [-d|--debug] [-c|--combos]
 show_colors () {
+    usage="$( cat << EOF
+show_colors - Outputs a bunch of color examples.
+
+Usage: show_colors [-c|--combos] [-v|--verbose] [-d|--debug]
+    -c or --combos will add a few sections that show different color code combinations.
+    -v or --verbose will add the uninterpreted output string as output to stderr
+                    prior to the interpreted output being sent to stdout.
+    -d or --debug adds to --verbose by passing the --debug flag to calls made to echo_color.
+                  Be ready for a wall of text being sent to stderr.
+
+EOF
+)"
     local debug verbose show_combos text_colors background_colors effects special_formats fg_codes bg_codes effect_codes output
     while [[ "$#" -gt '0' ]]; do
         case "$( printf '%s' "$1" | tr '[:upper:]' '[:lower:]' )" in
+        -h|--help)
+            printf '%s\n' "$usage"
+            return 0
+            ;;
         -v|--verbose)   verbose='--verbose' ;;
         -d|--debug)     debug='--debug' ;;
         -c|--combos)    show_combos='--combos' ;;
         *)
-            echo "Unknown parameter: [$1]." >&2
+            printf 'show_colors: Unknown parameter: [%s].\n' "$1" >&2
             return 1
             ;;
         esac
@@ -226,7 +301,7 @@ show_colors () {
         bold  dim  underline  strikethrough  reversed
     )
     special_formats=(
-        success  info  warn  error  good  bad
+        debug  info  warn  error  success  good  bad
     )
     fg_codes=( 30 90 37 97 31 91 35 95 34 94 36 96 32 92 33 93 )
     bg_codes=( 40 100 47 107 41 101 45 105 44 104 46 106 42 102 43 103 )
@@ -240,23 +315,23 @@ show_colors () {
             shift
             per_line="$1"
             shift
-            echo -E "$title:"
+            printf '%s:\n' "$title"
             i=0
             for color in "$@"; do
                 i=$(( i + 1 ))
-                echo -n ' '
+                printf ' '
                 if [[ "$i" -eq '1' ]]; then
-                    echo -n '   '
+                    printf '   '
                 fi
                 printf "%${name_width}s:[" "$color"
                 echo_color -n "$color" $debug -- " Example "
                 printf ']'
                 if [[ "$i" -eq "$per_line" ]]; then
                     i=0
-                    echo ''
+                    printf '\n'
                 fi
             done
-            [[ "$i" -ne '0' ]] && echo ''
+            [[ "$i" -ne '0' ]] && printf '\n'
         }
         output_combo_section () {
             local title added_code pad fg_code bg_code code
@@ -267,14 +342,14 @@ show_colors () {
             else
                 pad=' '
             fi
-            echo -E "$title:"
+            printf '%s:\n' "$title"
             for fg_code in "${fg_codes[@]}"; do
                 printf '    '
                 for bg_code in "${bg_codes[@]}"; do
                     code="${added_code}${fg_code};${bg_code}"
                     printf ' %-9b' "\033[${code}m${pad}${code}${pad}\033[0m"
                 done
-                echo ''
+                printf '\n'
             done
         }
         output_simple_section 'Text Colors'       '16' '4' "${text_colors[@]}"
@@ -290,13 +365,82 @@ show_colors () {
     )"
     if [[ -n "$debug" || -n "$verbose" ]]; then
         {
-            echo "escaped:"
-            echo -e "$output" | escape_escapes
-            echo ''
-            echo "unescaped:"
+            printf 'Without Interpretation:\n'
+            printf '%s\n' "$output" | escape_escapes
+            printf 'With Interpretation:\n'
         } >&2
     fi
-    echo -e "$output"
+    printf '%b\n' "$output"
+}
+
+# Usage: echo_red <message>
+echo_red () {
+    echo_color 'red' -- "$@"
+}
+
+# Usage: echo_green <message>
+echo_green () {
+    echo_color 'green' -- "$@"
+}
+
+# Usage: echo_yellow <message>
+echo_yellow () {
+    echo_color 'yellow' -- "$@"
+}
+
+# Usage: echo_blue <message>
+echo_blue () {
+    echo_color 'blue' -- "$@"
+}
+
+# Usage: echo_cyan <message>
+echo_cyan () {
+    echo_color 'cyan' -- "$@"
+}
+
+# Usage: echo_bold <message>
+echo_bold () {
+    echo_color 'bold' -- "$@"
+}
+
+# Usage: echo_underline <message>
+echo_underline () {
+    echo_color 'underline' -- "$@"
+}
+
+# Usage: echo_debug <message>
+echo_debug () {
+    echo_color 'debug' -- "$@"
+}
+
+# Usage: echo_info <message>
+echo_info () {
+    echo_color 'info' -- "$@"
+}
+
+# Usage: echo_warn <message>
+echo_warn () {
+    echo_color 'warn' -- "$@"
+}
+
+# Usage: echo_error <message>
+echo_error () {
+    echo_color 'error' -- "$@"
+}
+
+# Usage: echo_success <message>
+echo_success () {
+    echo_color 'success' -- "$@"
+}
+
+# Usage: echo_good <message>
+echo_good () {
+    echo_color 'good' -- "$@"
+}
+
+# Usage: echo_bad <message>
+echo_bad () {
+    echo_color 'bad' -- "$@"
 }
 
 return 0
