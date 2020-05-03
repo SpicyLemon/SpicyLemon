@@ -1,5 +1,5 @@
 #!/bin/bash
-# This file contains the to_date function that converts epocs in milliseconds to a date string.
+# This file contains the to_date function that converts epochs in milliseconds to a date string.
 # This file can be sourced to add the to_date function to your environment.
 # This file can also be executed to run the to_date function without adding it to your environment.
 #
