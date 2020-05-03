@@ -4,7 +4,7 @@
 # This file can also be executed to run the chrome_cors function without adding it to your environment.
 #
 # File contents:
-#   chrome_cors  ---------------------> Opens up a url in Chrome with CORS safety disabled.
+#   chrome_cors  --> Opens up a url in Chrome with CORS safety disabled.
 #
 
 # Determine if this script was invoked by being executed or sourced.

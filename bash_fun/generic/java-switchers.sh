@@ -3,8 +3,8 @@
 # This file is meant to be sourced to add the functions to your environment.
 #
 # File contents:
-#   java_8_activate  -----------------> Exports JAVA_HOME to point to Java 8.
-#   java_8_deactivate  ---------------> Unsets JAVA_HOME.
+#   java_8_activate  ----> Exports JAVA_HOME to point to Java 8.
+#   java_8_deactivate  --> Unsets JAVA_HOME.
 #
 
 # Determine if this script was invoked by being executed or sourced.

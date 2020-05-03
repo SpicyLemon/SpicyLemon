@@ -2,21 +2,10 @@ change_word.sh - depends on grep
 chrome_cors.sh - depends on open
 echo_color.sh - depends on join_str, escape_escapes
 echo_do.sh - depends on NOTHING
-get_shell_type.sh - ps, awk
-
-hr.sh
-    hr
-    hrr
-    hhr
-    pick_a_palette
-
-i_can.sh
-    i_can
-    can_i
-
-java-switchers.sh
-    java_8_activate
-    java_8_deactivate
+get_shell_type.sh - depends on ps, awk
+hrr.sh - depends on tput
+i_can.sh - depends on NOTHING
+java-switchers.sh - depends on /usr/libexec/java_home
 
 join_str.sh
     join_str

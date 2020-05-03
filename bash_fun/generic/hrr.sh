@@ -4,10 +4,10 @@
 # This file can also be executed to run the hrr function without adding it to your environment.
 #
 # File contents:
-#   hr  ------------------------------> Creates a single-line horizontal rule in the terminal with a message in it.
-#   hrr  -----------------------------> Creates a 3-line horizontal rule in the terminal with a message in it.
-#   hhr  -----------------------------> So you don't have to remember if it's hrr or hhr.
-#   pick_a_palette  ------------------> Sets the PALETTE environment variable if not already set.
+#   hr  --------------> Creates a single-line horizontal rule in the terminal with a message in it.
+#   hrr  -------------> Creates a 3-line horizontal rule in the terminal with a message in it.
+#   hhr  -------------> So you don't have to remember if it's hrr or hhr.
+#   pick_a_palette  --> Sets the PALETTE environment variable if not already set.
 #
 
 # Determine if this script was invoked by being executed or sourced.

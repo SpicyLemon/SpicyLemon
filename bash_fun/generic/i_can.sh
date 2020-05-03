@@ -3,8 +3,8 @@
 # This file is meant to be sourced to add the i_can and can_i functions to your environment.
 #
 # File contents:
-#   i_can  ---------------------------> Tests if a command is available.
-#   can_i  ---------------------------> Outputs results of i_can.
+#   i_can  --> Tests if a command is available.
+#   can_i  --> Outputs results of i_can.
 #
 
 # Determine if this script was invoked by being executed or sourced.
