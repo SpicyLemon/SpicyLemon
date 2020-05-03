@@ -4,7 +4,7 @@
 # This file can also be executed to run the ps_grep function without adding it to your environment.
 #
 # File contents:
-#   ps_grep  -------------------------> Greps ps with provided input.
+#   ps_grep  --> Greps ps with provided input.
 #
 
 # Determine if this script was invoked by being executed or sourced.
