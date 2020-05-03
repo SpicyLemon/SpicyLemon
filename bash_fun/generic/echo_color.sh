@@ -37,74 +37,65 @@ Usage: echo_color [<color name>|<color code>|-n|-N|-d|--debug|--examples] -- <me
     --examples will cause the other parameters (except --debug) to be ignored, and instead output a set of examples.
 EOF
 )"
-    local code_on_parts code_off_parts without_newline debug show_examples code_on_part reset_to_default message
+    local code_on_parts without_newline debug show_examples message
+    local code_on code_off_parts code_off newline_flag full_output
     code_on_parts=()
-    code_off_parts=()
     while [[ "$#" -gt '0' && "$1" != '--' ]]; do
         case "$( printf %s "$1" | tr '[:upper:]' '[:lower:]' )" in
         -h|--help|help)
             echo "$usage"
             return 0
             ;;
-        black)                  code_on_parts+=( '30' ); code_off_parts+=( '39' ) ;;
-        red)                    code_on_parts+=( '31' ); code_off_parts+=( '39' ) ;;
-        green)                  code_on_parts+=( '32' ); code_off_parts+=( '39' ) ;;
-        yellow)                 code_on_parts+=( '33' ); code_off_parts+=( '39' ) ;;
-        blue)                   code_on_parts+=( '34' ); code_off_parts+=( '39' ) ;;
-        magenta|pink)           code_on_parts+=( '35' ); code_off_parts+=( '39' ) ;;
-        cyan|teal)              code_on_parts+=( '36' ); code_off_parts+=( '39' ) ;;
-        light-gray|light-grey)  code_on_parts+=( '37' ); code_off_parts+=( '39' ) ;;
-        dark-gray|dark-grey)                                    code_on_parts+=( '90' ); code_off_parts+=( '39' ) ;;
-        light-red|bright-red)                                   code_on_parts+=( '91' ); code_off_parts+=( '39' ) ;;
-        light-green|bright-green)                               code_on_parts+=( '92' ); code_off_parts+=( '39' ) ;;
-        light-yellow|bright-yellow)                             code_on_parts+=( '93' ); code_off_parts+=( '39' ) ;;
-        light-blue|bright-blue)                                 code_on_parts+=( '94' ); code_off_parts+=( '39' ) ;;
-        light-magenta|bright-magenta|light-pink|bright-pink)    code_on_parts+=( '95' ); code_off_parts+=( '39' ) ;;
-        light-cyan|bright-cyan|light-teal|bright-teal)          code_on_parts+=( '96' ); code_off_parts+=( '39' ) ;;
-        white)                                                  code_on_parts+=( '97' ); code_off_parts+=( '39' ) ;;
-        bg-black)                       code_on_parts+=( '40' ); code_off_parts+=( '49' ) ;;
-        bg-red)                         code_on_parts+=( '41' ); code_off_parts+=( '49' ) ;;
-        bg-green)                       code_on_parts+=( '42' ); code_off_parts+=( '49' ) ;;
-        bg-yellow)                      code_on_parts+=( '43' ); code_off_parts+=( '49' ) ;;
-        bg-blue)                        code_on_parts+=( '44' ); code_off_parts+=( '49' ) ;;
-        bg-magenta|bg-pink)             code_on_parts+=( '45' ); code_off_parts+=( '49' ) ;;
-        bg-cyan|bg-teal)                code_on_parts+=( '46' ); code_off_parts+=( '49' ) ;;
-        bg-light-gray|bg-light-grey)    code_on_parts+=( '47' ); code_off_parts+=( '49' ) ;;
-        bg-dark-gray|bg-dark-grey)                                          code_on_parts+=( '100' ); code_off_parts+=( '49' ) ;;
-        bg-light-red|bg-bright-red)                                         code_on_parts+=( '101' ); code_off_parts+=( '49' ) ;;
-        bg-light-green|bg-bright-green)                                     code_on_parts+=( '102' ); code_off_parts+=( '49' ) ;;
-        bg-light-yellow|bg-bright-yellow)                                   code_on_parts+=( '103' ); code_off_parts+=( '49' ) ;;
-        bg-light-blue|bg-bright-blue)                                       code_on_parts+=( '104' ); code_off_parts+=( '49' ) ;;
-        bg-light-magenta|bg-bright-magenta|bg-light-pink|bg-bright-pink)    code_on_parts+=( '105' ); code_off_parts+=( '49' ) ;;
-        bg-light-cyan|bg-bright-cyan|bg-light-teal|bg-bright-teal)          code_on_parts+=( '106' ); code_off_parts+=( '49' ) ;;
-        bg-white)                                                           code_on_parts+=( '107' ); code_off_parts+=( '49' ) ;;
-        bold)           code_on_parts+=( '1' ); code_off_parts+=( '21' '22' ) ;;
-        dim)            code_on_parts+=( '2' ); code_off_parts+=( '22' ) ;;
-        underline)      code_on_parts+=( '4' ); code_off_parts+=( '24' ) ;;
-        reversed)       code_on_parts+=( '7' ); code_off_parts+=( '27' ) ;;
-        strikethrough)  code_on_parts+=( '9' ); code_off_parts+=( '29' ) ;;
-        success)        code_on_parts+=( '97' '42' ); code_off_parts+=( '39' '49' ) ;;
-        info)           code_on_parts+=( '97' '100' ); code_off_parts+=( '39' '49' ) ;;
-        warn|warning)   code_on_parts+=( '93' '100' ); code_off_parts+=( '39' '49' ) ;;
-        error)          code_on_parts+=( '1' '91' '100' ); code_off_parts+=( '21' '22' '39' '49' ) ;;
-        good)           code_on_parts+=( '92' '100' ); code_off_parts+=( '39' '49' ) ;;
-        bad)            code_on_parts+=( '1' '97' '41' ); code_off_parts+=( '21' '22' '39' '49' ) ;;
+        black)                  code_on_parts+=( '30' );;
+        red)                    code_on_parts+=( '31' );;
+        green)                  code_on_parts+=( '32' );;
+        yellow)                 code_on_parts+=( '33' );;
+        blue)                   code_on_parts+=( '34' );;
+        magenta|pink)           code_on_parts+=( '35' );;
+        cyan|teal)              code_on_parts+=( '36' );;
+        light-gray|light-grey)  code_on_parts+=( '37' );;
+        dark-gray|dark-grey)                                    code_on_parts+=( '90' );;
+        light-red|bright-red)                                   code_on_parts+=( '91' );;
+        light-green|bright-green)                               code_on_parts+=( '92' );;
+        light-yellow|bright-yellow)                             code_on_parts+=( '93' );;
+        light-blue|bright-blue)                                 code_on_parts+=( '94' );;
+        light-magenta|bright-magenta|light-pink|bright-pink)    code_on_parts+=( '95' );;
+        light-cyan|bright-cyan|light-teal|bright-teal)          code_on_parts+=( '96' );;
+        white)                                                  code_on_parts+=( '97' );;
+        bg-black)                       code_on_parts+=( '40' );;
+        bg-red)                         code_on_parts+=( '41' );;
+        bg-green)                       code_on_parts+=( '42' );;
+        bg-yellow)                      code_on_parts+=( '43' );;
+        bg-blue)                        code_on_parts+=( '44' );;
+        bg-magenta|bg-pink)             code_on_parts+=( '45' );;
+        bg-cyan|bg-teal)                code_on_parts+=( '46' );;
+        bg-light-gray|bg-light-grey)    code_on_parts+=( '47' );;
+        bg-dark-gray|bg-dark-grey)                                          code_on_parts+=( '100' );;
+        bg-light-red|bg-bright-red)                                         code_on_parts+=( '101' );;
+        bg-light-green|bg-bright-green)                                     code_on_parts+=( '102' );;
+        bg-light-yellow|bg-bright-yellow)                                   code_on_parts+=( '103' );;
+        bg-light-blue|bg-bright-blue)                                       code_on_parts+=( '104' );;
+        bg-light-magenta|bg-bright-magenta|bg-light-pink|bg-bright-pink)    code_on_parts+=( '105' );;
+        bg-light-cyan|bg-bright-cyan|bg-light-teal|bg-bright-teal)          code_on_parts+=( '106' );;
+        bg-white)                                                           code_on_parts+=( '107' );;
+        bold)               code_on_parts+=( '1' );;
+        dim)                code_on_parts+=( '2' );;
+        underline)          code_on_parts+=( '4' );;
+        reverse|reversed)   code_on_parts+=( '7' );;
+        strikethrough)      code_on_parts+=( '9' );;
+        success)            code_on_parts+=( '97;42' );;
+        info)               code_on_parts+=( '97;100' );;
+        warn|warning)       code_on_parts+=( '93;100' );;
+        error)              code_on_parts+=( '1;91;100' );;
+        good)               code_on_parts+=( '92;100' );;
+        bad)                code_on_parts+=( '1;97;41' );;
         -n) without_newline='YES' ;;
         -N) without_newline= ;;
         -d|--debug) debug='--debug' ;;
         --examples) show_examples='--examples' ;;
         *)
             if [[ "$1" =~ ^[[:digit:]]+(([[:space:]]+|\;)[[:digit:]]+)*$ ]]; then
-                code_on_part="$( printf %s $1 | sed -E 's/[[:space:]]+/;/g' )"
-                code_on_parts+=( "$code_on_part" )
-                # TODO: Enhance this to handle multiple settings.
-                if [[ "$code_on_part" =~ ^38\;5\;[[:digit:]]+$ ]]; then
-                    code_off_parts+=( '39' )
-                elif [[ "$code_on_part" =~ ^48\;5\;[[:digit:]]+$ ]]; then
-                    code_off_parts+=( '49' )
-                else
-                    reset_to_default='YES'
-                fi
+                code_on_parts+=( "$( printf %s $1 | sed -E 's/[[:space:]]+/;/g' )" )
             else
                 echo -e "echo_color: Invalid color name or code: [$1]." >&2
                 return 1
@@ -113,6 +104,13 @@ EOF
         esac
         shift
     done
+
+    if [[ -n "$show_examples" ]]; then
+        [[ "$debug" ]] && echo -E "Showing examples." >&2
+        show_colors $debug
+        return 0
+    fi
+
     if [[ "$1" != '--' ]]; then
         echo -E "No '--' separator found." >&2
         return 1
@@ -124,23 +122,56 @@ EOF
     #   b) It makes calling this function with user-defined input easier and nicer.
     #   c) It'll make it easier to expand functionality to allow messages to be piped in.
 
-    if [[ -n "$show_examples" ]]; then
-        [[ "$debug" ]] && echo -E "Showing examples." >&2
-        show_colors "$debug"
-        return 0
-    fi
-
-    local code_on code_off newline_flag full_output
-    code_on="$( join_str ';' "${code_on_parts[@]}" )"
-    if [[ -n "$reset_to_default" ]]; then
-        code_off='0'
-    else
-        code_off="$( join_str ';' "${code_off_parts[@]}" )"
-    fi
     if [[ -n "$without_newline" ]]; then
         newline_flag='-n'
     fi
-    full_output="\033[${code_on}m${message}\033[${code_off}m"
+
+    if [[ "${#code_on_parts[@]}" -gt '0' ]]; then
+        code_on="$( join_str ';' "${code_on_parts[@]}" )"
+        # This regex is a combination of all of the cases handled below.
+        # Basically, if there's a part of the code that we don't know how to turn off specifically, we'll just reset everything.
+        # Otherwise, if we know how to turn off ALL pieces of the desired code, we'll just turn off what we're turning on.
+        # This allows for commands like this to behave as expected:
+        #   echo_color red -- "This is a $( echo_color bold -- "test" ) of the echo_color function."
+        if [[ ! "$code_on" =~ ^([12479]|(3|4|9|10)[01234567]|[34]8\;5\;[[:digit:]]{1,3})(\;([12479]|(3|4|9|10)[01234567]|[34]8\;5\;[[:digit:]]{1,3}))*$ ]]; then
+            code_off='0'
+        else
+            code_off_parts=()
+            # This part of the regex: (^|\;) is checking for either the start of the string, or a semicolon.
+            # This part of the regex: (\;|$) is checking for either a semicolon or the end of the string.
+            # Check for bold or dim: 1 or 2
+            if [[ "$code_on" =~ (^|\;)1(\;|$) ]]; then
+                code_off_parts+=( '21' '22' )
+            elif [[ "$code_on" =~ (^|\;)2(\;|$) ]]; then
+                code_off_parts+=( '22' )
+            fi
+            # Check for underline: 4
+            if [[ "$code_on" =~ (^|\;)4(\;|$) ]]; then
+                code_off_parts+=( '24' )
+            fi
+            # Check for reversed: 7
+            if [[ "$code_on" =~ (^|\;)7(\;|$) ]]; then
+                code_off_parts+=( '27' )
+            fi
+            # Check for strikethrough: 9
+            if [[ "$code_on" =~ (^|\;)9(\;|$) ]]; then
+                code_off_parts+=( '29' )
+            fi
+            # Check for text/foreground colors: 30-37, 90-97, or 38;5;ddd
+            if [[ "$code_on" =~ (^|\;)[39][01234567](\;|$) || "$code_on" =~ (^|\;)38\;5\;[[:digit:]]{1,3}(\;|$) ]]; then
+                code_off_parts+=( '39' )
+            fi
+            # Check for background colors: for 40-47, 100-107, or 48;5;ddd
+            if [[ "$code_on" =~ (^|\;)(4|10)[01234567](\;|$) || "$code_on" =~ (^|\;)48\;5\;[[:digit:]]{1,3}(\;|$) ]]; then
+                code_off_parts+=( '49' )
+            fi
+            code_off="$( join_str ';' "${code_off_parts[@]}" )"
+        fi
+        full_output="\033[${code_on}m${message}\033[${code_off}m"
+    else
+        full_output="$message"
+    fi
+
     if [[ -n "$debug" ]]; then
         {
             printf '  Opening code: [%s].\n' "$code_on"
@@ -206,7 +237,7 @@ show_colors () {
                 i=$(( i + 1 ))
                 echo -n ' '
                 if [[ "$i" -eq '1' ]]; then
-                    echo -n ' '
+                    echo -n '   '
                 fi
                 printf "%${name_width}s:[" "$color"
                 echo_color -n "$color" $debug -- " Example "
@@ -229,7 +260,7 @@ show_colors () {
             fi
             echo -E "$title:"
             for fg_code in "${fg_codes[@]}"; do
-                printf ' '
+                printf '    '
                 for bg_code in "${bg_codes[@]}"; do
                     code="${added_code}${fg_code};${bg_code}"
                     printf ' %-9b' "\033[${code}m${pad}${code}${pad}\033[0m"
