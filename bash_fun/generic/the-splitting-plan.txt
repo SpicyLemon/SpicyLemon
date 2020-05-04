@@ -1,25 +1,47 @@
-change_word.sh - depends on grep
-chrome_cors.sh - depends on open
-echo_color.sh - depends on join_str, escape_escapes
-echo_do.sh - depends on NOTHING
-get_shell_type.sh - depends on ps, awk
-hrr.sh - depends on tput
-i_can.sh - depends on NOTHING
-java-switchers.sh - depends on /usr/libexec/java_home
-join_str.sh - depends on NOTHING
-jqq.sh - depends on jq
-print_args.sh - depends on NOTHING
-ps_grep.sh - depends on head, tail, ps, grep
-stream-helpers.sh - depends on sed, tee, awk, pbcopy
-to_date.sh - depends on date, tail, sed
-to_epoch.sh - depends on date, head, sed
+Most depend on dirname and basename.
 
-Should be elsewhere:
-    provenir_tester     --> Put in the provenir section of stuff as an executable or something...
-    kill_sophos     --> No clue where to put this one.
+join_str.sh         - depends on printf
+stream-helpers.sh   - depends on cat, echo, printf, sed, tee, awk, pbcopy
+change_word.sh      - depends on echo, grep, sed
+chrome_cors.sh      - depends on open
+echo_color.sh       - depends on cat, echo, printf, tr, join_str, escape_escapes
+echo_do.sh          - depends on printf
+get_shell_type.sh   - depends on cat, echo, printf, ps, awk
+hrr.sh              - depends on tput, printf, echo, sed
+i_can.sh            - depends on cat, echo
+java-switchers.sh   - depends on cat, echo, /usr/libexec/java_home
+jqq.sh              - depends on cat, jq
+print_args.sh       - depends on printf
+ps_grep.sh          - depends on printf, ps, head, tail, grep
+to_date.sh          - depends on echo, date, tr, tail, sed
+to_epoch.sh         - depends on echo, date, tr, head, sed
+
+External Dependencies:
+    cat echo printf head tail
+    sed tee awk grep tr
+    pbcopy open ps tput date
+    /usr/libexec/java_home jq
+
+Make required:
+    'cat'   'echo'  'printf'  'head'  'tail'
+    'sed'   'tee'   'awk'     'grep'  'tr'
+    'open'  'ps'    'tput'    'date'
+
+Just check:
+    'pbcopy'  '/usr/libexec/java_home'  'jq'
+
+Post load to check:
+    'change_word'   'chrome_cors'     'echo_color'        'show_colors'        'to_date'       'to_epoch'
+    'echo_red'      'echo_green'      'echo_yellow'       'echo_blue'          'echo_cyan'     'echo_bold'  'echo_underline'
+    'echo_debug'    'echo_info'       'echo_warn'         'echo_error'         'echo_success'  'echo_good'  'echo_bad'
+    'echo_do'       'get_shell_type'  'hr'  'hrr'  'hhr'  'pick_a_palette'     'ps_grep'       'tee_pbcopy'
+    'i_can'         'can_i'           'java_8_activate'   'java_8_deactivate'  'join_str'      'jqq'        'print_args'
+    'strip_colors'  'escape_escapes'  'to_stdout_and_strip_colors_log'         'to_stderr_and_strip_colors_log'
+
+Command to get all the function names from all the files:
+    grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * | sed 's/^[^:]*:/~/; s/[[:space:]].*$/~/;' | tr '\n' ' ' | tr '~' "'" | pbcopy
 
 Todo:
-    Go back through and note some extra dependencies, and maybe, somehow, version stuff.
     Replace uses of echo with printf.
     Enhance hrr.sh to use subshells for setting the palette
     Look into possible enhancements for jqq to allow the query and jq arguments to be in any order.
