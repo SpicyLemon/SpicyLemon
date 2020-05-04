@@ -1,5 +1,3 @@
-Most depend on dirname and basename.
-
 join_str.sh         - depends on printf
 stream-helpers.sh   - depends on cat, echo, printf, sed, tee, awk, pbcopy
 change_word.sh      - depends on echo, grep, sed
@@ -28,9 +26,9 @@ Make required:
     'open'  'ps'    'tput'    'date'
 
 Just check:
-    'pbcopy'  '/usr/libexec/java_home'  'jq'
+    'dirname'  'basename'  'pbcopy'  '/usr/libexec/java_home'  'jq'
 
-Post load to check:
+All functions defined in here:
     'change_word'   'chrome_cors'     'echo_color'        'show_colors'        'to_date'       'to_epoch'
     'echo_red'      'echo_green'      'echo_yellow'       'echo_blue'          'echo_cyan'     'echo_bold'  'echo_underline'
     'echo_debug'    'echo_info'       'echo_warn'         'echo_error'         'echo_success'  'echo_good'  'echo_bad'
@@ -39,7 +37,7 @@ Post load to check:
     'strip_colors'  'escape_escapes'  'to_stdout_and_strip_colors_log'         'to_stderr_and_strip_colors_log'
 
 Command to get all the function names from all the files:
-    grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * | sed 's/^[^:]*:/~/; s/[[:space:]].*$/~/;' | tr '\n' ' ' | tr '~' "'" | pbcopy
+    grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * | sed 's/^[^:]*:/~/; s/[[:space:]].*$/~ /;' | tr '\n' ' ' | tr '~' "'" | pbcopy
 
 Todo:
     Replace uses of echo with printf.
@@ -47,9 +45,6 @@ Todo:
     Look into possible enhancements for jqq to allow the query and jq arguments to be in any order.
     Look into possible enhancemet for jqq to allow just providing the variable name, rather than the entire json content.
     Additional output helpers for stripping more than just colors.
-        Need to research escape codes more to know exactly what should be stripped.
-
-
-
+        Need to research escape codes more to know exactly what should be stripped. 
 
 
