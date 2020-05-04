@@ -4,7 +4,7 @@
 # This file can also be executed to run the to_epoch function without adding it to your environment.
 #
 # File contents:
-#   to_epoch  ------------------------> Converts a date in YYYY-mm-dd HH:MM:SS format (using local time zone) to an epoch as milliseconds.
+#   to_epoch  --> Converts a date in YYYY-mm-dd HH:MM:SS format (using local time zone) to an epoch as milliseconds.
 #
 
 # Determine if this script was invoked by being executed or sourced.
