@@ -3,6 +3,7 @@ This directory contains files and scripts for doing things on a bash command-lin
 
 ## Contents
 
+* `ask.sh` - Asks flying-ferret questions.
 * `bootRun.sh` - A bash script that makes it easier to run the gradle bootRun task with supplied arguments. File is executable.
 * `capture_cmd.sh` - A bash file with a function for capturing the output of commands by stdout, stderr, and combined. File should be sourced.
 * `curl_link_header.sh` - A bash file with a function for using curl, and looking at response headers, in order to get all pages of a result. File should be sourced.
