@@ -60,10 +60,10 @@ hrr () {
 
 # So you don't have to remember if it's hrr or hhr.
 hhr () {
-    hrr $@
+    hrr "$@"
 }
 
-# Sets the PALETTE environment veriable if it's not already set.
+# Sets the PALETTE environment variable if it's not already set.
 # Usage: pick_a_palette && echo "PALETTE set to ${PALETTE[*]}"
 pick_a_palette () {
     if [[ -z "${PALETTE+x}" ]]; then
