@@ -236,9 +236,7 @@ EOF
         {
             if [[ -n "$debug" ]]; then
                 printf '   Code params:'
-                for code_param in "${code_params[@]}"; do
-                    printf ' [%s]' "$code_param"
-                done
+                printf ' [%s]' "${code_params[@]}"
                 printf '\n'
             fi
             printf '  Opening code: [%s] -> [\\033[%sm].\n' "$code_on" "$code_on"
