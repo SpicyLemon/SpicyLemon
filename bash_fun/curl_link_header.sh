@@ -219,6 +219,8 @@ curl_link_header () {
         done
 
         [[ -n "$verbose" ]] && echo "Made [$calls_made] curl calls." >&2
+        [[ -n "$next_link" ]] && echo "The final call still had a next link: [$next_link]." >&2
+
         # Unfortunately, the subshell makes all variables set inside it, go back to what they used to be when it ends.
         # Fortunatly though, all I want out of here is the exit code! Easy peasy!
         exit "$exit_code"
@@ -280,3 +282,4 @@ __curl_link_header_get_link () {
 if [[ "$sourced" != 'YES' ]]; then
     curl_link_header "$@"
 fi
+unset sourced

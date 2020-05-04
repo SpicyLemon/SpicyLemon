@@ -101,3 +101,4 @@ __fzf_zwnj () {
 if [[ "$sourced" != 'YES' ]]; then
     cat - | fzf_wrapper "$@"
 fi
+unset sourced
