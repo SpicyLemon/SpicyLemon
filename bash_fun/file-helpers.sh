@@ -1,7 +1,6 @@
 #!/bin/bash
 # This file contains functions for helping do things with files.
 # File contents:
-#   fp  --------------------------------> File Path - Pass in a filename and it will print out the full path to the file.
 #   add_to_filename  -------------------> Adds some text to a filename.
 #   flatten_file  ----------------------> Comma separates a file and removes line breaks.
 #   flatten_quote_file  ----------------> Single-quotes each line, comma separates them and removes line breaks.
@@ -28,28 +27,6 @@ EOF
     exit 1
 fi
 unset sourced
-
-# Get the full path to a file
-# Usage: fp [file]
-#  If no file is specified, you'll be able to select one
-fp () {
-    local filename="$1"
-    [[ $(which -s setopt) ]] && setopt local_options BASH_REMATCH KSH_ARRAYS
-    if [[ ! -n "$filename" ]]; then
-        filename=$(ls -a | sort -f -r | fzf +m);
-    fi
-    local fullpath="$PWD/$filename"
-    # Convert /./ to just /
-    while [[ "$fullpath" =~ (/\./) ]]; do
-        fullpath="${fullpath/${BASH_REMATCH[1]}//}"
-    done
-    # Remove sections that go backwards. e.g. /foo/bar/baz/../myfile.txt becomes /foo/bar/myfile.txt
-    while [[ "$fullpath" =~ ([^/]+/\.\./) ]]; do
-        fullpath="${fullpath/${BASH_REMATCH[1]}/}"
-    done
-    echo -En "$fullpath" | pbcopy
-    echo -E "$fullpath copied to clipboard"
-}
 
 # Adds some text to the end of a filename just before any extension
 # Usage: add_to_filename file.txt to_add
