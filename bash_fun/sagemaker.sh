@@ -210,10 +210,9 @@ __hmac_w_hex () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    if [[ "$#" -gt '0' ]]; then
-        make_sagemaker_call "$@"
-    else
-        echo -E "For Usage: ./$( basename "$0" ) --help"
-    fi
+    make_sagemaker_call "$@"
+    exit $?
 fi
 unset sourced
+
+return 0

@@ -281,5 +281,8 @@ __curl_link_header_get_link () {
 # If this script was not sourced make it do things now.
 if [[ "$sourced" != 'YES' ]]; then
     curl_link_header "$@"
+    exit $?
 fi
 unset sourced
+
+return 0

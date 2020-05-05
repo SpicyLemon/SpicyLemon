@@ -14,8 +14,7 @@
 if [[ "$sourced" != 'YES' ]]; then
     >&2 cat << EOF
 This script is meant to be sourced instead of executed.
-Please run this command to enable the functionality contained in within.
-$( echo -e "\033[1;37msource $( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )\033[0m" )
+Please run this command to enable the functionality contained in within: $( printf '\033[1;37msource %s\033[0m' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" )
 EOF
     exit 1
 fi
@@ -281,3 +280,5 @@ __capture_cmd_debug () {
     __capture_cmd_print_vars "$retval"
     return "$retval"
 }
+
+return 0

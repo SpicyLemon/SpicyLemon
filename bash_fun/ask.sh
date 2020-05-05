@@ -28,55 +28,59 @@
 
 # Usage: ask should I stay or should I go?
 ask () {
+    if [[ "$#" -eq '0' || "$#" -eq '1' && (( "$1" == '-h' || "$1" == '--help' )) ]]; then
+        printf 'Usage: ask <query>\n'
+        return 1
+    fi
     if [[ "$#" -eq '1' && (( "$1" == '-o' || "$1" == '--open' )) ]]; then
-        open "https://flying-ferret.com"
+        open 'https://flying-ferret.com'
         return 0
     fi
-    local can_perl cant_perl_ff
-    can_perl="$( type perl | grep -v 'not found' )"
-    if [[ -n "$can_perl" ]]; then
-        cant_perl_ff="$( perl -e "use flyingferret;" 2>&1 )"
-    fi
-    if [[ -n "$can_perl" && -z "$cant_perl_ff" ]]; then
+    if command -v 'perl' > /dev/null 2>&1 && perl -e 'use flyingferret;' > /dev/null 2>&1; then
         ask_flying_ferret_perl "$@"
     else
         ask_flying_ferret_api "$@"
     fi
+    return $?
 }
 
 ask_flying_ferret_perl () {
     local query
-    query="$( echo -E "$*" | sed -e 's/^[[:space:]]+//; s/[[:space:]]+$//;' -e "s/'/\\\'/g" )"
+    query="$( sed -E -e 's/^[[:space:]]+//; s/[[:space:]]+$//;' -e "s/'/\\\'/g" <<< "$*" )"
+    if [[ -z "$query" ]]; then
+        printf 'Usage: ask <query>\n'
+        return 1
+    fi
     perl -Mflyingferret -e "print join(\"\\n\", @{flyingferret::transform('$query')}) . \"\\n\";"
+    return $?
 }
 
 ask_flying_ferret_api () {
     local query api_url flying_ferret_says results
-    query="$( echo -E "$*" | sed -e 's/^[[:space:]]+//; s/[[:space:]]+$//' )"
+    query="$( sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' <<< "$*" )"
     if [[ -z "$query" ]]; then
-        echo "Usage: ask <query>"
+        printf 'Usage: ask <query>\n'
         return 1
     fi
     api_url='https://www.flying-ferret.com/cgi-bin/api/v1/transform.cgi'
     flying_ferret_says="$( curl -s --data-urlencode "q=$query" "$api_url" 2>&1 )"
-    if [[ -z "$( echo -E "$flying_ferret_says" | jq ' . ' 2> /dev/null )" ]]; then
+    if [[ -z "$( jq ' . ' 2> /dev/null <<< "$flying_ferret_says" )" ]]; then
         echo -E "Flying ferret is confused. See $api_url?help= for more info."
         return 10
     fi
-    results="$( echo -E "$flying_ferret_says" | jq -r ' .results | .[] ' )"
+    results="$( jq -r ' .results | .[] ' <<< "$flying_ferret_says" )"
     if [[ -z "$results" ]]; then
-        echo -E 'Flying ferret returned without any results.'
+        printf 'Flying ferret returned without any results.\n'
         return 5
     fi
-    echo -E "$results"
+    printf '%s\n' "$results"
     return 0
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    if [[ "$#" -gt '0' ]]; then
-        ask "$@"
-    else
-        echo -E "Usage: ./$( basename "$0" ) <flying ferret query>"
-    fi
+    ask "$@"
+    exit $?
 fi
 unset sourced
+
+return 0

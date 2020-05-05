@@ -100,5 +100,8 @@ __fzf_zwnj () {
 # If this script was not sourced make it do things now.
 if [[ "$sourced" != 'YES' ]]; then
     cat - | fzf_wrapper "$@"
+    exit $?
 fi
 unset sourced
+
+return 0
