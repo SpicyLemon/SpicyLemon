@@ -256,8 +256,9 @@ show_colors () {
     usage="$( cat << EOF
 show_colors - Outputs a bunch of color examples.
 
-Usage: show_colors [-c|--combos] [-v|--verbose] [-d|--debug]
+Usage: show_colors [-c|--combos] [--256] [-v|--verbose] [-d|--debug]
     -c or --combos will add a few sections that show different color code combinations.
+    --256 will add sections showing all the extended colors.
     -v or --verbose will add the uninterpreted output string as output to stderr
                     prior to the interpreted output being sent to stdout.
     -d or --debug adds to --verbose by passing the --debug flag to calls made to echo_color.
@@ -265,7 +266,7 @@ Usage: show_colors [-c|--combos] [-v|--verbose] [-d|--debug]
 
 EOF
 )"
-    local debug verbose show_combos text_colors background_colors effects special_formats fg_codes bg_codes effect_codes output
+    local debug verbose show_combos show_256 text_colors background_colors effects special_formats fg_codes bg_codes effect_codes output
     while [[ "$#" -gt '0' ]]; do
         case "$( printf '%s' "$1" | tr '[:upper:]' '[:lower:]' )" in
         -h|--help)
@@ -275,6 +276,7 @@ EOF
         -v|--verbose)   verbose='--verbose' ;;
         -d|--debug)     debug='--debug' ;;
         -c|--combos)    show_combos='--combos' ;;
+        --256)          show_256='--256' ;;
         *)
             printf 'show_colors: Unknown parameter: [%s].\n' "$1" >&2
             return 1
@@ -330,6 +332,7 @@ EOF
             done
             [[ "$i" -ne '0' ]] && printf '\n'
         }
+
         output_combo_section () {
             local title added_code pad fg_code bg_code code
             title="$1"
@@ -349,6 +352,45 @@ EOF
                 printf '\n'
             done
         }
+
+        output_256_section () {
+            local title base row column code
+            title="$1"
+            base="$2"
+            make_color_piece () {
+                printf '\033[%d;5;%dm %3d \033[0m' "$base" "$1" "$1"
+            }
+            printf '%s: %d;5;\n' "$title" "$base"
+            printf '  '
+            for code in $( seq 0 15 ); do
+                printf '%s' "$( make_color_piece "$code" )"
+            done
+            printf '\n'
+            for row in $( seq 0 11 ); do
+                printf '  '
+                for column in $( seq 0 5 ); do
+                    code=$(( row * 6 + column + 16))
+                    printf '\033[%d;5;%dm %3d \033[0m' "$base" "$code" "$code"
+                done
+                printf '     '
+                for column in $( seq 0 5 ); do
+                    code=$(( row * 6 + column + 88))
+                    printf '\033[%d;5;%dm %3d \033[0m' "$base" "$code" "$code"
+                done
+                printf '     '
+                for column in $( seq 0 5 ); do
+                    code=$(( row * 6 + column + 160))
+                    printf '\033[%d;5;%dm %3d \033[0m' "$base" "$code" "$code"
+                done
+                printf '\n'
+            done
+            printf '  '
+            for code in $( seq 232 256 ); do
+                printf '%s' "$( make_color_piece "$code" )"
+            done
+            printf '\n'
+        }
+
         output_simple_section 'Text Colors'       '16' '4' "${text_colors[@]}"
         output_simple_section 'Background Colors' '16' '4' "${background_colors[@]}"
         output_simple_section 'Text Effects'      '1'  '9' "${effects[@]}"
@@ -358,6 +400,10 @@ EOF
             output_combo_section 'Color Combos - Bold'     '1'
             output_combo_section 'Color Combos - Dim'      '2'
             output_combo_section 'Color Combos - Reversed' '7'
+        fi
+        if [[ -n "$show_256" ]]; then
+            output_256_section 'Text colors' '38'
+            output_256_section 'Background colors' '48'
         fi
     )"
     if [[ -n "$debug" || -n "$verbose" ]]; then
