@@ -1,10 +1,10 @@
 #!/bin/bash
-# This file contains the multi_line_replace function that replaces parts of a file with multi-line text.
-# This file can be sourced to add the multi_line_replace function to your environment.
-# This file can also be executed to run the multi_line_replace function without adding it to your environment.
+# This file contains the getlines function that gets requested lines from a file.
+# This file can be sourced to add the getlines function to your environment.
+# This file can also be executed to run the getlines function without adding it to your environment.
 #
 # File contents:
-#   getlines  -------------------------> Function for getting specific lines or line ranges from a file.
+#   getlines  --> Function for getting specific lines or line ranges from a file.
 #
 
 # Determine if this script was invoked by being executed or sourced.
