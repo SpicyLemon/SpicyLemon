@@ -1,7 +1,6 @@
 #!/bin/bash
 # This file houses functions for doing common text manipulation stuff.
 # File contents:
-#   string_repeat  --------------------> Repeat a string a number of times.
 #   split_x_per_line  -----------------> Break a long comma separated string into a number of entries per line.
 #   pretty_json  ----------------------> Pulls some json from the clipboard and runs it through jq to make it look nice, then puts it back into the clipboard.
 #   ugly_json  ------------------------> Pulls some json from the clipboard and uses jq to make it compact, then puts it back into the clipboard.
@@ -38,26 +37,6 @@ EOF
     exit 1
 fi
 unset sourced
-
-# Repeat a string a number of time
-# Usage: string_repeat "<string>" "<count>"
-string_repeat () {
-    local string count retval
-    string="$1"
-    count="$2"
-    retval=""
-    if [[ -n "$string" && -n "$count" && "$count" -gt "0" ]]; then
-        for i in $( seq 1 1 $count ); do
-            retval="$retval$string"
-        done
-    fi
-    if [[ -n "$retval" ]]; then
-        echo "$retval"
-    else
-        >&2 echo "Usage: string_repeat \"<string>\" \"<count>\""
-        return 1
-    fi
-}
 
 # Splits a long series of comma separated values into lines containing a certain amount of entries.
 # Usage: split_x_per_line "<count>" "<file>"
