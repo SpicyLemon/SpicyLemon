@@ -306,6 +306,18 @@ EOF
     bg_codes=( 40 100 47 107 41 101 45 105 44 104 46 106 42 102 43 103 )
     output="$(
         # Sneaky private functions with access to variables from parent function. Teehee.
+        output_16_section () {
+            local title code
+            title="$1"
+            printf '%s:\n   ' "$title"
+            for code in "${fg_codes[@]}" "${bg_codes[@]}"; do
+                printf ' \033[%dm %3d \033[0m' "$code" "$code"
+                if [[ "$code" == '93' || "$code" == '103' ]]; then
+                    printf '\n   '
+                fi
+            done
+        }
+
         output_simple_section () {
             local title name_width per_line i text_color
             title="$1"
@@ -391,6 +403,7 @@ EOF
             printf '\n'
         }
 
+        output_16_section 'Simple Color Codes'
         output_simple_section 'Text Colors'       '16' '4' "${text_colors[@]}"
         output_simple_section 'Background Colors' '16' '4' "${background_colors[@]}"
         output_simple_section 'Text Effects'      '1'  '9' "${effects[@]}"
