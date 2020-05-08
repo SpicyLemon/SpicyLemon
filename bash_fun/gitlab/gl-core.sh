@@ -340,8 +340,9 @@ __gl_project_subset () {
     if [[ "${#provided_repos[@]}" -gt '0' ]]; then
         for search in "${provided_repos[@]}"; do
             project="$( echo -E "$GITLAB_PROJECTS" | jq -c --arg search "$search" \
-                        ' .[] | select( ( .name | ascii_downcase ) == ( $search | ascii_downcase )
-                                     or ( .path | ascii_downcase ) == ( $search | ascii_downcase ) ) ' )"
+                        ' [ .[] | select( ( .name | ascii_downcase ) == ( $search | ascii_downcase )
+                                     or ( .path | ascii_downcase ) == ( $search | ascii_downcase ) ) ]
+                          | if ( length == 1 ) then .[0] else empty end ' )"
             if [[ -n "$project" ]]; then
                 projects="$( echo -E "[$projects,[$project]]" | jq -c ' add ' )"
             else
