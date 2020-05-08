@@ -4,7 +4,6 @@
 #   flatten_file  ----------------------> Comma separates a file and removes line breaks.
 #   flatten_quote_file  ----------------> Single-quotes each line, comma separates them and removes line breaks.
 #   make_nice_files  -------------------> Does a flatten_file, flatten_quote_file and also creates files with 15 entries per line (using split_x_per_line).
-#   multi_line_replace  ----------------> Replaces part of a file with multi-line replacement text.
 #   get_all_system_logs  ---------------> Gets all the system logs.
 #   check_system_log_timestamp_order  --> Checks that the lines of a system log file are in chronological order.
 #
@@ -128,33 +127,6 @@ make_nice_files () {
         output="$output~$nice_quoted_filename"
     fi
     echo -e "$output" | column -s '~' -t
-}
-
-# Similar to sed 's/str_to_replace/replacement_text/' filename
-# Except, each line that has the str_to_replace is replicated for each line in the multi-line replacement text.
-# Usage: multi_line_replace <filename> <str_to_replace> <multi-line replacement text>
-multi_line_replace () {
-    if [[ "$#" -ne '3' ]]; then
-        >&2 echo "Usage: multi_line_replace <filename> <str_to_replace> <multi-line replacement text>"
-        return 1
-    fi
-    local filename to_replace replace_with loop_counter loop_max line_to_replace replacement_lines
-    filename="$1"
-    to_replace="$2"
-    replace_with="$3"
-    if [[ "$filename" != '-' && ! -f "$filename" ]]; then
-        echo -E "File not found: [$filename]."
-        return 2
-    fi
-    cat "$filename" | while IFS= read -r line; do
-        if [[ "$line" =~ $to_replace ]]; then
-            echo -E "$replace_with" | while read repl_line; do
-                echo -E "$line" | sed "s/$to_replace/$repl_line/"
-            done
-        else
-            echo -E "$line"
-        fi
-    done
 }
 
 # Usage: get_all_system_logs
