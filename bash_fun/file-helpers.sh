@@ -1,7 +1,6 @@
 #!/bin/bash
 # This file contains functions for helping do things with files.
 # File contents:
-#   add_to_filename  -------------------> Adds some text to a filename.
 #   flatten_file  ----------------------> Comma separates a file and removes line breaks.
 #   flatten_quote_file  ----------------> Single-quotes each line, comma separates them and removes line breaks.
 #   make_nice_files  -------------------> Does a flatten_file, flatten_quote_file and also creates files with 15 entries per line (using split_x_per_line).
@@ -10,8 +9,9 @@
 #   check_system_log_timestamp_order  --> Checks that the lines of a system log file are in chronological order.
 #
 # Depends on:
-#   string_repeat - Function defined in generic.sh - source text-helpers.sh
-#   split_x_per_line - Function defined in generic.sh - source text-helpers.sh
+#   add_to_filename - Function defined in generic/add_to_filename.sh
+#   string_repeat - Function defined in text-helpers.sh
+#   split_x_per_line - Function defined in text-helpers.sh
 
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
@@ -28,15 +28,6 @@ EOF
 fi
 unset sourced
 
-# Adds some text to the end of a filename just before any extension
-# Usage: add_to_filename file.txt to_add
-add_to_filename () {
-    local filename_in addition
-    filename_in="$1"
-    addition="$2"
-    echo "$filename_in" | sed -E "s/(\.)|$/_$addition\1/"
-}
-
 # Adds a comma space to the end of each line and gets rid of the line breaks
 # Usage: flatten_file file.txt
 flatten_file () {
@@ -45,7 +36,7 @@ flatten_file () {
     if [[ -z "$filename" ]]; then
         echo "Usage: flatten_file <filename>"
     elif [[ -f "$filename" ]]; then
-        filename_out="$( add_to_filename "$filename" 'flat' )"
+        filename_out="$( add_to_filename 'flat' "$filename" )"
         cat "$filename" | sed -E 's/ *$/, /' | tr -d '\n' | sed -E 's/, $//' > $filename_out
         echo "Created: $filename_out"
     else
@@ -61,7 +52,7 @@ flatten_quote_file () {
     if [[ -z "$filename" ]]; then
         echo "Usage: flatten_file <filename>"
     elif [[ -f "$filename" ]]; then
-        filename_out="$( add_to_filename "$filename" 'flat_quoted' )"
+        filename_out="$( add_to_filename 'flat_quoted' "$filename" )"
         cat "$filename" | sed -E "s/^/'/; s/ *$/', /" | tr -d '\n' | sed -E 's/, $//' > $filename_out
         echo "Created: $filename_out"
     else
@@ -123,7 +114,7 @@ make_nice_files () {
     flatten_file_out="$( flatten_file $filename )"
     flattened_filename="$( echo "$flatten_file_out" | sed -E 's/^[^ ]+ //' )"
     output="$output~$flattened_filename"
-    nice_filename="$( add_to_filename "$filename" 'nice' )"
+    nice_filename="$( add_to_filename 'nice' "$filename" )"
     split_x_per_line "$count" "$flattened_filename" > $nice_filename
     output="$output~$nice_filename"
     if [[ -z "$no_quoted" ]]; then
@@ -132,7 +123,7 @@ make_nice_files () {
         flatten_quote_file_out="$( flatten_quote_file $filename )"
         quoted_filename="$( echo "$flatten_quote_file_out" | sed -E 's/^[^ ]+ //' )"
         output="$output~$quoted_filename"
-        nice_quoted_filename="$( add_to_filename "$nice_filename" 'quoted' )"
+        nice_quoted_filename="$( add_to_filename 'quoted' "$nice_filename" )"
         split_x_per_line "$count" "$quoted_filename" > $nice_quoted_filename
         output="$output~$nice_quoted_filename"
     fi

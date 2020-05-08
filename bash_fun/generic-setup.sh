@@ -55,7 +55,7 @@ __do_setup () {
     # These will be looked for in $func_dir and '.sh' will be appended.
     # They will be sourced in this order too.
     func_base_file_names=(
-        'join_str'        'stream-helpers'  'fp'
+        'join_str'        'stream-helpers'  'fp'          'add_to_filename'
         'change_word'     'chrome_cors'     'echo_color'  'echo_do'
         'get_shell_type'  'hrr'             'i_can'       'java-switchers'
         'jqq'             'print_args'      'ps_grep'
@@ -65,11 +65,11 @@ __do_setup () {
     # These are functions that will be double checked after sourcing to make sure they got added to the environment.
     # If a problem is found, then a message will be output at the end.
     funcs_to_double_check=(
-        'change_word'   'chrome_cors'     'echo_color'        'show_colors'        'to_date'       'to_epoch'   'fp'
-        'echo_red'      'echo_green'      'echo_yellow'       'echo_blue'          'echo_cyan'     'echo_bold'  'echo_underline'
-        'echo_debug'    'echo_info'       'echo_warn'         'echo_error'         'echo_success'  'echo_good'  'echo_bad'
-        'echo_do'       'get_shell_type'  'hr'  'hrr'  'hhr'  'pick_a_palette'     'ps_grep'       'tee_pbcopy'
-        'i_can'         'can_i'           'java_8_activate'   'java_8_deactivate'  'join_str'      'jqq'        'print_args'
+        'change_word'   'chrome_cors'     'echo_color'        'show_colors'        'to_date'       'to_epoch'    'fp'
+        'echo_red'      'echo_green'      'echo_yellow'       'echo_blue'          'echo_cyan'     'echo_bold'   'echo_underline'
+        'echo_debug'    'echo_info'       'echo_warn'         'echo_error'         'echo_success'  'echo_good'   'echo_bad'
+        'echo_do'       'get_shell_type'  'hr'  'hrr'  'hhr'  'pick_a_palette'     'ps_grep'       'tee_pbcopy'  'add_to_filename'
+        'i_can'         'can_i'           'java_8_activate'   'java_8_deactivate'  'join_str'      'jqq'         'print_args'
         'strip_colors'  'escape_escapes'  'to_stdout_and_strip_colors_log'         'to_stderr_and_strip_colors_log'
     )
 
