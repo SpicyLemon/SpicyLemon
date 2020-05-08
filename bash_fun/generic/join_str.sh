@@ -19,13 +19,12 @@ join_str () {
     local d retval
     d="$1"
     shift
-    retval="$1"
+    printf %s "$1"
     shift
     while [[ "$#" -gt '0' ]]; do
-        retval="${retval}${d}${1}"
+        printf '%s%s' "$d" "$1"
         shift
     done
-    printf %s "$retval"
 }
 
 if [[ "$sourced" != 'YES' ]]; then
