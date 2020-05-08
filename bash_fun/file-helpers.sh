@@ -7,7 +7,7 @@
 #
 # Depends on:
 #   add_to_filename - Function defined in generic/add_to_filename.sh
-#   string_repeat - Function defined in text-helpers.sh
+#   string_repeat - Function defined in generic/string_repeat.sh
 #   split_x_per_line - Function defined in text-helpers.sh
 
 # Determine if this script was invoked by being executed or sourced.
