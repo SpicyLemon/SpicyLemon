@@ -72,7 +72,7 @@ __do_setup () {
         'echo_do'       'get_shell_type'  'hr'   'hrr'   'hhr'  'pick_a_palette'     'ps_grep'        'tee_pbcopy'  'add_to_filename'
         'i_can'         'can_i'           'java_8_activate'     'java_8_deactivate'  'join_str'       'jqq'         'print_args'
         'strip_colors'  'escape_escapes'  'multi_line_replace'  'to_stdout_and_strip_colors_log'      'to_stderr_and_strip_colors_log'
-        'get_all_system_logs'  'check_system_log_timestamp_order'  'getlines'        'string_repeat'
+        'get_all_system_logs'  'check_system_log_timestamp_order'  'getlines'        'string_repeat'  'tee_pbcopy_strip_colors'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
