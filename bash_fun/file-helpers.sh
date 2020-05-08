@@ -4,7 +4,6 @@
 #   flatten_file  ----------------------> Comma separates a file and removes line breaks.
 #   flatten_quote_file  ----------------> Single-quotes each line, comma separates them and removes line breaks.
 #   make_nice_files  -------------------> Does a flatten_file, flatten_quote_file and also creates files with 15 entries per line (using split_x_per_line).
-#   check_system_log_timestamp_order  --> Checks that the lines of a system log file are in chronological order.
 #
 # Depends on:
 #   add_to_filename - Function defined in generic/add_to_filename.sh
@@ -126,29 +125,6 @@ make_nice_files () {
         output="$output~$nice_quoted_filename"
     fi
     echo -e "$output" | column -s '~' -t
-}
-
-# Usage: check_system_log_timestamp_order <file>
-check_system_log_timestamp_order () {
-    local file
-    file="$1"
-    if [[ -z "$file" ]]; then
-        echo "Usage: check_system_log_timestamp_order <file>"
-        return 1
-    fi
-    if [[ ! -f "$file" ]]; then
-        echo "File not found: $file"
-        return 2
-    fi
-    cat "$file" \
-        | awk 'BEGIN { pt = 0 ; pd = ""; }
-            { if (/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/)
-                { d = $1 " " $2 " " $3;
-                    m = (index("JanFebMarAprMayJunJulAugSepOctNovDec",$1)+2)/3;
-                    gsub(/(:)/, "", $3);
-                    t = sprintf("%d%02d%06d", m, $2, $3);
-                    if (pt > t) { print (NR-1) ": " pd " > " d " :" NR; }
-                    pt = t; pd = d; } }'
 }
 
 return 0
