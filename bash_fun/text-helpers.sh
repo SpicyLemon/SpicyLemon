@@ -2,7 +2,6 @@
 # This file houses functions for doing common text manipulation stuff.
 # File contents:
 #   string_repeat  --------------------> Repeat a string a number of times.
-#   string_join  ----------------------> Uses a provided delimiter to join the rest of the arguments.
 #   split_x_per_line  -----------------> Break a long comma separated string into a number of entries per line.
 #   pretty_json  ----------------------> Pulls some json from the clipboard and runs it through jq to make it look nice, then puts it back into the clipboard.
 #   ugly_json  ------------------------> Pulls some json from the clipboard and uses jq to make it compact, then puts it back into the clipboard.
@@ -59,21 +58,6 @@ string_repeat () {
         >&2 echo "Usage: string_repeat \"<string>\" \"<count>\""
         return 1
     fi
-}
-
-# Joins all provided parameters using the provided delimiter.
-# Usage: string_join <delimiter> [<arg1> [<arg2>... ]]
-string_join () {
-    local d retval
-    d="$1"
-    shift
-    retval="$1"
-    shift
-    while [[ "$#" -gt '0' ]]; do
-        retval="${retval}${d}$1"
-        shift
-    done
-    echo -E -n "$retval"
 }
 
 # Splits a long series of comma separated values into lines containing a certain amount of entries.
