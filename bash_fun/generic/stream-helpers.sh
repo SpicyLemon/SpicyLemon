@@ -8,6 +8,7 @@
 #   to_stdout_and_strip_colors_log  --> Outputs to stdout and logs to a file with color stuff stripped out.
 #   to_stdout_and_strip_colors_log  --> Outputs to stderr and logs to a file with color stuff stripped out.
 #   tee_pbcopy  ----------------------> Outputs to stdout as well as copy it to the clipboard.
+#   tee_pbcopy_strip_colors  ---------> Outputs to stdout and also strips the color codes and puts a copy in the clipboard.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -73,6 +74,12 @@ to_stderr_and_strip_colors_log () {
 # Usage: <do stuff> | tee_pbcopy
 tee_pbcopy () {
     tee >( awk '{if(p) print(l);l=$0;p=1;} END{printf("%s",l);}' | pbcopy )
+}
+
+# Takes in a stream and outputs it to stdout while also putting it into pbcopy (with trailing newline removed).
+# Usage: <do stuff> | tee_pbcopy
+tee_pbcopy_strip_colors () {
+    tee >( strip_colors | awk '{if(p) print(l);l=$0;p=1;} END{printf("%s",l);}' | pbcopy )
 }
 
 return 0
