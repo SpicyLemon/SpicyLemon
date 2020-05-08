@@ -21,7 +21,6 @@
 #   quote_clipboard  ------------------> Adds a single quote to the beginning and end of each line in the clipboard.
 #   double_quote_clipboard  -----------> Adds double quotes to the beginning and end of each line in the clipboard.
 #   unquote_clipboard  ----------------> For each line in the clipboard, removes a matching single or double quote at the beginning and end of a line.
-#   getlines  -------------------------> Function for getting specific lines or line ranges from a file.
 #   strip_final_newline  --------------> Strips the final newline character from a string. Only the last line is changed.
 #
 
@@ -231,52 +230,6 @@ double_quote_clipboard () {
 unquote_clipboard () {
     pbpaste | sed 's/^\(['\'\"']\)\(.*\)\1$/\2/' | pbcopy
     __output_clipboard_if_option_given "$1"
-}
-
-getlines () {
-    local filename pieces piece error errors awk_clause awk_test
-    [[ $(which -s setopt) ]] && setopt local_options BASH_REMATCH KSH_ARRAYS
-    errors=()
-    while [[ "$#" -gt "0" ]]; do
-        if [[ "$1" == '-h' || "$1" == '--help' ]]; then
-            echo "Usage: getlines <file> [<line number>|<line1>-<line2>]"
-            return 0
-        elif [[ -z "$filename" && -f "$1" ]]; then
-            filename="$1"
-        else
-            pieces="$( echo "$1" | sed 's/,[[:space:]]*/\'$'\n''/g' | awk NF )"
-            for piece in "$pieces"; do
-                if [[ "$piece" =~ ^[[:space:]]*([[:digit:]]+)-([[:digit:]]+)[[:space:]]*$ ]]; then
-                    awk_clause="(NR>=${BASH_REMATCH[1]} && NR<=${BASH_REMATCH[2]})"
-                elif [[ "$piece" =~ ^[[:space:]]*([[:digit:]]+)[[:space:]]*$ ]]; then
-                    awk_clause="NR==${BASH_REMATCH[1]}"
-                else
-                    errors+=( "Unknown parameter provided: '$piece'." )
-                    awk_clause=""
-                fi
-                if [[ -n "$awk_clause" ]]; then
-                    if [[ -z "$awk_test" ]]; then
-                        awk_test="$awk_clause"
-                    else
-                        awk_test="$awk_test || $awk_clause"
-                    fi
-                fi
-            done
-        fi
-        shift
-    done
-    if [[ -z "$awk_test" ]]; then
-        errors+=( "No input defined." )
-    fi
-    if [[ "${#errors[@]}" -gt '0' ]]; then
-        >&2 printf '%s\n' "${errors[@]}"
-        return 1
-    fi
-    if [[ -n "$filename" ]]; then
-        awk "$awk_test" "$filename"
-    else
-        cat "-" | awk "$awk_test"
-    fi
 }
 
 # Usage: <do stuff> | strip_final_newline
