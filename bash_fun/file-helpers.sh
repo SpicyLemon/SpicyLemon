@@ -4,7 +4,6 @@
 #   flatten_file  ----------------------> Comma separates a file and removes line breaks.
 #   flatten_quote_file  ----------------> Single-quotes each line, comma separates them and removes line breaks.
 #   make_nice_files  -------------------> Does a flatten_file, flatten_quote_file and also creates files with 15 entries per line (using split_x_per_line).
-#   get_all_system_logs  ---------------> Gets all the system logs.
 #   check_system_log_timestamp_order  --> Checks that the lines of a system log file are in chronological order.
 #
 # Depends on:
@@ -127,19 +126,6 @@ make_nice_files () {
         output="$output~$nice_quoted_filename"
     fi
     echo -e "$output" | column -s '~' -t
-}
-
-# Usage: get_all_system_logs
-# You'll probably want to pipe this to something or redirect it to a file though.
-get_all_system_logs () {
-    { cat /var/log/system.log; for l in $( ls /var/log/system.log.* ); do zcat < "$l"; done; } \
-    | awk 'BEGIN { al = ""; }
-        { if (/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) /) {
-            if (length(al)) { print al; }; al = $0; }
-            else { al = al "~" $0; } }
-        END { if (length(al)) { print al; } }' \
-    | sort -s -k1bM -k2bn -k3.1b,3.2bn -k3.4b,3.5bn -k3.7b,3.8bn \
-    | tr '~' '\n'
 }
 
 # Usage: check_system_log_timestamp_order <file>

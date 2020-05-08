@@ -59,7 +59,7 @@ __do_setup () {
         'change_word'     'chrome_cors'     'echo_color'  'echo_do'
         'get_shell_type'  'hrr'             'i_can'       'java-switchers'
         'jqq'             'print_args'      'ps_grep'     'multi_line_replace'
-        'to_date'         'to_epoch'
+        'to_date'         'to_epoch'        'get_all_system_logs'
     )
 
     # These are functions that will be double checked after sourcing to make sure they got added to the environment.
@@ -71,6 +71,7 @@ __do_setup () {
         'echo_do'       'get_shell_type'  'hr'   'hrr'   'hhr'  'pick_a_palette'     'ps_grep'       'tee_pbcopy'  'add_to_filename'
         'i_can'         'can_i'           'java_8_activate'     'java_8_deactivate'  'join_str'      'jqq'         'print_args'
         'strip_colors'  'escape_escapes'  'multi_line_replace'  'to_stdout_and_strip_colors_log'     'to_stderr_and_strip_colors_log'
+        'get_all_system_logs'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
