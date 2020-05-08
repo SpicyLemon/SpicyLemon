@@ -13,7 +13,6 @@
 #   gfb  ------------------> Pulls master and creates a fresh branch from it.
 #   list_extra_branches  --> List all the local extra branches in all the local repos.
 #   master_pull_all  ------> Finds all your repos and does a pull on the master branches of each one.
-#   git_diff_analysis  ----> Compares the current branch with master (or provided branch) in order to get some stats for you.
 #
 # Depends on:
 #   fzf - Command-line fuzzy finder - https://github.com/junegunn/fzf - brew install fzf
@@ -294,62 +293,6 @@ master_pull_all () {
     else
         echo -e "\033[1;32mAll repos successfully pulled master.\033[0m"
     fi
-}
-
-git_diff_analysis () {
-    local usage
-    usage="$( cat << EOF
-git_diff_analysis - Gets some stats on branch differences.
-
-Usage: git_diff_analysis [<main branch> [<branch with changes>]]
-
-    If no branches are supplied, the diff will be from master to your current branch.
-    If only one branch is supplied, the diff will be from that branch to your current branch.
-    If two brances are supplied, the diff will be from the first branch to the second.
-EOF
-)"
-    local branches
-    branches=()
-    while [[ "$#" -gt '0' ]]; do
-        case "$( printf %s "$1" | tr '[:upper:]' '[:lower:]' )" in
-        -h|--help)
-            printf '%s\n' "$usage"
-            return 0
-            ;;
-        *)
-            branches+=( "$1" )
-            ;;
-        esac
-        shift
-    done
-    if [[ "${#branches[@]}" -gt '2' ]]; then
-        printf 'Only two branches can be supplied.\n' >&2
-        return 1
-    elif [[ "${#branches[@]}" -eq '0' ]]; then
-        branches+=( 'master' )
-    fi
-    if ! in_git_folder; then
-        printf 'This command must be run from a git folder.\n' >&2
-        return 1
-    fi
-    local diff_numstats test_entries code_entries
-    local total_lines_added total_lines_removed test_lines_added test_lines_removed code_lines_added code_lines_removed
-    printf '\033[97mgit diff %s --numstat\033[0m\n' "${branches[*]}"
-    diff_numstats="$( git diff ${branches[@]} --numstat )"
-    test_entries="$( grep 'src/test' <<< "$diff_numstats" )"
-    code_entries="$( grep -v 'src/test' <<< "$diff_numstats" )"
-
-    total_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$diff_numstats" )"
-    total_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$diff_numstats" )"
-    test_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$test_entries" )"
-    test_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$test_entries" )"
-    code_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$code_entries" )"
-    code_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$code_entries" )"
-
-    printf '%7s  %7s  code changes\n' "+$code_lines_added" "-$code_lines_removed"
-    printf '%7s  %7s  test code changes\n' "+$test_lines_added" "-$test_lines_removed"
-    printf -- '------------------------------------\n'
-    printf '%7s  %7s  total changes\n' "+$total_lines_added" "-$total_lines_removed"
 }
 
 __git_get_all_repos () {
