@@ -61,6 +61,7 @@ __do_setup () {
         'jqq'             'print_args'      'ps_grep'     'multi_line_replace'
         'to_date'         'to_epoch'        'get_all_system_logs'
         'check_system_log_timestamp_order'  'getlines'    'string_repeat'
+        'pretty_json'
     )
 
     # These are functions that will be double checked after sourcing to make sure they got added to the environment.
@@ -73,6 +74,7 @@ __do_setup () {
         'i_can'         'can_i'           'java_8_activate'     'java_8_deactivate'  'join_str'       'jqq'         'print_args'
         'strip_colors'  'escape_escapes'  'multi_line_replace'  'to_stdout_and_strip_colors_log'      'to_stderr_and_strip_colors_log'
         'get_all_system_logs'  'check_system_log_timestamp_order'  'getlines'        'string_repeat'  'tee_pbcopy_strip_colors'
+        'pretty_json'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
@@ -86,7 +88,7 @@ __do_setup () {
     # These are programs/functions defined externally that might cause some of the new functions to not work properly.
     # Any that aren't available will be included in a message after sourcing all the files.
     desired_external=(
-        'dirname'  'basename'  'pbcopy'  '/usr/libexec/java_home'  'jq'
+        'dirname'  'basename'  'pbcopy'  'pbpaste'  '/usr/libexec/java_home'  'jq'
     )
 
     # These are used for verbose output as line headers.

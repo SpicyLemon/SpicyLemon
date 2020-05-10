@@ -2,7 +2,6 @@
 # This file houses functions for doing common text manipulation stuff.
 # File contents:
 #   split_x_per_line  -----------------> Break a long comma separated string into a number of entries per line.
-#   pretty_json  ----------------------> Pulls some json from the clipboard and runs it through jq to make it look nice, then puts it back into the clipboard.
 #   ugly_json  ------------------------> Pulls some json from the clipboard and uses jq to make it compact, then puts it back into the clipboard.
 #   flatten  --------------------------> Flattens input piped into it.
 #   flatten_x  ------------------------> Flattens input piped into it and splits it, x per line.
@@ -61,17 +60,6 @@ split_x_per_line () {
         echo -E "$input" | sed -E "s/($( string_repeat "[^,]+," "$count" ) )/\1~/g" | tr '~' '\n' | sed -E 's/ +$//'
     else
         >&2 echo "No input provided."
-    fi
-}
-
-# Pulls json string from clipboard, makes it pretty, puts it back into the clipboard.
-# The -v option also outputs it to stdout
-# Usage: pretty_json   or   pretty_json -v
-pretty_json () {
-    pbpaste | jq --sort-keys '.' | pbcopy
-    if [[ -n "$1" && "$1" == "-v" ]]; then
-        pbpaste | jq '.'     # re-doing it so we get the colors
-        echo "(Copied to clipboard)"
     fi
 }
 
