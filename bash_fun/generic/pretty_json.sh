@@ -1,5 +1,5 @@
 #!/bin/bash
-# This file contains the pretty_json function uses jq to make json look pretty.
+# This file contains the pretty_json function that uses jq to make json look pretty.
 # This file can be sourced to add the pretty_json function to your environment.
 # This file can also be executed to run the pretty_json function without adding it to your environment.
 #
@@ -37,8 +37,7 @@ Usage: pretty_json [-q|--quiet] [-c|--clipboard] [-s <file>|--save <file>] [-f <
 EOF
 )"
     local keep_quiet to_clipboard to_file output_filename from_file input_filename from_pipe from_args json_in
-    local last_was_save this_can_be_output_filename last_was_file this_can_be_input_filename unknown_args
-    unknown_args=()
+    local last_was_save this_can_be_output_filename last_was_file this_can_be_input_filename
     while [[ "$#" -gt '0' ]]; do
         if [[ -n "$last_was_save" ]]; then
             last_was_save=

@@ -1,5 +1,5 @@
 #!/bin/bash
-# This file contains the ugly_json function uses jq to make json look ugly (compact).
+# This file contains the ugly_json function that uses jq to make json look ugly (compact).
 # This file can be sourced to add the ugly_json function to your environment.
 # This file can also be executed to run the ugly_json function without adding it to your environment.
 #
@@ -37,8 +37,7 @@ Usage: ugly_json [-q|--quiet] [-c|--clipboard] [-s <file>|--save <file>] [-f <fi
 EOF
 )"
     local keep_quiet to_clipboard to_file output_filename from_file input_filename from_pipe from_args json_in
-    local last_was_save this_can_be_output_filename last_was_file this_can_be_input_filename unknown_args
-    unknown_args=()
+    local last_was_save this_can_be_output_filename last_was_file this_can_be_input_filename
     while [[ "$#" -gt '0' ]]; do
         if [[ -n "$last_was_save" ]]; then
             last_was_save=
