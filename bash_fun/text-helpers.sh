@@ -18,7 +18,6 @@
 #   quote_clipboard  ------------------> Adds a single quote to the beginning and end of each line in the clipboard.
 #   double_quote_clipboard  -----------> Adds double quotes to the beginning and end of each line in the clipboard.
 #   unquote_clipboard  ----------------> For each line in the clipboard, removes a matching single or double quote at the beginning and end of a line.
-#   strip_final_newline  --------------> Strips the final newline character from a string. Only the last line is changed.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -185,15 +184,6 @@ double_quote_clipboard () {
 unquote_clipboard () {
     pbpaste | sed 's/^\(['\'\"']\)\(.*\)\1$/\2/' | pbcopy
     __output_clipboard_if_option_given "$1"
-}
-
-# Usage: <do stuff> | strip_final_newline
-strip_final_newline () {
-    if [[ -n "$1" ]]; then
-        echo -E "$1" | strip_final_newline
-        return 0
-    fi
-    awk ' { if(p) print(l); l=$0; p=1; } END { printf("%s", l); } '
 }
 
 # Internal function that outputs the clipboard if provided -v.
