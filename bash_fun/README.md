@@ -8,7 +8,6 @@ This directory contains files and scripts for doing things on a bash command-lin
 * `capture_cmd.sh` - A bash file with a function for capturing the output of commands by stdout, stderr, and combined. File should be sourced.
 * `curl_link_header.sh` - A bash file with a function for using curl, and looking at response headers, in order to get all pages of a result. File should be sourced.
 * `/deprecated` - A home for stuff that is no longer maintained, or has been replaced.
-* `file-helpers.sh` - A bash file with some functions for doing things with files. File should be sourced, not executed.
 * `fzf_wrapper.sh` - A bash function/script that adds some functionality to fzf.
 * `/generic` - A directory to hold the files with a some generic environment functions.
 * `/generic-setup.sh` - The entry point to the generic functions. Source this in order to add all the genric functions.
