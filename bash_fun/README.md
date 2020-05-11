@@ -18,7 +18,6 @@ This directory contains files and scripts for doing things on a bash command-lin
 * `mysql_runner.sh` - A bash script for running stuff on a mysql database with a bunch of defaults handy for me.
 * `psql_runner.sh` - A bash script for running stuff on a postgresql database with a bunch of defaults handy for me.
 * `sagemaker.sh` - A function for making calls to sagemaker. Only tested on one endpoint, though, so your mileage may vary. File is executable.
-* `text-helpers.sh` - A bash file to define a bunch of text manipulation helper functions. File should be sourced, not executed.
 
 ## File Details
 
