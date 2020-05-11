@@ -6,7 +6,7 @@
 #   strip_colors  --------------------> Strips the color stuff from a stream.
 #   escape_escapes  ------------------> Escapes any escape characters in a stream.
 #   to_stdout_and_strip_colors_log  --> Outputs to stdout and logs to a file with color stuff stripped out.
-#   to_stdout_and_strip_colors_log  --> Outputs to stderr and logs to a file with color stuff stripped out.
+#   to_stderr_and_strip_colors_log  --> Outputs to stderr and logs to a file with color stuff stripped out.
 #   tee_pbcopy  ----------------------> Outputs to stdout as well as copy it to the clipboard.
 #   tee_pbcopy_strip_colors  ---------> Outputs to stdout and also strips the color codes and puts a copy in the clipboard.
 #
