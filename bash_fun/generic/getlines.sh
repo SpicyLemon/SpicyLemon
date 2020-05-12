@@ -79,23 +79,27 @@ getlines () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    if ! command -v 'join_str' > /dev/null 2>&1; then
-        # Check for the join_str.sh script in the same directory and source it if its there.
-        where_i_am="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
-        join_str_fn="$where_i_am/join_str.sh"
-        if [[ -f "$join_str_fn" ]]; then
-            source "$join_str_fn"
-            if [[ "$?" -ne '0' ]] || ! command -v 'join_str' > /dev/null 2>&1; then
-                ( printf 'This script relies on the join_str function.\n'
-                  printf 'The file [%s] was found and sourced, but there was a problem loading the join_str function.\n' "$join_str_fn" ) >&2
-                exit 1
+    where_i_am="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
+    require_command () {
+        local cmd cmd_fn
+        cmd="$1"
+        if ! command -v "$cmd" > /dev/null 2>&1; then
+            cmd_fn="$where_i_am/$cmd.sh"
+            if [[ -f "$cmd_fn" ]]; then
+                source "$cmd_fn"
+                if [[ "$?" -ne '0' ]] || ! command -v "$cmd" > /dev/null 2>&1; then
+                    ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                      printf 'The file [%s] was found and sourced, but there was a problem loading the [%s] function.\n' "$cmd_fn" "$cmd" ) >&2
+                    return 1
+                fi
+            else
+                ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                  printf 'The file [%s] was looked for, but not found.\n' "$cmd_fn" ) >&2
+                return 1
             fi
-        else
-            ( printf 'This script relies on the join_str function.\n'
-              printf 'The file [%s] was looked for, but not found.\n' "$join_str_fn" ) >&2
-            exit 1
         fi
-    fi
+    }
+    require_command 'join_str' || exit $?
     getlines "$@"
     exit $?
 fi
