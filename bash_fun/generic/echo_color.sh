@@ -165,16 +165,12 @@ EOF
         return 0
     fi
 
-    if [[ "$1" != '--' ]]; then
-        printf 'No -- separator found.\n' >&2
-        return 1
+    if [[ "$1" == '--' ]]; then
+        shift
+        message="$@"
+    else
+        message="$( cat - )"
     fi
-    shift
-    message="$@"
-    # Allowing for an empty message because:
-    #   a) It won't really hurt anything.
-    #   b) It makes calling this function with user-defined input easier and nicer.
-    #   c) It'll make it easier to expand functionality to allow messages to be piped in.
 
     if [[ -n "$without_newline" ]]; then
         format='%b'
