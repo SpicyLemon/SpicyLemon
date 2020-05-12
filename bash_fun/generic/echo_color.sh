@@ -71,8 +71,10 @@ Valid Parameters: <name> <color code> -n -N --explain --examples
     -N signifies that you DO want a trailing newline added to the output. This is the default behavior.
             If both -n and -N are provided, whichever is latest in the paramters is used.
     --explain will cause the begining and ending escape codes to be output via stderr.
-    --examples will cause the other parameters to be ignored, and instead output a set of examples.
-            See the  show_colors  function.
+
+    --examples will cause the any previous parameters to be ignored, and instead output a set of examples.
+            All parameters that follow this option are supplied to the  show_colors  function.
+            See  show_colors --help  or  echo_color --examples --help  for more information.
 
 Examples:
     > echo_color underline -- "This is underlined."
@@ -86,11 +88,11 @@ Examples:
 
 EOF
 )"
-    local code_on_parts code_params without_newline explain debug show_examples message
+    local code_on_parts code_params without_newline explain debug show_examples show_examples_args message
     local code_on code_off_parts code_off format full_output code_param
     code_on_parts=()
     code_params=()
-    while [[ "$#" -gt '0' && "$1" != '--' ]]; do
+    while [[ "$#" -gt '0' && "$1" != '--' && -z "$show_examples" ]]; do
         case "$( printf %s "$1" | tr '[:upper:]' '[:lower:]' )" in
         -h|--help|help)
             printf '%b\n' "$usage"
@@ -148,13 +150,17 @@ EOF
         -N) without_newline=;;
         --explain) explain='YES';;
         -d|--debug) debug='--debug';;
-        --examples) show_examples='--examples';;
+        --examples)
+            show_examples='--examples'
+            shift
+            show_examples_args=( "$@" )
+            ;;
         *)
             if [[ "$1" =~ ^[[:digit:]]+(([[:space:]]+|\;)[[:digit:]]+)*$ ]]; then
                 code_on_parts+=( "$( printf %s "$1" | sed -E 's/[[:space:]]+/;/g' )" )
                 code_params+=( "$1" )
             else
-                printf 'echo_color: Invalid parameter: [%s].\n' "$1" >&2
+                printf 'echo_color: Invalid parameter: [%s]. Did you forget the -- ?\n' "$1" >&2
                 return 1
             fi
             ;;
@@ -163,8 +169,7 @@ EOF
     done
 
     if [[ -n "$show_examples" ]]; then
-        [[ "$debug" ]] && printf 'Showing examples.\n' >&2
-        show_colors $debug
+        show_colors "${show_examples_args[@]}"
         return 0
     fi
 
@@ -251,18 +256,16 @@ EOF
 }
 
 # Displays examples of some color codes
-# Usage: show_colors [-v|--verbose] [-d|--debug] [-c|--combos]
+# Usage: show_colors [-c|--combos] [--256] [-v|--verbose]
 show_colors () {
     usage="$( cat << EOF
 show_colors - Outputs a bunch of color examples.
 
-Usage: show_colors [-c|--combos] [--256] [-v|--verbose] [-d|--debug]
+Usage: show_colors [-c|--combos] [--256] [-v|--verbose]
     -c or --combos will add a few sections that show different color code combinations.
     --256 will add sections showing all the extended colors.
     -v or --verbose will add the uninterpreted output string as output to stderr
                     prior to the interpreted output being sent to stdout.
-    -d or --debug adds to --verbose by passing the --debug flag to calls made to echo_color.
-                  Be ready for a wall of text being sent to stderr.
 
 EOF
 )"
@@ -297,11 +300,12 @@ EOF
         bg-white      bg-light-magenta  bg-light-cyan  bg-light-yellow
     )
     effects=(
-        bold  dim  underline  strikethrough  reversed
+        bold  dim  underline  reversed  strikethrough
     )
     special_formats=(
         debug  info  warn  error  success  good  bad
     )
+    ef_codes=( 1 2 4 7 9 )
     fg_codes=( 30 90 37 97 31 91 35 95 34 94 36 96 32 92 33 93 )
     bg_codes=( 40 100 47 107 41 101 45 105 44 104 46 106 42 102 43 103 )
     output="$(
@@ -310,9 +314,9 @@ EOF
             local title code
             title="$1"
             printf '%s:\n   ' "$title"
-            for code in "${fg_codes[@]}" "${bg_codes[@]}"; do
+            for code in "${ef_codes[@]}" "${fg_codes[@]}" "${bg_codes[@]}"; do
                 printf ' \033[%dm %3d \033[0m' "$code" "$code"
-                if [[ "$code" == '93' || "$code" == '103' ]]; then
+                if [[ "$code" == '9' || "$code" == '93' || "$code" == '103' ]]; then
                     printf '\n   '
                 fi
             done
