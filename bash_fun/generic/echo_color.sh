@@ -376,33 +376,30 @@ EOF
             make_color_piece () {
                 printf '\033[%d;5;%dm %3d \033[0m' "$base" "$1" "$1"
             }
-            printf '%s: %d;5;\n' "$title" "$base"
+            printf '%s: %d;5;...\n' "$title" "$base"
             printf '  '
             for code in $( seq 0 15 ); do
-                printf '%s' "$( make_color_piece "$code" )"
+                make_color_piece "$code"
             done
             printf '\n'
             for row in $( seq 0 11 ); do
                 printf '  '
                 for column in $( seq 0 5 ); do
-                    code=$(( row * 6 + column + 16))
-                    printf '\033[%d;5;%dm %3d \033[0m' "$base" "$code" "$code"
+                    make_color_piece "$(( row * 6 + column + 16))"
                 done
                 printf '     '
                 for column in $( seq 0 5 ); do
-                    code=$(( row * 6 + column + 88))
-                    printf '\033[%d;5;%dm %3d \033[0m' "$base" "$code" "$code"
+                    make_color_piece "$(( row * 6 + column + 88))"
                 done
                 printf '     '
                 for column in $( seq 0 5 ); do
-                    code=$(( row * 6 + column + 160))
-                    printf '\033[%d;5;%dm %3d \033[0m' "$base" "$code" "$code"
+                    make_color_piece "$(( row * 6 + column + 160))"
                 done
                 printf '\n'
             done
             printf '  '
             for code in $( seq 232 256 ); do
-                printf '%s' "$( make_color_piece "$code" )"
+                make_color_piece "$code"
             done
             printf '\n'
         }
