@@ -48,34 +48,32 @@ __do_setup () {
     # Where to look for the files to source.
     func_dir="${where_i_am}/generic"
 
-    # Dependency notes:
-    # echo_color - join_str, escape_escapes (from stream-helpers).
-
     # All of the filenames to source.
     # These will be looked for in $func_dir and '.sh' will be appended.
     # They will be sourced in this order too.
     func_base_file_names=(
-        'join_str'        'stream-helpers'  'fp'          'add_to_filename'
-        'change_word'     'chrome_cors'     'echo_color'  'echo_do'
-        'get_shell_type'  'hrr'             'i_can'       'java-switchers'
-        'jqq'             'print_args'      'ps_grep'     'multi_line_replace'
-        'to_date'         'to_epoch'        'get_all_system_logs'
-        'check_system_log_timestamp_order'  'getlines'    'string_repeat'
-        'pretty_json'     'ugly_json'       're_line'     'strip_final_newline'
-        'show_last_exit_code'
+        'add_to_filename'  'change_word'          'check_system_log_timestamp_order'  'chrome_cors'          'echo_color'
+        'echo_do'          'escape_escapes'       'fp'                                'get_all_system_logs'  'get_shell_type'
+        'getlines'         'hrr'                  'i_can'                             'java-switchers'       'join_str'
+        'jqq'              'multi_line_replace'   'pretty_json'                       'print_args'           'ps_grep'
+        're_line'          'show_last_exit_code'  'string_repeat'                     'strip_colors'         'strip_final_newline'
+        'tee_pbcopy'       'tee_strip_colors'     'tee_strip_colors_pbcopy'           'to_date'              'to_epoch'
+        'ugly_json'
     )
 
     # These are functions that will be double checked after sourcing to make sure they got added to the environment.
     # If a problem is found, then a message will be output at the end.
     funcs_to_double_check=(
-        'change_word'   'chrome_cors'     'echo_color'          'show_colors'        'to_date'        'to_epoch'    'fp'
-        'echo_red'      'echo_green'      'echo_yellow'         'echo_blue'          'echo_cyan'      'echo_bold'   'echo_underline'
-        'echo_debug'    'echo_info'       'echo_warn'           'echo_error'         'echo_success'   'echo_good'   'echo_bad'
-        'echo_do'       'get_shell_type'  'hr'   'hrr'   'hhr'  'pick_a_palette'     'ps_grep'        'tee_pbcopy'  'add_to_filename'
-        'i_can'         'can_i'           'java_8_activate'     'java_8_deactivate'  'join_str'       'jqq'         'print_args'
-        'strip_colors'  'escape_escapes'  'multi_line_replace'  'to_stdout_and_strip_colors_log'      'to_stderr_and_strip_colors_log'
-        'get_all_system_logs'  'check_system_log_timestamp_order'  'getlines'        'string_repeat'  'tee_pbcopy_strip_colors'
-        'pretty_json'   'ugly_json'       're_line'           'strip_final_newline'  'show_last_exit_code'
+        'add_to_filename'  'change_word'          'check_system_log_timestamp_order'  'chrome_cors'          'echo_color'
+            'echo_red'    'echo_green'  'echo_yellow'  'echo_blue'   'echo_cyan'     'echo_bold'  'echo_underline'
+            'echo_debug'  'echo_info'   'echo_warn'    'echo_error'  'echo_success'  'echo_good'  'echo_bad'
+        'echo_do'          'escape_escapes'       'fp'                                'get_all_system_logs'  'get_shell_type'
+        'getlines'         'hrr'                  'i_can'                             'join_str'
+            'hr'  'hhr'  'pick_a_palette'  'can_i'  'java_8_activate'  'java_8_deactivate'
+        'jqq'              'multi_line_replace'   'pretty_json'                       'print_args'           'ps_grep'
+        're_line'          'show_last_exit_code'  'string_repeat'                     'strip_colors'         'strip_final_newline'
+        'tee_pbcopy'       'tee_strip_colors'     'tee_strip_colors_pbcopy'           'to_date'              'to_epoch'
+        'ugly_json'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
