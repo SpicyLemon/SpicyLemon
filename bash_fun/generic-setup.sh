@@ -30,7 +30,7 @@ __do_setup () {
     # input vars
     local where_i_am
     # Variables defining configuration.
-    local title func_dir func_base_file_names funcs_to_double_check required_external desired_external
+    local title func_dir func_base_file_names extra_funcs_to_check required_external desired_external
     # Variables that define strings used in verbose output.
     local info ok warn error
     # Variables that will hold output.
@@ -50,30 +50,24 @@ __do_setup () {
 
     # All of the filenames to source.
     # These will be looked for in $func_dir and '.sh' will be appended.
-    # They will be sourced in this order too.
+    # Handy command for generating this:
+    #   ls *.sh | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
-        'add_to_filename'  'change_word'          'check_system_log_timestamp_order'  'chrome_cors'          'echo_color'
-        'echo_do'          'escape_escapes'       'fp'                                'get_all_system_logs'  'get_shell_type'
-        'getlines'         'hrr'                  'i_can'                             'java-switchers'       'join_str'
-        'jqq'              'multi_line_replace'   'pretty_json'                       'print_args'           'ps_grep'
-        're_line'          'show_last_exit_code'  'string_repeat'                     'strip_colors'         'strip_final_newline'
-        'tee_pbcopy'       'tee_strip_colors'     'tee_strip_colors_pbcopy'           'to_date'              'to_epoch'
-        'ugly_json'
+        'add_to_filename'      'change_word'     'check_system_log_timestamp_order'  'chrome_cors'              'echo_color'
+        'echo_do'              'escape_escapes'  'fp'                                'get_all_system_logs'      'get_shell_type'
+        'getlines'             'hrr'             'i_can'                             'java_8_activate'          'java_8_deactivate'
+        'join_str'             'jqq'             'multi_line_replace'                'pretty_json'              'print_args'
+        'ps_grep'              're_line'         'show_last_exit_code'               'string_repeat'            'strip_colors'
+        'strip_final_newline'  'tee_pbcopy'      'tee_strip_colors'                  'tee_strip_colors_pbcopy'  'to_date'
+        'to_epoch'             'ugly_json'
     )
 
-    # These are functions that will be double checked after sourcing to make sure they got added to the environment.
-    # If a problem is found, then a message will be output at the end.
-    funcs_to_double_check=(
-        'add_to_filename'  'change_word'          'check_system_log_timestamp_order'  'chrome_cors'          'echo_color'
-            'echo_red'    'echo_green'  'echo_yellow'  'echo_blue'   'echo_cyan'     'echo_bold'  'echo_underline'
-            'echo_debug'  'echo_info'   'echo_warn'    'echo_error'  'echo_success'  'echo_good'  'echo_bad'
-        'echo_do'          'escape_escapes'       'fp'                                'get_all_system_logs'  'get_shell_type'
-        'getlines'         'hrr'                  'i_can'                             'join_str'
-            'hr'  'hhr'  'pick_a_palette'  'can_i'  'java_8_activate'  'java_8_deactivate'
-        'jqq'              'multi_line_replace'   'pretty_json'                       'print_args'           'ps_grep'
-        're_line'          'show_last_exit_code'  'string_repeat'                     'strip_colors'         'strip_final_newline'
-        'tee_pbcopy'       'tee_strip_colors'     'tee_strip_colors_pbcopy'           'to_date'              'to_epoch'
-        'ugly_json'
+    # These are extra functions defined in the files that will be checked (along with the primary functions).
+    extra_funcs_to_check=(
+        'echo_red'    'echo_green'  'echo_yellow'  'echo_blue'   'echo_cyan'     'echo_bold'  'echo_underline'
+        'echo_debug'  'echo_info'   'echo_warn'    'echo_error'  'echo_success'  'echo_good'  'echo_bad'
+        'hr'  'hhr'  'pick_a_palette'
+        'can_i'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
@@ -163,18 +157,16 @@ __do_setup () {
     done
     __if_verbose "$info" 1 "Done sourcing the files."
 
-    if [[ "${#funcs_to_double_check[@]}" -gt '0'  ]]; then
-        __if_verbose "$info" 1 "Checking that functions are available."
-        for entry in "${funcs_to_double_check[@]}"; do
-            if ! __i_can "$entry"; then
-                problems+=( "The [$entry] command failed to load." )
-                __if_verbose "$error" 2 "Command failed to load: [$entry]."
-            else
-                __if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
-            fi
-        done
-        __if_verbose "$info" 1 "Done checking that functions are available."
-    fi
+    __if_verbose "$info" 1 "Checking that functions are available."
+    for entry in "${func_base_file_names[@]}" "${extra_funcs_to_check[@]}"; do
+        if ! __i_can "$entry"; then
+            problems+=( "The [$entry] command failed to load." )
+            __if_verbose "$error" 2 "Command failed to load: [$entry]."
+        else
+            __if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
+        fi
+    done
+    __if_verbose "$info" 1 "Done checking that functions are available."
 
     __if_verbose "$info" 1 "Doing final check for problems encountered."
     if [[ "${#problems[@]}" -gt '0' ]]; then
