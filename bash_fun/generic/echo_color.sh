@@ -27,15 +27,6 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-if [[ "$sourced" != 'YES' ]]; then
-    >&2 cat << EOF
-This script is meant to be sourced instead of executed.
-Please run this command to enable the functionality contained in within: $( printf '\033[1;37msource %s\033[0m' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" )
-EOF
-    exit 1
-fi
-unset sourced
-
 echo_color () {
     local usage
     usage="$( cat << EOF
@@ -499,5 +490,32 @@ echo_good () {
 echo_bad () {
     echo_color 'bad' -- "$@"
 }
+
+if [[ "$sourced" != 'YES' ]]; then
+    where_i_am="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
+    require_command () {
+        local cmd cmd_fn
+        cmd="$1"
+        if ! command -v "$cmd" > /dev/null 2>&1; then
+            cmd_fn="$where_i_am/$cmd.sh"
+            if [[ -f "$cmd_fn" ]]; then
+                source "$cmd_fn"
+                if [[ "$?" -ne '0' ]] || ! command -v "$cmd" > /dev/null 2>&1; then
+                    ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                      printf 'The file [%s] was found and sourced, but there was a problem loading the [%s] function.\n' "$cmd_fn" "$cmd" ) >&2
+                    return 1
+                fi
+            else
+                ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                  printf 'The file [%s] was looked for, but not found.\n' "$cmd_fn" ) >&2
+                return 1
+            fi
+        fi
+    }
+    require_command 'join_str' || exit $?
+    echo_color "$@"
+    exit $?
+fi
+unset sourced
 
 return 0
