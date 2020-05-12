@@ -1,6 +1,7 @@
 #!/bin/bash
 # This file contains various functions for printing things to your terminal with colors.
-# This file is meant to be sourced to add the functions to your environment.
+# This file can be sourced to add echo_color and a few other handy functions to your environment.
+# This file can also be executed to run the echo_color function without adding anything to your environment.
 #
 # File contents:
 #   echo_color  ------> Outputs a message using a specific color code.
