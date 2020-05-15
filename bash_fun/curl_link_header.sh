@@ -51,12 +51,12 @@ curl_link_header () {
             __curl_link_header_usage
             return 0
             ;;
-        --max-links)
+        --max-links|--max-calls)
             max_calls="$2"
             shift
             ;;
-        --max-links=*)
-            max_calls="$( sed 's/^--max-links=//;' <<< "$1" )"
+        --max-links=*|--max-calls=*)
+            max_calls="$( sed -E 's/^--max-(links|calls)=//;' <<< "$1" )"
             ;;
         --delimiter)
             delimiter="$2"
