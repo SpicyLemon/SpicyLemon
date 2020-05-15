@@ -204,10 +204,9 @@ curl_link_header () {
         # Additionally, since they're inside the curl_link_header function, they have access to all the variables from there.
 
         # Figure out what the next link is.
-        # Usage: __curl_link_header_get_next_link
-        __curl_link_header_get_next_link () {
+        # Usage: __curl_link_header_set_next_link
+        __curl_link_header_set_next_link () {
             local full_link_header link_value_entries rel_next_link_value
-            next_link=
             if [[ ! -f "$header_file" ]]; then
                 printf 'Header file not found: [%s].\n' "$header_file" >&2
                 return 1
@@ -226,6 +225,10 @@ curl_link_header () {
             [[ -n "$verbose" ]] && printf 'Link-value entries in header:\n%s\n' "$link_value_entries" >&2
 
             if [[ -n "$interactive" ]]; then
+                if [[ "$calls_made" -ge "$max_calls" ]]; then
+                    [[ -n "$verbose" ]] && printf 'Max number of calls reached.\n' >&2
+                    return 0
+                fi
                 rel_next_link_value="$( fzf --tac +m --cycle --header='Select the desired link-value.'<<< "$link_value_entries" )"
                 if [[ -z "$rel_next_link_value" ]]; then
                     [[ -n "$verbose" ]] && printf 'No link-value selected.\n' >&2
@@ -276,8 +279,9 @@ curl_link_header () {
             fi
 
             # Get the next link unless there was an issue.
+            next_link=
             if [[ "$exit_code" -eq '0' ]]; then
-                __curl_link_header_get_next_link
+                __curl_link_header_set_next_link
             fi
         }
 
@@ -298,7 +302,7 @@ curl_link_header () {
         done
 
         [[ -n "$verbose" ]] && printf 'Made [%s] curl calls.\n' "$calls_made" >&2
-        [[ -n "$next_link" ]] && printf 'The final call still had a next link: [%s].\n' "$next_link" >&2
+        [[ -n "$next_link" ]] && printf 'The final result still had a [rel="%s"] link: [%s].\n' "$rel_value" "$next_link" >&2
 
         # Unfortunately, the subshell makes all variables set inside it go back to what they used to be when it ends.
         # Fortunatly though, all I want out of here is the exit code! Easy peasy!
