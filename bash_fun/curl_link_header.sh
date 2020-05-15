@@ -16,12 +16,14 @@ curl_link_header - Uses the link header in a result to get multiple pages of res
 
 This function uses curl to do all the work.
 
-Usage: curl_link_header [--max-calls NUM] [--delimiter <text>] <curl options>
+Usage: curl_link_header [--max-calls NUM] [--delimiter <text>] [--rel <text>] <curl options>
     The --max-calls option will limit the number of curl calls made.
         The minimum NUM is 1. The maximum NUM is 65535.
         A NUM of 1 would be the same as just using the curl commmand with the provided options.
         If not provided, the default is 100.
     The --delimiter option defines some text that will be output before every request except the first.
+    The --rel option defines which rel link to follow.
+        If not provided, the default "next" is used.
 
 See curl --help for information on curl options.
 
@@ -173,9 +175,49 @@ curl_link_header () {
 
     # Starting up a sub-shell in order to make a function private that also has access to the variable so far.
     (
+        # Create some functions in a subshell to prevent them from being used outside the curl_link_header function.
+        # It also keeps the outside environment a bit cleaner.
+        # Additionally, since they're inside the curl_link_header function, they have access to all the variables from there.
+
+        # Figure out what the next link is.
+        # Usage: next_link="$( __curl_link_header_get_next_link )"
+        __curl_link_header_get_next_link () {
+            local full_link_header link_header_values rel_next_link_value next_link_retval
+            if [[ ! -f "$header_file" ]]; then
+                echo -e "Header file not found: [$header_file]." >&2
+                return 1
+            elif [[ ! -r "$header_file" ]]; then
+                echo -e "Cannot read from header file: [$header_file]." >&2
+                return 2
+            fi
+
+            full_link_header="$( grep -i '^link:' "$header_file" )"
+            if [[ -z "$full_link_header" ]]; then
+                echo -e "No link header found in response header." >&2
+                return 10
+            fi
+
+            link_header_values="$( echo -e "$full_link_header" | sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' )"
+            [[ -n "$verbose" ]] && echo -e "Link-value entries in header:\n$link_header_values" >&2
+
+            rel_next_link_value="$( echo -e "$link_header_values" | grep -E ';[[:space:]]*rel="next"[[:space:]]*(;|$)' )"
+            if [[ -z "$rel_next_link_value" ]]; then
+                [[ -n "$verbose" ]] && echo -e "No link-value with the [rel=\"next\"] link-param found in the link header." >&2
+                # No normal output here because this is an expected thing on the last result.
+                return 0
+            fi
+            [[ -n "$verbose" ]] && echo -e "Link-value found for [rel=\"next\"]:\n$rel_next_link_value" >&2
+
+            next_link_retval="$( echo -e "$rel_next_link_value" | sed -E 's/^.*<([^>]*)>.*$/\1/;' )"
+            if [[ -z "$next_link_retval" ]]; then
+                echo -e "The URI-Reference in the link-value with the [rel=\"next\"] link-param, is empty." >&2
+                return 12
+            fi
+            [[ -n "$verbose" ]] && echo -e "Next link: $next_link_retval" >&2
+            printf %s "$next_link_retval"
+        }
+
         # This function is for actually making the curl call, and getting the next link.
-        # It's created inside the subshell to prevent it from being used outside the curl_link_header function.
-        # But since it's inside the curl_link_header function, it has access to the variables from there.
         # Usage: __curl_link_header_do_curl "$url"
         __curl_link_header_do_curl () {
             local url curl_cmd
@@ -196,7 +238,7 @@ curl_link_header () {
 
             # Get the next link unless there was an issue.
             if [[ "$exit_code" -eq '0' ]]; then
-                next_link="$( __curl_link_header_get_link "$header_file" "$verbose" )"
+                next_link="$( __curl_link_header_get_next_link )"
             else
                 next_link=
             fi
@@ -221,7 +263,7 @@ curl_link_header () {
         [[ -n "$verbose" ]] && echo "Made [$calls_made] curl calls." >&2
         [[ -n "$next_link" ]] && echo "The final call still had a next link: [$next_link]." >&2
 
-        # Unfortunately, the subshell makes all variables set inside it, go back to what they used to be when it ends.
+        # Unfortunately, the subshell makes all variables set inside it go back to what they used to be when it ends.
         # Fortunatly though, all I want out of here is the exit code! Easy peasy!
         exit "$exit_code"
     )
@@ -236,46 +278,6 @@ curl_link_header () {
     [[ -n "$verbose" ]] && echo -e "Returning with exit code [$exit_code]." >&2
 
     return "$exit_code"
-}
-
-# Usage: next_link="$( __curl_link_header_get_link "$header_file" "$verbose" )"
-__curl_link_header_get_link () {
-    local header_file verbose
-    local full_link_header link_header_values rel_next_link_value next_link
-    header_file="$1"
-    verbose="$2"
-    if [[ ! -f "$header_file" ]]; then
-        echo -e "Header file not found: [$header_file]." >&2
-        return 1
-    elif [[ ! -r "$header_file" ]]; then
-        echo -e "Cannot read from header file: [$header_file]." >&2
-        return 2
-    fi
-
-    full_link_header="$( grep -i '^link:' "$header_file" )"
-    if [[ -z "$full_link_header" ]]; then
-        echo -e "No link header found in response." >&2
-        return 10
-    fi
-
-    link_header_values="$( echo -e "$full_link_header" | sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' )"
-    [[ -n "$verbose" ]] && echo -e "Link-value entries in header:\n$link_header_values" >&2
-
-    rel_next_link_value="$( echo -e "$link_header_values" | grep -E ';[[:space:]]*rel="next"[[:space:]]*(;|$)' )"
-    if [[ -z "$rel_next_link_value" ]]; then
-        [[ -n "$verbose" ]] && echo -e "No link-value with the [rel=\"next\"] link-param found in the link header." >&2
-        # No normal output here because this is an expected thing on the last result.
-        return 0
-    fi
-    [[ -n "$verbose" ]] && echo -e "Link-value found for [rel=\"next\"]:\n$rel_next_link_value" >&2
-
-    next_link="$( echo -e "$rel_next_link_value" | sed -E 's/^.*<([^>]*)>.*$/\1/;' )"
-    if [[ -z "$next_link" ]]; then
-        echo -e "The URI-Reference in the link-value with the [rel=\"next\"] link-param, is empty." >&2
-        return 12
-    fi
-    [[ -n "$verbose" ]] && echo -e "Next link: $next_link" >&2
-    printf %s "$next_link"
 }
 
 # If this script was not sourced make it do things now.
