@@ -22,7 +22,7 @@ Usage: curl_link_header [--max-calls NUM] [--delimiter <text>] [--rel <text>] <c
         A NUM of 1 would be the same as just using the curl commmand with the provided options.
         If not provided, the default is 100.
     The --delimiter option defines some text that will be output before every request except the first.
-    The --rel option defines which rel link to follow.
+    The --rel option defines the rel of the link-value entry to follow.
         If not provided, the default "next" is used.
 
 See curl --help for information on curl options.
@@ -39,7 +39,7 @@ EOF
 
 # The main wrapper command that adds the extra stuff.
 curl_link_header () {
-    local curl_args max_calls delimiter clean_up_header_file next_link exit_code
+    local curl_args max_calls delimiter rel_value clean_up_header_file next_link exit_code
     local initial_url url_count header_file output_file output_file_count create_dirs dir_to_create verbose
     curl_args=()
     url_count=0
@@ -55,14 +55,21 @@ curl_link_header () {
             shift
             ;;
         --max-links=*)
-            max_calls="$( printf %s "$1" | sed 's/^--max-links=//;' )"
+            max_calls="$( sed 's/^--max-links=//;' <<< "$1" )"
             ;;
         --delimiter)
             delimiter="$2"
             shift
             ;;
         --delimiter=*)
-            delimiter="$( printf %s "$1" | sed 's/^--delimiter=//;' )"
+            delimiter="$( sed 's/^--delimiter=//;' <<< "$1" )"
+            ;;
+        --rel)
+            rel_value="$2"
+            shift
+            ;;
+        --rel=*)
+            rel_value="$( sed 's/^--rel=//;' <<< "$1" )"
             ;;
         -D|--dump-header)
             header_file="$2"
@@ -70,7 +77,7 @@ curl_link_header () {
             shift
             ;;
         -D=*|--dump-header=*)
-            header_file="$( printf %s "$1" | sed -E 's/^(-D|--dump-header)=//;' )"
+            header_file="$( sed -E 's/^(-D|--dump-header)=//;' <<< "$1" )"
             curl_args+=( "$1" )
             ;;
         -o|--output)
@@ -78,7 +85,7 @@ curl_link_header () {
             output_file_count=$(( output_file_count + 1 ))
             ;;
         -o=*|--output=*)
-            output_file="$( printf %s "$1" | sed -E 's/^(-o|--output)=//;' )"
+            output_file="$( sed -E 's/^(-o|--output)=//;' <<< "$1" )"
             output_file_count=$(( output_file_count + 1 ))
             ;;
         --create-dirs)
@@ -93,7 +100,7 @@ curl_link_header () {
             return 1
             ;;
         *)
-            if [[ -n "$( printf %s "$1" | grep -iE '^https?://' )" ]]; then
+            if [[ -n "$( grep -iE '^https?://' <<< "$1" )" ]]; then
                 initial_url="$1"
                 url_count=$(( url_count + 1 ))
             else
@@ -107,7 +114,7 @@ curl_link_header () {
     if [[ -z "$initial_url" ]]; then
         printf 'No initial url was found in the provided arguments.\n' >&2
         return 1
-    elif [[ -n "$( printf %s "$initial_url" | grep -E '[^\\][]{}[]' )" ]]; then
+    elif [[ -n "$( grep -E '[^\\][]{}[]' <<< "$initial_url" )" ]]; then
         printf 'Variable replacement inside urls is not supported by the curl_link_header function.\n' >&2
         return 1
     elif [[ "$url_count" -gt '1' ]]; then
@@ -226,7 +233,7 @@ curl_link_header () {
             [[ -n "$verbose" ]] && printf 'Call # [% 5d]\n' "$calls_made" >&2
             # Make the curl call and set the exit code.
             if [[ -n "$output_file" ]]; then
-                [[ -n "$verbose" ]] && printf 'Executing command: %s >> $s\n' "${curl_cmd[*]}" "$output_file" >&2
+                [[ -n "$verbose" ]] && printf 'Executing command: %s >> %s\n' "${curl_cmd[*]}" "$output_file" >&2
                 "${curl_cmd[@]}" >> "$output_file"
                 exit_code=$?
             else
