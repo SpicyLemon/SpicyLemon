@@ -180,9 +180,10 @@ curl_link_header () {
         # Additionally, since they're inside the curl_link_header function, they have access to all the variables from there.
 
         # Figure out what the next link is.
-        # Usage: next_link="$( __curl_link_header_get_next_link )"
+        # Usage: __curl_link_header_get_next_link
         __curl_link_header_get_next_link () {
-            local full_link_header link_header_values rel_next_link_value next_link_retval
+            local full_link_header link_header_values rel_next_link_value
+            next_link=
             if [[ ! -f "$header_file" ]]; then
                 echo -e "Header file not found: [$header_file]." >&2
                 return 1
@@ -208,13 +209,13 @@ curl_link_header () {
             fi
             [[ -n "$verbose" ]] && echo -e "Link-value found for [rel=\"next\"]:\n$rel_next_link_value" >&2
 
-            next_link_retval="$( echo -e "$rel_next_link_value" | sed -E 's/^.*<([^>]*)>.*$/\1/;' )"
-            if [[ -z "$next_link_retval" ]]; then
+            next_link="$( echo -e "$rel_next_link_value" | sed -E 's/^.*<([^>]*)>.*$/\1/;' )"
+            if [[ -z "$next_link" ]]; then
                 echo -e "The URI-Reference in the link-value with the [rel=\"next\"] link-param, is empty." >&2
                 return 12
             fi
-            [[ -n "$verbose" ]] && echo -e "Next link: $next_link_retval" >&2
-            printf %s "$next_link_retval"
+            [[ -n "$verbose" ]] && echo -e "Next link: $next_link" >&2
+            return 0
         }
 
         # This function is for actually making the curl call, and getting the next link.
@@ -238,9 +239,7 @@ curl_link_header () {
 
             # Get the next link unless there was an issue.
             if [[ "$exit_code" -eq '0' ]]; then
-                next_link="$( __curl_link_header_get_next_link )"
-            else
-                next_link=
+                __curl_link_header_get_next_link
             fi
         }
 
