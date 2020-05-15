@@ -39,7 +39,7 @@ EOF
 
 # The main wrapper command that adds the extra stuff.
 curl_link_header () {
-    local curl_args curl_arg max_calls delimiter clean_up_header_file next_link exit_code
+    local curl_args max_calls delimiter clean_up_header_file next_link exit_code
     local initial_url url_count header_file output_file output_file_count create_dirs dir_to_create verbose
     curl_args=()
     url_count=0
@@ -89,7 +89,7 @@ curl_link_header () {
             curl_args+=( "$1" )
             ;;
         -O|--remote-name|-J|--remote-header-name)
-            echo -e "The $1 option is not supported by the curl_link_header function." >&2
+            printf 'The [%s] option is not supported by the curl_link_header function.\n' "$1" >&2
             return 1
             ;;
         *)
@@ -105,34 +105,34 @@ curl_link_header () {
     done
     # Make sure we've got an initial url, and that we were given only one.
     if [[ -z "$initial_url" ]]; then
-        echo -e "No initial url was found in the provided arguments." >&2
+        printf 'No initial url was found in the provided arguments.\n' >&2
         return 1
     elif [[ -n "$( printf %s "$initial_url" | grep -E '[^\\][]{}[]' )" ]]; then
-        echo -e "Variable replacement inside urls is not supported by the curl_link_header function." >&2
+        printf 'Variable replacement inside urls is not supported by the curl_link_header function.\n' >&2
         return 1
     elif [[ "$url_count" -gt '1' ]]; then
-        echo -e "This curl_link_header function only supports a single url." >&2
+        printf 'This curl_link_header function only supports a single url.\n' >&2
         return 1
     fi
     # Make sure the --max-links number is valid.
     if [[ -z "$max_calls" ]]; then
         max_calls="100"
     elif [[ "$max_calls" =~ [^[:digit:]] ]]; then
-        echo -e "The --max-links must be a positive number, but [$max_calls] was provided." >&2
+        printf 'The --max-links must be a positive number, but [%s] was provided.\n' "$max_calls" >&2
         return 1
     elif [[ "$max_calls" -lt '1' ]]; then
-        echo -e "The --max-links must be at least 1, but [$max_calls] was provided." >&2
+        printf 'The --max-links must be at least 1, but [%s] was provided.\n' "$max_calls" >&2
         return 1
     elif [[ "$max_calls" -gt '65535' ]]; then
-        echo -e "The --max-links must be at most 65535, but [$max_calls] was provided." >&2
+        printf 'The --max-links must be at most 65535, but [%s] was provided.\n' "$max_calls" >&2
         return 1
     fi
     # Make sure the output file is valid.
     if [[ "$output_file_count" -ge '2' ]]; then
-        echo -e "This curl_link_header function only supports a single -o or --output option." >&2
+        printf 'This curl_link_header function only supports a single -o or --output option.\n' >&2
         return 1
     elif [[ "$output_file" =~ \# ]]; then
-        echo -e "This curl_link_header function does not support # in filenames: [$output_file]." >&2
+        printf 'This curl_link_header function does not support # in filenames: [%s].\n' "$output_file" >&2
         return 1
     elif [[ "$output_file" == '-' ]]; then
         output_file=
@@ -140,14 +140,14 @@ curl_link_header () {
     fi
     # Remove the output file if it already exists.
     if [[ -n "$output_file" && -f "$output_file" ]]; then
-        [[ -n "$verbose" ]] && echo -e "Removing existing output file: [$output_file]." >&2
+        [[ -n "$verbose" ]] && printf 'Removing existing output file: [%s].\n' "$output_file" >&2
         rm "$output_file" || return $?
     fi
     # Create the directories if needed
     if [[ -n "$output_file" && -n "$create_dirs" ]]; then
         dir_to_create="$( dirname "$output_file" )"
         if [[ ! -d "$dir_to_create" ]]; then
-            [[ -n "$verbose" ]] && echo "Creating directories for output file: [$dir_to_create]." >&2
+            [[ -n "$verbose" ]] && printf 'Creating directories for output file: [%s].\n' "$dir_to_create" >&2
             mkdir -p "$dir_to_create" || return $?
         fi
     fi
@@ -157,20 +157,18 @@ curl_link_header () {
         clean_up_header_file='YES'
         header_file="$( mktemp -t curl_link_header )"
         curl_args+=( '--dump-header' "$header_file" )
-        [[ -n "$verbose" ]] && echo "Using temporary file for response header: [$header_file]." >&2
+        [[ -n "$verbose" ]] && printf 'Using temporary file for response header: [%s].\n' "$header_file" >&2
     fi
 
     if [[ -n "$verbose" ]]; then
-        echo -e    "         Initial url: [$initial_url]" >&2
-        echo -e    "           Max calls: [$max_calls]" >&2
-        echo -e    "           Delimiter: [$delimiter]" >&2
-        echo -e    "Response header file: [$header_file]$( [[ -n "$clean_up_header_file" ]] && echo -e -n ' (temporary)' )" >&2
-        echo -e    "           Output to: [$( [[ -n "$output_file" ]] && printf %s "$output_file" || echo -e -n '<stdout>' )]" >&2
-        echo -e -n " Parameters for curl:" >&2
-        for curl_arg in "${curl_args[@]}"; do
-            echo -e -n " [$curl_arg]" >&2
-        done
-        echo -e    '' >&2
+        {
+            printf '         Initial url: [%s]\n' "$initial_url"
+            printf '           Max calls: [%s]\n' "$max_calls"
+            printf '           Delimiter: [%s]\n' "$delimiter"
+            printf 'Response header file: [%s]%s\n' "$header_file" "$( [[ -n "$clean_up_header_file" ]] && printf ' (temporary)' )"
+            printf '           Output to: %s\n' "$( [[ -n "$output_file" ]] && printf '[%s]' "$output_file" || printf '<stdout>' )]"
+            printf ' Parameters for curl:'; printf ' [%s]' "${curl_args[@]}"; printf '\n'
+        } >&2
     fi
 
     # Starting up a sub-shell in order to make a function private that also has access to the variable so far.
@@ -185,36 +183,36 @@ curl_link_header () {
             local full_link_header link_header_values rel_next_link_value
             next_link=
             if [[ ! -f "$header_file" ]]; then
-                echo -e "Header file not found: [$header_file]." >&2
+                printf 'Header file not found: [%s].\n' "$header_file" >&2
                 return 1
             elif [[ ! -r "$header_file" ]]; then
-                echo -e "Cannot read from header file: [$header_file]." >&2
+                printf 'Cannot read from header file: [%s].\n' "$header_file" >&2
                 return 2
             fi
 
             full_link_header="$( grep -i '^link:' "$header_file" )"
             if [[ -z "$full_link_header" ]]; then
-                echo -e "No link header found in response header." >&2
+                printf 'No Link header found in response header [%s].\n' "$header_file" >&2
                 return 10
             fi
 
-            link_header_values="$( echo -e "$full_link_header" | sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' )"
-            [[ -n "$verbose" ]] && echo -e "Link-value entries in header:\n$link_header_values" >&2
+            link_header_values="$( sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' <<< "$full_link_header" )"
+            [[ -n "$verbose" ]] && printf 'Link-value entries in header:\n%s\n' "$link_header_values" >&2
 
-            rel_next_link_value="$( echo -e "$link_header_values" | grep -E ';[[:space:]]*rel="next"[[:space:]]*(;|$)' )"
+            rel_next_link_value="$( grep -E ';[[:space:]]*rel="next"[[:space:]]*(;|$)' <<< "$link_header_values" )"
             if [[ -z "$rel_next_link_value" ]]; then
-                [[ -n "$verbose" ]] && echo -e "No link-value with the [rel=\"next\"] link-param found in the link header." >&2
+                [[ -n "$verbose" ]] && printf 'No link-value with the [rel="next"] link-param found in the link header.\n' >&2
                 # No normal output here because this is an expected thing on the last result.
                 return 0
             fi
-            [[ -n "$verbose" ]] && echo -e "Link-value found for [rel=\"next\"]:\n$rel_next_link_value" >&2
+            [[ -n "$verbose" ]] && printf 'Link-value found for [rel=\"next\"]:\n%s\n' "$rel_next_link_value" >&2
 
-            next_link="$( echo -e "$rel_next_link_value" | sed -E 's/^.*<([^>]*)>.*$/\1/;' )"
+            next_link="$( sed -E 's/^.*<([^>]*)>.*$/\1/;' <<< "$rel_next_link_value" )"
             if [[ -z "$next_link" ]]; then
-                echo -e "The URI-Reference in the link-value with the [rel=\"next\"] link-param, is empty." >&2
+                printf 'The URI-Reference in the link-value with the [rel=\"next\"] link-param, is empty.\n' >&2
                 return 12
             fi
-            [[ -n "$verbose" ]] && echo -e "Next link: $next_link" >&2
+            [[ -n "$verbose" ]] && printf 'Next link: [%s]\n' "$next_link" >&2
             return 0
         }
 
@@ -228,11 +226,11 @@ curl_link_header () {
             [[ -n "$verbose" ]] && printf 'Call # [% 5d]\n' "$calls_made" >&2
             # Make the curl call and set the exit code.
             if [[ -n "$output_file" ]]; then
-                [[ -n "$verbose" ]] && echo -e "Executing command: ${curl_cmd[@]} >> $output_file" >&2
+                [[ -n "$verbose" ]] && printf 'Executing command: %s >> $s\n' "${curl_cmd[*]}" "$output_file" >&2
                 "${curl_cmd[@]}" >> "$output_file"
                 exit_code=$?
             else
-                [[ -n "$verbose" ]] && echo -e "Executing command: ${curl_cmd[@]}" >&2
+                [[ -n "$verbose" ]] && printf 'Executing command: %s\n' "${curl_cmd[*]}" >&2
                 "${curl_cmd[@]}"
                 exit_code=$?
             fi
@@ -259,8 +257,8 @@ curl_link_header () {
             __curl_link_header_do_curl "$next_link"
         done
 
-        [[ -n "$verbose" ]] && echo "Made [$calls_made] curl calls." >&2
-        [[ -n "$next_link" ]] && echo "The final call still had a next link: [$next_link]." >&2
+        [[ -n "$verbose" ]] && printf 'Made [%s] curl calls.\n' "$calls_made" >&2
+        [[ -n "$next_link" ]] && printf 'The final call still had a next link: [%s].\n' "$next_link" >&2
 
         # Unfortunately, the subshell makes all variables set inside it go back to what they used to be when it ends.
         # Fortunatly though, all I want out of here is the exit code! Easy peasy!
@@ -270,11 +268,11 @@ curl_link_header () {
 
     # Clean up
     if [[ -n "$clean_up_header_file" ]]; then
-        [[ -n "$verbose" ]] && echo "Deleting temporary response header file: [$header_file]." >&2
+        [[ -n "$verbose" ]] && printf 'Deleting temporary response header file: [%s].\n' "$header_file" >&2
         rm "$header_file"
     fi
 
-    [[ -n "$verbose" ]] && echo -e "Returning with exit code [$exit_code]." >&2
+    [[ -n "$verbose" ]] && printf 'Returning with exit code [%s].\n' "$exit_code" >&2
 
     return "$exit_code"
 }
