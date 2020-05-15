@@ -180,7 +180,7 @@ curl_link_header () {
         # Figure out what the next link is.
         # Usage: __curl_link_header_get_next_link
         __curl_link_header_get_next_link () {
-            local full_link_header link_header_values rel_next_link_value
+            local full_link_header link_value_entries rel_next_link_value
             next_link=
             if [[ ! -f "$header_file" ]]; then
                 printf 'Header file not found: [%s].\n' "$header_file" >&2
@@ -196,10 +196,10 @@ curl_link_header () {
                 return 10
             fi
 
-            link_header_values="$( sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' <<< "$full_link_header" )"
-            [[ -n "$verbose" ]] && printf 'Link-value entries in header:\n%s\n' "$link_header_values" >&2
+            link_value_entries="$( sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' <<< "$full_link_header" )"
+            [[ -n "$verbose" ]] && printf 'Link-value entries in header:\n%s\n' "$link_value_entries" >&2
 
-            rel_next_link_value="$( grep -E ';[[:space:]]*rel="next"[[:space:]]*(;|$)' <<< "$link_header_values" )"
+            rel_next_link_value="$( grep -E ';[[:space:]]*rel="next"[[:space:]]*(;|$)' <<< "$link_value_entries" )"
             if [[ -z "$rel_next_link_value" ]]; then
                 [[ -n "$verbose" ]] && printf 'No link-value with the [rel="next"] link-param found in the link header.\n' >&2
                 # No normal output here because this is an expected thing on the last result.
