@@ -192,7 +192,7 @@ curl_link_header () {
             printf '           Max calls: [%s]\n' "$max_calls"
             printf '           Delimiter: [%s]\n' "$delimiter"
             printf 'Response header file: [%s]%s\n' "$header_file" "$( [[ -n "$clean_up_header_file" ]] && printf ' (temporary)' )"
-            printf '           Output to: %s\n' "$( [[ -n "$output_file" ]] && printf '[%s]' "$output_file" || printf '<stdout>' )]"
+            printf '           Output to: %s\n' "$( [[ -n "$output_file" ]] && printf '[%s]' "$output_file" || printf '<stdout>' )"
             printf ' Parameters for curl:'; printf ' [%s]' "${curl_args[@]}"; printf '\n'
         } >&2
     fi
