@@ -16,7 +16,7 @@ curl_link_header - Uses the link header in a result to get multiple pages of res
 
 This function uses curl to do all the work.
 
-Usage: curl_link_header [--max-calls NUM] [--delimiter <text>] [--rel <text>] <curl options>
+Usage: curl_link_header [--max-calls NUM] [--delimiter <text>] [--rel <text>] [-i|--interactive] <curl options>
     The --max-calls option will limit the number of curl calls made.
         The minimum NUM is 1. The maximum NUM is 65535.
         A NUM of 1 would be the same as just using the curl commmand with the provided options.
@@ -24,6 +24,8 @@ Usage: curl_link_header [--max-calls NUM] [--delimiter <text>] [--rel <text>] <c
     The --delimiter option defines some text that will be output before every request except the first.
     The --rel option defines the rel of the link-value entry to follow.
         If not provided, the default "next" is used.
+    The -i or --interactive option allows you to select the desired next link to get after each result.
+        If this is provided, any --rel option will be ignored.
 
 See curl --help for information on curl options.
 
@@ -39,7 +41,7 @@ EOF
 
 # The main wrapper command that adds the extra stuff.
 curl_link_header () {
-    local curl_args max_calls delimiter rel_value egrep_escaped_rel_value clean_up_header_file next_link exit_code
+    local curl_args max_calls delimiter rel_value egrep_escaped_rel_value interactive clean_up_header_file next_link exit_code
     local initial_url url_count header_file output_file output_file_count create_dirs dir_to_create verbose
     rel_value='next'
     curl_args=()
@@ -71,6 +73,13 @@ curl_link_header () {
             ;;
         --rel=*)
             rel_value="$( sed 's/^--rel=//;' <<< "$1" )"
+            ;;
+        -i|--interactive)
+            if ! command -v 'fzf' > /dev/null 2>&1; then
+                printf 'The fzf program is required for interactive mode. See https://github.com/junegunn/fzf\n' >&2
+                return 1
+            fi
+            interactive="$1"
             ;;
         -D|--dump-header)
             header_file="$2"
@@ -179,6 +188,7 @@ curl_link_header () {
             printf '         Initial url: [%s]\n' "$initial_url"
             printf '                 rel: [%s]%s\n' "$rel_value" \
                         "$( [[ "$rel_value" != "$egrep_escaped_rel_value" ]] && printf ' escaped: [%s]' "$egrep_escaped_rel_value" )"
+            printf '         Interactive: [%s]\n' "$( [[ -n "$interactive" ]] && printf 'YES' || printf 'no' )"
             printf '           Max calls: [%s]\n' "$max_calls"
             printf '           Delimiter: [%s]\n' "$delimiter"
             printf 'Response header file: [%s]%s\n' "$header_file" "$( [[ -n "$clean_up_header_file" ]] && printf ' (temporary)' )"
@@ -215,17 +225,31 @@ curl_link_header () {
             link_value_entries="$( sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' <<< "$full_link_header" )"
             [[ -n "$verbose" ]] && printf 'Link-value entries in header:\n%s\n' "$link_value_entries" >&2
 
-            rel_next_link_value="$( grep -E ';[[:space:]]*rel="'"$egrep_escaped_rel_value"'"[[:space:]]*(;|$)' <<< "$link_value_entries" )"
-            if [[ -z "$rel_next_link_value" ]]; then
-                [[ -n "$verbose" ]] && printf 'No link-value with the [rel="%s"] link-param found in the link header.\n' "$rel_value" >&2
-                # No normal output here because this is an expected thing on the last result.
-                return 0
+            if [[ -n "$interactive" ]]; then
+                rel_next_link_value="$( fzf --tac +m --cycle --header='Select the desired link-value.'<<< "$link_value_entries" )"
+                if [[ -z "$rel_next_link_value" ]]; then
+                    [[ -n "$verbose" ]] && printf 'No link-value selected.\n' >&2
+                    # Nothing selected. Stop going.
+                    return 0
+                fi
+                [[ -n "$verbose" ]] && printf 'Link-value selected:\n%s\n' "$rel_next_link_value" >&2
+            else
+                rel_next_link_value="$( grep -E ';[[:space:]]*rel="'"$egrep_escaped_rel_value"'"[[:space:]]*(;|$)' <<< "$link_value_entries" )"
+                if [[ -z "$rel_next_link_value" ]]; then
+                    [[ -n "$verbose" ]] && printf 'No link-value with the [rel="%s"] link-param found in the link header.\n' "$rel_value" >&2
+                    # No normal output here because this is an expected thing on the last result.
+                    return 0
+                fi
+                [[ -n "$verbose" ]] && printf 'Link-value found for [rel="%s"]:\n%s\n' "$rel_value" "$rel_next_link_value" >&2
             fi
-            [[ -n "$verbose" ]] && printf 'Link-value found for [rel="%s"]:\n%s\n' "$rel_value" "$rel_next_link_value" >&2
 
             next_link="$( sed -E 's/^.*<([^>]*)>.*$/\1/;' <<< "$rel_next_link_value" )"
             if [[ -z "$next_link" ]]; then
-                printf 'The URI-Reference in the link-value with the [rel="%s"] link-param, is empty.\n' "$rel_value" >&2
+                if [[ -n "$interactive" ]]; then
+                    printf 'The URI-Reference in the selected link-value, is empty.\n' >&2
+                else
+                    printf 'The URI-Reference in the link-value with the [rel="%s"] link-param, is empty.\n' "$rel_value" >&2
+                fi
                 return 12
             fi
             [[ -n "$verbose" ]] && printf 'Next link: [%s]\n' "$next_link" >&2
