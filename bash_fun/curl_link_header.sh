@@ -39,8 +39,9 @@ EOF
 
 # The main wrapper command that adds the extra stuff.
 curl_link_header () {
-    local curl_args max_calls delimiter rel_value clean_up_header_file next_link exit_code
+    local curl_args max_calls delimiter rel_value egrep_escaped_rel_value clean_up_header_file next_link exit_code
     local initial_url url_count header_file output_file output_file_count create_dirs dir_to_create verbose
+    rel_value='next'
     curl_args=()
     url_count=0
     output_file_count=0
@@ -134,6 +135,12 @@ curl_link_header () {
         printf 'The --max-links must be at most 65535, but [%s] was provided.\n' "$max_calls" >&2
         return 1
     fi
+    # Make sure we have a --rel value.
+    if [[ -z "$rel_value" ]]; then
+        printf 'No rel value defined.\n' >&2
+        return 1
+    fi
+    egrep_escaped_rel_value="$( sed 's/[][\.|$(){}?+*^]/\\&/g' <<< "$rel_value" )"
     # Make sure the output file is valid.
     if [[ "$output_file_count" -ge '2' ]]; then
         printf 'This curl_link_header function only supports a single -o or --output option.\n' >&2
@@ -170,6 +177,8 @@ curl_link_header () {
     if [[ -n "$verbose" ]]; then
         {
             printf '         Initial url: [%s]\n' "$initial_url"
+            printf '                 rel: [%s]%s\n' "$rel_value" \
+                        "$( [[ "$rel_value" != "$egrep_escaped_rel_value" ]] && printf ' escaped: [%s]' "$egrep_escaped_rel_value" )"
             printf '           Max calls: [%s]\n' "$max_calls"
             printf '           Delimiter: [%s]\n' "$delimiter"
             printf 'Response header file: [%s]%s\n' "$header_file" "$( [[ -n "$clean_up_header_file" ]] && printf ' (temporary)' )"
@@ -206,17 +215,17 @@ curl_link_header () {
             link_value_entries="$( sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' <<< "$full_link_header" )"
             [[ -n "$verbose" ]] && printf 'Link-value entries in header:\n%s\n' "$link_value_entries" >&2
 
-            rel_next_link_value="$( grep -E ';[[:space:]]*rel="next"[[:space:]]*(;|$)' <<< "$link_value_entries" )"
+            rel_next_link_value="$( grep -E ';[[:space:]]*rel="'"$egrep_escaped_rel_value"'"[[:space:]]*(;|$)' <<< "$link_value_entries" )"
             if [[ -z "$rel_next_link_value" ]]; then
-                [[ -n "$verbose" ]] && printf 'No link-value with the [rel="next"] link-param found in the link header.\n' >&2
+                [[ -n "$verbose" ]] && printf 'No link-value with the [rel="%s"] link-param found in the link header.\n' "$rel_value" >&2
                 # No normal output here because this is an expected thing on the last result.
                 return 0
             fi
-            [[ -n "$verbose" ]] && printf 'Link-value found for [rel=\"next\"]:\n%s\n' "$rel_next_link_value" >&2
+            [[ -n "$verbose" ]] && printf 'Link-value found for [rel="%s"]:\n%s\n' "$rel_value" "$rel_next_link_value" >&2
 
             next_link="$( sed -E 's/^.*<([^>]*)>.*$/\1/;' <<< "$rel_next_link_value" )"
             if [[ -z "$next_link" ]]; then
-                printf 'The URI-Reference in the link-value with the [rel=\"next\"] link-param, is empty.\n' >&2
+                printf 'The URI-Reference in the link-value with the [rel="%s"] link-param, is empty.\n' "$rel_value" >&2
                 return 12
             fi
             [[ -n "$verbose" ]] && printf 'Next link: [%s]\n' "$next_link" >&2
