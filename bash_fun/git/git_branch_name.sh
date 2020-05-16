@@ -15,12 +15,12 @@
 
 # Usage: git_branch_name
 git_branch_name () {
-    if in_git_folder; then
-        printf '%s\n' "$( git branch | grep '^\*' | sed 's/^\* //' )"
-        return 0
+    if ! in_git_folder; then
+        printf 'git_branch_name: Not in a git repo.\n' >&2
+        return 1
     fi
-    printf 'git_branch_name: Not in a git repo.\n' >&2
-    return 1
+    printf '%s\n' "$( git branch | grep '^\*' | sed 's/^\* //' )"
+    return 0
 }
 
 if [[ "$sourced" != 'YES' ]]; then
