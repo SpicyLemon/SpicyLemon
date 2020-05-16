@@ -80,7 +80,7 @@ if [[ "$sourced" != 'YES' ]]; then
             fi
         fi
     }
-    require_command in_git_folder
+    require_command 'in_git_folder' || exit $?
     __git_get_all_repos "$@"
     exit $?
 fi
