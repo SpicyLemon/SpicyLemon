@@ -48,7 +48,7 @@ __git_echo_do () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    echo_do "$@"
+    __git_echo_do "$@"
     exit $?
 fi
 unset sourced
