@@ -1,22 +1,17 @@
 #!/bin/bash
-# This file contains lots of handy functions for dealing with git.
-# File contents:
-#   in_git_folder  --------> Helper function for testing if you're currently in a git folder.
-#   gcb  ------------------> Git Change Branch - Select a branch and switch to it.
-#   gcba  -----------------> Git Change Branch (All) - Gets a list of all branches (local and remote) and lets you pick one to checkout.
-#   gcbm  -----------------> Git Change Branch (to) Master - Checkout the master branch.
-#   gdb  ------------------> Git Delete Branches - Select branches that you want to delete, and then deletes them.
-#   bn  -------------------> Branch Name - Outputs your current branch name.
-#   gpm  ------------------> Git Pull Merge (Master) - Pull master and merge it into your branch.
-#   gsu  ------------------> Git Set Upstream - Sets the upstream appropriately for the repo and branch you're in.
-#   clean_git_repo  -------> Takes several actions to help you clean up a git repo.
-#   gfb  ------------------> Pulls master and creates a fresh branch from it.
-#   list_extra_branches  --> List all the local extra branches in all the local repos.
-#   master_pull_all  ------> Finds all your repos and does a pull on the master branches of each one.
+# This file contains the __git_get_all_repos function that outputs all known git repo folders on the system.
+# This file can be sourced to add the __git_get_all_repos function to your environment.
+# This file can also be executed to run the __git_get_all_repos function without adding it to your environment.
 #
-# Depends on:
-#   fzf - Command-line fuzzy finder - https://github.com/junegunn/fzf - brew install fzf
-#   jq - Command-line JSON processor - https://github.com/stedolan/jq - brew install jq
+# File contents:
+#   __git_get_all_repos  --> Gets a list of all the known git repo folders.
+#
+# In order to find the desired folders, this function will look at the following environment variables:
+#   GIT_REPO_DIR, GITLAB_REPO_DIR, GITHUB_REPO_DIR
+# For each of those variables that are defined, and contain the path to a directory, that dirctory will be looked in.
+# Each direct sub-directory will be examined to see if it as git repo. If so, it will be part of the output.
+# In order to use this file as an executable, those environment variables must also be exported.
+#
 
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
@@ -24,287 +19,22 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-if [[ "$sourced" != 'YES' ]]; then
-    >&2 cat << EOF
-This script is meant to be sourced instead of executed.
-Please run this command to enable the functionality contained in within: $( printf '\033[1;37msource %s\033[0m' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" )
-EOF
-    exit 1
-fi
-unset sourced
-
-# Output a command, then execute it.
-# Usage: __git_echo_do <command> [<arg1> [<arg2> ...]]
-#   or   __git_echo_do "command string"
-# Examples:
-#   __git_echo_do say -vVictoria -r200 "Buu Whoa"
-# The exit code of the command will be returned by this function.
-# If no command is provided, this will return with exit code 124
-__git_echo_do () {
-    local cmd_pieces pieces_for_output cmd_piece retval
-    cmd_pieces=()
-    if [[ "$#" > '0' ]]; then
-        cmd_pieces+=( "$@" )
-    fi
-    if [[ "${#cmd_pieces[@]}" -eq '0' || "${cmd_pieces[@]}" =~ ^[[:space:]]*$ ]]; then
-        return 124
-    fi
-    pieces_for_output=()
-    if [[ "${#cmd_pieces[@]}" -eq '1' && ( "${cmd_pieces[@]}" =~ [[:space:]\(=] || -z "$( command -v "${cmd_pieces[@]}" )" ) ]]; then
-        pieces_for_output+=( "${cmd_pieces[@]}" )
-        cmd_pieces=( 'eval' "${cmd_pieces[@]}" )
-    else
-        for cmd_piece in "${cmd_pieces[@]}"; do
-            if [[ "$cmd_piece" =~ [[:space:]\'\"] ]]; then
-                pieces_for_output+=( "\"$( echo -E "$cmd_piece" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
-            else
-                pieces_for_output+=( "$cmd_piece" )
-            fi
-        done
-    fi
-    echo -en "\033[1;37m"
-    echo -En "${pieces_for_output[@]}"
-    echo -e "\033[0m"
-    "${cmd_pieces[@]}"
-    retval="$?"
-    echo -E ''
-    return "$retval"
-}
-
-# Tests if you're in a git folder
-# Usage: in_git_folder && echo "In a git folder!" || echo "Not in a git folder."
-in_git_folder () {
-    [[ $( git rev-parse --is-inside-work-tree 2>/dev/null ) ]] && return 0
-    return 1
-}
-
-# Change your current git branch
-# Usage: gcb
-gcb () {
-    local branch
-    branch="$1"
-    if in_git_folder; then
-        local selection
-        if [[ -n "$1" ]]; then
-            selection="$1"
-        else
-            selection="$( git branch | fzf +m --cycle | sed -E 's/^[* ]+//' )"
-        fi
-        [[ -n "$selection" ]] && git checkout "$selection"
-    else
-        echo "gcb => git change branch. But you aren't in a git directory."
-    fi
-}
-
-# Check out a git branch from remote
-# Usage: gcba
-gcba () {
-    if in_git_folder; then
-        [[ $(which setopt) ]] && setopt local_options BASH_REMATCH KSH_ARRAYS
-        local all_branches local_branches remote remote_branches new_branches selected_entry remote_and_branch_rx just_branch_rx branch
-        all_branches="$( git branch | sed -E 's#^([* ]) #\1 ~ ~#' )"
-        local_branches="$( echo -E "$all_branches" | sed -E 's#^[^~]*~[^~]*~##' )"
-        for remote in $( git remote ); do
-            git fetch -q "$remote"
-            remote_branches="$( git ls-remote --heads "$remote" | sed -E 's#^.*refs/heads/##' )"
-            new_branches="$( echo -E "$( echo -E "$local_branches" && echo -E "$local_branches" && echo -E "$remote_branches" )" | sort | uniq -u | sed -E "s#^#  ~$remote~#" )"
-            all_branches="$( echo -E "$all_branches" && echo -E "$new_branches" )"
-        done
-        selected_entry="$( echo -E "$all_branches" | sort -t '~' -k 3 -k 2 | column -s '~' -t | fzf +m --cycle )"
-        if [[ -n "$selected_entry" ]]; then
-            remote_and_branch_rx='^[* ] +([^ ]+) +(.+)$'
-            just_branch_rx='^[* ] +(.+)$'
-            if [[ "$selected_entry" =~ $remote_and_branch_rx ]]; then
-                remote="${BASH_REMATCH[1]}"
-                branch="${BASH_REMATCH[2]}"
-                __git_echo_do git checkout --track "$remote/$branch"
-            elif [[ "$selected_entry" =~ $just_branch_rx ]]; then
-                branch="${BASH_REMATCH[1]}"
-                __git_echo_do git checkout "$branch"
-            else
-                echo -E "Unknown selection: '$selected_entry'"
-            fi
-        fi
-    else
-        echo "gcba => git change branch all. But you aren't in a git directory."
-    fi
-}
-
-# Change your current git branch to master
-# Usage: gcbm
-gcbm () {
-    if in_git_folder; then
-        git checkout master
-    else
-        echo "gcbm => git change branch master. But you aren't in a git directory."
-    fi
-}
-
-# Delete git branches
-# Usage: gdb
-gdb () {
-    if in_git_folder; then
-        local local_branches branches
-        local_branches="$( git branch | grep -v -e '^\*' -e ' master' | sed -E 's/^ +| +$//g' | sort -r )"
-        if [[ -n "$local_branches" ]]; then
-            branches="$( echo "$local_branches" | fzf -m --cycle --header="Select branches to delete using tab. Press enter when ready (or esc to cancel)." )"
-            if [[ -n "$branches" ]]; then
-                for branch in $( echo -E "$branches" | sed -l '' ); do
-                    __git_echo_do git branch -D "$branch"
-                done
-            else
-                echo "No branches selected for deletion."
-            fi
-        else
-            echo "No branches to delete."
-        fi
-    else
-        echo "gdb => git delete branches. But you aren't in a git directory."
-    fi
-}
-
-# Branch Name - outputs the name of the current branch.
-# Usage: bn
-bn () {
-    if in_git_folder; then
-        echo "$( git branch | grep '^\*' | sed 's/^\* //' )"
-        return 0
-    else
-        >&2 echo "Not in a git repo."
-        return 1
-    fi
-}
-
-# Git Pull Merge (master) - Goes to master, does a pull, goes back to your other branch and does a merge.
-# Usage: gpm
-gpm () {
-    if in_git_folder; then
-        __git_echo_do git checkout master \
-        && __git_echo_do git pull \
-        && __git_echo_do git checkout - \
-        && __git_echo_do git merge master
-        __git_echo_do git status
-    else
-        echo "Not in a git repo."
-    fi
-}
-
-# Git Set Upstream - Sets the upstream branch for the current branch of the repo you're in.
-# Usage: gsu
-gsu () {
-    if in_git_folder; then
-        local branch cmd
-        branch="$( git branch | grep '^\*' | sed 's/^\* //' )"
-        __git_echo_do git branch "--set-upstream-to=origin/$branch" "$branch"
-        __git_echo_do git pull
-    fi
-}
-
-# Clean up a git repo
-# Usage: clean_git_repo
-clean_git_repo () {
-    if in_git_folder; then
-        __git_echo_do git checkout master
-        __git_echo_do gdb
-        __git_echo_do git clean -fdx -e .idea
-        __git_echo_do git branch -r | grep -v 'HEAD' | xargs -L 1 git branch -rD
-        __git_echo_do git fetch
-    else
-        echo "Not in a git repo."
-    fi
-}
-
-# Create a fresh branch
-# Usage: gfb <branch name>
-gfb () {
-    local branch
-    branch="$1"
-    if in_git_folder; then
-        if [[ -z "$branch" ]]; then
-            >&2 echo -E "Usage: gfb <branch name>"
-            return 1
-        fi
-        if [[ "$( bn )" != 'master' ]]; then
-            __git_echo_do git checkout master
-        fi
-        __git_echo_do git pull
-        __git_echo_do git checkout -b "$branch"
-    else
-        echo "gfb => git fresh branch. But you aren't in a git repo."
-        return 1
-    fi
-}
-
-list_extra_branches () {
-    local cwd repos repo branches
-    cwd="$( pwd )"
-    repos=( $( __git_get_all_repos ) )
-    for repo in "${repos[@]}"; do
-        cd "$repo"
-        branches="$( git branch )"
-        if [[ -n "$( echo -E "$branches" | grep -v '^[* ] master$' )" ]]; then
-            echo -e -n "\033[1;37m"
-            echo -E -n "$repo"
-            echo -e "\033[0m"
-            echo -e "$( echo -E "$branches" | sed -E 's/^[*] (.+)$/* \\033[1;32m\1\\033[0m/; s/^/  /;' )"
-        fi
-    done
-    cd "$cwd"
-}
-
-master_pull_all () {
-    local cwd repos repo_count repo_index failed_repos repo repo_failed cur_branch
-    cwd="$( pwd )"
-    repos=( $( __git_get_all_repos ) )
-    repo_count="${#repos[@]}"
-    repo_index=0
-    failed_repos=()
-    for repo in "${repos[@]}"; do
-        repo_index=$(( repo_index + 1 ))
-        repo_failed=
-        cur_branch=
-        echo -e "\033[1;36m$repo_index of $repo_count\033[0m - \033[1;33m$repo\033[0m"
-        __git_echo_do cd "$repo" || repo_failed='YES'
-        if [[ -z "$repo_failed" ]]; then
-            cur_branch="$( bn )"
-            if [[ "$cur_branch" != 'master' ]]; then
-                __git_echo_do git checkout master || repo_failed='YES'
-            fi
-        fi
-        if [[ -z "$repo_failed" ]]; then
-            __git_echo_do git pull || repo_failed='YES'
-        fi
-        if [[ -z "$repo_failed" && "$cur_branch" != 'master' ]]; then
-            __git_echo_do git checkout "$cur_branch" || repo_failed='YES'
-        fi
-        if [[ -n "$repo_failed" ]]; then
-            echo -e "\033[1;38;5;231;48;5;196m An error occurred \033[0m - \033[1;31mSee above\033[0m"
-            failed_repos+=( "$repo" )
-        fi
-    done
-    if [[ "$cwd" != "$( pwd )" ]]; then
-        __git_echo_do cd "$cwd"
-    fi
-    if [[ "${#failed_repos[@]}" -gt '0' ]]; then
-        echo -e "\033[1;31m${#failed_repos[@]} repo(s) ran into problems:\033[0m"
-        for repo in "${failed_repos[@]}"; do
-            echo -e "    \033[35m$repo\033[0m"
-        done
-    else
-        echo -e "\033[1;32mAll repos successfully pulled master.\033[0m"
-    fi
-}
-
 __git_get_all_repos () {
     local base_dirs repos cwd base_dir repo
     base_dirs=()
+    if [[ -n "$GIT_REPO_DIR" && -d "$GIT_REPO_DIR" ]]; then
+        base_dirs+=( "$GIT_REPO_DIR" )
+    fi
     if [[ -n "$GITLAB_REPO_DIR" && -d "$GITLAB_REPO_DIR" ]]; then
         base_dirs+=( "$GITLAB_REPO_DIR" )
     elif [[ -n "$GITLAB_BASE_DIR" && -d "$GITLAB_BASE_DIR" ]]; then
         # GITLAB_BASE_DIR is deprecated, use GITLAB_REPO_DIR instead.
         base_dirs+=( "$GITLAB_BASE_DIR" )
     fi
-    if [[ -n "$GITHUB_BASE_DIR" && -d "$GITHUB_BASE_DIR" ]]; then
+    if [[ -n "$GITHUB_REPO_DIR" && -d "$GITHUB_REPO_DIR" ]]; then
+        base_dirs+=( "$GITHUB_REPO_DIR" )
+    elif [[ -n "$GITHUB_BASE_DIR" && -d "$GITHUB_BASE_DIR" ]]; then
+        # GITHUB_BASE_DIR is deprecated, use GITHUB_REPO_DIR instead.
         base_dirs+=( "$GITHUB_BASE_DIR" )
     fi
     repos=()
@@ -322,7 +52,38 @@ __git_get_all_repos () {
         done
         cd "$cwd"
     fi
-    echo -E -n "${repos[@]}"
+    if [[ "${#repos[@]}" -gt '0' ]]; then
+        printf '%s ' "${repos[@]}"
+        return 0
+    fi
+    return 1
 }
+
+if [[ "$sourced" != 'YES' ]]; then
+    where_i_am="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
+    require_command () {
+        local cmd cmd_fn
+        cmd="$1"
+        if ! command -v "$cmd" > /dev/null 2>&1; then
+            cmd_fn="$where_i_am/$cmd.sh"
+            if [[ -f "$cmd_fn" ]]; then
+                source "$cmd_fn"
+                if [[ "$?" -ne '0' ]] || ! command -v "$cmd" > /dev/null 2>&1; then
+                    ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                      printf 'The file [%s] was found and sourced, but there was a problem loading the [%s] function.\n' "$cmd_fn" "$cmd" ) >&2
+                    return 1
+                fi
+            else
+                ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                  printf 'The file [%s] was looked for, but not found.\n' "$cmd_fn" ) >&2
+                return 1
+            fi
+        fi
+    }
+    require_command in_git_folder
+    __git_get_all_repos "$@"
+    exit $?
+fi
+unset sourced
 
 return 0
