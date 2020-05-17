@@ -13,4 +13,6 @@ This directory contains files for stuff that has either been replaced, or is no 
 * `text-helpers.sh` - Some old functions for converting lists of things into nicer formats. These are all replaced by the `re_line.sh` function.
 * `git-helpers.sh` - Some functions that help interact with git. These were awkwardly named, though.
   It has been replaced by the contents of the `bash_fun/git` directory.
+* `github.sh` - This was the beginnings of some workings on some github api command line interaction.
+  But I haven't touched it in a long time, and I don't plan to.
 
