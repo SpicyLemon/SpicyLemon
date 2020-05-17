@@ -11,4 +11,6 @@ This directory contains files for stuff that has either been replaced, or is no 
   If you were previously sourcing this file, you will want to change to source `generic-setup.sh` instead.
 * `file-helpers.sh` - Some old file formatting stuff for lists of entries. This can now easily be handled by `re_line.sh`.
 * `text-helpers.sh` - Some old functions for converting lists of things into nicer formats. These are all replaced by the `re_line.sh` function.
+* `git-helpers.sh` - Some functions that help interact with git. These were awkwardly named, though.
+  It has been replaced by the contents of the `bash_fun/git` directory.
 
