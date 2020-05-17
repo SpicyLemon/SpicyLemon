@@ -25,8 +25,8 @@ fi
 unset sourced
 
 # Putting all the setup stuff in a function so that cleanup is easier.
-# Usage: __do_setup "<my source dir>"
-__do_setup () {
+# Usage: __generic_do_setup "<my source dir>"
+__generic_do_setup () {
     # input vars
     local where_i_am
     # Variables defining configuration.
@@ -46,12 +46,12 @@ __do_setup () {
     title='Generic'
 
     # Where to look for the files to source.
-    func_dir="${where_i_am}/generic"
+    func_dir="${where_i_am}"
 
     # All of the filenames to source.
     # These will be looked for in $func_dir and '.sh' will be appended.
     # Handy command for generating this:
-    #   ls *.sh | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
+    #   ls *.sh | grep -v 'generic-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
         'add_to_filename'      'change_word'     'check_system_log_timestamp_order'  'chrome_cors'              'echo_color'
         'echo_do'              'escape_escapes'  'fp'                                'get_all_system_logs'      'get_shell_type'
@@ -97,112 +97,112 @@ __do_setup () {
     problems=()
 
     # And, let's get started!
-    __if_verbose "$info" 0 "Loading $title functions."
+    __generic_if_verbose "$info" 0 "Loading $title functions."
 
     if [[ "${#required_external[@]}" -gt '0'  ]]; then
-        __if_verbose "$info" 1 "Checking for needed external programs and functions."
+        __generic_if_verbose "$info" 1 "Checking for needed external programs and functions."
         for cmd_to_check in "${required_external[@]}"; do
-            if ! __i_can "$cmd_to_check"; then
+            if ! __generic_i_can "$cmd_to_check"; then
                 problems+=( "Command not found: [$cmd_to_check]." )
-                __if_verbose "$error" 2 "The $cmd_to_check command was not found."
+                __generic_if_verbose "$error" 2 "The $cmd_to_check command was not found."
             else
-                __if_verbose "$ok" 2 "The $cmd_to_check command is available."
+                __generic_if_verbose "$ok" 2 "The $cmd_to_check command is available."
             fi
         done
-        __if_verbose "$info" 1 "Done checking for needed external programs and functions."
+        __generic_if_verbose "$info" 1 "Done checking for needed external programs and functions."
     fi
 
-    __if_verbose "$info" 1 "Checking for source files."
+    __generic_if_verbose "$info" 1 "Checking for source files."
     if [[ "${#func_base_file_names[@]}" -eq '0' ]]; then
         problems+=( "No function files defined." )
-        __if_verbose "$error" 2 "The func_base_file_names setup variable does not have any entries."
+        __generic_if_verbose "$error" 2 "The func_base_file_names setup variable does not have any entries."
     elif [[ ! -d "$func_dir" ]]; then
         problems+=( "Function directory not found: [$func_dir]." )
-        __if_verbose "$error" 2 "The function directory was not found: [$func_dir]."
+        __generic_if_verbose "$error" 2 "The function directory was not found: [$func_dir]."
     else
-        __if_verbose "$ok" 2 "The function directory [$func_dir] exists."
+        __generic_if_verbose "$ok" 2 "The function directory [$func_dir] exists."
         for entry in "${func_base_file_names[@]}"; do
             func_file="${func_dir}/${entry}.sh"
             if [[ ! -f "$func_file" ]]; then
                 problems+=( "File not found: [$func_file]." )
-                __if_verbose "$error" 2 "Function file not found: [$func_file]."
+                __generic_if_verbose "$error" 2 "Function file not found: [$func_file]."
             else
                 files_to_source+=( "$func_file" )
-                __if_verbose "$ok" 2 "The function file [$func_file] exists."
+                __generic_if_verbose "$ok" 2 "The function file [$func_file] exists."
             fi
         done
     fi
-    __if_verbose "$info" 1 "Done checking for source files."
+    __generic_if_verbose "$info" 1 "Done checking for source files."
 
-    __if_verbose "$info" 1 "Checking for problems encountered so far."
+    __generic_if_verbose "$info" 1 "Checking for problems encountered so far."
     if [[ "${#problems[@]}" -gt '0' ]]; then
         printf 'Could not set up %s functions:\n' "$title" >&2
         printf '  %s\n' "${problems[@]}" >&2
-        __if_verbose "$error" 2 "Quitting early due to problems."
+        __generic_if_verbose "$error" 2 "Quitting early due to problems."
         return 2
     fi
-    __if_verbose "$ok" 1 "No problems encountered so far."
+    __generic_if_verbose "$ok" 1 "No problems encountered so far."
 
-    __if_verbose "$info" 1 "Sourcing the files."
+    __generic_if_verbose "$info" 1 "Sourcing the files."
     for entry in "${files_to_source[@]}"; do
-        __if_verbose "$info" 2 "Executing command: [source \"$entry\"]."
+        __generic_if_verbose "$info" 2 "Executing command: [source \"$entry\"]."
         source "$entry"
         exit_code="$?"
         if [[ "$exit_code" -ne '0' ]]; then
             problems+=( "Failed to source the [$entry] file." )
-            __if_verbose "$error" 3 "The command to source [$entry] failed with an exit code of [$exit_code]."
+            __generic_if_verbose "$error" 3 "The command to source [$entry] failed with an exit code of [$exit_code]."
         else
-            __if_verbose "$ok" 3 "The source command was successful for [$entry]."
+            __generic_if_verbose "$ok" 3 "The source command was successful for [$entry]."
         fi
     done
-    __if_verbose "$info" 1 "Done sourcing the files."
+    __generic_if_verbose "$info" 1 "Done sourcing the files."
 
-    __if_verbose "$info" 1 "Checking that functions are available."
+    __generic_if_verbose "$info" 1 "Checking that functions are available."
     for entry in "${func_base_file_names[@]}" "${extra_funcs_to_check[@]}"; do
-        if ! __i_can "$entry"; then
+        if ! __generic_i_can "$entry"; then
             problems+=( "The [$entry] command failed to load." )
-            __if_verbose "$error" 2 "Command failed to load: [$entry]."
+            __generic_if_verbose "$error" 2 "Command failed to load: [$entry]."
         else
-            __if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
+            __generic_if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
         fi
     done
-    __if_verbose "$info" 1 "Done checking that functions are available."
+    __generic_if_verbose "$info" 1 "Done checking that functions are available."
 
-    __if_verbose "$info" 1 "Doing final check for problems encountered."
+    __generic_if_verbose "$info" 1 "Doing final check for problems encountered."
     if [[ "${#problems[@]}" -gt '0' ]]; then
         printf 'Error(s) encountered while setting up %s functions:\n' "$title" >&2
         printf '  %s\n' "${problems[@]}" >&2
-        __if_verbose "$error" 2 "There were errors encountered during setup."
+        __generic_if_verbose "$error" 2 "There were errors encountered during setup."
         return 3
     fi
-    __if_verbose "$ok" 1 "No problems encountered during setup."
+    __generic_if_verbose "$ok" 1 "No problems encountered during setup."
 
     if [[ "${#desired_external[@]}" -gt '0'  ]]; then
-        __if_verbose "$info" 1 "Checking for desired external programs."
+        __generic_if_verbose "$info" 1 "Checking for desired external programs."
         for cmd_to_check in "${desired_external[@]}"; do
-            if ! __i_can "$cmd_to_check"; then
+            if ! __generic_i_can "$cmd_to_check"; then
                 problems+=( "Command $cmd_to_check not found." )
-                __if_verbose "$error" 2 "The $cmd_to_check command was not found."
+                __generic_if_verbose "$error" 2 "The $cmd_to_check command was not found."
             else
-                __if_verbose "$ok" 2 "The $cmd_to_check command is available."
+                __generic_if_verbose "$ok" 2 "The $cmd_to_check command is available."
             fi
         done
         if [[ "${#problems[@]}" -gt '0' ]]; then
             printf 'One or more commands used by %s functions are not available:\n' "$title" >&2
             printf '  %s\n' "${problems[@]}" >&2
             printf 'Some newly added functions might not behave as expected.\n' >&2
-            __if_verbose "$warn" 2 "Some desired functions were not found."
+            __generic_if_verbose "$warn" 2 "Some desired functions were not found."
         fi
-        __if_verbose "$info" 1 "Done checking for desired external programs."
+        __generic_if_verbose "$info" 1 "Done checking for desired external programs."
     fi
 
-    __if_verbose "$info" 0 "Setup of $title functions complete."
+    __generic_if_verbose "$info" 0 "Setup of $title functions complete."
     return 0
 }
 
 # Tests if a command is available.
-# Usage: if __i_can "foo"; then echo "I can totally foo"; else echo "There's no way I can foo."; fi
-__i_can () {
+# Usage: if __generic_i_can "foo"; then echo "I can totally foo"; else echo "There's no way I can foo."; fi
+__generic_i_can () {
     if [[ "$#" -eq '0' ]]; then
         return 1
     fi
@@ -210,8 +210,8 @@ __i_can () {
 }
 
 GENERIC_SETUP_VERBOSE=
-# Usage: __if_verbose <level string> <indent-level> <message>
-__if_verbose () {
+# Usage: __generic_if_verbose <level string> <indent-level> <message>
+__generic_if_verbose () {
     [[ -n "$GENERIC_SETUP_VERBOSE" ]] && printf '%s %b: %s%s\n' "$( date '+%F %T %Z' )" "$1" "$( printf "%$(( $2 * 2 ))s" )" "$3"
 }
 
@@ -220,12 +220,12 @@ if [[ "$1" == '-v' || "$1" == '--verbose' ]]; then
 fi
 
 # Do what needs to be done.
-__do_setup "$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
+__generic_do_setup "$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
 
 # Now clean up after yourself.
-unset -f __do_setup
-unset -f __i_can
-unset -f __if_verbose
+unset -f __generic_do_setup
+unset -f __generic_i_can
+unset -f __generic_if_verbose
 unset GENERIC_SETUP_VERBOSE
 
 return 0
