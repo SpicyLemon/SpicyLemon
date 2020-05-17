@@ -3,7 +3,6 @@
 # This file can be sourced to add the git_diff_analysis function to your environment.
 # This file can also be executed to run the git_diff_analysis function without adding it to your environment.
 #
-# This file contains lots of handy functions for dealing with git.
 # File contents:
 #   git_diff_analysis  --> Compares two branches and gets some diff stats.
 #
