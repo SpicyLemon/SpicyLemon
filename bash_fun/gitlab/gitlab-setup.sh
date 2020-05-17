@@ -65,8 +65,8 @@ fi
 unset sourced
 
 # Putting all the setup stuff in a functions so that there aren't left-over variables and stuff.
-# Usage: __gitlab_setup "<my source dir>" "<verbose>"
-__gitlab_setup () {
+# Usage: __gitlab_do_setup "<my source dir>" "<verbose>"
+__gitlab_do_setup () {
     local where_i_am
     local gitlab_func_dir gitlab_funcs gitlab_func_file_names
     local files_to_source problems cmd_to_check
@@ -75,7 +75,7 @@ __gitlab_setup () {
     where_i_am="$1"
 
     # Look for a gitlab/ directory in the same location that this source file is in.
-    gitlab_func_dir="${where_i_am}/gitlab"
+    gitlab_func_dir="${where_i_am}"
 
     # These are the available gitlab functions excluding the main  gitlab  one that pulls them all together.
     gitlab_funcs=(
@@ -101,261 +101,261 @@ __gitlab_setup () {
     error="\033[1;41m [ ERROR ] \033[0m     "
 
     # And, let's get started!
-    __if_verbose "$info" 0 "Loading GitLab functions."
+    __gitlab_if_verbose "$info" 0 "Loading GitLab functions."
 
-    __if_verbose "$info" 1 "Checking on needed external programs and functions."
-    if ! __i_can jq; then
+    __gitlab_if_verbose "$info" 1 "Checking on needed external programs and functions."
+    if ! __gitlab_i_can jq; then
         problems+=( "Command jq not found. See https://github.com/stedolan/jq for installation instructions." )
-        __if_verbose "$error" 2 "The jq program was not found."
+        __gitlab_if_verbose "$error" 2 "The jq program was not found."
     else
-        __if_verbose "$ok" 2 "The jq program is installed."
+        __gitlab_if_verbose "$ok" 2 "The jq program is installed."
     fi
-    if ! __i_can fzf; then
+    if ! __gitlab_i_can fzf; then
         problems+=( "Command fzf not found. See https://github.com/junegunn/fzf for installation instructions." )
-        __if_verbose "$error" 2 "The fzf program was not found."
+        __gitlab_if_verbose "$error" 2 "The fzf program was not found."
     else
-        __if_verbose "$ok" 2 "The fzf program is installed."
+        __gitlab_if_verbose "$ok" 2 "The fzf program is installed."
     fi
     for cmd_to_check in 'awk' 'sed' 'curl' 'grep' 'git'; do
-        if ! __i_can "$cmd_to_check"; then
+        if ! __gitlab_i_can "$cmd_to_check"; then
             problems+=( "Command $cmd_to_check not found." )
-            __if_verbose "$error" 2 "The $cmd_to_check command was not found."
+            __gitlab_if_verbose "$error" 2 "The $cmd_to_check command was not found."
         else
-            __if_verbose "$ok" 2 "The $cmd_to_check command is installed."
+            __gitlab_if_verbose "$ok" 2 "The $cmd_to_check command is installed."
         fi
     done
-    if ! __i_can fzf_wrapper; then
-        __if_verbose "$warn" 2 "The fzf_wrapper function was not found."
+    if ! __gitlab_i_can fzf_wrapper; then
+        __gitlab_if_verbose "$warn" 2 "The fzf_wrapper function was not found."
         # See if we can fix that on our own.
         fzf_wrapper_file="${where_i_am}/fzf_wrapper.sh"
         if [[ -f "$fzf_wrapper_file" ]]; then
             files_to_source+=( "$fzf_wrapper_file" )
-            __if_verbose "$ok" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file] exists and will be sourced."
+            __gitlab_if_verbose "$ok" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file] exists and will be sourced."
         else
             problems+=( "Command fzf_wrapper not found." )
-            __if_verbose "$error" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file] was not found either."
+            __gitlab_if_verbose "$error" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file] was not found either."
         fi
     else
-        __if_verbose "$ok" 2 "The fzf_wrapper function is installed."
+        __gitlab_if_verbose "$ok" 2 "The fzf_wrapper function is installed."
     fi
-    __if_verbose "$info" 1 "Done checking on needed external programs and functions."
+    __gitlab_if_verbose "$info" 1 "Done checking on needed external programs and functions."
 
-    __if_verbose "$info" 1 "Checking on source files for GitLab functions."
+    __gitlab_if_verbose "$info" 1 "Checking on source files for GitLab functions."
     if [[ ! -d "$gitlab_func_dir" ]]; then
         problems+=( "Directory not found: $gitlab_func_dir" )
-        __if_verbose "$error" 2 "The GitLab function directory [$gitlab_func_dir] was not found."
+        __gitlab_if_verbose "$error" 2 "The GitLab function directory [$gitlab_func_dir] was not found."
     else
-        __if_verbose "$ok" 2 "The GitLab function directory [$gitlab_func_dir] exists."
+        __gitlab_if_verbose "$ok" 2 "The GitLab function directory [$gitlab_func_dir] exists."
         # Make sure all the needed files are there too.
         for entry in "${gitlab_func_file_names[@]}"; do
             func_file="${gitlab_func_dir}/${entry}.sh"
             if [[ ! -f "$func_file" ]]; then
                 problems+=( "File not found: $func_file" )
-                __if_verbose "$error" 2 "The GitLab function file [$func_file] was not found."
+                __gitlab_if_verbose "$error" 2 "The GitLab function file [$func_file] was not found."
             else
                 files_to_source+=( "$func_file" )
-                __if_verbose "$ok" 2 "The GitLab function file [$func_file] exists."
+                __gitlab_if_verbose "$ok" 2 "The GitLab function file [$func_file] exists."
             fi
         done
     fi
-    __if_verbose "$info" 1 "Done checking on source files for GitLab functions."
+    __gitlab_if_verbose "$info" 1 "Done checking on source files for GitLab functions."
 
-    __if_verbose "$info" 1 "Checking for problems with environment variables."
+    __gitlab_if_verbose "$info" 1 "Checking for problems with environment variables."
     if [[ -n "$GITLAB_PRIVATE_TOKEN" ]]; then
-        __if_verbose "$info" 2 "The GITLAB_PRIVATE_TOKEN environment variable has a value. Making sure it is okay."
+        __gitlab_if_verbose "$info" 2 "The GITLAB_PRIVATE_TOKEN environment variable has a value. Making sure it is okay."
         if [[ "$GITLAB_PRIVATE_TOKEN" =~ ^[[:space:]]*$ ]]; then
             problems+=( "The GITLAB_PRIVATE_TOKEN environment variable is blank." )
-            __if_verbose "$error" 3 "The GITLAB_PRIVATE_TOKEN environment variable is blank."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_PRIVATE_TOKEN environment variable is blank."
         else
-            __if_verbose "$ok" 3 "The GITLAB_PRIVATE_TOKEN environment variable is okay."
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_PRIVATE_TOKEN environment variable is okay."
         fi
     elif [[ -z ${GITLAB_PRIVATE_TOKEN+x} ]]; then
         problems+=( "The GITLAB_PRIVATE_TOKEN environment variable is not defined." )
-        __if_verbose "$error" 2 "The GITLAB_PRIVATE_TOKEN environment variable is not defined."
+        __gitlab_if_verbose "$error" 2 "The GITLAB_PRIVATE_TOKEN environment variable is not defined."
     else
         problems+=( "The GITLAB_PRIVATE_TOKEN environment variable does not have a value." )
-        __if_verbose "$error" 2 "The GITLAB_PRIVATE_TOKEN environment variable is defined, but empty."
+        __gitlab_if_verbose "$error" 2 "The GITLAB_PRIVATE_TOKEN environment variable is defined, but empty."
     fi
     if [[ -n "$GITLAB_REPO_DIR" ]]; then
-        __if_verbose "$info" 2 "The GITLAB_REPO_DIR environment variable has a value. Making sure it is okay."
+        __gitlab_if_verbose "$info" 2 "The GITLAB_REPO_DIR environment variable has a value. Making sure it is okay."
         if [[ ! "$GITLAB_REPO_DIR" =~ ^/ ]]; then
             problems+=( "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] does not start with a /." )
-            __if_verbose "$error" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] does not start with a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] does not start with a /."
         elif [[ "$GITLAB_REPO_DIR" =~ /$ ]]; then
             problems+=( "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] must not end in a /." )
-            __if_verbose "$error" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] ends in a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] ends in a /."
         elif [[ ! -d "$GITLAB_REPO_DIR" ]]; then
             problems+=( "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] references a directory that does not exist." )
-            __if_verbose "$error" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] is a directory that does not exist."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] is a directory that does not exist."
         else
-            __if_verbose "$ok" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] is okay."
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_REPO_DIR environment variable [$GITLAB_REPO_DIR] is okay."
         fi
     elif [[ -n "$GITLAB_BASE_DIR" ]]; then
-        __if_verbose "$info" 2 "The GITLAB_REPO_DIR environment variable does not have a value, but the GITLAB_BASE_DIR environment variable does. Making sure it is okay."
-        __if_verbose "$warn" 2 "The GITLAB_BASE_DIR environment variable is deprecated. Please set GITLAB_REPO_DIR instead."
+        __gitlab_if_verbose "$info" 2 "The GITLAB_REPO_DIR environment variable does not have a value, but the GITLAB_BASE_DIR environment variable does. Making sure it is okay."
+        __gitlab_if_verbose "$warn" 2 "The GITLAB_BASE_DIR environment variable is deprecated. Please set GITLAB_REPO_DIR instead."
         if [[ ! "$GITLAB_BASE_DIR" =~ ^/ ]]; then
             problems+=( "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] does not start with a /." )
-            __if_verbose "$error" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] does not start with a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] does not start with a /."
         elif [[ "$GITLAB_BASE_DIR" =~ /$ ]]; then
             problems+=( "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] must not end in a /." )
-            __if_verbose "$error" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] ends in a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] ends in a /."
         elif [[ ! -d "$GITLAB_BASE_DIR" ]]; then
             problems+=( "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] references a directory that does not exist." )
-            __if_verbose "$error" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] is a directory that does not exist."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] is a directory that does not exist."
         else
-            __if_verbose "$ok" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] is okay."
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_BASE_DIR environment variable [$GITLAB_BASE_DIR] is okay."
         fi
     else
-        __if_verbose "$warn" 2 "The GITLAB_REPO_DIR environment variable is not set. Some functionality might not be available."
+        __gitlab_if_verbose "$warn" 2 "The GITLAB_REPO_DIR environment variable is not set. Some functionality might not be available."
     fi
     if [[ -n "$GITLAB_CONFIG_DIR" ]]; then
-        __if_verbose "$info" 2 "The GITLAB_CONFIG_DIR environment variable has a value. Making sure it is okay."
+        __gitlab_if_verbose "$info" 2 "The GITLAB_CONFIG_DIR environment variable has a value. Making sure it is okay."
         if [[ ! "$GITLAB_CONFIG_DIR" =~ ^/ ]]; then
             problems+=( "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] does not start with a /." )
-            __if_verbose "$error" 3 "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] does not start with a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] does not start with a /."
         elif [[ "$GITLAB_CONFIG_DIR" =~ /$ ]]; then
             problems+=( "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] must not end in a /." )
-            __if_verbose "$error" 3 "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] ends in a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] ends in a /."
         else
-            __if_verbose "$ok" 3 "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] is okay."
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_CONFIG_DIR environment variable [$GITLAB_CONFIG_DIR] is okay."
         fi
     else
-        __if_verbose "$warn" 2 "The GITLAB_CONFIG_DIR environment variable is not set. A default value will be used if possible, but some functionality might not be available."
+        __gitlab_if_verbose "$warn" 2 "The GITLAB_CONFIG_DIR environment variable is not set. A default value will be used if possible, but some functionality might not be available."
     fi
     if [[ -n "$GITLAB_TEMP_DIR" ]]; then
-        __if_verbose "$info" 2 "The GITLAB_TEMP_DIR environment variable has a value. Making sure it is okay."
+        __gitlab_if_verbose "$info" 2 "The GITLAB_TEMP_DIR environment variable has a value. Making sure it is okay."
         if [[ ! "$GITLAB_TEMP_DIR" =~ ^/ ]]; then
             problems+=( "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] does not start with a /." )
-            __if_verbose "$error" 3 "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] does not start with a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] does not start with a /."
         elif [[ "$GITLAB_TEMP_DIR" =~ /$ ]]; then
             problems+=( "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] must not end in a /." )
-            __if_verbose "$error" 3 "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] ends in a /."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] ends in a /."
         else
-            __if_verbose "$ok" 3 "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] is okay."
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_TEMP_DIR environment variable [$GITLAB_TEMP_DIR] is okay."
         fi
     else
-        __if_verbose "$warn" 2 "The GITLAB_TEMP_DIR environment variable is not set. A default value will be used."
+        __gitlab_if_verbose "$warn" 2 "The GITLAB_TEMP_DIR environment variable is not set. A default value will be used."
     fi
     if [[ -n "$GITLAB_PROJECTS_MAX_AGE" ]]; then
-        __if_verbose "$info" 2 "The GITLAB_PROJECTS_MAX_AGE environment variable has a value. Making sure it is okay."
+        __gitlab_if_verbose "$info" 2 "The GITLAB_PROJECTS_MAX_AGE environment variable has a value. Making sure it is okay."
         if [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^[+\-] ]]; then
             problems+=( "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] must not start with a + or -." )
-            __if_verbose "$error" 3 "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] starts with either a + or -."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] starts with either a + or -."
         elif [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
             problems+=( "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] is not in the correct format. See the -atime section in 'man find'." )
-            __if_verbose "$error" 3 "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] is not in the correct format."
+            __gitlab_if_verbose "$error" 3 "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] is not in the correct format."
         else
-            __if_verbose "$ok" 3 "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] is okay."
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_PROJECTS_MAX_AGE environment variable [$GITLAB_PROJECTS_MAX_AGE] is okay."
         fi
     else
-        __if_verbose "$warn" 2 "The GITLAB_PROJECTS_MAX_AGE environment variable is not set. A default value will be used."
+        __gitlab_if_verbose "$warn" 2 "The GITLAB_PROJECTS_MAX_AGE environment variable is not set. A default value will be used."
     fi
-    __if_verbose "$info" 1 "Done checking for problems with environment variables."
+    __gitlab_if_verbose "$info" 1 "Done checking for problems with environment variables."
 
-    __if_verbose "$info" 1 "Checking for problems encountered so far."
+    __gitlab_if_verbose "$info" 1 "Checking for problems encountered so far."
     # If there were problems, yo, output them and quit.
     if [[ "${#problems[@]}" -gt '0' ]]; then
         printf 'Could not set up GitLab cli functions:\n' >&2
         printf '  %s\n' "${problems[@]}" >&2
-        __if_verbose "$error" 0 "Quitting early due to problems."
+        __gitlab_if_verbose "$error" 0 "Quitting early due to problems."
         return 2
     fi
-    __if_verbose "$ok" 1 "No problems encountered so far."
+    __gitlab_if_verbose "$ok" 1 "No problems encountered so far."
 
-    __if_verbose "$info" 1 "Sourcing all needed files."
+    __gitlab_if_verbose "$info" 1 "Sourcing all needed files."
     for entry in "${files_to_source[@]}"; do
-        __if_verbose "$info" 2 "Executing command: source $entry"
+        __gitlab_if_verbose "$info" 2 "Executing command: source $entry"
         source "$entry"
         exit_code="$?"
         if [[ "$exit_code" -ne '0' ]]; then
             problems+=( "Failed to source the [$entry] file." )
-            __if_verbose "$error" 3 "The command to source [$entry] failed with an exit code of [$exit_code]."
+            __gitlab_if_verbose "$error" 3 "The command to source [$entry] failed with an exit code of [$exit_code]."
         else
-            __if_verbose "$ok" 3 "The source command was successful for [$entry]."
+            __gitlab_if_verbose "$ok" 3 "The source command was successful for [$entry]."
         fi
     done
-    __if_verbose "$info" 1 "Done sourcing all needed files."
+    __gitlab_if_verbose "$info" 1 "Done sourcing all needed files."
 
-    __if_verbose "$info" 1 "Checking that functions are available."
+    __gitlab_if_verbose "$info" 1 "Checking that functions are available."
     for entry in "${gitlab_funcs[@]}" 'gitlab'; do
-        if ! __i_can "$entry"; then
+        if ! __gitlab_i_can "$entry"; then
             problems+=( "The [$entry] command failed to load." )
-            __if_verbose "$error" 2 "The [$entry] command failed to load."
+            __gitlab_if_verbose "$error" 2 "The [$entry] command failed to load."
         else
-            __if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
+            __gitlab_if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
         fi
     done
-    __if_verbose "$info" 1 "Done checking that functions are available."
+    __gitlab_if_verbose "$info" 1 "Done checking that functions are available."
 
-    __if_verbose "$info" 1 "Setting up tab completion."
-    if __i_can complete; then
+    __gitlab_if_verbose "$info" 1 "Setting up tab completion."
+    if __gitlab_i_can complete; then
         can_auto='YES'
         can_complete='YES'
-        __if_verbose "$ok" 2 "The [complete] tab completion program has been detected and will be used."
-    elif __i_can compctl; then
+        __gitlab_if_verbose "$ok" 2 "The [complete] tab completion program has been detected and will be used."
+    elif __gitlab_i_can compctl; then
         can_auto='YES'
         can_compctl='YES'
-        __if_verbose "$ok" 2 "The [compctl] tab completion program has been detected and will be used."
+        __gitlab_if_verbose "$ok" 2 "The [compctl] tab completion program has been detected and will be used."
     else
-        __if_verbose "$warn" 2 "Unable to detect tab completion program. Tab complete will not be available for these GitLab functions."
+        __gitlab_if_verbose "$warn" 2 "Unable to detect tab completion program. Tab complete will not be available for these GitLab functions."
     fi
 
     if [[ -n "$can_auto" ]]; then
         for entry in "${gitlab_funcs[@]}" 'gitlab'; do
-            if __i_can "$entry"; then
+            if __gitlab_i_can "$entry"; then
                 auto_opts_func="__${entry}_auto_options"
-                if __i_can "$auto_opts_func"; then
+                if __gitlab_i_can "$auto_opts_func"; then
                     exit_code=
                     if [[ -n "$can_complete" ]]; then
-                        __if_verbose "$info" 2 "Executing command: complete -W \"\$( $auto_opts_func )\" $entry"
+                        __gitlab_if_verbose "$info" 2 "Executing command: complete -W \"\$( $auto_opts_func )\" $entry"
                         complete -W "$( $auto_opts_func )" $entry
                         exit_code="$?"
                     elif [[ -n "$can_compctl" ]]; then
                         if [[ "$entry" == 'gitlab' ]]; then
-                            __if_verbose "$info" 2 "Executing command: compctl -x 'p[1]' -k \"( \$( $auto_opts_func ) )\" -- $entry"
+                            __gitlab_if_verbose "$info" 2 "Executing command: compctl -x 'p[1]' -k \"( \$( $auto_opts_func ) )\" -- $entry"
                             compctl -x 'p[1]' -k "( $( $auto_opts_func ) )" -- $entry
                             exit_code="$?"
                         else
-                            __if_verbose "$info" 2 "Executing command: compctl -k \"( \$( $auto_opts_func ) )\" $entry"
+                            __gitlab_if_verbose "$info" 2 "Executing command: compctl -k \"( \$( $auto_opts_func ) )\" $entry"
                             compctl -k "( $( $auto_opts_func ) )" $entry
                             exit_code="$?"
                         fi
                     else
                         problems+=( "Unknown tab complete program. Cannot set up tab complete for [$entry]." )
-                        __if_verbose "$error" 2 "The tab completion program is not known. Tab completion unavailable for [$entry]."
+                        __gitlab_if_verbose "$error" 2 "The tab completion program is not known. Tab completion unavailable for [$entry]."
                     fi
                     if [[ -n "$exit_code" ]]; then
                         if [[ "$exit_code" -ne '0' ]]; then
                             problems+=( "Tab completion setup failed for [$entry]." )
-                            __if_verbose "$error" 3 "The command to set up tab completion for [$entry] failed with an exit code of [$exit_code]."
+                            __gitlab_if_verbose "$error" 3 "The command to set up tab completion for [$entry] failed with an exit code of [$exit_code]."
                         else
-                            __if_verbose "$ok" 3 "Tab completion set up for [$entry]."
+                            __gitlab_if_verbose "$ok" 3 "Tab completion set up for [$entry]."
                         fi
                     fi
                 else
-                    __if_verbose "$warn" 2 "The [$auto_opts_func] function was not found. Tab completion unavailable for [$entry]."
+                    __gitlab_if_verbose "$warn" 2 "The [$auto_opts_func] function was not found. Tab completion unavailable for [$entry]."
                 fi
             fi
         done
     fi
-    __if_verbose "$info" 1 "Done setting up tab completion."
+    __gitlab_if_verbose "$info" 1 "Done setting up tab completion."
 
-    __if_verbose "$info" 1 "Doing final checking for problems encountered."
+    __gitlab_if_verbose "$info" 1 "Doing final checking for problems encountered."
     if [[ "${#problems[@]}" -gt '0' ]]; then
         printf 'Error(s) encountered while setting up GitLab cli functions:' >&2
         printf '  %s\n' "${problems[@]}" >&2
-        __if_verbose "$error" 0 "There were errors encountered during setup."
+        __gitlab_if_verbose "$error" 0 "There were errors encountered during setup."
         return 3
     fi
-    __if_verbose "$ok" 1 "No errors encountered during setup."
+    __gitlab_if_verbose "$ok" 1 "No errors encountered during setup."
 
-    __if_verbose "$info" 0 "Setup of GitLab functions complete."
+    __gitlab_if_verbose "$info" 0 "Setup of GitLab functions complete."
     return 0
 }
 
 # Tests if a command is available.
-# Usage: if __i_can "foo"; then echo "I can totally foo"; else echo "There's no way I can foo."; fi
-__i_can () {
+# Usage: if __gitlab_i_can "foo"; then echo "I can totally foo"; else echo "There's no way I can foo."; fi
+__gitlab_i_can () {
     if [[ "$#" -eq '0' ]]; then
         return 1
     fi
@@ -363,8 +363,8 @@ __i_can () {
 }
 
 GITLAB_SETUP_VERBOSE=
-# Usage: __if_verbose <level string> <indent-level> <message>
-__if_verbose () {
+# Usage: __gitlab_if_verbose <level string> <indent-level> <message>
+__gitlab_if_verbose () {
     [[ -n "$GITLAB_SETUP_VERBOSE" ]] && printf '%s %b: %s%s\n' "$( date '+%F %T %Z' )" "$1" "$( printf "%$(( $2 * 2 ))s" )" "$3"
 }
 
@@ -373,12 +373,12 @@ if [[ "$1" == '-v' || "$1" == '--verbose' ]]; then
 fi
 
 # Do what needs to be done.
-__gitlab_setup "$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
+__gitlab_do_setup "$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
 
 # Now clean up after yourself.
-unset -f __gitlab_setup
-unset -f __i_can
-unset -f __if_verbose
+unset -f __gitlab_do_setup
+unset -f __gitlab_i_can
+unset -f __gitlab_if_verbose
 unset GITLAB_SETUP_VERBOSE
 
 return 0
