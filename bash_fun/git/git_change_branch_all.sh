@@ -33,7 +33,7 @@ git_change_branch_all () {
             fi
         fi
     done
-    selected_entry="$( sort -t '~' -k 3 -k 2 <<< "$options" | column -s '~' -t | fzf +m --cycle )"
+    selected_entry="$( sort -t '~' -k 3 -k 2 <<< "$options" | column -s '~' -t | fzf +m --cycle  --header='Select the branch to change to and press enter (or esc to cancel).' )"
     if [[ -z "$selected_entry" ]]; then
         return 0
     fi

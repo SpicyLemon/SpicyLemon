@@ -20,7 +20,7 @@ git_change_branch () {
         return 1
     fi
     local selection
-    selection="$( git branch | fzf +m --cycle | sed -E 's/^[* ]+//' )"
+    selection="$( git branch | fzf +m --cycle --header='Select the branch to change to and press enter (or esc to cancel).' | sed -E 's/^[* ]+//' )"
     [[ -n "$selection" ]] && git checkout "$selection"
     return 0
 }
