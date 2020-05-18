@@ -45,8 +45,10 @@ EOF
     if [[ "${#branches[@]}" -gt '2' ]]; then
         printf 'Only two branches can be supplied.\n' >&2
         return 1
+    elif [[ "${#branches[@]}" -eq '1' ]]; then
+        branches+=( "$( git_branch_name )" )
     elif [[ "${#branches[@]}" -eq '0' ]]; then
-        branches+=( 'master' )
+        branches=( 'master' "$( git_branch_name )" )
     fi
     if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
         printf 'This command must be run from a git folder.\n' >&2
@@ -75,7 +77,7 @@ EOF
 
     [[ -n "$verbose" ]] && printf '\033[96mCounting unit test changes.\033[0m\n' >&2
 
-    diff_no_context_cmd=( git diff master -U0 )
+    diff_no_context_cmd=( git diff ${branches[@]} -U0 )
     diff_tests_filter=( grep '@Test' )
     [[ -n "$verbose" ]] && printf '  \033[97m%s | %s\033[0m\n' "${diff_no_context_cmd[*]}" "${diff_tests_filter[*]}" >&2
     diff_tests="$( "${diff_no_context_cmd[@]}" | "${diff_tests_filter[@]}" )"
@@ -86,6 +88,12 @@ EOF
 
     [[ -n "$verbose" ]] && printf '\033[96mDone.\033[0m\n' >&2
     (
+        # Bash and ksh arrays are 0 based while most other shells are 1 based.
+        # Luckily, in those other ones, asking for the 0th element will just return nothing.
+        printf '      Repo Directory: %s\n' "$( basename "$( git rev-parse --show-toplevel )" )"
+        printf '         From Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[0]}" || printf %s "${branches[1]}" )"
+        printf '           To Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[1]}" || printf %s "${branches[2]}" )"
+        printf '========================================\n'
         printf 'Line Changes -  Code: %+6d  %+6d\n' "$code_lines_added" "$code_lines_removed"
         printf 'Line Changes - Tests: %+6d  %+6d\n' "$test_lines_added" "$test_lines_removed"
         printf 'Line Changes - Total: %+6d  %+6d\n' "$total_lines_added" "$total_lines_removed"
