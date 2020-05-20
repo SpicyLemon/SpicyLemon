@@ -36,10 +36,12 @@
 # If you are running into problems, you can get more information on what's going on by using the -v flag.
 #   For example,  source gitlab-setup.sh -v
 #
-# Lastly, these functions rely on the following programs (that you might not have installed yet):
+# Lastly, these functions rely on the following programs or functions (that you might not have installed yet):
 #   * jq - Command-line JSON processor - https://github.com/stedolan/jq
 #   * fzf - Command-line fuzzy finder - https://github.com/junegunn/fzf
 #   * fzf_wrapper - A wrapper for fzf that adds a the --to-columns option. It's defined in the fzf_wrapper.sh file in this repo.
+#   * curl_link_header - A function similar to curl that will follow link header results until all results have been retrieved.
+#                        It's defined in the curl_link_header.sh file in this repo.
 # And these, that you probably do have installed:
 #   * awk - Pattern-Directed Scanning and Processing Language
 #   * sed - Stream Editor
@@ -71,7 +73,7 @@ __gitlab_do_setup () {
     local gitlab_func_dir gitlab_funcs gitlab_func_file_names
     local files_to_source problems cmd_to_check
     local info ok warn error
-    local fzf_wrapper_file entry exit_code can_auto can_complete can_compctl auto_opts_func
+    local fzf_wrapper_file_1 fzf_wrapper_file_2 curl_link_header_1 curl_link_header_2 entry exit_code can_auto can_complete can_compctl auto_opts_func
     where_i_am="$1"
 
     # Look for a gitlab/ directory in the same location that this source file is in.
@@ -127,16 +129,38 @@ __gitlab_do_setup () {
     if ! __gitlab_i_can fzf_wrapper; then
         __gitlab_if_verbose "$warn" 2 "The fzf_wrapper function was not found."
         # See if we can fix that on our own.
-        fzf_wrapper_file="${where_i_am}/fzf_wrapper.sh"
-        if [[ -f "$fzf_wrapper_file" ]]; then
-            files_to_source+=( "$fzf_wrapper_file" )
-            __gitlab_if_verbose "$ok" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file] exists and will be sourced."
+        fzf_wrapper_file_1="${where_i_am}/fzf_wrapper.sh"
+        fzf_wrapper_file_2="${where_i_am}/../fzf_wrapper.sh"
+        if [[ -f "$fzf_wrapper_file_1" ]]; then
+            files_to_source+=( "$fzf_wrapper_file_1" )
+            __gitlab_if_verbose "$ok" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file_1] exists and will be sourced."
+        elif [[ -f "$fzf_wrapper_file_2" ]]; then
+            files_to_source+=( "$fzf_wrapper_file_2" )
+            __gitlab_if_verbose "$ok" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file_2] exists and will be sourced."
         else
             problems+=( "Command fzf_wrapper not found." )
-            __gitlab_if_verbose "$error" 3 "The file containing the fzf_wrapper function [$fzf_wrapper_file] was not found either."
+            __gitlab_if_verbose "$error" 3 "The file containing the fzf_wrapper function was not found at either [$fzf_wrapper_file_1] or [$fzf_wrapper_file_2]."
         fi
     else
         __gitlab_if_verbose "$ok" 2 "The fzf_wrapper function is installed."
+    fi
+    if ! __gitlab_i_can curl_link_header; then
+        __gitlab_if_verbose "$warn" 2 "The curl_link_header function was not found."
+        # See if we can fix that on our own.
+        curl_link_header_1="${where_i_am}/curl_link_header.sh"
+        curl_link_header_2="${where_i_am}/../curl_link_header.sh"
+        if [[ -f "$curl_link_header_1" ]]; then
+            files_to_source+=( "$curl_link_header_1" )
+            __gitlab_if_verbose "$ok" 3 "The file containing the curl_link_header function [$curl_link_header_1] exists and will be sourced."
+        elif [[ -f "$curl_link_header_2" ]]; then
+            files_to_source+=( "$curl_link_header_2" )
+            __gitlab_if_verbose "$ok" 3 "The file containing the curl_link_header function [$curl_link_header_2] exists and will be sourced."
+        else
+            problems+=( "Command fzf_wrapper not found." )
+            __gitlab_if_verbose "$error" 3 "The file containing the curl_link_header function was not found at either [$curl_link_header_1] or [$curl_link_header_2]."
+        fi
+    else
+        __gitlab_if_verbose "$ok" 2 "The curl_link_header function is installed."
     fi
     __gitlab_if_verbose "$info" 1 "Done checking on needed external programs and functions."
 
