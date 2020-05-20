@@ -519,8 +519,8 @@ __gl_get_projects () {
     keep_quiet="$1"
     verbose="$2"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab projects... "
-    projects_url="$( __gl_url_api_projects )?simple=true&membership=true&archived=false&"
-    projects="$( __gl_get_all_results "$projects_url" '' '' "$verbose" )"
+    projects_url="$( __gl_url_api_projects )?order_by=id&simple=true&membership=true&archived=false&"
+    projects="$( __gl_get_all_results "$projects_url" '' '' "$verbose" 'use_keyset' )"
     GITLAB_PROJECTS="$projects"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
@@ -738,40 +738,53 @@ __gl_get_project_jobs () {
 # The url is required, and must end in either a ? or a &.
 # page count max is optional. Default is 9999. It is forced to be between 1 and 9999 (inclusive).
 # per page is optional. Default is 100. It is forced to be between 1 and 100 (inclusive).
-# Usage: __gl_get_all_results <url> [<page count max>] [<per page>] [<verbose>]
+# Usage: __gl_get_all_results <url> [<page count max>] [<per page>] [<verbose>] [<use keyset pagination>]
 __gl_get_all_results () {
-    local url page_count_max per_page verbose results page previous_count full_url page_data
+    local url page_count_max per_page verbose very_verbose use_keyset initial_url tmp_stderr error_info
     url="$1"
     page_count_max="$( __gl_clamp "$2" "1" "9999" "9999" )"
-    per_page="$( __gl_clamp "$3" "1" "100" "100" )"
+    per_page="$( __gl_clamp "$3" "20" "100" "100" )"
     verbose="$4"
+    use_keyset="$5"
     if [[ "$url" =~ [^?\&]$ ]]; then
-        >&2 echo -E "__gl_get_all_results [$url] must end in either a ? or a & so that the per_page and page parameters can be added."
+        printf '__gl_get_all_results [%s] must end in either a ? or a & so that extra parameters can be added.\n' "$url" >&2
         return 1
     fi
-    [[ -z "$verbose" ]] || >&2 echo -E "Page Count Max: [$page_count_max], Per Page: [$per_page]"
-    results="[]"
-    page=1
-    previous_count=$per_page
-    while [[ "$page" -le "$page_count_max" && "$previous_count" -eq "$per_page" ]]; do
-        full_url="${url}per_page=${per_page}&page=${page}"
-        [[ -z "$verbose" ]] || >&2 echo -E -n "Requesting $full_url ... "
-        page_data="$( curl -s --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" "$full_url" )"
-        if [[ -n "$( echo -E "$page_data" | jq -r ' if type=="array" then "okay" else "" end ' )" ]]; then
-            results="$( echo -E "[$results,$page_data]" | jq -c ' add ' )"
-            previous_count="$( echo -E "$page_data" | jq ' length ' )"
-            [[ -z "$verbose" ]] || >&2 echo -E "Done. Received $previous_count entries."
-        else
-            [[ -z "$verbose" ]] || >&2 echo -e "\033[1;38;5;231;48;5;196m ERROR \033[0m"
-            if [[ -n "$verbose" || -n "$( echo -E "$page_data" | jq -r ' if type != "object" or .message != "403 Forbidden" then "showit" else "" end ' )" ]]; then
-                >&2 echo -E "$full_url -> $page_data"
-            fi
-            previous_count=0
-        fi
-        page=$(( page + 1 ))
-    done
-    [[ -z "$verbose" ]] || >&2 echo -E "Final result count: $( echo -E "$results" | jq 'length' )."
-    echo -E "$results"
+    if [[ "$verbose" == '-vv' ]]; then
+        very_verbose="--verbose"
+    fi
+    if [[ -n "$use_keyset" ]]; then
+        initial_url="${url}pagination=keyset&per_page=${per_page}"
+    else
+        initial_url="${url}per_page=${per_page}"
+    fi
+    tmp_stderr="$( mktemp -t gl_get_all_results_stderr )"
+    if [[ -n "$verbose" ]]; then
+        {
+            printf 'Provided Url: [%s]\n' "$url"
+            printf ' Initial Url: [%s]\n' "$initial_url"
+            printf '   Max Pages: [%d]\n' "$page_count_max"
+            printf '    Per Page: [%d]\n' "$per_page"
+        } >&2
+    fi
+    {
+        printf '['
+        curl_link_header -s $very_verbose \
+            --header "PRIVATE-TOKEN: $GITLAB_PRIVATE_TOKEN" \
+            --delimiter ',' --max-calls "$page_count_max" \
+            "$initial_url"
+        printf ']'
+    } 2>> "$tmp_stderr" | jq -c ' add ' 2>> "$tmp_stderr"
+    error_info="$( cat "$tmp_stderr" )"
+    rm "$tmp_stderr"
+    if [[ -n "$error_info" ]]; then
+        {
+            printf '__gl_get_all_results [%s] encountered one or more errors:\n' "$url"
+            printf '%s\n' "$error_info" | sed 's/^/  /;'
+        } >&2
+        return 1
+    fi
+    return 0
 }
 
 # Gets all the branches of a repo.
