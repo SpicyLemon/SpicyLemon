@@ -215,13 +215,27 @@ curl_link_header () {
                 return 2
             fi
 
-            full_link_header="$( grep -i '^link:' "$header_file" )"
+            full_link_header="$( grep -i -E '^links?:' "$header_file" )"
             if [[ -z "$full_link_header" ]]; then
-                printf 'No Link header found in response header [%s].\n' "$header_file" >&2
-                return 10
+                if [[ -n "$verbose" ]]; then
+                    {
+                        printf 'No Link header found in response header'
+                        if [[ -n "$clean_up_header_file" ]]; then
+                            printf '\n'
+                            cat "$header_file" | sed 's/^/  /;'
+                        else
+                            printf ' [%s].\n' "$header_file"
+                        fi
+                    } >&2
+                fi
+                # Unfortunately, there's no real way to tell from here if the lack of a link header
+                # is a bad thing (e.g. you're not using the url you think you are),
+                # or a good thing (you've gotten all of the results).
+                # So at least, for now, just return link it's all good.
+                return 0
             fi
 
-            link_value_entries="$( sed -E 's/^[Ll][Ii][Nn][Kk]:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' <<< "$full_link_header" )"
+            link_value_entries="$( sed -E 's/^[Ll][Ii][Nn][Kk][sS]?:[[:space:]]*//; s/(<[^>]*>[^,]*)(,|$)[[:space:]]*/\1\'$'\n/g;' <<< "$full_link_header" )"
             [[ -n "$verbose" ]] && printf 'Link-value entries in header:\n%s\n' "$link_value_entries" >&2
 
             if [[ -n "$interactive" ]]; then
