@@ -119,7 +119,7 @@ The following environment variables can be defined:
 The `gitlab` function provides an entry point to all the other functions.
 It also provides an easy way to find out what functionality is available.
 
-```bash
+```shell
 > gitlab --help
 gitlab - This is a gateway to all GitLab functions.
 
