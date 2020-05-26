@@ -99,6 +99,9 @@ When executed:
 1.  The changes are made.
 1.  A colorized list of "after" entries are listed.
 
+This is probably best done in a git repo containing no uncommitted changes.
+That way, it's easy to undo if there were some unintended changes.
+
 ### `check_system_log_timestamp_order.sh`
 
 A function/script for finding improperly ordered entries in system logs.
