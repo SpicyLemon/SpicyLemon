@@ -114,7 +114,133 @@ The following environment variables can be defined:
 
 ## Main Functions
 
-TODO
+### gitlab
+
+The `gitlab` function provides an entry point to all the other functions.
+It also provides an easy way to find out what functionality is available.
+
+```bash
+> gitlab --help
+gitlab - This is a gateway to all GitLab functions.
+
+Usage:
+    gitlab (help|merge-requests|mr-search|merged-mrs|ignore-list|clone|open|todo|jobs|clean) [command options]
+
+    gitlab help
+        Display this message.
+        All commands also have -h or --help.
+
+    gitlab merge-requests [-r|--refresh] [-d|--deep] [-b|--bypass-ignore] [-i|--include-approved] [-m|--mine]
+                          [-u|--update] [-q|--quiet] [-s|--select] [-o|--open-all] [-h|--help]
+        Get information about merge requests.
+        Same as the [1;37mgmr[0m function.
+
+    gitlab mr-search <options>
+        Do a search for merge requests with given criteria.
+        Same as the [1;37mgmrsearch[0m function.
+
+    gitlab merged-mrs <project> [-n <count>|--count <count>|--all] [-s|--select] [-q|--quiet]
+        Lists MRs that have been merged.
+        Same as the [1;37mglmerged[0m function.
+
+    gitlab ignore-list [add|remove|update|clear|prune|status|list [<state(s)>]] [-h|--help]
+        Manage a project ignore list that gmr -d will pay attention to.
+        Same as the [1;37mgmrignore[0m function.
+
+    gitlab clone [-b <dir>|--base-dir <dir>] [-f|--force] [-r|--refresh] [-h|--help] [-p <project name>|--project <project name>] [-s|--select-project]
+        Easily clone repos from GitLab.
+        Same as the [1;37mglclone[0m function.
+
+    gitlab open [-r [<repo>]|--repo [<repo>]|--select-repo] [-b [<branch]|--branch [<branch>]|--select-branch]
+                [-d [<branch>]|--diff [<branch>]|--select-diff-branch] [-m|--mrs] [-p|--pipelines] [-q|--quiet] [-x|--do-not-open]
+        Open various webpages of a GitLab repo.
+        Same as the [1;37mglopen[0m function.
+
+    gitlab todo [-s|--select] [-o|--open] [-m|--mark-as-done] [--mark-all-as-done] [-q|--quiet] [-h|--help]
+        Get and manage your GitLab todo list.
+        Same as the [1;37mgtd[0m function.
+
+    gitlab jobs [-r <repo>|--repo <repo>] [-b <branch>|--branch <branch>|-a|--all-branches] [-q|--quiet] [-s|--select] [-o|--open]
+                [-p <page count>|--page-count <page count>|-d|--deep] [-x|--no-refresh] [-t <type>|--type <type>|--all-types] [-h|--help]
+        Get information about jobs in GitLab.
+        Same as the [1;37mgljobs[0m function.
+
+    gitlab clean [-v|--verbose] [-l|--list] [-h|--help]
+        Cleans up environment variables storing GitLab information.
+        Same as the [1;37mglclean[0m function.
+```
+
+### gitlab clone
+
+The `gitlab clone` command calls the `glclone` function.
+
+This function makes it easy to clone one or more projects from gitlab.
+When called, all available projects are displayed using fzf where you can select one or more entries.
+All selected entries are then cloned locally to either the directory defined by providing arguments, or else the `GITLAB_REPO_DIR` environment variable.
+
+```bash
+> gitlab clone --help
+glclone: GitLab Clone
+
+This will look up all the projects you have access to in GitLab, and provide a way for you to select one or more to clone.
+
+If you set the GITLAB_REPO_DIR environment variable to you root git directory,
+new repos will automatically go into that directory regardless of where you are when running the command.
+If that variable is not set, and no -b or --base-dir parameter is provided, the current directory is used.
+
+Usage: glclone [-b <dir>|--base-dir <dir>] [-f|--force] [-r|--refresh] [-h|--help] [-p <project name>|--project <project name>] [-s|--select-project]
+
+  The -b <dir> or --base-dir <dir> option will designate the directory to create your repo in.
+        Providing this option overrides the default setting from the GITLAB_REPO_DIR.
+  The -f or --force option will allow cloning into directories already under a git repo.
+  The -r or --refresh option will cause your projects to be reloaded.
+  The -p or --project option will allow you to supply the project name you are interested in.
+    If the provided project name cannot be found, it will be used as an initial query,
+    and you will be prompted to select the project.
+    Multiple projects can be provided in the following ways:
+        -p project1 -p project2
+        -p 'project3 project4'
+        -p project5 project6
+    Additionallly, the -p or --project option can be omitted, and leftover parameters
+    will be treated as the projects you are interested in.
+        For example:
+            glclone project7 project8
+        Is the same as
+            glclone -p project7 -p project8
+    If no project name is provided after this option, it will be treated the same as -s or --select-projects
+  The -s or --select-projects option forces glclone to prompt you to select projects.
+      This is only needed if you are supplying projects to clone (with -p or --project),
+      but also want to select others.
+```
+
+### gitlab clean
+
+The `gitlab clean` command calls the `glclean` function.
+
+This function cleans up the environment variables and temp files that are created and populated by the other functions.
+This can be useful if you need to refresh some cached information such as your projects list.
+
+```bash
+> gitlab clean --help
+glclean: GitLab Clean
+
+Cleans up all the persistant variables used by the functions in this file.
+Use this when you want a fresh start with respects to the data these GitLab functions use.
+
+This will NOT affect your GITLAB_PRIVATE_TOKEN variable.
+
+The following variables will be removed:
+    GITLAB_USER_INFO         GITLAB_USER_ID     GITLAB_USERNAME         GITLAB_PROJECTS
+    GITLAB_MRS               GITLAB_MRS_TODO    GITLAB_MRS_BY_ME        GITLAB_TODOS
+    GITLAB_JOBS              GITLAB_MERGED_MRS  GITLAB_MERGED_MRS_REPO  GITLAB_MRS_SEARCH_RESULTS
+    GITLAB_MRS_DEEP_RESULTS
+
+Usage: glclean [-v|--verbose] [-l|--list] [-h|--help]
+
+  The -v or --verbose option will output the values of each variable before being deleted.
+  The -l or --list option will just show the variable names without deleting them.
+    Combined with the -v command, the contents of the variables will also be displayed.
+```
 
 ## Disclaimer
 
