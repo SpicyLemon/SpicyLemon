@@ -28,7 +28,7 @@ __gitlab_auto_options () {
 gitlab () {
     local usage
     usage="$( cat << EOF
-gitlab - This is a gateway to all GitLab functions.
+gitlab - This is the gateway to all GitLab CLI functions.
 
 Usage:
     gitlab $( __gitlab_options_display ) [command options]
@@ -36,6 +36,10 @@ Usage:
     gitlab help
         Display this message.
         All commands also have -h or --help.
+
+    gitlab clone $( __glclone_options_display )
+        Easily clone repos from GitLab.
+        Same as the $( __gl_bold_white "glclone" ) function.
 
     gitlab merge-requests $( __gmr_options_display_1 )
                           $( __gmr_options_display_2 )
@@ -53,10 +57,6 @@ Usage:
     gitlab ignore-list $( __gmrignore_options_display )
         Manage a project ignore list that gmr -d will pay attention to.
         Same as the $( __gl_bold_white "gmrignore" ) function.
-
-    gitlab clone $( __glclone_options_display )
-        Easily clone repos from GitLab.
-        Same as the $( __gl_bold_white "glclone" ) function.
 
     gitlab open $( __glopen_options_display_1 )
                 $( __glopen_options_display_2 )
