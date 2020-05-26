@@ -1,19 +1,28 @@
 # SpicyLemon / bash_fun / gitlab
+
 This directory contains files that define functions for interacting with GitLab's API from your command line.
 
-## Contents
+<hr>
 
-* `gitlab.sh` - Contains the main `gitlab` function that can access the rest of these functions.
-* `gl-core.sh` - Contains all generic/core functions that actually do the work.
-* `glclean.sh` - Contains the `glclean` function, used to clean up environment variables used by these functions.
-* `glclone.sh` - Contains the `glclone` function, used to clone GitLab repos.
-* `gljobs.sh` - Contains the `gljobs` function, used to look up ci/cd job information.
-* `glmerged.sh` - Contains the `glmerged` function, used to look up merged MRs.
-* `glopen.sh` - Contains the `glopen` function, used to open certain GitLab pages in your browser.
-* `gmr.sh` - Contains the `gmr` function, used to find MRs for you.
-* `gmrignore.sh` - Contains the `gmrignore` function, used to manage a project ignore list.
-* `gmrsearch.sh` - Contains the `gmrsearch` function, used to interact with the GitLab MR search api.
-* `gtd.sh` - Contains the `gtd` function, used to interact with your GitLab ToDo list.
+## Table of Contents
+
+* [Usage](#user-content-usage)
+  * [Setup/Installation](#user-content-setupinstallation)
+  * [Invocation](#user-content-invocation)
+  * [Customization](#user-content-customization)
+* [Function Details](#user-content-function-details)
+  * [gitlab](#user-content-gitlab)
+  * [gitlab clone](#user-content-gitlab-clone)
+  * [gitlab merge-requests](#user-content-gitlab-merge-requests)
+  * [gitlab mr-search](#user-content-gitlab-mr-search)
+  * [gitlab merged-mrs](#user-content-gitlab-merged-mrs)
+  * [gitlab ignore-list](#user-content-gitlab-ignore-list)
+  * [gitlab open](#user-content-gitlab-open)
+  * [gitlab todo](#user-content-gitlab-todo)
+  * [gitlab jobs](#user-content-gitlab-jobs)
+  * [gitlab clean](#user-content-gitlab-clean)
+* [Directory Contents](#user-content-directory-contents)
+* [Disclaimer](#user-content-disclaimer)
 
 ## Usage
 
@@ -66,7 +75,7 @@ These programs are required, and are almost always available already:
 * `grep` - Pattern search.
 * `curl` - Url transfer utility.
 
-### Invocation:
+### Invocation
 
 The main function added to your environment is `gitlab`.
 You can use it to access any other pieces of functionality in here.
@@ -112,7 +121,7 @@ The following environment variables can be defined:
   Do not include a leading `+` or `-`.
   If not defined, the default is `23h`.
 
-## Main Functions
+## Function Details
 
 ### gitlab
 
@@ -629,6 +638,20 @@ Usage: glclean [-v|--verbose] [-l|--list] [-h|--help]
   The -l or --list option will just show the variable names without deleting them.
     Combined with the -v command, the contents of the variables will also be displayed.
 ```
+
+## Directory Contents
+
+* `gitlab.sh` - Contains the main `gitlab` function that can access the rest of these functions.
+* `gl-core.sh` - Contains all generic/core functions that actually do the work.
+* `glclean.sh` - Contains the `glclean` function, used to clean up environment variables used by these functions.
+* `glclone.sh` - Contains the `glclone` function, used to clone GitLab repos.
+* `gljobs.sh` - Contains the `gljobs` function, used to look up ci/cd job information.
+* `glmerged.sh` - Contains the `glmerged` function, used to look up merged MRs.
+* `glopen.sh` - Contains the `glopen` function, used to open certain GitLab pages in your browser.
+* `gmr.sh` - Contains the `gmr` function, used to find MRs for you.
+* `gmrignore.sh` - Contains the `gmrignore` function, used to manage a project ignore list.
+* `gmrsearch.sh` - Contains the `gmrsearch` function, used to interact with the GitLab MR search api.
+* `gtd.sh` - Contains the `gtd` function, used to interact with your GitLab ToDo list.
 
 ## Disclaimer
 
