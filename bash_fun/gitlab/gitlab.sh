@@ -35,7 +35,7 @@ Usage:
 
     gitlab help
         Display this message.
-        All commands also accept a -h or --help options.
+        All commands also have -h or --help.
 
     gitlab merge-requests $( __gmr_options_display_1 )
                           $( __gmr_options_display_2 )
