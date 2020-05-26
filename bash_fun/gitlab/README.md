@@ -1,10 +1,10 @@
 # SpicyLemon / bash_fun / gitlab
-This directory contains files and scripts for interacting with GitLab.
+This directory contains files that define functions for interacting with GitLab's API from your command line.
 
 ## Contents
 
 * `gitlab.sh` - Contains the main `gitlab` function that can access the rest of these functions.
-* `gl-core.sh` - Contains all generic/core functions used in the rest of these files.
+* `gl-core.sh` - Contains all generic/core functions that actually do the work.
 * `glclean.sh` - Contains the `glclean` function, used to clean up environment variables used by these functions.
 * `glclone.sh` - Contains the `glclone` function, used to clone GitLab repos.
 * `gljobs.sh` - Contains the `gljobs` function, used to look up ci/cd job information.
@@ -24,7 +24,7 @@ This directory contains files and scripts for interacting with GitLab.
 In order to interact with GitLab through their api, you will need an access token.
 
 1.  Log into GitLab.
-1.  Go to your personal settings page and to the "Access Tokens" page (e.g https://gitlab.com/profile/personal_access_tokens )
+1.  Go to your personal settings page then to the "Access Tokens" page (e.g `https://gitlab.com/profile/personal_access_tokens`)
 1.  Create a token with the `api` scope.
 1.  In your terminal environment, set the `GITLAB_PRIVATE_TOKEN` environment variable to the value of that token.
     For example, you could put `GITLAB_PRIVATE_TOKEN=123abcABC456-98ZzYy7` in your `.bash_profile` file (or similar)
@@ -32,14 +32,15 @@ In order to interact with GitLab through their api, you will need an access toke
 
 #### Add these functions to your environment
 
-1.  Copy the `gitlab-setup.sh` file, and `gitlab/` directory to a safe place on your system.
-    I personally, have a `~/.functions/` folder for these things.
-1.  Also copy the `fzf_wrapper.sh` file to the same directory.
-    It's in the parent directory with the `gitlab-setup.sh` file.
-1.  In your `.bash_profile` (or similar environment start-up script), add a line to source the `gitlab-setup.sh` file.
+1.  Copy the `gitlab/` directory and its contents to a safe place on your system.
+    I personally, have a `~/.functions/` folder for such files and directories.
+    So I've got a `~/.functions/gitlab/` folder with all these files.
+1.  Copy the [fzf_wrapper.sh](../fzf_wrapper.sh) file to either the same directory as the `gitlab/` directory, or into the `gitlab/` directory itself.
+1.  Copy the [curl_link_header.sh](../curl_link_header.sh) file to either the same directory as the `gitlab/` directory, or into the `gitlab/` directory itself.
+1.  In your environment setup file (e.g. `.bash_profile`), add a line to source the `gitlab-setup.sh` file.
     For example, in mine, I have this line:
     ```bash
-    source "$HOME/.functions/gitlab-setup.sh"
+    source "$HOME/.functions/gitlab/gitlab-setup.sh"
     ```
     In order to add these functions to an already open environment, execute the same command.
 
@@ -47,15 +48,23 @@ If you need to troubleshoot the setup, you can add a `-v` flag when sourcing the
 
 #### Program/Function Requirements
 
-These GitLab functions depend on the following external programs/functions
+These GitLab functions depend on some external programs/functions.
+Availability of the programs/functions is checked when `gitlab-setup.sh` is sourced.
+
+These functions are looked for, and if not found, the file containing them is the looked for and sourced if possible:
+* `fzf_wrapper` - Adds column support to `fzf`. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/fzf_wrapper.sh
+* `curl_link_header` - Adds link header processing to `curl`. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/curl_link_header.sh
+
+These programs are required, and don't usually come pre-installed:
 * `jq` - Json processor. See https://github.com/stedolan/jq
-* `fzf` - Fuzzy finder. See https://github.com/junegunn/fzf.
-* `awk` - Pattern scanning and processing. Usually installed by default.
-* `sed` - Stream editor. Usually installed by default.
-* `grep` - Pattern search. Usually installed by default.
-* `curl` - Url transfer Usually installed by default.
+* `fzf` - Fuzzy finder. See https://github.com/junegunn/fzf
 * `git` - The stupid content tracker. https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
-* `fzf_wrapper` - Adds column support to `fzf`. Defined in `fzf_wrapper.sh` in the parent directory.
+
+These programs are required, and are almost always available already:
+* `awk` - Pattern scanning and processing.
+* `sed` - Stream editor.
+* `grep` - Pattern search.
+* `curl` - Url transfer utility.
 
 ### Invocation:
 
@@ -108,6 +117,7 @@ The following environment variables can be defined:
 TODO
 
 ## Disclaimer
+
 All of this was developed and tested on a Mac in Bash.
 Some light testing was also done in ZSH.
 
