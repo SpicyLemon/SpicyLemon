@@ -194,9 +194,9 @@ The `term` key should be a `Term` object if supplied. The rest are expected to b
 
 When constructed with exactly three of the four parameters defined, the fourth will be calculated automatically.
 Otherwise, calculations of the derivative values will be attempted.
-This automatica calculation is not done at any other time.
-For example, if you create an empty LoanInfo object, then use the setters to define three values,
-you must manully call the calculation method for the fourth.
+This automatic calculation is not done at any other time.
+If you create an empty LoanInfo object, then use the setters to define three values,
+you must manually call the calculation method for the fourth to be calculated and set.
 
 No checks are made to ensure that all four parameters make sense.
 For example, it's possible to set the principal at `1000000`, the rate at `0.0001`,
@@ -247,7 +247,7 @@ The return value of `updateCosts` is the LoanInfo object.
 
 ### Getters and Setters
 
-This object uses the same method for a getter and setter for each parameter.
+This object uses the same method as a getter and setter for each parameter.
 These methods will always return the associated parameter.
 And if provided with a defined argument, the paremter will be set prior to being returned.
 
@@ -357,5 +357,4 @@ Term (providing a Term object):
 ```Perl
 $builder->withTerm(Term->newMonths($term_in_months));
 ```
-
 
