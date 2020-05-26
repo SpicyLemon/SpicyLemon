@@ -3,14 +3,15 @@ Dumping ground for fun random stuff that I've put together.
 
 ## Contents
 
-* `bash_fun` - Scripts and functions for doing stuff in bash.
+* `bash_fun` - Scripts and functions for doing stuff in bash (and also in other shells in most cases).
 * `js_fun` - Stuff relating to javascript.
+* `perl_fun` - Stuff that I've done in Perl, and felt like sharing.
 
 ## Favorites
 
 ### [bootRun.sh](bash_fun/bootRun.sh)
 
-This script makes it easier to run Spring Boot programs, through gradle, with command-line arguments.
+This script makes it easier to run Gradle based Spring Boot programs with command-line arguments.
 
 Hopefully, in most cases, it can just be copied into a project next to the gradle wrapper file.
 In the other cases, hopefully the only customization needed is with a couple variables that are set at the top of the script.
@@ -33,14 +34,16 @@ Will end up running
 ./gradlew bootRun -Pargs=arg1,--flag2,argument3,argument4,"arguments \"with\" fancy stuff."
 ```
 
-### [gitlab.sh](bash_fun/gitlab.sh)
+### [GitLab CLI Stuff](bash_fun/gitlab)
 
-This file houses a whole suite of functions for interacting with GitLab through the command line.
+This directory houses a several functions for interacting with GitLab through the command line.
 
-Recommended usage is to source it to add the functions to your environment, but it can also be run as a script.
-The downside to running it as a script is that it doesn't cache as much that way.
+To use it, download the directory to somehwere handy for you and in your environment startup script (e.g. `.bash_profile`) add a line to source the gitlab-setup.sh file.
+This stuff also depends on the functions in [curl_link_header.sh](bash_fun/curl_link_header.sh) and [fzf_wrapper.sh](bash_fun/fzf_wrapper.sh).
+Either place those in the same folder as the `gitlab-setup.sh` file, or the same folder as the `gitlab` directory.
+ALternatively, you could also place them somewhere else and source them prior to sourceing the `gitlab-setup.sh` file.
 
-See `gitlab --help` or `./gitlab.sh --help` for more info.
+See `gitlab --help` for more info.
 
 ### [calculation-template.html](js_fun/calculation-template.html)
 
@@ -51,50 +54,25 @@ This allows you to put all the input, ouput, parsing and calculation pieces in o
 
 The file has a comment at the top with details on usage.
 
-### [echo_do](https://github.com/SpicyLemon/SpicyLemon/blob/200e222352378578c602039226cdead87b3ba78c/bash_fun/generic.sh#L66)
+### [curl_link_header](bash_fun/curl_link_header.sh)
 
-The `echo_do` bash function will echo a command then execute it.
+This is a script/function that uses curl and follows entries in the [link response header](https://tools.ietf.org/html/rfc5988#section-5) in order to collect extra information.
+The file can either be sourced (e.g. in your `.bash_profile`) to add the function to your environment, or else it can be executed like most other script files.
 
-Features:
-1.  The command being executed is printed in bright white before it is executed.
-    It might be slightly different than the command you provided, but you should still be able to copy/paste it to run it again.
-1.  Command output still goes to your console as it happens.
-1.  The exit code of your command is maintained.
-    For example, if `generic command` returns with an exit code of 3, then `echo_do generic command` will also have an exit code of 3.
-1.  Simple commands can be provided normally but with `echo_do` as the first part of the command.
-    For example: `echo_do git pull`.
-1.  More complex commands can be provided as a string.
-    For example: `echo_do '( echo "stdout"; echo "stderr" >&2; return 3 )'`
-1.  Various aspects of the command and results end up stored in the following environment variables:
-    * `ECHO_DO_CMD_PARTS` - An array containing each element of the command executed.
-    * `ECHO_DO_CMD_STR` - A string containing the command as it appeared in output before being executed.
-    * `ECHO_DO_STDOUT` - A string with just the stdout output of the command.
-    * `ECHO_DO_STDERR` - A string with just the stderr output of the command.
-    * `ECHO_DO_STDALL` - A string with both stdout and stderr output of the command (should match what ends up on your screen).
-    * `ECHO_DO_EXIT_CODE` - The exit code that your command produced.
-      This is the same as `$?` except that it won't change until your next `echo_do`.
-1.  If no command is provided, `echo_do` will have an exit code of 124, and none of the environment variables will be set.
+This is handy for getting paginated API results where the API responses include link headers.
 
-Current drawbacks:
-1.  Temporary files are used to store stdout, stderr, and combined stdout/stderr while the command is running.
-    The contents of the files are then pulled into the appropriatel environment variables and deleted.
-    The `mktemp` command is used to create these files, and only the current user should have read or write access.
-    But still, for a bit, they exist as files.
-1.  Setting variables can be tricky with `echo_do`.
-    Some shells will try to be helpful and alter your command as it comes into `echo_do` as parameters.
-    For example, the command `echo_do foo='bar baz'` will end up being seen as "foo=bar baz".
-    Then, when trying to execute it, it'll get confused when it gets to "baz".
-    To prevent this, you can send the command in a string, e.g. `echo_do "foo='bar baz'"`.
-1.  Putting `echo_do` in a piped command probably won't work as expected.
-    If echo_do is part of the first command, the printed commmand will be part of the output, which probably isn't what you want.
-    If echo_do is in a piped part of the command, the environment variables might not get properly set (due to different shell behaviors).
-    Also, if echo_do is in a piped part of the command, the provided command is what will be receiving the incoming stream.
+You basically provide the parameters that you'd normally provide to curl, with some extra options available, but also some restrictions.
+Curl gets the contents of the provided url, then looks in the response header for a link header, gets the desired entry, and uses curl to get that entry.
+This continues until either the link header no longer contains a desired entry, there is no link header, or a maximum number of calls is made.
+
+You can see this in action in the `__gl_get_all_results` function defined in [bash_fun/gitlab/gl-core.sh](bash_fun/gitlab/gl-core.sh)
 
 ### [fzf_wrapper.sh](bash_fun/fzf_wrapper.sh)
 
-The primary purpose of this file is to define the `__fzf_wrapper` function.
+The primary purpose of this file is to define the `fzf_wrapper` function.
 This function adds a `--to-columns` option to [fzf](https://github.com/junegunn/fzf).
-When `--to-columns` is supplied, the string defined by `-d` or `--delimiter` becomes the string given to the `column` command.
+When `--to-columns` is supplied, the string defined by `-d` or `--delimiter` becomes the string given to the `column` command in order to display columnar entries in fzf.
+But the selected entries remain the same as they were when provided.
 
 For example:
 ```bash
@@ -115,5 +93,5 @@ Lastly, the result(s) from fzf are changed back to their original state by repla
 followed by spaces, then the zero-width non-joiner, with the original delimiter.
 
 Without the `--to-columns` option, there is no change to the functionality of fzf or any of the provided options.
-As such, it should be safe to `alias fzf=__fzf_wrapper` and not notice any difference except the availability of the `--to-columns` option.
+As such, it should be safe to `alias fzf=fzf_wrapper` and not notice any difference except the availability of the `--to-columns` option.
 
