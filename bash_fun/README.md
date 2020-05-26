@@ -1,25 +1,22 @@
 # SpicyLemon / bash_fun
 This directory contains files and scripts for doing things on a bash command-line.
+In most cases, the scripts/functions should work in other shells too, but that hasn't been fully tested.
 
 ## Contents
 
-* `ask.sh` - Asks flying-ferret questions.
-* `bootRun.sh` - A bash script that makes it easier to run the gradle bootRun task with supplied arguments. File is executable.
-* `capture_cmd.sh` - A bash file with a function for capturing the output of commands by stdout, stderr, and combined. File should be sourced.
-* `curl_link_header.sh` - A bash file with a function for using curl, and looking at response headers, in order to get all pages of a result. File should be sourced.
+* `ask.sh` - Asks [flying-ferret](https://github.com/SpicyLemon/flying-ferret) questions.
+* `bootRun.sh` - A bash script that makes it easier to run the gradle bootRun task with supplied arguments.
+* `capture_cmd.sh` - A bash file with a function for capturing the output of commands by stdout, stderr, and combined.
+* `curl_link_header.sh` - A bash script/function for using curl, and looking at response headers, in order to get all pages of a result.
 * `/deprecated` - A home for stuff that is no longer maintained, or has been replaced.
-* `fzf_wrapper.sh` - A bash function/script that adds some functionality to fzf.
-* `/generic` - A directory to hold the files with a some generic environment functions.
-* `/generic-setup.sh` - The entry point to the generic functions. Source this in order to add all the genric functions.
-* `git-helpers.sh` - A bash file with a bunch of functions for making git life easier. File should be sourced, not executed.
-* `github.sh` - The beginnings of some functions for interacting with GitHub. File should be sourced, not executed.
-* `/gitlab` - A directory to hold the files containing functionality for interacting with GitLab.
-* `gitlab-setup.sh` - The entry point to the GitLab functionality. Source this in order to add the GitLab functions.
-* `mysql_runner.sh` - A bash script for running stuff on a mysql database with a bunch of defaults handy for me.
-* `psql_runner.sh` - A bash script for running stuff on a postgresql database with a bunch of defaults handy for me.
-* `sagemaker.sh` - A function for making calls to sagemaker. Only tested on one endpoint, though, so your mileage may vary. File is executable.
+* `fzf_wrapper.sh` - A bash function/script that adds the --to-columns functionality to fzf.
+* `/generic` - A directory to hold a bunch of random/generic bash functions/scripts.
+* `/git` - A directory to hold several git-related functions/scripts.
+* `/gitlab` - A directory holding files defining several functions useful for interacting with the GitLab API from the command line.
+* `gradle_do.sh` - A function/script for executing the gradle wrapper from anywhere in a repo.
+* `sagemaker.sh` - A function for making calls to sagemaker. Only tested on one endpoint, though, so your mileage may vary.
 
-## File Details
+## Details
 
 TODO
 
