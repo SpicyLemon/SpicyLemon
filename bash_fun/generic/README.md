@@ -206,7 +206,7 @@ $ for f in $( ls *.sh ); do echo_do diff "$f" "/some/other/dir/$f"; done
 ```
 
 * `escape_escapes.sh` - Function/script for escaping the ASCII escape character (octal `\033`, hex `\x1B`).
-* `fp.sh` - Function/script for getting the full path to a file. Really, it just prepends the current directory to a string and cleans it up.
+* `fp.sh` - Function/script for getting the full path to a file.
 * `get_all_system_logs.sh` - Function/script that pulls all system logs into a single file and sorts the entries by the stamp.
 * `get_shell_type.sh` - Function for telling which shell is being used. Currently only recognizes bash and zsh.
 * `getlines.sh` - Function/script for getting specific lines from a file by line number.
