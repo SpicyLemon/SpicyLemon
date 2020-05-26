@@ -9,7 +9,7 @@
 #   4) Set the GITLAB_PRIVATE_TOKEN environment variable to the value of that token.
 #       For example, you could put   GITLAB_PRIVATE_TOKEN=123abcABC456-98ZzYy7  in your .bash_profile file
 #       so that it's set every time you open a terminal (use your own actual token of course).
-#   5) Optionally, the following optional environment variables can be defined.
+#   5) Optionally, the following environment variables can be defined.
 #       GITLAB_REPO_DIR  ----------> The directory where your GitLab repositories are to be stored.
 #                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
 #                                    If not defined, functions that look for it will require it to be provided as input.
@@ -36,18 +36,20 @@
 # If you are running into problems, you can get more information on what's going on by using the -v flag.
 #   For example,  source gitlab-setup.sh -v
 #
-# Lastly, these functions rely on the following programs or functions (that you might not have installed yet):
-#   * jq - Command-line JSON processor - https://github.com/stedolan/jq
-#   * fzf - Command-line fuzzy finder - https://github.com/junegunn/fzf
-#   * fzf_wrapper - A wrapper for fzf that adds a the --to-columns option. It's defined in the fzf_wrapper.sh file in this repo.
-#   * curl_link_header - A function similar to curl that will follow link header results until all results have been retrieved.
-#                        It's defined in the curl_link_header.sh file in this repo.
-# And these, that you probably do have installed:
-#   * awk - Pattern-Directed Scanning and Processing Language
-#   * sed - Stream Editor
-#   * curl - Transfer a URL
-#   * grep - File Pattern Searcher
-#   * git - The Stupid Content Tracker
+# These programs are required, and don't usually come pre-installed:
+#   * jq - Json processor. See https://github.com/stedolan/jq
+#   * fzf - Fuzzy finder. See https://github.com/junegunn/fzf
+#   * git - The stupid content tracker. https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+#
+# These functions are looked for and if not found, the file containing them is the looked for and sourced if possible:
+#   * fzf_wrapper - Adds column support to fzf. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/fzf_wrapper.sh
+#   * curl_link_header - Adds link header processing to curl. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/curl_link_header.sh
+#
+# These programs are required, and are almost always already available:
+#   * awk - Pattern scanning and processing.
+#   * sed - Stream editor.
+#   * grep - Pattern search.
+#   * curl - Url transfer utility.
 #
 
 # Determine if this script was invoked by being executed or sourced.
