@@ -37,8 +37,11 @@ gmrignore $( __gmrignore_options_display )
 
   Exactly one of these commands must be provided:
     add    - Display a list of projects that are not currently ignored and let you select ones to add.
+             Selected entries will be added to the ignore list (so they won't be searched).
     remove - Display a list of projects that are currently ignored, and let you select ones to remove from that list.
+             Selected entries will be removed from the ignore list (so that they'll be searched again).
     update - Display a list of all projects, let you select ones to become the new ignore list.
+             Selected entries become the new ignore list.
     clear  - Clear the list of ignored projects.
     prune  - Get rid of the unknown projects.
                 As projects are moved, deleted, or renamed in gitlab, sometimes their id changes.
@@ -52,9 +55,9 @@ gmrignore $( __gmrignore_options_display )
                     In these cases, you don't want to do a prune or else a lot of ignored projects will show up again.
     status - Output some consolidated information about what's being ignored.
     list   - Output repositories according to their state.
-                This command can optionally take in one ore more states.
+                This command can optionally take in one or more states.
                 Output will then be limited to the provided states.
-                    Valid states are:  ignored  shown  unknown  all
+                    Valid <states> are:  ignored  shown  unknown  all
                 If none are provided, all will be used.
 
 EOF
