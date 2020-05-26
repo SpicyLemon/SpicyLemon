@@ -24,6 +24,8 @@ This directory contains files that define functions for interacting with GitLab'
 * [Directory Contents](#user-content-directory-contents)
 * [Disclaimer](#user-content-disclaimer)
 
+<hr>
+
 ## Usage
 
 ### Setup/Installation
@@ -41,11 +43,13 @@ In order to interact with GitLab through their api, you will need an access toke
 
 #### Add these functions to your environment
 
-1.  Copy the `gitlab/` directory and its contents to a safe place on your system.
+1.  Copy this `gitlab/` directory and its contents to a safe place on your system.
     I personally, have a `~/.functions/` folder for such files and directories.
     So I've got a `~/.functions/gitlab/` folder with all these files.
 1.  Copy the [fzf_wrapper.sh](../fzf_wrapper.sh) file to either the same directory as the `gitlab/` directory, or into the `gitlab/` directory itself.
+    If you already have the fzf_wrapper function in your environment, you do not need to do this.
 1.  Copy the [curl_link_header.sh](../curl_link_header.sh) file to either the same directory as the `gitlab/` directory, or into the `gitlab/` directory itself.
+    If you already have the curl_link_header function in your environment, you do not need to do this.
 1.  In your environment setup file (e.g. `.bash_profile`), add a line to source the `gitlab-setup.sh` file.
     For example, in mine, I have this line:
     ```bash
@@ -60,16 +64,16 @@ If you need to troubleshoot the setup, you can add a `-v` flag when sourcing the
 These GitLab functions depend on some external programs/functions.
 Availability of the programs/functions is checked when `gitlab-setup.sh` is sourced.
 
-These functions are looked for, and if not found, the file containing them is the looked for and sourced if possible:
-* `fzf_wrapper` - Adds column support to `fzf`. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/fzf_wrapper.sh
-* `curl_link_header` - Adds link header processing to `curl`. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/curl_link_header.sh
-
 These programs are required, and don't usually come pre-installed:
 * `jq` - Json processor. See https://github.com/stedolan/jq
 * `fzf` - Fuzzy finder. See https://github.com/junegunn/fzf
 * `git` - The stupid content tracker. https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 
-These programs are required, and are almost always available already:
+These functions are looked for, and if not found, the file containing them is the looked for and sourced if possible:
+* `fzf_wrapper` - Adds column support to `fzf`. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/fzf_wrapper.sh
+* `curl_link_header` - Adds link header processing to `curl`. See https://github.com/SpicyLemon/SpicyLemon/blob/master/bash_fun/curl_link_header.sh
+
+These programs are required, and are almost always already available:
 * `awk` - Pattern scanning and processing.
 * `sed` - Stream editor.
 * `grep` - Pattern search.
