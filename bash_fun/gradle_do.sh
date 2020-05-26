@@ -18,10 +18,7 @@ gradle_do () {
         local git_root
         git_root="$( git rev-parse --show-toplevel )"
         if [[ -x "${git_root}/gradlew" ]]; then
-            (
-                cd "$git_root"
-                "$git_root/gradlew" "$@"
-            )
+            ( cd "$git_root" && './gradlew' "$@" )
             return $?
         fi
     fi
