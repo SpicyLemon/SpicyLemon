@@ -3,13 +3,13 @@
 # To use this script, place it in the same directory as the ./gradlew script you want to use.
 # Make sure the script is executable, and then call it.
 # Examples:
-#   command: ./run.sh
+#   command: ./bootRun.sh
 #   same as: ./gradlew bootRun
 #
-#   command: ./run.sh -h
+#   command: ./bootRun.sh -h
 #   same as: ./graldew bootRun -Pargs=-h
 #
-#   command: ./run.sh arg1 --foo fooParam --bar barParam 'an arg with spaces'
+#   command: ./bootRun.sh arg1 --foo fooParam --bar barParam 'an arg with spaces'
 #   same as: ./gradlew bootRun -Pargs=arg1,--foo,fooParam,--bar,barParam,'an arg with spaces'
 #
 
@@ -25,31 +25,29 @@ SCRIPT="$SCRIPT_IN_DIR/$SCRIPT_NAME"
 # Joins all provided parameters using the provided delimiter.
 # Usage: string_join <delimiter> [<arg1> [<arg2>... ]]
 string_join () {
-    local d retval
-    d="$1"
-    shift
-    retval="$1"
-    shift
+    local d retval;
+    d="$1";
+    shift;
+    printf %s "$1";
+    shift;
     while [[ "$#" -gt '0' ]]; do
-        retval="${retval}${d}$1"
-        shift
+        printf '%s%s' "$d" "$1";
+        shift;
     done
-    echo -E -n "$retval"
 }
 
 # Escapes (for bash output) all provided parameters and joins them using the provided delimiter.
 # Usage: escape_and_join <delimiter> [<arg1> [<arg2>... ]]
 escape_and_join () {
-    local d retval
-    d="$1"
-    shift
-    retval="$1"
-    shift
+    local d retval;
+    d="$1";
+    shift;
+    printf %s "$1";
+    shift;
     while [[ "$#" -gt '0' ]]; do
-        retval="${retval}${d}$( cli_escape "$1" )"
-        shift
+        printf '%s%s' "$d" "$( cli_escape "$1" )";
+        shift;
     done
-    echo -E -n "$retval"
 }
 
 # Escapes slashes and quotes.
@@ -62,12 +60,12 @@ cli_escape () {
         do_wrap="YES"
     fi
     # Replace all space-like characters with actual spaces, change \ to \\, then change " to \".
-    str_out="$( echo -E "$str_in" | sed -E 's/[[:space:]]/ /g; s/\\/\\\\/g; s/"/\\"/g;' )"
+    str_out="$( sed -E 's/[[:space:]]/ /g; s/\\/\\\\/g; s/"/\\"/g;' <<< "$str_in" )"
     # And wrap it in quotes if we need to.
     if [[ -n "$do_wrap" ]]; then
         str_out="\"$str_out\""
     fi
-    echo -E -n "$str_out"
+    printf '%s' "$str_out"
 }
 
 # Checks to make sure that the provided command is valid, and that there is a task defined.
@@ -79,13 +77,14 @@ cli_escape () {
 #   11  --> Could not find thing to execute.
 # Usage: check_setup || exit $?
 check_setup () {
+    local cmd_file cmd_parts
     # Make sure we can do what we want to do, and give a nice message if we can't.
     if [[ "$GRADLE_CMD" =~ ^[[:space:]]*$ ]]; then
-        >&2 echo -E "No command defined to execute. Check setup of $SCRIPT with respect to GRADLE_CMD."
+        printf 'No command defined to execute. Check setup of %s with respect to GRADLE_CMD.\n' "$SCRIPT" >&2
         return 10
     fi
     if [[ "$GRADLE_TASK" =~ ^[[:space:]]*$ ]]; then
-        >&2 echo -E "No gradle task defined to run. Check setup of $SCRIPT with respect to GRADLE_TASK."
+        printf 'No gradle task defined to run. Check setup of %s with respect to GRADLE_TASK.\n' "$SCRIPT" >&2
         return 10
     fi
 
@@ -102,21 +101,22 @@ check_setup () {
         fi
         # Since GRADLE_CMD is what will actually be executed, check that, but output the cmd file from above if something is wrong.
         if [[ ! -f "$GRADLE_CMD" ]]; then
-            >&2 echo -E "File not found: $cmd_file"
+            printf 'File not found: %s\n' "$cmd_file" >&2
             return 11
         elif [[ -d "$GRADLE_CMD" ]]; then
-            >&2 echo -E "Directory found when file expected: $cmd_file"
+            printf 'Directory found when file expected: %s\n' "$cmd_file" >&2
             return 11
         elif [[ ! -x "$GRADLE_CMD" ]]; then
-            >&2 echo -E "File not executable: $cmd_file"
+            printf 'File not executable: %s\n' "$cmd_file" >&2
             return 11
         fi
     else
         # No slash means it'll be treated like a command (and looked for in PATH).
         # e.g. gradle
+        # We want to test only the first piece of the command to see if it's a valid command.
         cmd_parts=( $GRADLE_CMD )
-        if [[ -z "$( command -v "${cmd_parts[0]}" 2> /dev/null )" ]]; then
-            >&2 echo -E "Command not found: $GRADLE_CMD"
+        if ! command -v "${cmd_parts[0]}" > /dev/null 2>&1; then
+            printf 'Command not found: %s\n' "$GRADLE_CMD" >&2
             return 11
         fi
     fi
@@ -131,7 +131,6 @@ run_gradle_task_with_params () {
     shift
     task="$1"
     shift
-    args=( "$@" )
     cmd_pieces=( "$base_cmd" "$task" )
     cmd_for_output="${cmd_pieces[@]}"
     if [[ "$#" -gt '0' && -n "$@" ]]; then
@@ -143,9 +142,7 @@ run_gradle_task_with_params () {
         cmd_for_output="$cmd_for_output -Pargs=$( escape_and_join "," "${args[@]}" )"
     fi
     # Output what we're about to do.
-    echo -e -n "\033[1;37m"
-    echo -E -n "$cmd_for_output"
-    echo -e "\033[0m"
+    printf '\033[1;37m%s\033[0m\n' "$cmd_for_output"
     # Do it!
     "${cmd_pieces[@]}"
     return $?
