@@ -54,7 +54,7 @@ This allows you to put all the input, ouput, parsing and calculation pieces in o
 
 The file has a comment at the top with details on usage.
 
-### [curl_link_header](bash_fun/curl_link_header.sh)
+### [curl_link_header.sh](bash_fun/curl_link_header.sh)
 
 This is a script/function that uses curl and follows entries in the [link response header](https://tools.ietf.org/html/rfc5988#section-5) in order to collect extra information.
 The file can either be sourced (e.g. in your `.bash_profile`) to add the function to your environment, or else it can be executed like most other script files.
