@@ -81,7 +81,7 @@ __generic_do_setup () {
     # These are programs/functions defined externally that might cause some of the new functions to not work properly.
     # Any that aren't available will be included in a message after sourcing all the files.
     desired_external=(
-        'dirname'  'basename'  'pbcopy'  'pbpaste'  '/usr/libexec/java_home'  'jq'
+        'dirname'  'basename'  'pbcopy'  'pbpaste'  '/usr/libexec/java_home'  'jq'  'fzf'
     )
 
     # These are used for verbose output as line headers.
