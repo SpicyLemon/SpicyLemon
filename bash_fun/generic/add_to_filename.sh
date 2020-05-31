@@ -35,7 +35,7 @@ add_to_filename () {
     fi
     for filename in "${filenames[@]}"; do
         [[ -n "$show_orig" ]] && printf '%s  ' "$filename"
-        sed -E "s/(\.)|$/_$addition\1/" <<< "$filename"
+        sed -E "s/(\.)|$/$addition\1/" <<< "$filename"
     done
 }
 
