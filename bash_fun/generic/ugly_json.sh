@@ -27,9 +27,11 @@ Usage: ugly_json [-q|--quiet] [-c|--clipboard] [-s <file>|--save <file>] [-f <fi
     -c or --clipboard will cause the output to be placed in the clipboard.
     -s or --save will cause the output to be written to the provided file.
         If also using the -f or --file option, the provided file can be ommitted, and
-        output will go to a file with the same name as provided with -f or --file, except
-        '-ugly' will be added to the name just before the first period, or at the
-        end if there is no period.
+        output will go to a file with a name based on the one provided with -f or --file.
+        If the input filename has .pretty -pretty or _pretty in it, then that will be changed
+        to .ugly -ugly or _ugly for the output filename.
+        Otherwise, -ugly will be added to the input filename just before the first period,
+        or at the end of the filename if there is no period.
     -f or --file will read the json from the provided file.
     - indicates that the json is being piped in.
     -- indicates the end of parameters, and anything following is treated as json.
@@ -93,7 +95,11 @@ EOF
             printf 'No output filename provided with the %s option.\n' "$to_file" >&2
             return 1
         fi
-        output_filename="$( sed -E 's/(\.)|$/-ugly\1/' <<< "$input_filename" )"
+        if [[ "$input_filename" =~ [-._]pretty ]]; then
+            output_filename="$( sed -E 's/([-._])pretty/\1ugly/' <<< "$input_filename" )"
+        else
+            output_filename="$( sed -E 's/(\.)|$/-ugly\1/' <<< "$input_filename" )"
+        fi
     fi
     if [[ -n "$from_file" ]]; then
         if [[ -z "$input_filename" ]]; then
