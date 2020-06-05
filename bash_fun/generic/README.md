@@ -569,13 +569,143 @@ $ ( exit 0; ); show_last_exit_code
 You can't see it in this README, but when the exit code is zero, the background is green; otherwise it's red.
 The `show_last_exit_code` also exits with the same code as the previous command.
 
-* `string_repeat.sh` - Function/script for repeating a string a given number of times.
-* `strip_colors.sh` - Function/script for removing color-code control sequences from a stream.
-* `strip_final_newline.sh` - Function/script for removing the final newline from a stream.
-* `tee_pbcopy.sh` - Function/script for outputting a stream, and also putting it into the clipboard.
-* `tee_strip_colors.sh` - Function/script for outputting a stream, and also stripping the color control sequences before appending it to a file.
-* `tee_strip_colors_pbcopy.sh` - Function/script for outputting a stream, and also stripping the color control sequences before putting it into the clipboard.
-* `to_date.sh` - Function/script for converting milliseconds since the epoch into a date.
-* `to_epoch.sh` - Function/script for converting a date into milliseconds since the epoch.
-* `ugly_json.sh` - Function/script for using jq to make json ugly (compact).
+### `string_repeat.sh`
+
+Function/script for repeating a string a given number of times.
+
+Example Usage:
+```console
+$ string_repeat Banana 3
+BananaBananaBanana
+```
+
+The output does not contain an ending newline.
+
+### `strip_colors.sh`
+
+Function/script for removing color-code control sequences from a stream.
+
+This is useful for stuff that outputs with terminal color codes, but you don't want them.
+
+Example Usage:
+```console
+$ echo_color blue -- 'testing' | strip_colors | pbcopy
+```
+
+### `strip_final_newline.sh`
+
+Function/script for removing the final newline from a stream.
+
+This is most useful (for me) when sending stuff to pbcopy.
+If the provided text does not have a newline at the end of the last line, nothing is changed.
+
+Example Usage:
+```console
+$ cat foo.txt | strip_final_newline | pbcopy
+```
+
+### `tee_pbcopy.sh`
+
+Function/script for outputting a stream, and also putting it into the clipboard.
+
+Using `tee`, the input stream is sent to both stdout as well as the clipboard (using `pbcopy`).
+
+Example Usage:
+```console
+$ cat foo.txt | tee_pbcopy
+```
+
+### `tee_strip_colors.sh`
+
+Function/script for outputting a stream, and also stripping the color control sequences before appending it to a file.
+
+The output that goes to stdout will still contain colors, but the color information will be removed as the file is created.
+
+Example Usage:
+```console
+$ grep --color=always foo bar.txt | tee_strip_colors 'foo-lines-in-bar.txt'
+```
+
+### `tee_strip_colors_pbcopy.sh`
+
+Function/script for outputting a stream, and also stripping the color control sequences before putting it into the clipboard.
+
+The output that goes to stdout will stil contain colors, but the color information will be removed before being placed in the clipboard.
+
+Example Usage:
+```console
+$ grep --color=always foo bar.txt | tee_strip_colors_pbcopy
+```
+
+### `to_date.sh`
+
+Function/script for converting milliseconds since the epoch into a date.
+
+Fractional seconds are allowed too, but negative numbers are not allowed.
+
+Example Usage:
+```console
+$ to_date 1591340109000
+2020-06-05 00:55:09 -0600 (MDT) Friday
+```
+or
+```console
+$ to_date 1591340109000.1
+2020-06-05 00:55:09.0001 -0600 (MDT) Friday
+```
+Also available:
+```console
+$ to_date now
+2020-06-05 00:56:31 -0600 (MDT) Friday
+```
+
+### `to_epoch.sh`
+
+Function/script for converting a date into milliseconds since the epoch.
+
+A date is required, and should be in `yyyy-MM-dd` format.
+
+A time is optional and can be either `HH:mm`, `HH:mm:ss`, or `HH:mm:ss.ddd` format.
+If supplied, it should immediately follow the date (with a space between them).
+If not supplied, midnight is used, i.e. `00:00:00.000`
+Fractional milliseconds can also be supplied simply by providing more digits after the decimal.
+
+A timezone offset is also optional and should be in the format of `+HHmm` or `-HHmm`.
+If a time is supplied, the timezone offset should immediately follow the time (with a space between them).
+If the time is not supplied, the timezone offset should immediately follow the date (with a space between them).
+If not supplied, your local system timezone is used, i.e. the results of `date '+%z'`.
+
+Example Usage:
+```console
+$ to_epoch 2020-05-01 21:15:04.987 +0000
+1588367704987
+```
+Also available:
+```console
+$ to_epoch now
+1591341279000
+```
+
+### `ugly_json.sh`
+
+Function/script for using jq to make json ugly (compact).
+
+This is similar to just doing `jq --sort-keys -c '.' <filename>` except it's got some nice bonus features.
+
+It can get the input from a file, a pipe, the clipboard, or even as a raw json string as an argument.
+It can also output to a file, stdout, or the clipboard.
+STDOUT output will always contain color though.
+That's why the ability to output to a file was added.
+File output, and clipboard output do not contain color info.
+If the input is a file, and the output is a file, the output filename can be automatically generated from the input filename.
+
+See `ugly_json --help` for more info.
+
+Example Usage:
+```console
+$ ugly_json -- '{ "a" : "A" , "b" : "B" }'
+{"a":"A","b":"B"}
+```
+
+The counterpart to this function is `pretty_json` (listed above).
 
