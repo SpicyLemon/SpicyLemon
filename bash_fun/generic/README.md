@@ -77,7 +77,7 @@ These programs are also used, but are almost always already available:
 
 ### `generic-setup.sh`
 
-The file to source to source the rest of these files, importing the functions into your environment.
+[generic-setup.sh](generic-setup.sh) - The file to source to source the rest of these files, importing the functions into your environment.
 
 Use this commmand to utilize the file:
 ```console
@@ -91,7 +91,7 @@ $ source generic-setup.sh -v
 
 ### `add_to_filename.sh`
 
-A function/script for adding text to one or more filename strings, just before the extensions.
+[add_to_filename.sh](add_to_filename.sh) - A function/script for adding text to one or more filename strings, just before the extensions.
 
 Simple example - Add "-v2" to the name of a document.
 ```console
@@ -121,7 +121,7 @@ This file can also be executed as a script for the same functionality.
 
 ### `change_word.sh`
 
-A function/script for rudamentarily changing one string to another in a set of files.
+[change_word.sh](change_word.sh) - A function/script for rudamentarily changing one string to another in a set of files.
 
 Usage: `change_word <old word> <new word> <files>`
 
@@ -140,7 +140,7 @@ That way, it's easy to undo if there were some unintended changes.
 
 ### `check_system_log_timestamp_order.sh`
 
-A function/script for finding improperly ordered entries in system logs.
+[check_system_log_timestamp_order.sh](check_system_log_timestamp_order.sh) - A function/script for finding improperly ordered entries in system logs.
 
 I had a weird thing happen where some system log entries weren't in chronological order.
 So I ended up putting this together in order to find all such entries in a file.
@@ -157,7 +157,7 @@ $ { cat /var/log/system.log; for l in $( ls /var/log/system.log.* ); do zcat < "
 
 ### `chrome_cors.sh`
 
-A function/script for opening a page in a Chrome window with CORS security disabled.
+[chrome_cors.sh](chrome_cors.sh) - A function/script for opening a page in a Chrome window with CORS security disabled.
 This is handy when you're trying to set up some ajax scripts locally for a service running elsewhere that includes CORS headers in the response.
 
 ```console
@@ -166,7 +166,7 @@ $ chrome_cors my-own-page.html
 
 ### `echo_color.sh`
 
-A function/script for outputting command-line stuff with colors.
+[echo_color.sh](echo_color.sh) - A function/script for outputting command-line stuff with colors.
 
 If the file is executed, it just runs the `echo_color` function with the provided parameters.
 
@@ -230,7 +230,7 @@ Examples:
 
 ### `echo_do.sh`
 
-A function/script for outputting a command prior to executing it.
+[echo_do.sh](echo_do.sh) - A function/script for outputting a command prior to executing it.
 
 The provided command is printed in bold white, then executed.
 
@@ -243,7 +243,7 @@ $ for f in $( ls *.sh ); do echo_do diff "$f" "/some/other/dir/$f"; done
 
 ### `escape_escapes.sh`
 
-Function/script for escaping the ASCII escape character (octal `\033`, hex `\x1B`).
+[escape_escapes.sh](escape_escapes.sh) - Function/script for escaping the ASCII escape character (octal `\033`, hex `\x1B`).
 
 Example Usage:
 ```console
@@ -253,7 +253,7 @@ $ echo_color red -- This is red | escape_escapes
 
 ### `fp.sh`
 
-Function/script for getting the full path to a file.
+[fp.sh](fp.sh) - Function/script for getting the full path to a file.
 
 This basically prepends your current working directory to the provided strings then corrects for any instances of `../`.
 If only a single entry is provided, and `pbcopy` is available, the result will be loaded into your clipboard.
@@ -267,7 +267,7 @@ $ fp README.md
 
 ### `get_all_system_logs.sh`
 
-Function/script that pulls all system logs into a single file and sorts the entries by the stamp.
+[get_all_system_logs.sh](get_all_system_logs.sh) - Function/script that pulls all system logs into a single file and sorts the entries by the stamp.
 
 It gets the `/var/log/system.log` file and decompresses any `/var/log/system.log.*` files.
 Then it sorts the entries by date and outputs them to stdout.
@@ -280,7 +280,7 @@ $ get_all_system_logs
 
 ### `get_shell_type.sh`
 
-Function for telling which shell is being used. Currently only recognizes bash and zsh.
+[get_shell_type.sh](get_shell_type.sh) - Function for telling which shell is being used. Currently only recognizes bash and zsh.
 
 Originally, I was using this to split code that needed to be different for bash and zsh.
 But then I realized that it's better to do checks for specific functionality, so I don't really use this anymore.
@@ -294,7 +294,7 @@ bash
 
 ### `getlines.sh`
 
-Function/script for getting specific lines from a file by line number.
+[getlines.sh](getlines.sh) - Function/script for getting specific lines from a file by line number.
 
 It can take in specific line numbers, line number ranges, and any combination of those.
 A filename can also be provided.
@@ -318,7 +318,7 @@ unset sourced
 
 ### `hrr.sh`
 
-Function/script that outputs a colorful horizontal rule in your terminal.
+[hrr.sh](hrr.sh) - Function/script that outputs a colorful horizontal rule in your terminal.
 
 A message can be provided to include in the output too.
 You won't see it here (in this README), but it's colorized too.
@@ -344,7 +344,7 @@ $  hr This is a test of hr
 
 ### `i_can.sh`
 
-Function for testing whether or not a command is available in the environment.
+[i_can.sh](i_can.sh) - Function for testing whether or not a command is available in the environment.
 
 It takes in the primary command that you want to test and exits with an exit code of 0 if the command is available, or 1 if not.
 
@@ -362,7 +362,7 @@ No. You cannot [dance].
 
 ### `java_8_activate.sh`
 
-Function for setting the `JAVA_HOME` variable to the Java 8 JDK.
+[java_8_activate.sh](java_8_activate.sh) - Function for setting the `JAVA_HOME` variable to the Java 8 JDK.
 
 I'm not sure how helpful this will be to others, but it's handy for me.
 Rather than having to remember what value the `JAVA_HOME` variable needs to have in order to use Java 8, I just have to remember the `java_8_activate` command.
@@ -375,7 +375,7 @@ JAVA_HOME set to "/Library/Java/JavaVirtualMachines/jdk1.8.0_77.jdk/Contents/Hom
 
 ### `java_8_deactivate.sh`
 
-Function for clearing the `JAVA_HOME` variable, going back to the system default.
+[java_8_deactivate.sh](java_8_deactivate.sh) - Function for clearing the `JAVA_HOME` variable, going back to the system default.
 
 All this does is unsets the `JAVA_HOME` variable.
 But having it named similar to `java_8_activate` makes it a little easier to remember.
@@ -388,7 +388,7 @@ JAVA_HOME unset.
 
 ### `join_str.sh`
 
-Function/script for joining strings using a delimiter.
+[join_str.sh](join_str.sh) - Function/script for joining strings using a delimiter.
 
 The first argument provided is treated as the delimiter.
 All other arguments are then joined together into one line, with the delimiter between each entry.
@@ -402,7 +402,7 @@ $ join_str ', ' $( seq 1 10 )
 
 ### `jqq.sh`
 
-Function/script for running json contained in a variable through the `jq` program.
+[jqq.sh](jqq.sh) - Function/script for running json contained in a variable through the `jq` program.
 
 I got tired of typing `echo "$variable" | jq '.'`.
 So I created this, which saves a couple characters of typing, but is a bit clunky.
@@ -417,7 +417,7 @@ FOO
 
 ### `multi_line_replace.sh`
 
-Function/script for replacing a matched area of a single line with a multi-line replacement.
+[multi_line_replace.sh](multi_line_replace.sh) - Function/script for replacing a matched area of a single line with a multi-line replacement.
 
 This is basically a sort of templating script.
 It takes in three arguments:
@@ -458,7 +458,7 @@ This is the last line.
 
 ### `pretty_json.sh`
 
-Function/script for using jq to make json pretty.
+[pretty_json.sh](pretty_json.sh) - Function/script for using jq to make json pretty.
 
 This uses jq to make json pretty.
 It's similar to just doing `jq --sort-keys '.' <filename>` except it's got some nice bonus features.
@@ -485,7 +485,7 @@ The counterpart to this function is `ugly_json` (listed below).
 
 ### `print_args.sh`
 
-Function/script for printing out the arguments passed into it.
+[print_args.sh](print_args.sh) - Function/script for printing out the arguments passed into it.
 
 This is a really simple thing that is usefuly when you want to see what arguments look like as they're passed into a function.
 
@@ -500,7 +500,7 @@ Arguments received:
 
 ### `ps_grep.sh`
 
-Function/script for grepping through `ps aux` output.
+[ps_grep.sh](ps_grep.sh) - Function/script for grepping through `ps aux` output.
 
 I often found myself running the command `ps aux | grep <something>`.
 This function makes that a few characters shorter, but also provides some niceties.
@@ -518,7 +518,7 @@ spicylemon        4645   0.0  0.0  4334968   4004 s008  S+   10:52PM   0:04.43 v
 
 ### `re_line.sh`
 
-Function/script for reformatting delimited and/or line-separated entries.
+[re_line.sh](re_line.sh) - Function/script for reformatting delimited and/or line-separated entries.
 
 This is a fun function.
 It takes in collections of entries, and reformats them.
@@ -584,7 +584,7 @@ Usage: re_line [-f <filename>|--file <filename>|-c|--from-clipboard|-|-p|--from-
 
 ### `show_last_exit_code.sh`
 
-Function for outputting an indicator of the previous command's exit code.
+[show_last_exit_code.sh](show_last_exit_code.sh) - Function for outputting an indicator of the previous command's exit code.
 
 This is a function I use in my command prompt to indicate the exit code of the previous command.
 Basically, the first part of my PS1 value is `$( show_last_exit_code )`.
@@ -606,7 +606,7 @@ The `show_last_exit_code` also exits with the same code as the previous command.
 
 ### `string_repeat.sh`
 
-Function/script for repeating a string a given number of times.
+[string_repeat.sh](string_repeat.sh) - Function/script for repeating a string a given number of times.
 
 Example Usage:
 ```console
@@ -618,7 +618,7 @@ The output does not contain an ending newline.
 
 ### `strip_colors.sh`
 
-Function/script for removing color-code control sequences from a stream.
+[strip_colors.sh](strip_colors.sh) - Function/script for removing color-code control sequences from a stream.
 
 This is useful for stuff that outputs with terminal color codes, but you don't want them.
 
@@ -629,7 +629,7 @@ $ echo_color blue -- 'testing' | strip_colors | pbcopy
 
 ### `strip_final_newline.sh`
 
-Function/script for removing the final newline from a stream.
+[strip_final_newline.sh](strip_final_newline.sh) - Function/script for removing the final newline from a stream.
 
 This is most useful (for me) when sending stuff to pbcopy.
 If the provided text does not have a newline at the end of the last line, nothing is changed.
@@ -641,7 +641,7 @@ $ cat foo.txt | strip_final_newline | pbcopy
 
 ### `tee_pbcopy.sh`
 
-Function/script for outputting a stream, and also putting it into the clipboard.
+[tee_pbcopy.sh](tee_pbcopy.sh) - Function/script for outputting a stream, and also putting it into the clipboard.
 
 Using `tee`, the input stream is sent to both stdout as well as the clipboard (using `pbcopy`).
 
@@ -652,7 +652,7 @@ $ cat foo.txt | tee_pbcopy
 
 ### `tee_strip_colors.sh`
 
-Function/script for outputting a stream, and also stripping the color control sequences before appending it to a file.
+[tee_strip_colors.sh](tee_strip_colors.sh) - Function/script for outputting a stream, and also stripping the color control sequences before appending it to a file.
 
 The output that goes to stdout will still contain colors, but the color information will be removed as the file is created.
 
@@ -663,7 +663,7 @@ $ grep --color=always foo bar.txt | tee_strip_colors 'foo-lines-in-bar.txt'
 
 ### `tee_strip_colors_pbcopy.sh`
 
-Function/script for outputting a stream, and also stripping the color control sequences before putting it into the clipboard.
+[tee_strip_colors_pbcopy.sh](tee_strip_colors_pbcopy.sh) - Function/script for outputting a stream, and also stripping the color control sequences before putting it into the clipboard.
 
 The output that goes to stdout will stil contain colors, but the color information will be removed before being placed in the clipboard.
 
@@ -674,7 +674,7 @@ $ grep --color=always foo bar.txt | tee_strip_colors_pbcopy
 
 ### `to_date.sh`
 
-Function/script for converting milliseconds since the epoch into a date.
+[to_date.sh](to_date.sh) - Function/script for converting milliseconds since the epoch into a date.
 
 Fractional seconds are allowed too, but negative numbers are not allowed.
 
@@ -696,7 +696,7 @@ $ to_date now
 
 ### `to_epoch.sh`
 
-Function/script for converting a date into milliseconds since the epoch.
+[to_epoch.sh](to_epoch.sh) - Function/script for converting a date into milliseconds since the epoch.
 
 A date is required, and should be in `yyyy-MM-dd` format.
 
@@ -723,7 +723,7 @@ $ to_epoch now
 
 ### `ugly_json.sh`
 
-Function/script for using jq to make json ugly (compact).
+[ugly_json.sh](ugly_json.sh) - Function/script for using jq to make json ugly (compact).
 
 This is similar to just doing `jq --sort-keys -c '.' <filename>` except it's got some nice bonus features.
 
