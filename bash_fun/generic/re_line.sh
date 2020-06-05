@@ -36,7 +36,7 @@ Usage: re_line [-f <filename>|--file <filename>|-c|--from-clipboard|-|-p|--from-
     --min-width defines the minimum line width (in characters) the output should have.
         Once an item is added to a line that exceeds this amount, a newline is then started.
         Cannot be combined with -n, --count or --max-width.
-    --max-width defines the maximum line width (in characters) the output shoudl have.
+    --max-width defines the maximum line width (in characters) the output should have.
         If adding the next item to the line would exceed this amount, a newline is started
         and that next item is the first item on it.
         Note: A line can still exceed this width in cases where a single item exceeds this width.
