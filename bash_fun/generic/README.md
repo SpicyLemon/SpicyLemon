@@ -267,8 +267,7 @@ Lines are printed in numerical order (as opposed to the order that they're provi
 
 Example Usage:
 ```console
-$ getlines 60-64 10-15 fp.sh
-# Determine if this script was invoked by being executed or sourced.
+$ getlines 60-64 11-15 fp.sh
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
   || [[ -n "$KSH_VERSION" && $(cd "$(dirname -- "$0")" && printf '%s' "${PWD%/}/")$(basename -- "$0") != "${.sh.file}" ]] \
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
