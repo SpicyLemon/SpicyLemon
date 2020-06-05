@@ -205,13 +205,126 @@ The diff command would show in bold white followed by the results of the diff co
 $ for f in $( ls *.sh ); do echo_do diff "$f" "/some/other/dir/$f"; done
 ```
 
-* `escape_escapes.sh` - Function/script for escaping the ASCII escape character (octal `\033`, hex `\x1B`).
-* `fp.sh` - Function/script for getting the full path to a file.
-* `get_all_system_logs.sh` - Function/script that pulls all system logs into a single file and sorts the entries by the stamp.
-* `get_shell_type.sh` - Function for telling which shell is being used. Currently only recognizes bash and zsh.
-* `getlines.sh` - Function/script for getting specific lines from a file by line number.
-* `hrr.sh` - Function/script that outputs a colorful horizontal rule in your terminal.
-* `i_can.sh` - Function for testing whether or not a command is available in the environment.
+### `escape_escapes.sh`
+
+Function/script for escaping the ASCII escape character (octal `\033`, hex `\x1B`).
+
+Example Usage:
+```console
+$ echo_color red -- This is red | escape_escapes
+\033[31mThis is red\033[39m
+```
+
+### `fp.sh`
+
+Function/script for getting the full path to a file.
+
+This basically prepends your current working directory to the provided strings then corrects for any instances of `../`.
+If only a single entry is provided, and `pbcopy` is available, the result will be loaded into your clipboard.
+If no entries are provided, you will be prompted to select some from the current directory.
+
+Example Usage:
+```console
+$ fp README.md
+/Users/spicylemon/git/SpicyLemon/bash_fun/generic/README.md - copied to clipboard.
+```
+
+### `get_all_system_logs.sh`
+
+Function/script that pulls all system logs into a single file and sorts the entries by the stamp.
+
+It gets the `/var/log/system.log` file and decompresses any `/var/log/system.log.*` files.
+Then it sorts the entries by date and outputs them to stdout.
+There's usually quite a lot of output.
+
+Example Usage:
+```console
+$ get_all_system_logs
+```
+
+### `get_shell_type.sh`
+
+Function for telling which shell is being used. Currently only recognizes bash and zsh.
+
+Originally, I was using this to split code that needed to be different for bash and zsh.
+But then I realized that it's better to do checks for specific functionality, so I don't really use this anymore.
+I didn't feel like getting rid of it, though.
+
+Example Usage:
+```console
+$ get_shell_type
+bash
+```
+
+### `getlines.sh`
+
+Function/script for getting specific lines from a file by line number.
+
+It can take in specific line numbers, line number ranges, and any combination of those.
+A filename can also be provided.
+If no filename is provided, it'll attempt to get input that is piped in.
+Lines are printed in numerical order (as opposed to the order that they're provided as arguments).
+
+Example Usage:
+```console
+$ getlines 60-64 10-15 fp.sh
+# Determine if this script was invoked by being executed or sourced.
+( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
+  || [[ -n "$KSH_VERSION" && $(cd "$(dirname -- "$0")" && printf '%s' "${PWD%/}/")$(basename -- "$0") != "${.sh.file}" ]] \
+  || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
+) && sourced='YES' || sourced='NO'
+
+if [[ "$sourced" != 'YES' ]]; then
+    fp "$@"
+    exit $?
+fi
+unset sourced
+```
+
+### `hrr.sh`
+
+Function/script that outputs a colorful horizontal rule in your terminal.
+
+A message can be provided to include in the output too.
+You won't see it here (in this README), but it's colorized too.
+A random palette is chosen each time it's called.
+
+If you source the `hrr.sh` file, the `hrr` and `hhr` functions both become availalbe (so you don't have to remember which one it is).
+The `hr` function also becomes available.
+The `hrr` (and `hhr`) functions output 3 lines, and the `hr` function only outputs one.
+The width is determined by your environment.
+
+Example Usage:
+```console
+$ hrr This is a test of hrr
+ ################################################################################################################################################
+  ############################################################ This is a test of hrr ############################################################
+ ################################################################################################################################################
+```
+or
+```console
+$  hr This is a test of hr
+  ############################################################ This is a test of hr ############################################################
+```
+
+### `i_can.sh`
+
+Function for testing whether or not a command is available in the environment.
+
+It takes in the primary command that you want to test and exits with an exit code of 0 if the command is available, or 1 if not.
+
+This file also provides the `can_i` method that uses the `i_can` method to output whether or not a command is available.
+
+Example Usage:
+```console
+$ if i_can pbcopy; then cat README.txt | pbcopy && printf 'README.txt copied to clipboard.\n'; else printf 'Nothing happened.\n'; fi
+README.txt copied to clipboard.
+$ can_i pbpaste
+Yes. You can [pbpaste].
+$ can_i dance
+No. You cannot [dance].
+```
+
 * `java_8_activate.sh` - Function for setting the `JAVA_HOME` variable to the Java 8 JDK.
 * `java_8_deactivate.sh` - Function for clearing the `JAVA_HOME` variable, going back to the system default.
 * `join_str.sh` - Function/script for joining strings using a delimiter.
