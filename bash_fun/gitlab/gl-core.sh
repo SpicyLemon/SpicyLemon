@@ -239,18 +239,11 @@ __gl_ensure_projects () {
 }
 
 __gl_max_age_projects () {
-    if [[ -n "$GITLAB_PROJECTS_MAX_AGE" ]]; then
-        if [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
-            echo -E -n "$GITLAB_PROJECTS_MAX_AGE"
-            return 0
-        else
-            >&2 echo "Invalid GITLAB_PROJECTS_MAX_AGE value [$GITLAB_PROJECTS_MAX_AGE]. Using default of 23h."
-        fi
-    fi
-    echo -E -n '23h'
+    __gl_cache_max_age "$GITLAB_PROJECTS_MAX_AGE" 'GITLAB_PROJECTS_MAX_AGE'
 }
 
 __gl_projects_clear_cache () {
+    local projects_file
     projects_file="$( __gl_temp_projects_filename )"
     if [[ -f "$projects_file" ]]; then
         rm "$projects_file"
