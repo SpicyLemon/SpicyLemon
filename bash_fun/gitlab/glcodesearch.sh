@@ -93,7 +93,7 @@ EOF
             ;;
         --area)
             area="$( printf %s "$2" | __gl_uppercase )"
-            if [[ "$area" ne 'GLOBAL' ]]; then
+            if [[ "$area" != 'GLOBAL' ]]; then
                 area_spec=$3
                 shift
             fi
