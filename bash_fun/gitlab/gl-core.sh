@@ -515,13 +515,26 @@ __gl_get_user_info () {
 # Look up info on all available projects. Results are stored in $GITLAB_PROJECTS.
 # Usage: __gl_get_projects <keep quiet> <verbose>
 __gl_get_projects () {
-    local keep_quiet verbose projects_url page per_page previous_count projects
+    local keep_quiet verbose projects_url projects
     keep_quiet="$1"
     verbose="$2"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab projects... "
     projects_url="$( __gl_url_api_projects )?order_by=id&simple=true&membership=true&archived=false&"
     projects="$( __gl_get_all_results "$projects_url" '' '' "$verbose" 'use_keyset' )"
     GITLAB_PROJECTS="$projects"
+    [[ -n "$keep_quiet" ]] || echo -E "Done."
+}
+
+# Look up info on all available groups. Results are stored in $GITLAB_GROUPS.
+# Usage: __gl_get_groups <keep quiet> <verbose>
+__gl_get_groups () {
+    local keep_quiet verbose groups_url groups
+    keep_quiet="$1"
+    verbose="$2"
+    [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab groups... "
+    groups_url="$( __gl_url_api_groups )?order_by=id&"
+    groups="$( __gl_get_all_results "$groups_url" '' '' "$verbose" )"
+    GITLAB_GROUPS="$groups"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
 
