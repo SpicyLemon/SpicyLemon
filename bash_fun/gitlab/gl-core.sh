@@ -62,6 +62,17 @@ __gl_lowercase () {
     tr "[:upper:]" "[:lower:]"
 }
 
+# Converts a string to uppercase.
+# Usage: echo 'foo' | __gl_uppercase
+__gl_uppercase () {
+    if [[ "$#" -gt '0' ]]; then
+        printf '%s' "$*" | __gl_uppercase
+        return 0
+    fi
+    tr "[:lower:]" "[:upper:]"
+}
+
+
 # Usage: __gl_encode_for_url "value to encode"
 #  or    <do stuff> | __gl_encode_for_url
 __gl_encode_for_url () {
@@ -933,6 +944,35 @@ __gl_url_api_todos_mark_as_done () {
 __gl_url_api_todos_mark_all_as_done () {
     __gl_url_api_todos
     echo -E -n "/mark_as_done"
+}
+
+# Usage: __gl_url_api_groups [<group id>]
+__gl_url_api_groups () {
+    local group_id
+    group_id="$1"
+    __gl_url_api_v4
+    printf '/groups'
+    if [[ -n "$group_id" ]]; then
+        printf '/%s' "$group_id"
+    fi
+}
+
+# Usage: __gl_url_api_search_global
+__gl_url_api_search_global () {
+    __gl_url_api_v4
+    printf '/search'
+}
+
+# Usage: __gl_url_api_search_in_group <group id>
+__gl_url_api_search_in_group () {
+    __gl_url_api_groups "$1"
+    printf '/search'
+}
+
+# Usage: __gl_url_api_search_in_project <project id>
+__gl_url_api_search_in_project () {
+    __gl_url_api_projects "$1"
+    printf '/search'
 }
 
 # Creates the desired url for glopen to use.
