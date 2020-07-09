@@ -935,6 +935,17 @@ __gl_url_api_todos_mark_all_as_done () {
     echo -E -n "/mark_as_done"
 }
 
+# Usage: __gl_url_api_groups [<group id>]
+__gl_url_api_groups () {
+    local group_id
+    group_id="$1"
+    __gl_url_api_v4
+    printf '/groups'
+    if [[ -n "$group_id" ]]; then
+        printf '/%s' "$group_id"
+    fi
+}
+
 # Creates the desired url for glopen to use.
 # Usage: __gl_url_web_repo <base url> <branch> <diff_branch>
 __gl_url_web_repo () {
