@@ -262,6 +262,77 @@ __gl_projects_refresh_cache () {
     __gl_ensure_projects
 }
 
+# Makes sure that the $GITLAB_GROUPS variable has a value.
+# A temp file is used to store the groups info too.
+# If the file doesn't exist, or is older than a day, or is empty,
+#   the groups info will be refreshed and stored in the file.
+# Otherwise, it's contents will be loaded into the $GITLAB_GROUPS variable.
+# Usage: __gl_ensure_groups <keep quiet> <verbose>
+__gl_ensure_groups () {
+    local keep_quiet verbose groups_file
+    keep_quiet="$1"
+    verbose="$2"
+    __gl_ensure_temp_dir
+    groups_file="$( __gl_temp_groups_filename )"
+    if [[ ! -f "$groups_file" \
+            || $( find "$groups_file" -mtime "+$( __gl_max_age_groups )" ) ]] \
+            || ! $( grep -q '[^[:space:]]' "$groups_file" ); then
+        __gl_get_groups "$keep_quiet" "$verbose"
+        echo -E "$GITLAB_GROUPS" > "$groups_file"
+    else
+        GITLAB_GROUPS="$( cat "$groups_file" )"
+    fi
+}
+
+__gl_max_age_groups () {
+    __gl_cache_max_age "$GITLAB_GROUPS_MAX_AGE" 'GITLAB_GROUPS_MAX_AGE'
+}
+
+__gl_groups_clear_cache () {
+    local groups_file
+    groups_file="$( __gl_temp_groups_filename )"
+    if [[ -f "$groups_file" ]]; then
+        rm "$groups_file"
+    fi
+}
+
+__gl_groups_refresh_cache () {
+    __gl_groups_clear_cache
+    __gl_ensure_groups
+}
+
+__gl_cache_default_max_age () {
+    __gl_cache_max_age "$GITLAB_CACHE_DEFAULT_MAX_AGE" 'GITLAB_CACHE_DEFAULT_MAX_AGE'
+}
+
+# Usage: if __gl_is_valid_atime "<string>"; then
+__gl_is_valid_atime () {
+    [[ "$1" =~ ^([[:digit:]]+[smhdw])+$ ]]
+}
+
+# Usage: max_age="$( __gl_cache_max_age <value> <variable name> )"
+__gl_cache_max_age () {
+    local value name retval invalid_value
+    value="$1"
+    name="$2"
+    if [[ -n "$value" ]]; then
+        if __gl_is_valid_atime "$value"; then
+            retval="$value"
+        else
+            invalid_value='YES'
+        fi
+    elif [[ "$name" == 'GITLAB_CACHE_DEFAULT_MAX_AGE' ]]; then
+        retval='23h'
+    else
+        retval="$( __gl_cache_default_max_age )"
+    fi
+    if [[ -n "$invalid_value" ]]; then
+        printf 'Invalid %s value [%s]. Using default of %s.\n' "$name" "$value" "$retval" >&2
+    fi
+    printf '%s' "$retval"
+    return 0
+}
+
 # Makes sure that the gitlab temp directory exists.
 # Usage: __gl_ensure_temp_dir
 __gl_ensure_temp_dir () {
@@ -309,6 +380,12 @@ __gl_temp_dirname () {
 # Usage: __gl_temp_projects_filename
 __gl_temp_projects_filename () {
     echo -E -n "$( __gl_temp_dirname )/projects.json"
+}
+
+# Gets the full path and name of the file to store groups info.
+# Usage: __gl_temp_groups_filename
+__gl_temp_groups_filename () {
+    echo -E -n "$( __gl_temp_dirname )/groups.json"
 }
 
 #
