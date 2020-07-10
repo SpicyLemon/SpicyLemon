@@ -118,12 +118,18 @@ The following environment variables can be defined:
   This should be absolute, (starting with a `/`), but it should not end with a `/`.
   If not defined, `/tmp/gitlab` will be used.
   If the directory does not exist, it will be created automatically when needed.
+* `GITLAB_CACHE_DEFAULT_MAX_AGE` -
+  The default max age for cached data.
+  Format is <number>[smhdw] where s -> seconds, m -> minutes, h -> hours, d -> days, w -> weeks.
+  See `man find` in the -atime section for more info.
+  Do not include a leading + or -.
+  If not defined, the default is '23h'.
 * `GITLAB_PROJECTS_MAX_AGE` -
-  The max age that the projects list can be before it's considered out-of-date.
-  Format is `<number>[smhdw]` where `s` -> seconds, `m` -> minutes, `h` -> hours, `d` -> days, `w` -> weeks.
-  See `man find` in the `-atime` section for more info.
-  Do not include a leading `+` or `-`.
-  If not defined, the default is `23h`.
+  The max age that the projects list can be before it's refreshed when needed.
+  If not set, GITLAB_CACHE_DEFAULT_MAX_AGE or its default will be used.
+* `GITLAB_GROUPS_MAX_AGE` -
+  The max age that the groups list can be before it's refreshed when needed.
+  If not set, GITLAB_CACHE_DEFAULT_MAX_AGE or its default will be used.
 
 ## Function Details
 
@@ -634,7 +640,7 @@ The following variables will be removed:
     GITLAB_USER_INFO         GITLAB_USER_ID     GITLAB_USERNAME         GITLAB_PROJECTS
     GITLAB_MRS               GITLAB_MRS_TODO    GITLAB_MRS_BY_ME        GITLAB_TODOS
     GITLAB_JOBS              GITLAB_MERGED_MRS  GITLAB_MERGED_MRS_REPO  GITLAB_MRS_SEARCH_RESULTS
-    GITLAB_MRS_DEEP_RESULTS
+    GITLAB_MRS_DEEP_RESULTS  GITLAB_GROUPS
 
 Usage: glclean [-v|--verbose] [-l|--list] [-h|--help]
 
