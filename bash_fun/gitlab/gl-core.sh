@@ -478,7 +478,7 @@ __gl_project_lookup () {
     fi
 
     if [[ -n "$force_select" || -z "$project" ]]; then
-        project_id="$( ( printf 'name~full path~full name\n' \
+        project_id="$( ( printf 'name~path\n' \
                 && jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
                           sort_by(.name | ascii_downcase) | .[]
                             |         ( .name_with_namespace | clean )
