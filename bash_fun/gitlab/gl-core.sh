@@ -483,12 +483,15 @@ __gl_group_lookup () {
     fi
 
     if [[ -n "$force_select" || -z "$group" ]]; then
-        group_id="$( jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
-                      sort_by(.name | ascii_downcase) | .[]
-                    |         ( .name | clean ) + ( if (.full_name != .name) then "(" + .full_name + ")" else "" end )
-                      + "~" + ( .id | tostring ) ' <<< "$GITLAB_GROUPS" \
-            | fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" +m -i --query="$provided_group" --to-columns \
-            | __gl_column_value '~' '2' )"
+        group_id="$( ( printf 'name~full path~full name\n' \
+                && jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                          sort_by(.name | ascii_downcase) | .[]
+                            |         ( .name | clean )
+                              + "~" + ( .full_path | clean )
+                              + "~" + ( .full_name | clean )
+                              + "~" + ( .id | tostring ) ' <<< "$GITLAB_GROUPS" ) \
+            | fzf_wrapper --tac --cycle --with-nth=1,2,3 --delimiter="~" +m -i --query="$provided_group" --to-columns --header-lines=1 \
+            | __gl_column_value '~' '4' )"
         if [[ -n "$group_id" ]]; then
             group="$( jq -c --arg group_id "$group_id" ' .[] | select( .id == ( $group_id | tonumber ) ) ' <<< "$GITLAB_GROUPS" )"
         fi
@@ -513,7 +516,7 @@ __gl_group_by_name () {
 __gl_group_name () {
     local group_id group_name
     group_id="$1"
-    group_name="$( jq -r --arg group_id "$group_id" ' .[] | select(.id == ($group_id | tonumber) | .name ' <<< "$GITLAB_GROUPS" )"
+    group_name="$( jq -r --arg group_id "$group_id" ' .[] | select(.id == ($group_id | tonumber) ) | .name ' <<< "$GITLAB_GROUPS" )"
     if [[ -z "$group_name" ]]; then
         return 1
     fi
