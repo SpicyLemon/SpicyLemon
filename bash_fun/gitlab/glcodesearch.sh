@@ -64,7 +64,7 @@ Usage: glcodesearch $( __glcodesearch_options_display ) <search>
 
 EOF
     )"
-    local verbose area area_spec area_id search
+    local verbose area area_spec area_id search group project
     if [[ -n "$GITLAB_CODE_SEARCH_DEFAULT_OPTIONS" ]]; then
         set -- $GITLAB_CODE_SEARCH_DEFAULT_OPTIONS "$@"
     fi
@@ -126,18 +126,30 @@ EOF
         return 1
     elif [[ "$area" != 'GLOBAL' ]]; then
         if [[ -z "$area_spec" ]]; then
-            printf 'The <%s id or name> is missing and required.\n' "$( printf %s "$area" | __gl_lowercase )"
+            printf 'The <%s id or name> is missing and required.\n' "$( printf %s "$area" | __gl_lowercase )" >&2
             return 1
         elif [[ "$area_spec" =~ ^[[:digit:]]*$ ]]; then
             area_id="$area_spec"
         elif [[ "$area" == 'GROUP' ]]; then
-            # TODO: Add group id lookup from name.
-            printf 'Group name lookup not yet supported; use the group id instead.\n' "$area" >&2
-            return 2
+            __gl_ensure_groups
+            group="$( __gl_group_lookup '' "$area_spec" )"
+            if [[ -n "$group" ]]; then
+                area_id="$( jq -r ' .id ' <<< "$group" )"
+            fi
+            if [[ -z "$area_id" ]]; then
+                printf 'Unknown group name: [%s].\n' "$area_spec" >&2
+                return 1
+            fi
         elif [[ "$area" == 'PROJECT' ]]; then
-            # TODO: Add project id lookup from name.
-            printf 'Project name lookup not yet supported; use the project id instead.\n' "$area" >&2
-            return 2
+            __gl_ensure_projects
+            project="$( __gl_project_lookup '' "$area_spec" )"
+            if [[ -n "$project" ]]; then
+                area_id="$( jq -r ' .id ' <<< "$project" )"
+            fi
+            if [[ -z "$area_id" ]]; then
+                printf 'Unknown project name: [%s].\n' "$area_spec" >&2
+                return 1
+            fi
         fi
     fi
     if [[ -z "$search" ]]; then
@@ -148,9 +160,9 @@ EOF
     if [[ "$area" == 'GLOBAL' ]]; then
         search_url="$( __gl_url_api_search_global )"
     elif [[ "$area" == 'GROUP' ]]; then
-        search_url="$( __gl_url_api_search_in_group )"
+        search_url="$( __gl_url_api_search_in_group "$area_id" )"
     elif [[ "$area" == 'PROJECT' ]]; then
-        search_url="$( __gl_url_api_search_in_project )"
+        search_url="$( __gl_url_api_search_in_project "$area_id" )"
     fi
     query_string="scope=blobs&search=$( printf %s "$search" | __gl_encode_for_url )"
 
