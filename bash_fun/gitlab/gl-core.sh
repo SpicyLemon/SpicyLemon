@@ -456,6 +456,48 @@ __gl_project_subset () {
     return 0
 }
 
+# This can be used to get an entry from $GITLAB_PROJECTS based on a search and/or usage of fzf.
+# If <force select> has value:
+#   * fzf will be used to prompt the user to select a project
+# If <force select> does not have value:
+#   * The <provided project> is looked for, matching by name, name_with_namespace, path, or path_with_namespace in the $GITLAB_PROJECTS data.
+#   * If <provided project> isn't found exactly, or multiple matches are found, fzf will prompt the user to select a project.
+# Usage: __gl_project_lookup <force select> <provided project>
+__gl_project_lookup () {
+    local force_select provided_project project project_id
+    force_select="$1"
+    provided_project="$2"
+
+    if [[ -z "$force_select" && -n "$provided_project" ]]; then
+        project="$( jq -c --arg search "$( printf '%s' $provided_project | __gl_lowercase )" \
+                    ' [ .[] | select( ( .name | ascii_downcase )                == $search
+                                   or ( .name_with_namespace | ascii_downcase ) == $search
+                                   or ( .path | ascii_downcase )                == $search
+                                   or ( .path_with_namespace | ascii_downcase ) == $search ) ]
+                      | if ( length == 1 ) then .[0] else empty end ' <<< "$GITLAB_PROJECTS" )"
+    fi
+
+    if [[ -n "$force_select" || -z "$project" ]]; then
+        project_id="$( ( printf 'name~full path~full name\n' \
+                && jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                          sort_by(.name | ascii_downcase) | .[]
+                            |         ( .name_with_namespace | clean )
+                              + "~" + ( .path_with_namespace | clean )
+                              + "~" + ( .id | tostring ) ' <<< "$GITLAB_PROJECTS" ) \
+            | fzf_wrapper --tac --cycle --with-nth=1,2 --delimiter="~" +m -i --query="$provided_project" --to-columns --header-lines=1 \
+            | __gl_column_value '~' '3' )"
+        if [[ -n "$project_id" ]]; then
+            project="$( jq -c --arg project_id "$project_id" ' .[] | select( .id == ( $project_id | tonumber ) ) ' <<< "$GITLAB_PROJECTS" )"
+        fi
+    fi
+
+    if [[ -z "$project" ]]; then
+        return 1
+    fi
+    printf '%s' "$project"
+    return 0
+}
+
 # This is primarily used for research and testing.
 # It's an easy way to get a project entry from $GITLAB_PROJECTS.
 # Usage: __gl_project_by_name <repo>
@@ -478,7 +520,7 @@ __gl_project_name () {
 # If <force select> does not have value:
 #   * The <provided group> is looked for, matching by name, full_name, path, or full_path in the $GITLAB_GROUPS data.
 #   * If <provided group> isn't found exactly, or multiple matches are found, fzf will prompt the user to select a group.
-# Usage: __gl_project_subset <force select> <provided group>
+# Usage: __gl_group_lookup <force select> <provided group>
 __gl_group_lookup () {
     local force_select provided_group group group_id
     force_select="$1"
