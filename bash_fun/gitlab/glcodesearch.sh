@@ -176,7 +176,21 @@ EOF
     printf '.\n'
 
     if [[ "$result_count" -ge '1' ]]; then
-        # TODO: Convert the results into a better format for output.
+        project_ids="$( jq -c ' [ .[] | .project_id ] | unique ' <<< "$GITLAB_CODE_SEARCH_RESULTS" )"
+        projects="$( jq -c --argjson project_ids "$project_ids" \
+                        ' [ .[] | select( .id | first( ( $project_ids[] == . ) // empty ) // false ) ]
+                        | map({ (.id|tostring): .}) | add ' <<< "$GITLAB_PROJECTS" )"
+        GITLAB_CODE_SEARCH_RESULTS_1="$( jq --sort-keys --argjson projects "$projects" \
+                                          '[ .[] | $projects[.project_id|tostring] as $project
+                                                 | .project_name = $project.name
+                                                 | .sort_key = ( $project.name_with_namespace | ascii_downcase )
+                                                 | .project_web_url = $project.web_url ]' <<< "$GITLAB_CODE_SEARCH_RESULTS" )"
+        GITLAB_CODE_SEARCH_RESULTS_2="$( jq ' [ .[] | .startline as $startline
+                                                    | .lines = [ .data / "\n" | to_entries
+                                                                 | map( { line: .value, line_number: ( .key + $startline ) } ) ] ]
+                                              | sort_by( .project_id, .path ) ' <<< "$GITLAB_CODE_SEARCH_RESULTS_1" )"
+        GITLAB_CODE_SEARCH_RESULTS_3="$( jq ' group_by( .project_id )
+                                              | [ .[] | group_by( .path ) ] ' <<< "$GITLAB_CODE_SEARCH_RESULTS_2" )"
         results="$GITLAB_CODE_SEARCH_RESULTS"
         jq '.' <<< "$results"
     fi
