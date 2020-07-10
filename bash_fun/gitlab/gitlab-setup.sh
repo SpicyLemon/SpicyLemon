@@ -10,26 +10,30 @@
 #       For example, you could put   GITLAB_PRIVATE_TOKEN=123abcABC456-98ZzYy7  in your .bash_profile file
 #       so that it's set every time you open a terminal (use your own actual token of course).
 #   5) Optionally, the following environment variables can be defined.
-#       GITLAB_REPO_DIR  ----------> The directory where your GitLab repositories are to be stored.
-#                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
-#                                    If not defined, functions that look for it will require it to be provided as input.
-#       GITLAB_BASE_DIR  ----------> This variable has been deprecated in favor of GITLAB_REPO_DIR.
-#                                    Please use that variable instead.
-#       GITLAB_CONFIG_DIR  --------> The directory where you'd like to store some configuration information used in these functions.
-#                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
-#                                    If not defined, then, if HOME is defined, "$HOME/.config/gitlab" will be used.
-#                                    If HOME is not defined, then, if GITLAB_REPO_DIR is defined, "$GITLAB_REPO_DIR/.gitlab_config" will be used.
-#                                    If GITLAB_REPO_DIR is not defined either, then any functions that uses configuration information will be unavailable.
-#                                    If a config dir can be determined, but it doesn't exist yet, it will be created automatically when needed.
-#       GITLAB_TEMP_DIR  ----------> The temporary directory you'd like to use for some random file storage.
-#                                    This should be absolute, (starting with a '/'), but it should not end with a '/'.
-#                                    If not defined, "/tmp/gitlab" will be used.
-#                                    If the directory does not exist, it will be created automatically when needed.
-#       GITLAB_PROJECTS_MAX_AGE  --> The max age that the projects list can be before it's refreshed when needed.
-#                                    Format is <number>[smhdw] where s -> seconds, m -> minutes, h -> hours, d -> days, w -> weeks.
-#                                    see `man find` in the -atime section for more info.
-#                                    Do not include a leading + or -.
-#                                    If not defined, the default is '23h'.
+#       GITLAB_REPO_DIR  ---------------> The directory where your GitLab repositories are to be stored.
+#                                         This should be absolute, (starting with a '/'), but it should not end with a '/'.
+#                                         If not defined, functions that look for it will require it to be provided as input.
+#       GITLAB_BASE_DIR  ---------------> This variable has been deprecated in favor of GITLAB_REPO_DIR.
+#                                         Please use that variable instead.
+#       GITLAB_CONFIG_DIR  -------------> The directory where you'd like to store some configuration information used in these functions.
+#                                         This should be absolute, (starting with a '/'), but it should not end with a '/'.
+#                                         If not defined, then, if HOME is defined, "$HOME/.config/gitlab" will be used.
+#                                         If HOME is not defined, then, if GITLAB_REPO_DIR is defined, "$GITLAB_REPO_DIR/.gitlab_config" will be used.
+#                                         If GITLAB_REPO_DIR is not defined either, then any functions that uses configuration information will be unavailable.
+#                                         If a config dir can be determined, but it doesn't exist yet, it will be created automatically when needed.
+#       GITLAB_TEMP_DIR  ---------------> The temporary directory you'd like to use for some random file storage.
+#                                         This should be absolute, (starting with a '/'), but it should not end with a '/'.
+#                                         If not defined, "/tmp/gitlab" will be used.
+#                                         If the directory does not exist, it will be created automatically when needed.
+#       GITLAB_CACHE_DEFAULT_MAX_AGE  --> The default max age for cached data.
+#                                         Format is <number>[smhdw] where s -> seconds, m -> minutes, h -> hours, d -> days, w -> weeks.
+#                                         See `man find` in the -atime section for more info.
+#                                         Do not include a leading + or -.
+#                                         If not defined, the default is '23h'.
+#       GITLAB_PROJECTS_MAX_AGE  -------> The max age that the projects list can be before it's refreshed when needed.
+#                                         If not set, GITLAB_CACHE_DEFAULT_MAX_AGE or its default will be used.
+#       GITLAB_GROUPS_MAX_AGE  ---------> The max age that the groups list can be before it's refreshed when needed.
+#                                         If not set, GITLAB_CACHE_DEFAULT_MAX_AGE or its default will be used.
 #
 # To make these functions usable in your terminal, use the source command on this file.
 #   For example, you could put  source gitlab-setup.sh  in your .bash_profile file.
@@ -262,6 +266,20 @@ __gitlab_do_setup () {
     else
         __gitlab_if_verbose "$warn" 2 "The GITLAB_TEMP_DIR environment variable is not set. A default value will be used."
     fi
+    if [[ -n "$GITLAB_CACHE_DEFAULT_MAX_AGE" ]]; then
+        __gitlab_if_verbose "$info" 2 "The GITLAB_CACHE_DEFAULT_MAX_AGE environment variable has a value. Making sure it is okay."
+        if [[ "$GITLAB_CACHE_DEFAULT_MAX_AGE" =~ ^[+\-] ]]; then
+            problems+=( "The GITLAB_CACHE_DEFAULT_MAX_AGE environment variable [$GITLAB_CACHE_DEFAULT_MAX_AGE] must not start with a + or -." )
+            __gitlab_if_verbose "$error" 3 "The GITLAB_CACHE_DEFAULT_MAX_AGE environment variable [$GITLAB_CACHE_DEFAULT_MAX_AGE] starts with either a + or -."
+        elif [[ "$GITLAB_CACHE_DEFAULT_MAX_AGE" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
+            problems+=( "The GITLAB_CACHE_DEFAULT_MAX_AGE environment variable [$GITLAB_CACHE_DEFAULT_MAX_AGE] is not in the correct format. See the -atime section in 'man find'." )
+            __gitlab_if_verbose "$error" 3 "The GITLAB_CACHE_DEFAULT_MAX_AGE environment variable [$GITLAB_CACHE_DEFAULT_MAX_AGE] is not in the correct format."
+        else
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_CACHE_DEFAULT_MAX_AGE environment variable [$GITLAB_CACHE_DEFAULT_MAX_AGE] is okay."
+        fi
+    else
+        __gitlab_if_verbose "$warn" 2 "The GITLAB_CACHE_DEFAULT_MAX_AGE environment variable is not set. A default value will be used."
+    fi
     if [[ -n "$GITLAB_PROJECTS_MAX_AGE" ]]; then
         __gitlab_if_verbose "$info" 2 "The GITLAB_PROJECTS_MAX_AGE environment variable has a value. Making sure it is okay."
         if [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^[+\-] ]]; then
@@ -275,6 +293,20 @@ __gitlab_do_setup () {
         fi
     else
         __gitlab_if_verbose "$warn" 2 "The GITLAB_PROJECTS_MAX_AGE environment variable is not set. A default value will be used."
+    fi
+    if [[ -n "$GITLAB_GROUPS_MAX_AGE" ]]; then
+        __gitlab_if_verbose "$info" 2 "The GITLAB_GROUPS_MAX_AGE environment variable has a value. Making sure it is okay."
+        if [[ "$GITLAB_GROUPS_MAX_AGE" =~ ^[+\-] ]]; then
+            problems+=( "The GITLAB_GROUPS_MAX_AGE environment variable [$GITLAB_GROUPS_MAX_AGE] must not start with a + or -." )
+            __gitlab_if_verbose "$error" 3 "The GITLAB_GROUPS_MAX_AGE environment variable [$GITLAB_GROUPS_MAX_AGE] starts with either a + or -."
+        elif [[ "$GITLAB_GROUPS_MAX_AGE" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
+            problems+=( "The GITLAB_GROUPS_MAX_AGE environment variable [$GITLAB_GROUPS_MAX_AGE] is not in the correct format. See the -atime section in 'man find'." )
+            __gitlab_if_verbose "$error" 3 "The GITLAB_GROUPS_MAX_AGE environment variable [$GITLAB_GROUPS_MAX_AGE] is not in the correct format."
+        else
+            __gitlab_if_verbose "$ok" 3 "The GITLAB_GROUPS_MAX_AGE environment variable [$GITLAB_GROUPS_MAX_AGE] is okay."
+        fi
+    else
+        __gitlab_if_verbose "$warn" 2 "The GITLAB_GROUPS_MAX_AGE environment variable is not set. A default value will be used."
     fi
     __gitlab_if_verbose "$info" 1 "Done checking for problems with environment variables."
 

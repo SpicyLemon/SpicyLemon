@@ -250,18 +250,11 @@ __gl_ensure_projects () {
 }
 
 __gl_max_age_projects () {
-    if [[ -n "$GITLAB_PROJECTS_MAX_AGE" ]]; then
-        if [[ "$GITLAB_PROJECTS_MAX_AGE" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
-            echo -E -n "$GITLAB_PROJECTS_MAX_AGE"
-            return 0
-        else
-            >&2 echo "Invalid GITLAB_PROJECTS_MAX_AGE value [$GITLAB_PROJECTS_MAX_AGE]. Using default of 23h."
-        fi
-    fi
-    echo -E -n '23h'
+    __gl_cache_max_age "$GITLAB_PROJECTS_MAX_AGE" 'GITLAB_PROJECTS_MAX_AGE'
 }
 
 __gl_projects_clear_cache () {
+    local projects_file
     projects_file="$( __gl_temp_projects_filename )"
     if [[ -f "$projects_file" ]]; then
         rm "$projects_file"
@@ -271,6 +264,72 @@ __gl_projects_clear_cache () {
 __gl_projects_refresh_cache () {
     __gl_projects_clear_cache
     __gl_ensure_projects
+}
+
+# Makes sure that the $GITLAB_GROUPS variable has a value.
+# A temp file is used to store the groups info too.
+# If the file doesn't exist, or is older than a day, or is empty,
+#   the groups info will be refreshed and stored in the file.
+# Otherwise, it's contents will be loaded into the $GITLAB_GROUPS variable.
+# Usage: __gl_ensure_groups <keep quiet> <verbose>
+__gl_ensure_groups () {
+    local keep_quiet verbose groups_file
+    keep_quiet="$1"
+    verbose="$2"
+    __gl_ensure_temp_dir
+    groups_file="$( __gl_temp_groups_filename )"
+    if [[ ! -f "$groups_file" \
+            || $( find "$groups_file" -mtime "+$( __gl_max_age_groups )" ) ]] \
+            || ! $( grep -q '[^[:space:]]' "$groups_file" ); then
+        __gl_get_groups "$keep_quiet" "$verbose"
+        echo -E "$GITLAB_GROUPS" > "$groups_file"
+    else
+        GITLAB_GROUPS="$( cat "$groups_file" )"
+    fi
+}
+
+__gl_max_age_groups () {
+    __gl_cache_max_age "$GITLAB_GROUPS_MAX_AGE" 'GITLAB_GROUPS_MAX_AGE'
+}
+
+__gl_groups_clear_cache () {
+    local groups_file
+    groups_file="$( __gl_temp_groups_filename )"
+    if [[ -f "$groups_file" ]]; then
+        rm "$groups_file"
+    fi
+}
+
+__gl_groups_refresh_cache () {
+    __gl_groups_clear_cache
+    __gl_ensure_groups
+}
+
+__gl_cache_default_max_age () {
+    __gl_cache_max_age "$GITLAB_CACHE_DEFAULT_MAX_AGE" 'GITLAB_CACHE_DEFAULT_MAX_AGE'
+}
+
+# Usage: max_age="$( __gl_cache_max_age <value> <variable name> )"
+__gl_cache_max_age () {
+    local value name retval invalid_value
+    value="$1"
+    name="$2"
+    if [[ -n "$value" ]]; then
+        if [[ "$value" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
+            retval="$value"
+        else
+            invalid_value='YES'
+        fi
+    elif [[ "$name" == 'GITLAB_CACHE_DEFAULT_MAX_AGE' ]]; then
+        retval='23h'
+    else
+        retval="$( __gl_cache_default_max_age )"
+    fi
+    if [[ -n "$invalid_value" ]]; then
+        printf 'Invalid %s value [%s]. Using default of %s.\n' "$name" "$value" "$retval" >&2
+    fi
+    printf '%s' "$retval"
+    return 0
 }
 
 # Makes sure that the gitlab temp directory exists.
@@ -320,6 +379,12 @@ __gl_temp_dirname () {
 # Usage: __gl_temp_projects_filename
 __gl_temp_projects_filename () {
     echo -E -n "$( __gl_temp_dirname )/projects.json"
+}
+
+# Gets the full path and name of the file to store groups info.
+# Usage: __gl_temp_groups_filename
+__gl_temp_groups_filename () {
+    echo -E -n "$( __gl_temp_dirname )/groups.json"
 }
 
 #
@@ -405,6 +470,69 @@ __gl_project_name () {
     project_id="$1"
     project_name=$( echo -E "$GITLAB_PROJECTS" | jq -r " .[] | select(.id==$project_id) | .name " )
     echo -E -n "$project_name"
+}
+
+# This can be used to get an entry from $GITLAB_GROUPS based on a search and/or usage of fzf.
+# If <force select> has value:
+#   * fzf will be used to prompt the user to select a group
+# If <force select> does not have value:
+#   * The <provided group> is looked for, matching by name, full_name, path, or full_path in the $GITLAB_GROUPS data.
+#   * If <provided group> isn't found exactly, or multiple matches are found, fzf will prompt the user to select a group.
+# Usage: __gl_project_subset <force select> <provided group>
+__gl_group_lookup () {
+    local force_select provided_group group group_id
+    force_select="$1"
+    provided_group="$2"
+
+    if [[ -z "$force_select" && -n "$provided_group" ]]; then
+        group="$( jq -c --arg search "$( printf '%s' $provided_group | __gl_lowercase )" \
+                    ' [ .[] | select( ( .name | ascii_downcase )      == $search
+                                   or ( .full_name | ascii_downcase ) == $search
+                                   or ( .path | ascii_downcase )      == $search
+                                   or ( .full_path | ascii_downcase ) == $search ) ]
+                      | if ( length == 1 ) then .[0] else empty end ' <<< "$GITLAB_GROUPS" )"
+    fi
+
+    if [[ -n "$force_select" || -z "$group" ]]; then
+        group_id="$( ( printf 'name~full path~full name\n' \
+                && jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                          sort_by(.name | ascii_downcase) | .[]
+                            |         ( .name | clean )
+                              + "~" + ( .full_path | clean )
+                              + "~" + ( .full_name | clean )
+                              + "~" + ( .id | tostring ) ' <<< "$GITLAB_GROUPS" ) \
+            | fzf_wrapper --tac --cycle --with-nth=1,2,3 --delimiter="~" +m -i --query="$provided_group" --to-columns --header-lines=1 \
+            | __gl_column_value '~' '4' )"
+        if [[ -n "$group_id" ]]; then
+            group="$( jq -c --arg group_id "$group_id" ' .[] | select( .id == ( $group_id | tonumber ) ) ' <<< "$GITLAB_GROUPS" )"
+        fi
+    fi
+
+    if [[ -z "$group" ]]; then
+        return 1
+    fi
+    printf '%s' "$group"
+    return 0
+}
+
+# This is primarily used for research and testing.
+# It's an easy way to get a group entry from $GITLAB_GROUPS.
+# Usage: __gl_group_by_name <group>
+__gl_group_by_name () {
+    __gl_group_lookup '' "$@"
+}
+
+# Look up a group name from its id.
+# Usage: __gl_group_name <group id>
+__gl_group_name () {
+    local group_id group_name
+    group_id="$1"
+    group_name="$( jq -r --arg group_id "$group_id" ' .[] | select(.id == ($group_id | tonumber) ) | .name ' <<< "$GITLAB_GROUPS" )"
+    if [[ -z "$group_name" ]]; then
+        return 1
+    fi
+    printf '%s' "$group_name"
+    return 0
 }
 
 # Adds the .project_name parameter to the entries in $GITLAB_MRS_BY_ME.
@@ -526,13 +654,26 @@ __gl_get_user_info () {
 # Look up info on all available projects. Results are stored in $GITLAB_PROJECTS.
 # Usage: __gl_get_projects <keep quiet> <verbose>
 __gl_get_projects () {
-    local keep_quiet verbose projects_url page per_page previous_count projects
+    local keep_quiet verbose projects_url projects
     keep_quiet="$1"
     verbose="$2"
     [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab projects... "
     projects_url="$( __gl_url_api_projects )?order_by=id&simple=true&membership=true&archived=false&"
     projects="$( __gl_get_all_results "$projects_url" '' '' "$verbose" 'use_keyset' )"
     GITLAB_PROJECTS="$projects"
+    [[ -n "$keep_quiet" ]] || echo -E "Done."
+}
+
+# Look up info on all available groups. Results are stored in $GITLAB_GROUPS.
+# Usage: __gl_get_groups <keep quiet> <verbose>
+__gl_get_groups () {
+    local keep_quiet verbose groups_url groups
+    keep_quiet="$1"
+    verbose="$2"
+    [[ -n "$keep_quiet" ]] || echo -E -n "Getting all your GitLab groups... "
+    groups_url="$( __gl_url_api_groups )?order_by=id&"
+    groups="$( __gl_get_all_results "$groups_url" '' '' "$verbose" )"
+    GITLAB_GROUPS="$groups"
     [[ -n "$keep_quiet" ]] || echo -E "Done."
 }
 

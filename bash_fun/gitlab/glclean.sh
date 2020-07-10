@@ -29,7 +29,8 @@ glclean () {
     local vars_to_clean vars_str usage
     vars_to_clean=("GITLAB_USER_INFO" "GITLAB_USER_ID" "GITLAB_USERNAME" "GITLAB_PROJECTS" "GITLAB_MRS"
                    "GITLAB_MRS_TODO" "GITLAB_MRS_BY_ME" "GITLAB_TODOS" "GITLAB_JOBS" "GITLAB_MERGED_MRS"
-                   "GITLAB_MERGED_MRS_REPO" "GITLAB_MRS_SEARCH_RESULTS" "GITLAB_MRS_DEEP_RESULTS")
+                   "GITLAB_MERGED_MRS_REPO" "GITLAB_MRS_SEARCH_RESULTS" "GITLAB_MRS_DEEP_RESULTS"
+                   "GITLAB_GROUPS" )
     vars_str="$( echo -E "${vars_to_clean[*]}" | sed -E 's/ /~/g; s/([^~]+~[^~]+~[^~]+~[^~]+)~/\1\\n/g;' )"
     vars_str="$( echo -e "$vars_str" | column -s '~' -t | sed 's/^/    /' )"
     usage="$( cat << EOF
