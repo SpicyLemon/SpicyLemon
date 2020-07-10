@@ -461,6 +461,66 @@ __gl_project_name () {
     echo -E -n "$project_name"
 }
 
+# This can be used to get an entry from $GITLAB_GROUPS based on a search and/or usage of fzf.
+# If <force select> has value:
+#   * fzf will be used to prompt the user to select a group
+# If <force select> does not have value:
+#   * The <provided group> is looked for, matching by name, full_name, path, or full_path in the $GITLAB_GROUPS data.
+#   * If <provided group> isn't found exactly, or multiple matches are found, fzf will prompt the user to select a group.
+# Usage: __gl_project_subset <force select> <provided group>
+__gl_group_lookup () {
+    local force_select provided_group group group_id
+    force_select="$1"
+    provided_group="$2"
+
+    if [[ -z "$force_select" && -n "$provided_group" ]]; then
+        group="$( jq -c --arg search "$( printf '%s' $provided_group | __gl_lowercase )" \
+                    ' [ .[] | select( ( .name | ascii_downcase )      == $search
+                                   or ( .full_name | ascii_downcase ) == $search
+                                   or ( .path | ascii_downcase )      == $search
+                                   or ( .full_path | ascii_downcase ) == $search ) ]
+                      | if ( length == 1 ) then .[0] else empty end ' <<< "$GITLAB_GROUPS" )"
+    fi
+
+    if [[ -n "$force_select" || -z "$group" ]]; then
+        group_id="$( jq -r ' def clean: gsub("[\\n\\t]"; " ") | gsub("\\p{C}"; "") | gsub("~"; "-");
+                      sort_by(.name | ascii_downcase) | .[]
+                    |         ( .name | clean ) + ( if (.full_name != .name) then "(" + .full_name + ")" else "" end )
+                      + "~" + ( .id | tostring ) ' <<< "$GITLAB_GROUPS" \
+            | fzf_wrapper --tac --cycle --with-nth=1 --delimiter="~" +m -i --query="$provided_group" --to-columns \
+            | __gl_column_value '~' '2' )"
+        if [[ -n "$group_id" ]]; then
+            group="$( jq -c --arg group_id "$group_id" ' .[] | select( .id == ( $group_id | tonumber ) ) ' <<< "$GITLAB_GROUPS" )"
+        fi
+    fi
+
+    if [[ -z "$group" ]]; then
+        return 1
+    fi
+    printf '%s' "$group"
+    return 0
+}
+
+# This is primarily used for research and testing.
+# It's an easy way to get a group entry from $GITLAB_GROUPS.
+# Usage: __gl_group_by_name <group>
+__gl_group_by_name () {
+    __gl_group_lookup '' "$@"
+}
+
+# Look up a group name from its id.
+# Usage: __gl_group_name <group id>
+__gl_group_name () {
+    local group_id group_name
+    group_id="$1"
+    group_name="$( jq -r --arg group_id "$group_id" ' .[] | select(.id == ($group_id | tonumber) | .name ' <<< "$GITLAB_GROUPS" )"
+    if [[ -z "$group_name" ]]; then
+        return 1
+    fi
+    printf '%s' "$group_name"
+    return 0
+}
+
 # Adds the .project_name parameter to the entries in $GITLAB_MRS_BY_ME.
 # Usage: __gl_mrs_i_created_add_project_names
 __gl_mrs_i_created_add_project_names () {
