@@ -298,18 +298,13 @@ __gl_cache_default_max_age () {
     __gl_cache_max_age "$GITLAB_CACHE_DEFAULT_MAX_AGE" 'GITLAB_CACHE_DEFAULT_MAX_AGE'
 }
 
-# Usage: if __gl_is_valid_atime "<string>"; then
-__gl_is_valid_atime () {
-    [[ "$1" =~ ^([[:digit:]]+[smhdw])+$ ]]
-}
-
 # Usage: max_age="$( __gl_cache_max_age <value> <variable name> )"
 __gl_cache_max_age () {
     local value name retval invalid_value
     value="$1"
     name="$2"
     if [[ -n "$value" ]]; then
-        if __gl_is_valid_atime "$value"; then
+        if [[ "$value" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
             retval="$value"
         else
             invalid_value='YES'
