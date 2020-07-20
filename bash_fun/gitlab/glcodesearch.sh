@@ -18,11 +18,14 @@ EOF
 fi
 unset sourced
 
-__glcodesearch_options_display () {
-    printf '[-h|--help] [--global|--group <group id or name>|--project <project id or name>|--area <area identifier>]'
+__glcodesearch_options_display_1 () {
+    printf '[-h|--help] [-v|--verbose] [--summary|--project-summary|--context] [--links|--no-links] [--previous-results|--new-search]'
+}
+__glcodesearch_options_display_2 () {
+    printf '[--global|--group <group id or name>|--project <project id or name>|--area <area identifier>]'
 }
 __glcodesearch_auto_options () {
-    __glcodesearch_options_display | __gl_convert_display_options_to_auto_options
+    printf '%s' "$( __glcodesearch_options_display_1 ) $( __glcodesearch_options_display_2 )" | __gl_convert_display_options_to_auto_options
 }
 glcodesearch () {
     __gl_require_token || return 1
@@ -32,7 +35,8 @@ glcodesearch: GitLab Code Search
 
 Search for Code in Gitlab.
 
-Usage: glcodesearch $( __glcodesearch_options_display ) <search>
+Usage: glcodesearch $( __glcodesearch_options_display_1 )
+                    $( __glcodesearch_options_display_2 ) <search>
 
   The --global option is shorthand for '--area GLOBAL'.
   The --group <group id or name> option is shorthand for '--area GROUP <id or name>'.
@@ -47,6 +51,31 @@ Usage: glcodesearch $( __glcodesearch_options_display ) <search>
 
   The search area must be defined either through one of the above options, 
     or through the GITLAB_CODE_SEARCH_DEFAULT_OPTIONS environment variable.
+
+  The --context option causes the output to contain the project names, file names, and lines from the files.
+  The --summary option causes the output to contain just the project names and file names.
+  The --project-summary option causes the output to only contain the project names.
+  If more than one of --context, --summary, or --project-summary are provided, the last one provided is the one that will be used.
+  If none of them are provided, the default behavior is --context.
+
+  The --links option causes the output to contain links to the repository and files.
+  The --no-links option causes the repository and file links to not appear in the output.
+  If more than one of --links or --no-links are provided, the last one provided is the one that will be used.
+  If neither are provided, the default behavior is based on the --summary or --context options.
+    By default, --context uses --links and both --summary and --project-summary use --no-links.
+
+  The -v or --verbose flag causes this to output extra information that might be helpful in troubleshooting.
+
+  Any other parameters are treated as the search to execute.
+  If needed, the search can also be split off from the options using --.
+  If -- is provided, everything after it is treated as the search to execute.
+
+  The --previous-results option will cause the search to be ignored, and will instead output the desired
+    report from the previous search results.
+  The --new-search option indicates that a new search is to be done.
+  If more than one of --previous-results or --new-search are provided, the last one provided is the one that will be used.
+  If neither are provided, the default behavior is --new-search.
+
   If the GITLAB_CODE_SEARCH_DEFAULT_OPTIONS is defined, it will be treated like the first options provided.
     For example, if  GITLAB_CODE_SEARCH_DEFAULT_OPTIONS='--area GROUP 12345'  then the command
         glcodesearch someMethodName
@@ -58,13 +87,9 @@ Usage: glcodesearch $( __glcodesearch_options_display ) <search>
         glcodesearch --area GROUP 12345 --project 'my project' someMethodName
       Howerver, since the last area defined is the one that is used, the default '--area GROUP 12345' is effectively ignored.
 
-  Any other parameters are treated as the search to execute.
-  If needed, the search can also be split off from the options using --.
-  If -- is provided, everything after it is treated as the search to execute.
-
 EOF
     )"
-    local verbose area area_spec area_id search group project
+    local verbose area area_spec area_id search group project output_level include_links use_previous
     if [[ -n "$GITLAB_CODE_SEARCH_DEFAULT_OPTIONS" ]]; then
         set -- $GITLAB_CODE_SEARCH_DEFAULT_OPTIONS "$@"
     fi
@@ -99,6 +124,27 @@ EOF
             fi
             shift
             ;;
+        --context)
+            output_level="CONTEXT"
+            ;;
+        --summary)
+            output_level="SUMMARY"
+            ;;
+        --project-summary)
+            output_level="PROJECT_SUMMARY"
+            ;;
+        --links)
+            include_links="YES"
+            ;;
+        --no-links)
+            include_links="NO"
+            ;;
+        --previous-results)
+            use_previous="YES"
+            ;;
+        --new-search)
+            use_previous="NO"
+            ;;
         --)
             if [[ -n "$search" ]]; then
                 printf 'Unknown options: [%s].\n' "$search" >&2
@@ -117,63 +163,76 @@ EOF
         esac
         shift
     done
-    local search_url query_string
-    if [[ -z "$area" ]]; then
-        printf 'No search area provided.\n' >&2
-        return 1
-    elif [[ "$area" != 'GLOBAL' && "$area" != 'GROUP' && "$area" != 'PROJECT' ]]; then
-        printf 'Invalid area: [%s].\n' "$area" >&2
-        return 1
-    elif [[ "$area" != 'GLOBAL' ]]; then
-        if [[ -z "$area_spec" ]]; then
-            printf 'The <%s id or name> is missing and required.\n' "$( printf %s "$area" | __gl_lowercase )" >&2
-            return 1
-        elif [[ "$area_spec" =~ ^[[:digit:]]*$ ]]; then
-            area_id="$area_spec"
-        elif [[ "$area" == 'GROUP' ]]; then
-            __gl_ensure_groups
-            group="$( __gl_group_lookup '' "$area_spec" )"
-            if [[ -n "$group" ]]; then
-                area_id="$( jq -r ' .id ' <<< "$group" )"
-            fi
-            if [[ -z "$area_id" ]]; then
-                printf 'Unknown group name: [%s].\n' "$area_spec" >&2
-                return 1
-            fi
-        elif [[ "$area" == 'PROJECT' ]]; then
-            __gl_ensure_projects
-            project="$( __gl_project_lookup '' "$area_spec" )"
-            if [[ -n "$project" ]]; then
-                area_id="$( jq -r ' .id ' <<< "$project" )"
-            fi
-            if [[ -z "$area_id" ]]; then
-                printf 'Unknown project name: [%s].\n' "$area_spec" >&2
-                return 1
-            fi
+    local search_url query_string results_count
+    if [[ -z "$output_level" ]]; then
+        output_level="CONTEXT"
+    fi
+
+    if [[ -z "$include_links" ]]; then
+        if [[ "$output_level" == "CONTEXT" ]]; then
+            include_links="YES"
+        else
+            include_links="NO"
         fi
     fi
-    if [[ -z "$search" ]]; then
-        printf 'No search provided.\n' >&2
-        return 1
+
+    if [[ "$use_previous" != "YES" ]]; then
+        if [[ -z "$area" ]]; then
+            printf 'No search area provided.\n' >&2
+            return 1
+        elif [[ "$area" != 'GLOBAL' && "$area" != 'GROUP' && "$area" != 'PROJECT' ]]; then
+            printf 'Invalid area: [%s].\n' "$area" >&2
+            return 1
+        elif [[ "$area" != 'GLOBAL' ]]; then
+            if [[ -z "$area_spec" ]]; then
+                printf 'The <%s id or name> is missing and required.\n' "$( printf %s "$area" | __gl_lowercase )" >&2
+                return 1
+            elif [[ "$area_spec" =~ ^[[:digit:]]*$ ]]; then
+                area_id="$area_spec"
+            elif [[ "$area" == 'GROUP' ]]; then
+                __gl_ensure_groups
+                group="$( __gl_group_lookup '' "$area_spec" )"
+                if [[ -n "$group" ]]; then
+                    area_id="$( jq -r ' .id ' <<< "$group" )"
+                fi
+                if [[ -z "$area_id" ]]; then
+                    printf 'Unknown group name: [%s].\n' "$area_spec" >&2
+                    return 1
+                fi
+            elif [[ "$area" == 'PROJECT' ]]; then
+                __gl_ensure_projects
+                project="$( __gl_project_lookup '' "$area_spec" )"
+                if [[ -n "$project" ]]; then
+                    area_id="$( jq -r ' .id ' <<< "$project" )"
+                fi
+                if [[ -z "$area_id" ]]; then
+                    printf 'Unknown project name: [%s].\n' "$area_spec" >&2
+                    return 1
+                fi
+            fi
+        fi
+        if [[ -z "$search" ]]; then
+            printf 'No search provided.\n' >&2
+            return 1
+        fi
+
+        if [[ "$area" == 'GLOBAL' ]]; then
+            search_url="$( __gl_url_api_search_global )"
+        elif [[ "$area" == 'GROUP' ]]; then
+            search_url="$( __gl_url_api_search_in_group "$area_id" )"
+        elif [[ "$area" == 'PROJECT' ]]; then
+            search_url="$( __gl_url_api_search_in_project "$area_id" )"
+        fi
+        query_string="scope=blobs&search=$( printf %s "$search" | __gl_encode_for_url )"
+
+        GITLAB_CODE_SEARCH_RESULTS="$( __gl_get_all_results "${search_url}?${query_string}&" '' '' "$verbose" )"
     fi
 
-    if [[ "$area" == 'GLOBAL' ]]; then
-        search_url="$( __gl_url_api_search_global )"
-    elif [[ "$area" == 'GROUP' ]]; then
-        search_url="$( __gl_url_api_search_in_group "$area_id" )"
-    elif [[ "$area" == 'PROJECT' ]]; then
-        search_url="$( __gl_url_api_search_in_project "$area_id" )"
-    fi
-    query_string="scope=blobs&search=$( printf %s "$search" | __gl_encode_for_url )"
-
-    GITLAB_CODE_SEARCH_RESULTS="$( __gl_get_all_results "${search_url}?${query_string}&" '' '' "$verbose" )"
-
-    local results_count results
     result_count="$( jq ' length ' <<< "$GITLAB_CODE_SEARCH_RESULTS" )"
 
     printf "Found $result_count result"
     [[ "$result_count" -ne '1' ]] && printf 's'
-    printf '.\n'
+    [[ "$result_count" -eq '0' ]] && printf '.\n'
 
     if [[ "$result_count" -ge '1' ]]; then
         local project_ids projects
@@ -222,6 +281,9 @@ EOF
 
         # Do the output!
         project_count="$( jq -r 'length' <<< "$gitlab_code_search_results_4" )"
+        printf ' in %d repositor' "$project_count"
+        [[ "$result_count" -eq '1' ]] && printf 'y.\n' || printf 'ies.\n'
+
         for project_index in $( seq 0 $(( project_count - 1 )) ); do
             project_results="$( jq -c --arg project_index "$project_index" \
                                 ' .[$project_index|tonumber] ' <<< "$gitlab_code_search_results_4" )"
@@ -232,20 +294,38 @@ EOF
             # This way, it can be displayed all-at-once instead of as each file is ready.
             # Doing the output for each file was just a little overly-jerky.
             project_output=""
-            project_output+="$( printf '\033[97m%s\033[0m (%d of %d): %d file(s)\\n' "$project_name" "$(( project_index + 1 ))" "$project_count" "$project_file_count" )"
-            project_output+="$( printf '\033[4;96m%s\033[0m\\n' "$project_web_url" )"
-            for project_file_index in $( seq 0 $(( project_file_count - 1)) ); do
-                project_file="$( jq -c --arg project_file_index "$project_file_index" \
-                                 ' .files[$project_file_index|tonumber] ' <<< "$project_results" )"
-                project_file_path="$( jq -r ' .path ' <<< "$project_file" )"
-                project_file_web_url="$( jq -r ' .file_web_url ' <<< "$project_file" )"
-                project_file_line_count="$( jq -r ' .all_lines | length ' <<< "$project_file" )"
-                project_output+="$( printf '    \033[97m%s\033[0m - \033[93m%s\033[0m (%d of %d):\\n' "$project_name" "$project_file_path" "$(( project_file_index + 1 ))" "$project_file_count" )"
-                project_output+="$( printf '    \033[4;96m%s\033[0m\\n' "$project_file_web_url" )"
-                project_output+="$( jq -r ' .all_lines[] | "        [" + ( "    " + (.line_number|tostring) | .[-4:] ) + "]: " + .line ' <<< "$project_file" )"
-                project_output+="\n"
-            done
-            printf '%b\n' "$project_output"
+            if [[ "$output_level" == "PROJECT_SUMMARY" ]]; then
+                project_output+="$( printf '\033[97m%s\033[0m: %d file' "$project_name" "$project_file_count" )"
+            else
+                project_output+="$( printf '\033[97m%s\033[0m (%d of %d): %d file' "$project_name" "$(( project_index + 1 ))" "$project_count" "$project_file_count" )"
+            fi
+            project_output+="$( [[ "$project_file_count" -ne '1' ]] && printf 's' )\n"
+            if [[ "$include_links" == "YES" ]]; then
+                project_output+="$( printf '\033[4;96m%s\033[0m' "$project_web_url" )\n"
+            fi
+            if [[ "$output_level" == "PROJECT_SUMMARY" ]]; then
+                printf '%b' "$project_output"
+            else
+                for project_file_index in $( seq 0 $(( project_file_count - 1)) ); do
+                    project_file="$( jq -c --arg project_file_index "$project_file_index" \
+                                     ' .files[$project_file_index|tonumber] ' <<< "$project_results" )"
+                    project_file_path="$( jq -r ' .path ' <<< "$project_file" )"
+                    project_file_web_url="$( jq -r ' .file_web_url ' <<< "$project_file" )"
+                    project_file_line_count="$( jq -r ' .all_lines | length ' <<< "$project_file" )"
+                    if [[ "$output_level" == "CONTEXT" ]]; then
+                        project_output+="$( printf '    \033[97m%s\033[0m - \033[93m%s\033[0m (%d of %d):' "$project_name" "$project_file_path" "$(( project_file_index + 1 ))" "$project_file_count" )\n"
+                    else
+                        project_output+="$( printf '    \033[93m%s\033[0m (%d of %d):' "$project_file_path" "$(( project_file_index + 1 ))" "$project_file_count" )\n"
+                    fi
+                    if [[ "$include_links" == "YES" ]]; then
+                        project_output+="$( printf '    \033[4;96m%s\033[0m' "$project_file_web_url" )\n"
+                    fi
+                    if [[ "$output_level" == "CONTEXT" ]]; then
+                        project_output+="$( jq -r ' .all_lines[] | "        [" + ( "    " + (.line_number|tostring) | .[-4:] ) + "]: " + .line ' <<< "$project_file" )\n"
+                    fi
+                done
+                printf '%b\n' "$project_output"
+            fi
         done
     fi
 }
