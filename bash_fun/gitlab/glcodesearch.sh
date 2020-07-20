@@ -176,23 +176,77 @@ EOF
     printf '.\n'
 
     if [[ "$result_count" -ge '1' ]]; then
+        local project_ids projects
+        local gitlab_code_search_results_1 gitlab_code_search_results_2 gitlab_code_search_results_3 gitlab_code_search_results_4
+        local project_count project_index project_results project_name project_web_url project_file_count project_output
+        local project_file_index project_file project_file_path project_file_web_url project_file_line_count
+
+        # Get info on all the projects involved in the results.
         project_ids="$( jq -c ' [ .[] | .project_id ] | unique ' <<< "$GITLAB_CODE_SEARCH_RESULTS" )"
         projects="$( jq -c --argjson project_ids "$project_ids" \
                         ' [ .[] | select( .id | first( ( $project_ids[] == . ) // empty ) // false ) ]
                         | map({ (.id|tostring): .}) | add ' <<< "$GITLAB_PROJECTS" )"
-        GITLAB_CODE_SEARCH_RESULTS_1="$( jq --sort-keys --argjson projects "$projects" \
+
+        # Note: These jq commands are intentionally split out like this instead of combining them into
+        #       one big long command. This way, it's easier to tweak and mess with in the future.
+
+        # Add project info to each result and split the data field into lines.
+        gitlab_code_search_results_1="$( jq -c --sort-keys --argjson projects "$projects" \
                                           '[ .[] | $projects[.project_id|tostring] as $project
+                                                 | .startline as $startline
                                                  | .project_name = $project.name
-                                                 | .sort_key = ( $project.name_with_namespace | ascii_downcase )
-                                                 | .project_web_url = $project.web_url ]' <<< "$GITLAB_CODE_SEARCH_RESULTS" )"
-        GITLAB_CODE_SEARCH_RESULTS_2="$( jq ' [ .[] | .startline as $startline
-                                                    | .lines = [ .data / "\n" | to_entries
-                                                                 | map( { line: .value, line_number: ( .key + $startline ) } ) ] ]
-                                              | sort_by( .project_id, .path ) ' <<< "$GITLAB_CODE_SEARCH_RESULTS_1" )"
-        GITLAB_CODE_SEARCH_RESULTS_3="$( jq ' group_by( .project_id )
-                                              | [ .[] | group_by( .path ) ] ' <<< "$GITLAB_CODE_SEARCH_RESULTS_2" )"
-        results="$GITLAB_CODE_SEARCH_RESULTS"
-        jq '.' <<< "$results"
+                                                 | .project_sort_key = ( $project.name_with_namespace | ascii_downcase )
+                                                 | .file_sort_key = ( .path | ascii_downcase )
+                                                 | .project_web_url = $project.web_url
+                                                 | .file_web_url = $project.web_url + "/-/blob/" + .ref + "/" + .path
+                                                 | .lines = ( ( .data | rtrimstr("\n") ) / "\n"
+                                                                | to_entries
+                                                                | map( { line: .value, line_number: ( .key + $startline ) } ) )
+                                                 | del(.data)
+                                            ]' <<< "$GITLAB_CODE_SEARCH_RESULTS" )"
+        # Group the results together by project, then by filename.
+        gitlab_code_search_results_2="$( jq -c ' group_by( .project_id )
+                                                    | [ .[] | group_by( .path ) ] ' <<< "$gitlab_code_search_results_1" )"
+        # Combine each filename results into a single result with all the lines from each result with that filename.
+        gitlab_code_search_results_3="$( jq -c ' [ .[] | [ .[]
+                                                    | { all_lines: ( .[] | .lines
+                                                        | unique_by( .line_number )
+                                                        | sort_by( .line_number ) ) } + .[0]
+                                                    | del(.startline, .lines) ]
+                                                ] ' <<< "$gitlab_code_search_results_2" )"
+        # Convert each project entry into an object containing the project info and list of file results.
+        gitlab_code_search_results_4="$( jq -c ' [ .[] | { files: ( . | sort_by ( .file_sort_key ) ) }
+                                                            + ( .[0] | { project_id, project_name,
+                                                                         project_sort_key, project_web_url } )
+                                                ] | sort_by( .project_sort_key ) ' <<< "$gitlab_code_search_results_3" )"
+
+        # Do the output!
+        project_count="$( jq -r 'length' <<< "$gitlab_code_search_results_4" )"
+        for project_index in $( seq 0 $(( project_count - 1 )) ); do
+            project_results="$( jq -c --arg project_index "$project_index" \
+                                ' .[$project_index|tonumber] ' <<< "$gitlab_code_search_results_4" )"
+            project_name="$( jq -r ' .project_name ' <<< "$project_results" )"
+            project_web_url="$( jq -r ' .project_web_url ' <<< "$project_results" )"
+            project_file_count="$( jq -r ' .files | length ' <<< "$project_results" )"
+            # Put together the output chunk for the whole project.
+            # This way, it can be displayed all-at-once instead of as each file is ready.
+            # Doing the output for each file was just a little overly-jerky.
+            project_output=""
+            project_output+="$( printf '\033[97m%s\033[0m (%d of %d): %d file(s)\\n' "$project_name" "$(( project_index + 1 ))" "$project_count" "$project_file_count" )"
+            project_output+="$( printf '\033[4;96m%s\033[0m\\n' "$project_web_url" )"
+            for project_file_index in $( seq 0 $(( project_file_count - 1)) ); do
+                project_file="$( jq -c --arg project_file_index "$project_file_index" \
+                                 ' .files[$project_file_index|tonumber] ' <<< "$project_results" )"
+                project_file_path="$( jq -r ' .path ' <<< "$project_file" )"
+                project_file_web_url="$( jq -r ' .file_web_url ' <<< "$project_file" )"
+                project_file_line_count="$( jq -r ' .all_lines | length ' <<< "$project_file" )"
+                project_output+="$( printf '    \033[97m%s\033[0m - \033[93m%s\033[0m (%d of %d):\\n' "$project_name" "$project_file_path" "$(( project_file_index + 1 ))" "$project_file_count" )"
+                project_output+="$( printf '    \033[4;96m%s\033[0m\\n' "$project_file_web_url" )"
+                project_output+="$( jq -r ' .all_lines[] | "        [" + ( "    " + (.line_number|tostring) | .[-4:] ) + "]: " + .line ' <<< "$project_file" )"
+                project_output+="\n"
+            done
+            printf '%b\n' "$project_output"
+        done
     fi
 }
 
