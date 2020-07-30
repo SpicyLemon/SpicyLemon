@@ -131,6 +131,9 @@ The following environment variables can be defined:
 * `GITLAB_GROUPS_MAX_AGE` -
   The max age that the groups list can be before it's refreshed when needed.
   If not set, GITLAB_CACHE_DEFAULT_MAX_AGE or its default will be used.
+* `GITLAB_CODE_SEARCH_DEFAULT_OPTIONS` -
+  This is a set of options to be provided to the `glcodesearch` function as if they were the first parameters provided.
+  See `gitlab code-search --help` for more information.
 
 ## Function Details
 
@@ -162,6 +165,10 @@ Usage:
     gitlab mr-search <options>
         Do a search for merge requests with given criteria.
         Same as the gmrsearch function.
+
+    gitlab code-search <options>
+        Search for code in GitLab.
+        Same as the glcodesearch function.
 
     gitlab merged-mrs <project> [-n <count>|--count <count>|--all] [-s|--select] [-q|--quiet]
         Lists MRs that have been merged.
