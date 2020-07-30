@@ -467,7 +467,7 @@ Usage: glcodesearch [-h|--help] [-v|--verbose] [--summary|--project-summary|--co
   Only one --global, --group, --project, or --area option can be used.
   If more than one search areas are provided, the last one provided is the one that will be used.
 
-  The search area must be defined either through one of the above options, 
+  The search area must be defined either through one of the above options,
     or through the GITLAB_CODE_SEARCH_DEFAULT_OPTIONS environment variable.
 
   The --context option causes the output to contain the project names, file names, and lines from the files.
