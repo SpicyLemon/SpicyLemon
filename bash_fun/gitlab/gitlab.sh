@@ -20,7 +20,7 @@ fi
 unset sourced
 
 __gitlab_options_display () {
-    echo -E -n '(help|merge-requests|mr-search|merged-mrs|ignore-list|clone|open|todo|jobs|clean)'
+    echo -E -n '(help|merge-requests|mr-search|code-search|merged-mrs|ignore-list|clone|open|todo|jobs|clean)'
 }
 __gitlab_auto_options () {
     echo -E -n "$( __gitlab_options_display | __gl_convert_display_options_to_auto_options )"
@@ -49,6 +49,10 @@ Usage:
     gitlab mr-search <options>
         Do a search for merge requests with given criteria.
         Same as the $( __gl_bold_white "gmrsearch" ) function.
+
+    gitlab code-search <options>
+        Search for code in GitLab.
+        Same as the $( __gl_bold_white "glcodesearch" ) function.
 
     gitlab merged-mrs $( __glmerged_options_display )
         Lists MRs that have been merged.
@@ -125,6 +129,12 @@ EOF
         ;;
     mr-search|mrsearch)
         cmd='gmrsearch'
+        ;;
+    code-search|codesearch|code)
+        cmd='glcodesearch'
+        if [[ "$option" == 'code' && "$( __gl_lowercase "$2" )" == 'search' ]]; then
+            shift
+        fi
         ;;
     *)
         >&2 echo -E "Unknown command: [ $1 ]. Use -h for help."
