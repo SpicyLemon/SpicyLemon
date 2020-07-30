@@ -438,13 +438,13 @@ Expert features:
 
 The `gitlab code-search` command calls the `glcodesearch` function.
 
-This function searches for code in Gitlab.
+This function searches for code in GitLab.
 
 ```console
 $ gitlab code-search --help
 glcodesearch: GitLab Code Search
 
-Search for Code in Gitlab.
+Search for Code in GitLab.
 
 Usage: glcodesearch [-h|--help] [-v|--verbose] [--summary|--project-summary|--context] [--links|--no-links] [--previous-results|--new-search]
                     [--global|--group <group id or name>|--project <project id or name>|--area <area identifier>] <search>
@@ -454,7 +454,7 @@ Usage: glcodesearch [-h|--help] [-v|--verbose] [--summary|--project-summary|--co
   The --project <project id or name> option is shorthand for '--area PROJECT <id or name>'.
   The --area <area identifier> option defines the area to search in.
       <area identifier> must be one of the following:
-          GLOBAL                The search will be global across Gitlab.
+          GLOBAL                The search will be global across GitLab.
           GROUP <id or name>    The search will be contained to the provided group.
           PROJECT <id or name>  The search will be contained to the provided project.
   Only one --global, --group, --project, or --area option can be used.

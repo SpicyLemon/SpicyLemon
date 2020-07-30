@@ -33,7 +33,7 @@ glcodesearch () {
     usage="$( cat << EOF
 glcodesearch: GitLab Code Search
 
-Search for Code in Gitlab.
+Search for Code in GitLab.
 
 Usage: glcodesearch $( __glcodesearch_options_display_1 )
                     $( __glcodesearch_options_display_2 ) <search>
@@ -43,7 +43,7 @@ Usage: glcodesearch $( __glcodesearch_options_display_1 )
   The --project <project id or name> option is shorthand for '--area PROJECT <id or name>'.
   The --area <area identifier> option defines the area to search in.
       <area identifier> must be one of the following:
-          GLOBAL                The search will be global across Gitlab.
+          GLOBAL                The search will be global across GitLab.
           GROUP <id or name>    The search will be contained to the provided group.
           PROJECT <id or name>  The search will be contained to the provided project.
   Only one --global, --group, --project, or --area option can be used.
