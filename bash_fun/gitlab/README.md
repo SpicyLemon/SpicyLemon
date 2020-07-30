@@ -15,6 +15,7 @@ This directory contains files that define functions for interacting with GitLab'
   * [gitlab clone](#user-content-gitlab-clone)
   * [gitlab merge-requests](#user-content-gitlab-merge-requests)
   * [gitlab mr-search](#user-content-gitlab-mr-search)
+  * [gitlab code-search](#user-content-gitlab-code-search)
   * [gitlab merged-mrs](#user-content-gitlab-merged-mrs)
   * [gitlab ignore-list](#user-content-gitlab-ignore-list)
   * [gitlab open](#user-content-gitlab-open)
@@ -431,6 +432,71 @@ Expert features:
                             Default behavior is  --view normal
   --view-simple             Shortcut for  --view simple
   --view-normal             Shortcut for  --view normal
+```
+
+### gitlab code-search
+
+The `gitlab code-search` command calls the `glcodesearch` function.
+
+This function searches for code in Gitlab.
+
+```console
+$ gitlab code-search --help
+glcodesearch: GitLab Code Search
+
+Search for Code in Gitlab.
+
+Usage: glcodesearch [-h|--help] [-v|--verbose] [--summary|--project-summary|--context] [--links|--no-links] [--previous-results|--new-search]
+                    [--global|--group <group id or name>|--project <project id or name>|--area <area identifier>] <search>
+
+  The --global option is shorthand for '--area GLOBAL'.
+  The --group <group id or name> option is shorthand for '--area GROUP <id or name>'.
+  The --project <project id or name> option is shorthand for '--area PROJECT <id or name>'.
+  The --area <area identifier> option defines the area to search in.
+      <area identifier> must be one of the following:
+          GLOBAL                The search will be global across Gitlab.
+          GROUP <id or name>    The search will be contained to the provided group.
+          PROJECT <id or name>  The search will be contained to the provided project.
+  Only one --global, --group, --project, or --area option can be used.
+  If more than one search areas are provided, the last one provided is the one that will be used.
+
+  The search area must be defined either through one of the above options, 
+    or through the GITLAB_CODE_SEARCH_DEFAULT_OPTIONS environment variable.
+
+  The --context option causes the output to contain the project names, file names, and lines from the files.
+  The --summary option causes the output to contain just the project names and file names.
+  The --project-summary option causes the output to only contain the project names.
+  If more than one of --context, --summary, or --project-summary are provided, the last one provided is the one that will be used.
+  If none of them are provided, the default behavior is --context.
+
+  The --links option causes the output to contain links to the repository and files.
+  The --no-links option causes the repository and file links to not appear in the output.
+  If more than one of --links or --no-links are provided, the last one provided is the one that will be used.
+  If neither are provided, the default behavior is based on the --summary or --context options.
+    By default, --context uses --links and both --summary and --project-summary use --no-links.
+
+  The -v or --verbose flag causes this to output extra information that might be helpful in troubleshooting.
+
+  Any other parameters are treated as the search to execute.
+  If needed, the search can also be split off from the options using --.
+  If -- is provided, everything after it is treated as the search to execute.
+
+  The --previous-results option will cause the search to be ignored, and will instead output the desired
+    report from the previous search results.
+  The --new-search option indicates that a new search is to be done.
+  If more than one of --previous-results or --new-search are provided, the last one provided is the one that will be used.
+  If neither are provided, the default behavior is --new-search.
+
+  If the GITLAB_CODE_SEARCH_DEFAULT_OPTIONS is defined, it will be treated like the first options provided.
+    For example, if  GITLAB_CODE_SEARCH_DEFAULT_OPTIONS='--area GROUP 12345'  then the command
+        glcodesearch someMethodName
+      is the same as
+        glcodesearch --area GROUP 12345 someMethodName
+    In this same example, if you then execute
+        glcodesearch --project 'my project' someMethodName
+      it will be treated as
+        glcodesearch --area GROUP 12345 --project 'my project' someMethodName
+      Howerver, since the last area defined is the one that is used, the default '--area GROUP 12345' is effectively ignored.
 ```
 
 ### gitlab merged-mrs
