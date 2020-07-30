@@ -235,6 +235,7 @@ EOF
     [[ "$result_count" -eq '0' ]] && printf '.\n'
 
     if [[ "$result_count" -ge '1' ]]; then
+        __gl_ensure_projects
         local project_ids projects
         local gitlab_code_search_results_1 gitlab_code_search_results_2 gitlab_code_search_results_3 gitlab_code_search_results_4
         local project_count project_index project_results project_name project_web_url project_file_count project_output
