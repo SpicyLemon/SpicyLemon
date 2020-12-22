@@ -55,11 +55,12 @@ __generic_do_setup () {
     func_base_file_names=(
         'add_to_filename'      'change_word'     'check_system_log_timestamp_order'  'chrome_cors'              'echo_color'
         'echo_do'              'escape_escapes'  'fp'                                'get_all_system_logs'      'get_shell_type'
-        'getlines'             'hrr'             'i_can'                             'java_8_activate'          'java_8_deactivate'
+        'getlines'             'hrr'             'i_can'                             'set_title'
         'join_str'             'jqq'             'multi_line_replace'                'pretty_json'              'print_args'
         'ps_grep'              're_line'         'show_last_exit_code'               'string_repeat'            'strip_colors'
         'strip_final_newline'  'tee_pbcopy'      'tee_strip_colors'                  'tee_strip_colors_pbcopy'  'to_date'
-        'to_epoch'             'ugly_json'
+        'to_epoch'             'ugly_json'       'java_sdk_switcher'
+        'multiply'             'add'             'min'                               'max'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
@@ -81,7 +82,7 @@ __generic_do_setup () {
     # These are programs/functions defined externally that might cause some of the new functions to not work properly.
     # Any that aren't available will be included in a message after sourcing all the files.
     desired_external=(
-        'dirname'  'basename'  'pbcopy'  'pbpaste'  '/usr/libexec/java_home'  'jq'  'fzf'
+        'dirname'  'basename'  'pbcopy'  'pbpaste'  '/usr/libexec/java_home'  'jq'  'fzf'  'sdk'
     )
 
     # These are used for verbose output as line headers.
