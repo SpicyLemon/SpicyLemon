@@ -20,7 +20,7 @@ git_delete_branches () {
         return 1
     fi
     local local_branches branches
-    local_branches="$( git branch | grep -v -e '^\*' -e ' master[[:space:]]*$' | sed -E 's/^ +| +$//g' | sort )"
+    local_branches="$( git branch | grep -v -E -e '^\*' -e '[[:space:]](master|main|develop)[[:space:]]*$' | sed -E 's/^ +| +$//g' | sort )"
     if [[ -n "$local_branches" ]]; then
         branches="$( fzf --tac -m --cycle --header="Select branches to delete using tab. Press enter when ready (or esc to cancel)." <<< "$local_branches" )"
         if [[ -n "$branches" ]]; then
