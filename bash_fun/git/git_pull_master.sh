@@ -15,24 +15,7 @@
 
 # Usage: git_pull_master
 git_pull_master () {
-    if ! in_git_folder; then
-        printf 'git_pull_master: Not in a git repo.\n' >&2
-        return 1
-    fi
-    local cur_branch exit_code
-    cur_branch="$( git_branch_name )"
-    if [[ "$cur_branch" == 'master' ]]; then
-        __git_echo_do git pull
-        exit_code=$?
-    else
-        __git_echo_do git checkout master \
-            && __git_echo_do git pull \
-            && __git_echo_do git checkout "$cur_branch" \
-            && __git_echo_do git merge master
-        exit_code=$?
-        __git_echo_do git status
-    fi
-    return $exit_code
+    git_pull_merge 'master'
 }
 
 if [[ "$sourced" != 'YES' ]]; then
@@ -56,9 +39,7 @@ if [[ "$sourced" != 'YES' ]]; then
             fi
         fi
     }
-    require_command 'in_git_folder' || exit $?
-    require_command '__git_echo_do' || exit $?
-    require_command 'git_branch_name' || exit $?
+    require_command 'git_pull_merge' || exit $?
     git_pull_master "$@"
     exit $?
 fi
