@@ -6,7 +6,7 @@
 
 It is based off a similar script by Patrick Stadler: https://github.com/pstadler/ticker.sh
 
-![ticker.sh](/ticker/screenshot.png?raw=true Screenshot)
+![ticker.sh](/ticker/screenshot.png?raw=true)
 
 ## Install
 
