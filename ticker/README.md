@@ -4,9 +4,9 @@
 
 `ticker.sh` is a simple shell script using the Yahoo Finance API as a data source. It features colored output and is able to display pre- and post-market prices (denoted with `<` or `>` respectively).
 
-It is based off a similar script by Patrick Stadler: https://github.com/pstadler/ticker.sh
-
 ![ticker.sh](/ticker/screenshot.png?raw=true)
+
+It is based off a similar script by Patrick Stadler: https://github.com/pstadler/ticker.sh
 
 ## Install
 
