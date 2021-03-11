@@ -56,7 +56,7 @@ __git_do_setup () {
         '__git_echo_do'    '__git_get_all_repos'  'git_branch_name'   'git_change_branch'        'git_change_branch_all'
         'git_clean_repo'   'git_delete_branches'  'git_fresh_branch'  'git_list_extra_branches'  'git_master_pull_all'
         'git_pull_merge'   'git_set_upstream'     'in_git_folder'     'git_diff_analysis'        'git_merge_diff'
-        'git_commit_diff'  'git_pull_master'
+        'git_commit_diff'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
