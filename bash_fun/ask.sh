@@ -66,13 +66,20 @@ ask_flying_ferret_api () {
     fi
     api_url='https://www.flying-ferret.com/cgi-bin/api/v1/transform.cgi'
     flying_ferret_says="$( curl -s --data-urlencode "q=$query" "$api_url" 2>&1 )"
-    if [[ -z "$( jq ' . ' 2> /dev/null <<< "$flying_ferret_says" )" ]]; then
-        printf 'Flying Ferret is confused. See %s for more info.\n' "$api_url?help="
+    # If we don't have jq, just output the raw response.
+    if ! command -v 'jq' > /dev/null 2>&1; then
+        printf '%s\n' "$flying_ferret_says"
+        return 0
+    fi
+    # Check that we got json back.
+    if [[ -z "$( jq '.' 2> /dev/null <<< "$flying_ferret_says" )" ]]; then
+        printf '%s\n' "$flying_ferret_says" >&2
+        printf 'Flying Ferret is confused. See %s for more info.\n' "$api_url?help=" >&2
         return 10
     fi
     results="$( jq -r ' .results | .[] ' <<< "$flying_ferret_says" )"
     if [[ -z "$results" ]]; then
-        printf 'Flying Ferret returned without any results.\n'
+        printf 'Flying Ferret returned without any results.\n' >&2
         return 5
     fi
     printf '%s\n' "$results"
