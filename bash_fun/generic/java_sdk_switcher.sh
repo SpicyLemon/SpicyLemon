@@ -25,6 +25,17 @@ unset sourced
 
 # Usage: java_sdk_switcher
 java_sdk_switcher () {
+    local do_not_run
+    for req_cmd in 'sdk' 'fzf'; do
+        if ! command -v "$req_cmd" > /dev/null 2>&1; then
+            do_not_run='yes'
+            printf 'Missing required command: %s\n' "$req_cmd" >&2
+            "$req_cmd"
+        fi
+    done
+    if [[ -n "$do_not_run" ]]; then
+        return 1
+    fi
     if [[ "$1" == '-h' || "$1" == '--help' ]]; then
         printf 'To install SDKs, start with this command: sdk list java\n'
         printf 'See https://sdkman.io/ for more info.\n'
