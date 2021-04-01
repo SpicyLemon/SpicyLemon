@@ -56,7 +56,7 @@ __generic_do_setup () {
         'add_to_filename'      'change_word'     'check_system_log_timestamp_order'  'chrome_cors'              'echo_color'
         'echo_do'              'escape_escapes'  'fp'                                'get_all_system_logs'      'get_shell_type'
         'getlines'             'hrr'             'i_can'                             'set_title'
-        'join_str'             'jqq'             'multi_line_replace'                'pretty_json'              'print_args'
+        'join_str'                               'multi_line_replace'                'pretty_json'              'print_args'
         'ps_grep'              're_line'         'show_last_exit_code'               'string_repeat'            'strip_colors'
         'strip_final_newline'  'tee_pbcopy'      'tee_strip_colors'                  'tee_strip_colors_pbcopy'  'to_date'
         'to_epoch'             'ugly_json'       'java_sdk_switcher'
