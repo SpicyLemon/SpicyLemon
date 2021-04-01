@@ -19,6 +19,11 @@
 # Creates a single-line horizontal rule with a message in it.
 # Usage: hr <message>
 hr () {
+    if ! command -v "tput" > /dev/null 2>&1; then
+        printf 'Missing required command: tput\n' >&2
+        tput
+        return $?
+    fi
     local message char termwidth available sixths leftover block empty section padding left_wing right_wing unset_palette
     message="$*"
     if [[ -n "$message" ]]; then
