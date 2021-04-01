@@ -23,8 +23,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [getlines.sh](#user-content-getlinessh)
   * [hrr.sh](#user-content-hrrsh)
   * [i_can.sh](#user-content-i_cansh)
-  * [java_8_activate.sh](#user-content-java_8_activatesh)
-  * [java_8_deactivate.sh](#user-content-java_8_deactivatesh)
   * [join_str.sh](#user-content-join_strsh)
   * [multi_line_replace.sh](#user-content-multi_line_replacesh)
   * [pretty_json.sh](#user-content-pretty_jsonsh)
@@ -323,32 +321,6 @@ $ can_i pbpaste
 Yes. You can [pbpaste].
 $ can_i dance
 No. You cannot [dance].
-```
-
-### `java_8_activate.sh`
-
-[java_8_activate.sh](java_8_activate.sh) - Function for setting the `JAVA_HOME` variable to the Java 8 JDK.
-
-I'm not sure how helpful this will be to others, but it's handy for me.
-Rather than having to remember what value the `JAVA_HOME` variable needs to have in order to use Java 8, I just have to remember the `java_8_activate` command.
-
-Example Usage:
-```console
-$ java_8_activate
-JAVA_HOME set to "/Library/Java/JavaVirtualMachines/jdk1.8.0_77.jdk/Contents/Home".
-```
-
-### `java_8_deactivate.sh`
-
-[java_8_deactivate.sh](java_8_deactivate.sh) - Function for clearing the `JAVA_HOME` variable, going back to the system default.
-
-All this does is unsets the `JAVA_HOME` variable.
-But having it named similar to `java_8_activate` makes it a little easier to remember.
-
-Example Usage:
-```console
-$ java_8_deactivate
-JAVA_HOME unset.
 ```
 
 ### `join_str.sh`
