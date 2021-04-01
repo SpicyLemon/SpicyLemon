@@ -20,6 +20,7 @@ This directory contains files for stuff that has either been replaced, or is no 
 * `gitlab.sh` - This is the old monolithic version of the GitLab CLI interaction functions.
   It has been replaced with a much more managable and split out set of files in the [bash_fun/gitlab/](../gitlab) directory.
   If you were previously sourcing this file, you should source `gitlab-setup.sh` instead.
+* `jqq.sh` - Not needed because of herestrings. E.g. instead of `jqq "$foo" --sort-keys '.'` use `jq --sort-keys '.' <<< "$foo"`.
 * `text-helpers.sh` - Some old functions for converting lists of things into nicer formats.
   These are mostly replaced by the [re_line.sh](../generic/re_line.sh) function.
   Some other entries were moved into the [bash_fun/generic/](../generic) directory.

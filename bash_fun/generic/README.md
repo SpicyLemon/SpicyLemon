@@ -28,7 +28,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [java_8_activate.sh](#user-content-java_8_activatesh)
   * [java_8_deactivate.sh](#user-content-java_8_deactivatesh)
   * [join_str.sh](#user-content-join_strsh)
-  * [jqq.sh](#user-content-jqqsh)
   * [multi_line_replace.sh](#user-content-multi_line_replacesh)
   * [pretty_json.sh](#user-content-pretty_jsonsh)
   * [print_args.sh](#user-content-print_argssh)
@@ -398,21 +397,6 @@ Example Usage:
 ```console
 $ join_str ', ' $( seq 1 10 )
 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-```
-
-### `jqq.sh`
-
-[jqq.sh](jqq.sh) - Function/script for running json contained in a variable through the `jq` program.
-
-I got tired of typing `echo "$variable" | jq '.'`.
-So I created this, which saves a couple characters of typing, but is a bit clunky.
-I really don't use it much anymore.
-Instead, I usually use a herestring: `jq '.' <<< "$variable"`.
-
-Example Usage:
-```console
-$ jqq '{"foo":"FOO","bar":"BAR"}' '.foo' -r
-FOO
 ```
 
 ### `multi_line_replace.sh`
