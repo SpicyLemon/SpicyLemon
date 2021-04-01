@@ -20,7 +20,7 @@ max () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    strip_colors "$@"
+    max "$@"
     exit $?
 fi
 unset sourced

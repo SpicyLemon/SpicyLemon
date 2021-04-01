@@ -26,7 +26,7 @@ add () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    strip_colors "$@"
+    add "$@"
     exit $?
 fi
 unset sourced

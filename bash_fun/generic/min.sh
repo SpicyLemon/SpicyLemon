@@ -20,7 +20,7 @@ min () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    strip_colors "$@"
+    min "$@"
     exit $?
 fi
 unset sourced

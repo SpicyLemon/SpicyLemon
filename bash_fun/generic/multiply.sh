@@ -26,7 +26,7 @@ multiply () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    strip_colors "$@"
+    multiply "$@"
     exit $?
 fi
 unset sourced
