@@ -1,50 +1,8 @@
-join_str.sh         - depends on printf
-stream-helpers.sh   - depends on cat, echo, printf, sed, tee, awk, pbcopy
-change_word.sh      - depends on echo, grep, sed
-chrome_cors.sh      - depends on open
-echo_color.sh       - depends on cat, echo, printf, tr, join_str, escape_escapes
-echo_do.sh          - depends on printf
-get_shell_type.sh   - depends on cat, echo, printf, ps, awk
-hrr.sh              - depends on tput, printf, echo, sed
-i_can.sh            - depends on cat, echo
-java-switchers.sh   - depends on cat, echo, /usr/libexec/java_home
-jqq.sh              - depends on cat, jq
-print_args.sh       - depends on printf
-ps_grep.sh          - depends on printf, ps, head, tail, grep
-to_date.sh          - depends on echo, date, tr, tail, sed
-to_epoch.sh         - depends on echo, date, tr, head, sed
-
-External Dependencies:
-    cat echo printf head tail
-    sed tee awk grep tr
-    pbcopy open ps tput date
-    /usr/libexec/java_home jq
-
-Make required:
-    'cat'   'echo'  'printf'  'head'  'tail'
-    'sed'   'tee'   'awk'     'grep'  'tr'
-    'open'  'ps'    'tput'    'date'
-
-Just check:
-    'dirname'  'basename'  'pbcopy'  '/usr/libexec/java_home'  'jq'
-
-All functions defined in here:
-    'change_word'   'chrome_cors'     'echo_color'        'show_colors'        'to_date'       'to_epoch'
-    'echo_red'      'echo_green'      'echo_yellow'       'echo_blue'          'echo_cyan'     'echo_bold'  'echo_underline'
-    'echo_debug'    'echo_info'       'echo_warn'         'echo_error'         'echo_success'  'echo_good'  'echo_bad'
-    'echo_do'       'get_shell_type'  'hr'  'hrr'  'hhr'  'pick_a_palette'     'ps_grep'       'tee_pbcopy'
-    'i_can'         'can_i'           'java_8_activate'   'java_8_deactivate'  'join_str'      'jqq'        'print_args'
-    'strip_colors'  'escape_escapes'  'to_stdout_and_strip_colors_log'         'to_stderr_and_strip_colors_log'
-
-Command to get all the function names from all the files:
-    grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * | sed 's/^[^:]*:/~/; s/[[:space:]].*$/~ /;' | tr '\n' ' ' | tr '~' "'" | pbcopy
-
-Todo:
+TODO:
     Replace uses of echo with printf.
-    Enhance hrr.sh to use subshells for setting the palette
-    Look into possible enhancements for jqq to allow the query and jq arguments to be in any order.
-    Look into possible enhancemet for jqq to allow just providing the variable name, rather than the entire json content.
+    Correct the placement of output redirection.
+        Should be after the command.
+    Replace "echo ... |" and "printf ... |" stuff with herestrings.
+        To find most spots: grep -E "(echo|printf) .*\|" *
     Additional output helpers for stripping more than just colors.
-        Need to research escape codes more to know exactly what should be stripped. 
-
-
+        Need to research escape codes more to know exactly what should be stripped.
