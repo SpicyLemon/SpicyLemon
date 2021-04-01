@@ -29,6 +29,11 @@
 ) && sourced='YES' || sourced='NO'
 
 echo_color () {
+    if ! command -v 'join_str' > /dev/null 2>&1; then
+        printf 'Missing required command: join_str\n' >&2
+        join_str
+        return $?
+    fi
     local usage
     usage="$( cat << EOF
 echo_color - Makes it easier to output things in colors.
@@ -246,6 +251,11 @@ EOF
 # Displays examples of some color codes
 # Usage: show_colors [-c|--combos] [--256] [-v|--verbose]
 show_colors () {
+    if ! command -v 'join_str' > /dev/null 2>&1; then
+        printf 'Missing required command: join_str\n' >&2
+        join_str
+        return $?
+    fi
     usage="$( cat << EOF
 show_colors - Outputs a bunch of color examples.
 
