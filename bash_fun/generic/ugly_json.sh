@@ -14,13 +14,18 @@
 ) && sourced='YES' || sourced='NO'
 
 ugly_json () {
+    if ! command -v "jq" > /dev/null 2>&1; then
+        printf 'Missing required command: jq\n' >&2
+        jq
+        return $?
+    fi
     local usage
     usage="$( cat << EOF
 ugly_json - Makes Json Ugly (Compact).
 
 Usage: ugly_json [-q|--quiet] [-c|--clipboard] [-s <file>|--save <file>] [-f <file>|--file <file>|-|-- <json>]
 
-    If none of -f, --file, -, or -- are provided, pbpaste will be used to get the contents of the clipboard.
+    If none of -f, --file, -, or -- are provided, pbpaste will be used if available.
     At most, only one of -f, --file, -, or -- can be provided.
 
     -q or --quiet will supress normal stdout output.
@@ -58,7 +63,11 @@ EOF
             keep_quiet="$1"
             ;;
         -c|--clipboard)
-            to_clipboard="$1"
+            if command -v 'pbcopy' > /dev/null 2>&1; then
+                to_clipboard="$1"
+            else
+                printf 'Ignoring option [%s] because the command [pbcopy] is not available.\n' "$1" 2>&1
+            fi
             ;;
         -s|--save)
             to_file="$1"
@@ -114,8 +123,11 @@ EOF
         json_in="$( cat - )"
     elif [[ -n "$from_args" ]]; then
         json_in="$*"
-    else
+    elif command -v 'pbpaste' > /dev/null 2>&1; then
         json_in="$( pbpaste )"
+    else
+        printf 'No input provided.\n' >&2
+        return 1
     fi
     local jq_exit color_output normal_output
     if [[ -z "$keep_quiet" ]]; then
