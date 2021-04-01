@@ -140,7 +140,7 @@ EOF
         done
     fi
 
-    # Cleare out the any previously set values.
+    # Clear out the any previously set values.
     unset CAPTURE_CMD_CMD_PARTS CAPTURE_CMD_CMD_STR CAPTURE_CMD_EXIT_CODE CAPTURE_CMD_STDERR CAPTURE_CMD_STDOUT CAPTURE_CMD_ALL
 
     # All the input has been received and prepared. It's time to get to work.
