@@ -15,6 +15,17 @@
 
 # Usage: <do stuff> | tee_pbcopy
 tee_pbcopy () {
+    local do_not_run
+    for req_cmd in 'strip_final_newline' 'pbcopy'; do
+        if ! command -v "$req_cmd" > /dev/null 2>&1; then
+            do_not_run='yes'
+            printf 'Missing required command: %s\n' "$req_cmd" >&2
+            "$req_cmd"
+        fi
+    done
+    if [[ -n "$do_not_run" ]]; then
+        return 1
+    fi
     if [[ "$#" -gt '0' ]]; then
         printf %s "$@" | tee_pbcopy
         exit $?

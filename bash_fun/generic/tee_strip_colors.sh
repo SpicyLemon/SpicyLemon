@@ -15,6 +15,11 @@
 
 # Usage: <stuff> | tee_strip_colors "logfile"
 tee_strip_colors () {
+    if ! command -v 'strip_colors' > /dev/null 2>&1; then
+        printf 'Missing required command: strip_colors\n' >&2
+        strip_colors
+        return $?
+    fi
     local filename
     filename="$1"
     shift
