@@ -19,7 +19,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [echo_do.sh](#user-content-echo_dosh)
   * [escape_escapes.sh](#user-content-escape_escapessh)
   * [fp.sh](#user-content-fpsh)
-  * [get_all_system_logs.sh](#user-content-get_all_system_logssh)
   * [get_shell_type.sh](#user-content-get_shell_typesh)
   * [getlines.sh](#user-content-getlinessh)
   * [hrr.sh](#user-content-hrrsh)
@@ -101,7 +100,6 @@ Multi-file example - Add "-old" to the name of every .sh file in this directory 
 ```console
 $ add_to_filename "-old" g*.sh
 generic-setup-old.sh
-get_all_system_logs-old.sh
 get_shell_type-old.sh
 getlines-old.sh
 ```
@@ -110,7 +108,6 @@ Multi-file example coming in a stream:
 ```console
 $ ls g*.sh | add_to_filename "-new" -
 generic-setup-new.sh
-get_all_system_logs-new.sh
 get_shell_type-new.sh
 getlines-new.sh
 ```
@@ -244,19 +241,6 @@ Example Usage:
 ```console
 $ fp README.md
 /Users/spicylemon/git/SpicyLemon/bash_fun/generic/README.md - copied to clipboard.
-```
-
-### `get_all_system_logs.sh`
-
-[get_all_system_logs.sh](get_all_system_logs.sh) - Function/script that pulls all system logs into a single file and sorts the entries by the stamp.
-
-It gets the `/var/log/system.log` file and decompresses any `/var/log/system.log.*` files.
-Then it sorts the entries by date and outputs them to stdout.
-There's usually quite a lot of output.
-
-Example Usage:
-```console
-$ get_all_system_logs
 ```
 
 ### `get_shell_type.sh`

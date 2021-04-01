@@ -3,13 +3,14 @@ This directory contains files for stuff that has either been replaced, or is no 
 
 ## Contents
 
-* `check_system_log_timestamp_order.sh` - old system-specific function for checking system log timestamps.
+* `check_system_log_timestamp_order.sh` - Old system-specific function for checking system log timestamps.
 * `file-helpers.sh` - Some old file formatting stuff for lists of entries.
   Most of it can now be handled by [re_line.sh](../generic/re_line.sh).
   The rest wasn't really very useful.
 * `generic.sh` - This is an old monolithic dumping ground of environment functions.
   It has been replaced by the contents of the [bash_fun/generic/](../generic) directory.
   If you were previously sourcing this file, you should source `generic-setup.sh` instead.
+* `get_all_system_logs` - Old system-specific function for getting all system logs.
 * `git-helpers.sh` - Some functions that help interact with git.
   These were awkwardly named, though.
   They've been renamed to more easily convey their purpose.
