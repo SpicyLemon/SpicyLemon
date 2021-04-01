@@ -55,8 +55,10 @@ EOF
         return 1
     fi
 
-    local diff_numstats_cmd diff_numstats test_entries code_entries
-    local total_lines_added total_lines_removed test_lines_added test_lines_removed code_lines_added code_lines_removed
+    local diff_numstats_cmd diff_numstats test_entries proto_entries auto_entries code_entries
+    local total_lines_added total_lines_removed test_lines_added test_lines_removed
+    local proto_lines_added proto_lines_removed auto_lines_added auto_lines_removed
+    local code_lines_added code_lines_removed
     local diff_no_context_cmd diff_tests_filter diff_tests
     local tests_added tests_removed tests_delta
 
@@ -66,14 +68,20 @@ EOF
     [[ -n "$verbose" ]] && printf '  \033[97m%s\033[0m\n' "${diff_numstats_cmd[*]}" >&2
     diff_numstats="$( "${diff_numstats_cmd[@]}" )"
     test_entries="$( grep "_test\.go$" <<< "$diff_numstats" )"
-    code_entries="$( grep -v "_test\.go$" <<< "$diff_numstats" )"
+    proto_entries="$( grep "\.proto$" <<< "$diff_numstats" )"
+    auto_entries="$( grep -e "\.pb\.go$" -e "\.pb\.gw\.go$" <<< "$diff_numstats" )"
+    code_entries="$( grep -v -e "_test\.go$" -e ".proto$" -e "\.pb\.go$" -e "\.pb\.gw\.go$" <<< "$diff_numstats" )"
 
     total_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$diff_numstats" )"
-    total_lines_removed="$( awk '{sum-=$2} END { print sum }' <<< "$diff_numstats" )"
+    total_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$diff_numstats" )"
     test_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$test_entries" )"
-    test_lines_removed="$( awk '{sum-=$2} END { print sum }' <<< "$test_entries" )"
+    test_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$test_entries" )"
+    proto_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$proto_entries" )"
+    proto_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$proto_entries" )"
+    auto_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$auto_entries" )"
+    auto_lines_removed="$( awk '{sum-+$2} END { print sum }' <<< "$auto_entries" )"
     code_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$code_entries" )"
-    code_lines_removed="$( awk '{sum-=$2} END { print sum }' <<< "$code_entries" )"
+    code_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$code_entries" )"
 
     [[ -n "$verbose" ]] && printf '\033[96mDone.\033[0m\n' >&2
     (
@@ -83,9 +91,11 @@ EOF
         printf '         From Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[0]}" || printf %s "${branches[1]}" )"
         printf '           To Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[1]}" || printf %s "${branches[2]}" )"
         printf '========================================\n'
-        printf 'Line Changes -  Code: %+6d  %+6d\n' "$code_lines_added" "$code_lines_removed"
-        printf 'Line Changes - Tests: %+6d  %+6d\n' "$test_lines_added" "$test_lines_removed"
-        printf 'Line Changes - Total: %+6d  %+6d\n' "$total_lines_added" "$total_lines_removed"
+        printf 'Line Changes -  Code: %+6d  %s\n' "$code_lines_added" "$( printf '%+6d' "$code_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes - Proto: %+6d  %s\n' "$proto_lines_added" "$( printf '%+6d' "$proto_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes -  Auto: %+6d  %s\n' "$auto_lines_added" "$( printf '%+6d' "$auto_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes - Tests: %+6d  %s\n' "$test_lines_added" "$( printf '%+6d' "$test_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes - Total: %+6d  %s\n' "$total_lines_added" "$( printf '%+6d' "$total_lines_removed" | sed 's/+/-/' )"
     )
 }
 
