@@ -14,7 +14,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [generic-setup.sh](#user-content-generic-setupsh)
   * [add_to_filename.sh](#user-content-add_to_filenamesh)
   * [change_word.sh](#user-content-change_wordsh)
-  * [check_system_log_timestamp_order.sh](#user-content-check_system_log_timestamp_ordersh)
   * [chrome_cors.sh](#user-content-chrome_corssh)
   * [echo_color.sh](#user-content-echo_colorsh)
   * [echo_do.sh](#user-content-echo_dosh)
@@ -136,23 +135,6 @@ When executed:
 
 This is probably best done in a git repo containing no uncommitted changes.
 That way, it's easy to undo if there were some unintended changes.
-
-### `check_system_log_timestamp_order.sh`
-
-[check_system_log_timestamp_order.sh](check_system_log_timestamp_order.sh) - A function/script for finding improperly ordered entries in system logs.
-
-I had a weird thing happen where some system log entries weren't in chronological order.
-So I ended up putting this together in order to find all such entries in a file.
-
-Simple example:
-```console
-$ check_system_log_timestamp_order /var/log/system.log
-```
-
-Doing it for all system logs:
-```console
-$ { cat /var/log/system.log; for l in $( ls /var/log/system.log.* ); do zcat < "$l"; done; } | check_system_log_timestamp_order -
-```
 
 ### `chrome_cors.sh`
 

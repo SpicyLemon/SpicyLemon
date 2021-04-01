@@ -53,7 +53,7 @@ __generic_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'generic-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
-        'add_to_filename'      'change_word'     'check_system_log_timestamp_order'  'chrome_cors'              'echo_color'
+        'add_to_filename'      'change_word'                                         'chrome_cors'              'echo_color'
         'echo_do'              'escape_escapes'  'fp'                                'get_all_system_logs'      'get_shell_type'
         'getlines'             'hrr'             'i_can'                             'set_title'
         'join_str'                               'multi_line_replace'                'pretty_json'              'print_args'

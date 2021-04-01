@@ -3,6 +3,7 @@ This directory contains files for stuff that has either been replaced, or is no 
 
 ## Contents
 
+* `check_system_log_timestamp_order.sh` - old system-specific function for checking system log timestamps.
 * `file-helpers.sh` - Some old file formatting stuff for lists of entries.
   Most of it can now be handled by [re_line.sh](../generic/re_line.sh).
   The rest wasn't really very useful.
