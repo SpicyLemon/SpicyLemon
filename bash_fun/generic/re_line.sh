@@ -18,13 +18,14 @@ re_line () {
     usage="$( cat << EOF
 re_line - Reformats delimited and/or line-separated entries.
 
-Usage: re_line [-f <filename>|--file <filename>|-c|--from-clipboard|-|-p|--from-pipe|-- <input>]
+Usage: re_line [-f <filename>|--file <filename>|-c|--clipboard|-|-p|--from-pipe|-- <input>]
                [-n <count>|--count <count>|--min-width <width>|--max-width <width>]
                [-d <string>|--delimiter <string>] [-b <string>|--break <string>]
                [-w <string>|--wrap <string>] [-l <string>|--left <string>] [-r <string>|--right <string>]
 
     -f or --filename defines the file to get the input from.
     -c or --clipboard dictates that the input should be pulled from the clipboard.
+        This is only available if the pbpaste command is available.
     - or -p or --from-pipe indicates that the input is being piped in.
         This can also be expressed with -f - or --filename -.
     -- indicates that all remaining parameters are to be considered input.
@@ -83,7 +84,11 @@ EOF
             shift
             ;;
         -c|--clipboard)
-            from_clipboard="$1"
+            if command -v 'pbpaste' > /dev/null 2>&1; then
+                from_clipboard="$1"
+            else
+                printf 'Ignoring option [%s] because the command [pbpaste] is not available.\n' "$1" 2>&1
+            fi
             ;;
         -|-p|--pipe|--from-pipe)
             from_pipe="$1"
