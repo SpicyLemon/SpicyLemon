@@ -24,6 +24,11 @@ EOF
 
 # The main wrapper command that adds the extra stuff.
 fzf_wrapper () {
+    if ! command -v 'fzf' > /dev/null 2>&1; then
+        printf 'Missing required command: fzf\n' >&2
+        fzf
+        return $?
+    fi
     local fzf_cmd do_columns delimiter_flag delimiter exit_code
     fzf_cmd=( fzf )
     while [[ "$#" -gt '0' ]]; do
