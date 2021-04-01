@@ -14,6 +14,11 @@
 ) && sourced='YES' || sourced='NO'
 
 getlines () {
+    if ! command -v 'join_str' > /dev/null 2>&1; then
+        printf 'Missing required command: join_str\n' >&2
+        join_str
+        return $?
+    fi
     local usage
     usage='Usage: getlines <file> [<line number>|<line1>-<line2>]'
     local filename other_params verbose pieces piece error errors awk_clauses awk_test
