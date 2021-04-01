@@ -23,8 +23,10 @@ fp () {
         filenames=( $( cat - ) )
     elif [[ "$#" -gt '0' ]]; then
         filenames=( "$@" )
-    else
+    elif command -v "fzf" > /dev/null 2>&1; then
         filenames=( $( ls -a | grep -v "^\.\.$" | sort -f | fzf -m --tac --cycle ) )
+    else
+        filenames=()
     fi
     if [[ "${#filenames[@]}" -eq '0' ]]; then
         printf 'No filenames provided or selected.\n'
