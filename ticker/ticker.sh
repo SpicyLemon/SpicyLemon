@@ -5,14 +5,35 @@ if [[ "$#" -eq '0' ]]; then
     exit
 fi
 
-SYMBOLS=($@)
+SYMBOLS=()
+SYMBOLS_TO_GET=()
+
+hr='<hr>'
+br='<br>'
+
+while [[ "$#" -gt '0' ]]; do
+    # Check for special cases <br> and <hr> allowing for multiple bracket styles and casing.
+    # Techinically this will catch stuff like <bR], but this reads better than trying to match stuff,
+    # and catching extra stuff like that isn't going to hurt anything.
+    if [[ "$1" =~ ^[\[\(\{\<][bB][rR][\]\)\}\>]$ ]]; then
+        SYMBOLS+=( "$br" )
+    elif [[ "$1" =~ ^[\[\(\{\<][hH][rR][\]\)\}\>]$ ]]; then
+        SYMBOLS+=( "$hr" )
+    else
+        SYMBOLS+=( $1 )
+        SYMBOLS_TO_GET+=( $1 )
+    fi
+    shift
+done
+
 
 # Set this to anything non-empty to cause some debug statements to be printed along the way.
 DEBUG=
 
-if ! $(type jq > /dev/null 2>&1); then
-    echo "'jq' is not in the PATH. (See: https://stedolan.github.io/jq/)"
-    exit 1
+if ! command -v 'jq' > /dev/null 2>&1; then
+    printf 'Missing required command: jq\n' >&2
+    jq >&2  # Possibly provides shell/system specific information about the missing command.
+    exit $?
 fi
 
 if [[ -z "$NO_COLOR" ]]; then
@@ -26,7 +47,7 @@ API_ENDPOINT="https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&regio
 FIELDS=(symbol shortName marketState regularMarketPrice regularMarketChange regularMarketChangePercent \
   preMarketPrice preMarketChange preMarketChangePercent postMarketPrice postMarketChange postMarketChangePercent)
 
-url_symbols=$( IFS=,; echo "${SYMBOLS[*]}" )
+url_symbols=$( IFS=,; echo "${SYMBOLS_TO_GET[*]}" )
 url_fields=$( IFS=,; echo "${FIELDS[*]}" )
 
 api_url="$API_ENDPOINT&fields=$url_fields&symbols=$url_symbols"
@@ -52,7 +73,22 @@ parsedResults="$(
 )"
 [[ -n "$DEBUG" ]] && printf 'parsedResults:\n%s\n' "$parsedResults"
 
+width='85'  # 50 for the symbols, numbers, and indicator, leaving 35 for the name.
+# If tput is available, use that to get the window width
+if command -v 'tput' > /dev/null 2>&1; then
+    width="$( tput cols )"
+fi
+
 for symbol in ${SYMBOLS[*]}; do
+    if [[ "$symbol" == "$br" ]]; then
+        printf '\n'
+        continue
+    fi
+    if [[ "$symbol" == "$hr" ]]; then
+        printf "%${width}s\n" '' | tr ' ' '-'
+        continue
+    fi
+
     symbolLine="$( grep -i "^$symbol " <<< "$parsedResults" )"
     [[ -n "$DEBUG" ]] && printf 'symbolLine: [%s]\n' "$symbolLine"
 
