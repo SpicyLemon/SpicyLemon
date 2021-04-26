@@ -28,11 +28,8 @@ git_clean_repo () {
     #               -x -> ignore standard ignore rules
     #               -e .idea -> but leave the .idea directory alone
     __git_echo_do git clean -fdx -e .idea
-    # Remove any stale remote tracking branches
-    printf "\033[1;37mgit branch -r | grep -v 'HEAD' | xargs -L 1 git branch -rD\033[0m\n"
-    git branch -r | grep -v 'HEAD' | xargs -L 1 git branch -rD
-    # And get the most recent info
-    __git_echo_do git fetch
+    # And get the most recent info, pruning all stale branch references
+    __git_echo_do git fetch -p
 }
 
 if [[ "$sourced" != 'YES' ]]; then
