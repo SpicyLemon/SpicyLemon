@@ -44,7 +44,7 @@ __git_echo_do () {
     "${cmd_pieces[@]}"
     retval=$?
     printf '\n'
-    return $?
+    return $retval
 }
 
 if [[ "$sourced" != 'YES' ]]; then
