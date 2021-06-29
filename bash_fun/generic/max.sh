@@ -11,12 +11,23 @@
 ) && sourced='YES' || sourced='NO'
 
 # Usage: <stuff> | max
+#    or: max <val1> [<val2> ...]
+#    or: <stuff> | max - <val1> [<val2> ...]
 max () {
-    if [[ "$#" -gt '0' ]]; then
-        printf '%s\n' "$@" | max
-        return $?
-    fi
-    sort -n -r | head -n 1
+    {
+        if [[ "$#" -eq '0' ]]; then
+            cat -
+        else
+            while [[ "$#" -gt '0' ]]; do
+                if [[ "$1" == '-' ]]; then
+                    cat -
+                else
+                    printf ' %s ' "$1"
+                fi
+                shift
+            done
+        fi
+    } | tr '[:space:]' '\n' | grep . | sort -n -r | head -n 1
 }
 
 if [[ "$sourced" != 'YES' ]]; then

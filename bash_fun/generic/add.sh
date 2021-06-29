@@ -11,16 +11,22 @@
 ) && sourced='YES' || sourced='NO'
 
 # Usage: <stuff> | add
+#    or: add <val1> [<val2> ...]
+#    or: <stuff> | add - <val1> [<val2> ...]
 add () {
-    if [[ "$#" -eq '0' ]]; then
-        add $( cat - )
-        return $?
-    fi
     local retval
     retval=0
+    if [[ "$#" -eq '0' ]]; then
+        set -- $( cat - )
+    fi
     while [[ "$#" -gt '0' ]]; do
-        retval=$(( retval + $1 ))
-        shift
+        if [[ "$1" == '-' ]]; then
+            shift
+            set -- $( cat - ) $@
+        else
+            retval=$(( retval + $1 ))
+            shift
+        fi
     done
     printf '%d' "$retval"
 }
