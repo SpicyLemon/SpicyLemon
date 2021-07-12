@@ -59,9 +59,9 @@ echo_do () {
     printf '\033[1;37m%s\033[0m\n' "${pieces_for_output[*]}"
     # Execute the command.
     "${cmd_pieces[@]}"
-    retval="$?"
+    retval=$?
     printf '\n'
-    return "$?"
+    return $retval
 }
 
 if [[ "$sourced" != 'YES' ]]; then
