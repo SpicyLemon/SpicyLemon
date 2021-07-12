@@ -34,14 +34,14 @@ git_master_pull_all () {
         __git_echo_do cd "$repo" || repo_failed='YES'
         if [[ -z "$repo_failed" ]]; then
             cur_branch="$( git_branch_name )"
-            if [[ "$cur_branch" != 'master' ]]; then
-                __git_echo_do git checkout master || repo_failed='YES'
+            if [[ ! "$cur_branch" =~ ^(master|main)$ ]]; then
+                __git_echo_do git checkout master || __git_echo_do git checkout main || repo_failed='YES'
             fi
         fi
         if [[ -z "$repo_failed" ]]; then
             __git_echo_do git pull || repo_failed='YES'
         fi
-        if [[ -z "$repo_failed" && "$cur_branch" != 'master' ]]; then
+        if [[ -z "$repo_failed" && "$cur_branch" != "$( git_branch_name )" ]]; then
             __git_echo_do git checkout "$cur_branch" || repo_failed='YES'
         fi
         if [[ -n "$repo_failed" ]]; then

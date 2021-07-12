@@ -20,7 +20,7 @@ git_clean_repo () {
         return 1
     fi
     # Check out master
-    __git_echo_do git checkout master
+    __git_echo_do git checkout master || __git_echo_do git checkout main || return $?
     # Delete any branches if desired.
     __git_echo_do git_delete_branches
     # Do git clean: -f -> force to delete untracked files,
