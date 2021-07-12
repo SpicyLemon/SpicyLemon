@@ -25,8 +25,8 @@ git_fresh_branch () {
         printf 'Usage: git_fresh_branch <branch name>\n' >&2
         return 2
     fi
-    if [[ "$( git_branch_name )" != 'master' ]]; then
-        __git_echo_do git checkout master || return $?
+    if [[ ! "$( git_branch_name )" =~ ^(master|main)$ ]]; then
+        __git_echo_do git checkout master || __git_echo_do git checkout main || return $?
     fi
     __git_echo_do git pull
     __git_echo_do git checkout -b "$branch"
