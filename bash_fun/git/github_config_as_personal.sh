@@ -31,7 +31,7 @@ github_config_as_personal () {
         printf 'Array GITHUB_PERSONAL_CONFIG not defined in the environment.\n' >&2
         return 1
     fi
-    local retval setting name val cur_val
+    local retval setting name val cur_val origin
     retval=0
     for setting in "${GITHUB_PERSONAL_CONFIG[@]}"; do
         # Split on the 1st equals sign
@@ -52,6 +52,21 @@ github_config_as_personal () {
             printf 'Done.\n'
         fi
     done
+    if [[ -n "$GITHUB_PERSONAL_URL" ]]; then
+        origin="$( git remote get-url origin )"
+        printf 'Checking remote origin ... '
+        if [[ ! "$origin" =~ github\.com-personal && "$origin" =~ github\.com ]]; then
+            printf 'Is currently [%s]; updating now ... ' "$origin"
+            git remote set-url origin "$( sed 's/github\.com/github\.com-personal/' <<< "$origin" )"
+            printf 'Done.\n'
+        else
+            printf 'Already correct. Done.\n'
+        fi
+    else
+        printf 'Variable GITHUB_PERSONAL_URL not defined. Skipping remote origin check.\n'
+    fi
+    printf '\n'
+    __git_echo_do git remote get-url origin
     __git_echo_do git config --local --list
     return $retval
 }
