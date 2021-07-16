@@ -26,7 +26,7 @@ EOF
 fzf_wrapper () {
     if ! command -v 'fzf' > /dev/null 2>&1; then
         printf 'Missing required command: fzf\n' >&2
-        fzf
+        command fzf
         return $?
     fi
     local fzf_cmd do_columns delimiter_flag delimiter exit_code
@@ -34,7 +34,7 @@ fzf_wrapper () {
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
         -h|--help)
-            fzf "$1"
+            command fzf "$1"
             __fzf_wrapper_additions
             return 0
             ;;
