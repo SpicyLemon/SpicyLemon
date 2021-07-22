@@ -20,8 +20,8 @@ list () {
     local args no_more_flags show_files show_dirs show_hidden show_dot terminator show_base directories arg i directory
     args=()
     no_more_flags=''
-    show_files='YES'
-    show_dirs='YES'
+    show_files=''
+    show_dirs=''
     show_hidden='NO'
     show_dot='NO'
     terminator='\n'
@@ -56,12 +56,16 @@ Usage: list [-f|--files|-F|--no-files] [-d|--dirs|-D|--no-dirs] [-h|--hidden|-H|
     -f or --files        Include files in the output.
     -F or --no-files     Do not include files in the output.
         If multiple of -f -F --files --no-files are given, the last one is used.
-        If none of them are given, default behavior is -f or --files.
+        Default behavior depends on the presence of other flags.
+            If -d -d --dirs or --no-dirs is provided, the default is -F or --no-files
+            Otherwise, the default is -f or --files.
 
     -d or --dirs         Include directories in the output.
     -D or --no-dirs      Do not include directories in the output.
         If multiple of -d -D --dirs --no-dirs are given, the last one is used.
-        If none of them are given, default behavior is -d or --dirs.
+        Default behavior depends on the presense of other flags.
+            If -f -F --files or --no-files is provided, the default is -D or --no-dirs.
+            Otherwise, the default is -d or --dirs.
 
     -h or --hidden       Include hidden files and/or directories in the output.
     -H or --no-hidden    Do not include hidden files and/or directories in the ouptut.
@@ -84,8 +88,8 @@ Usage: list [-f|--files|-F|--no-files] [-d|--dirs|-D|--no-dirs] [-h|--hidden|-H|
     -B or --no-base     Do not include the base directory for each entry.
         If multiple of -b -a -B --base --absolute or --no-base are given, the last one is used.
         If none of them are given, default behavior depends on the number of directories provided as arguments.
-        If zero or one are provided, -B or --no-base is the default.
-        If two or more are provided, -b or --base is the default.
+            If zero or one are provided, -B or --no-base is the default.
+            If two or more are provided, -b or --base is the default.
 
     [--] <directory> [<directory2>...]
         Any number of directories can be provided as a base directory to list the contents of.
@@ -94,10 +98,26 @@ Usage: list [-f|--files|-F|--no-files] [-d|--dirs|-D|--no-dirs] [-h|--hidden|-H|
         So if your directory of interest starts with a dash, you must provide it after a -- argument.
         If no directories are provided, the current directory (.) is used.
 
-Default behavior:
+Default behavior: All of these behave the same:
+    list
     list --files --dirs --no-hidden --no-dot --newline --no-base
-or
     list -fdHTnB
+
+Examples:
+    Get just the (non-hidden) files in the current directory:
+        list -f
+        list -D
+    Get just the (non-hidden) directories in the current directory:
+        list -d
+        list -F
+    Get just the hidden directories in the home directory:
+        list -Id ~
+    Get ls long-format information on the hidden files in the /users/Spicylemon directory:
+        list -If0 /users/SpicyLemon | xargs -0 ls -l
+    Get ls long-format information on the entire contents of the foo/ and
+    bar/ directories (in the current directory), sorted by date, newest at the bottom,
+    and including the directories themselves:
+        list -th0 foo bar | xargs -0 ls -ldtr
 
 Exit codes:
     0   Normal execution with output.
@@ -148,6 +168,14 @@ EOF
         else
             show_base='YES'
         fi
+    fi
+    if [[ -z "$show_files" && -z "$show_dirs" ]]; then
+        show_files='YES'
+        show_dirs='YES'
+    elif [[ -z "$show_files" ]]; then
+        show_files='NO'
+    elif [[ -z "$show_dirs" ]]; then
+        show_dirs='NO'
     fi
 
     local exit_code find_args grep_args base_dir cwd
