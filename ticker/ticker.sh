@@ -111,6 +111,11 @@ for symbol in ${SYMBOLS[*]}; do
         marketStateIndicator=' '
     fi
 
+    # TLRY has a short name of "Tilray, Inc. - Class 2"
+    # HOOD has a short name of "Robinhood Markets, Inc. Class A Common Stock"
+    # The sed replacement below is to get rid of the "Class" parts of those.
+    # Then it's limited to 28 characters in order to keep the standard line at 80 characters.
     printf "%-10s $COLOR_BOLD%13.6f$COLOR_RESET $color%+13.6f %+7.2f%%$COLOR_RESET %1s [%s]\n" \
-        "$symbol" "$price" "$diff" "$percent" "$marketStateIndicator" "$shortName"
+        "$symbol" "$price" "$diff" "$percent" "$marketStateIndicator" \
+        "$( sed -E 's/( -)? [cC][lL][aA][sS][sS] [[:alnum:]].*$//' <<< "$shortName" | head -c 28 )"
 done
