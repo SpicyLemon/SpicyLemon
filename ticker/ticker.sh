@@ -111,11 +111,35 @@ for symbol in ${SYMBOLS[*]}; do
         marketStateIndicator=' '
     fi
 
-    # TLRY has a short name of "Tilray, Inc. - Class 2"
-    # HOOD has a short name of "Robinhood Markets, Inc. Class A Common Stock"
-    # The sed replacement below is to get rid of the "Class" parts of those.
-    # Then it's limited to 28 characters in order to keep the standard line at 80 characters.
+    # Some short names have info like " - Class 2" or " Class A Common Stock" at the end.
+    # This truncation first removes those "class" parts.
+    # Then it removes the "Inc" part (e.g. ", Inc.", " Inc.", ", Inc", " Inc")
+    # Then it limits what's left to 28 characters.
+    # And lastly, removes any trailing whitespace.
+    shortNameT="$( sed -E 's/( -)? [cC][lL][aA][sS][sS] [[:alnum:]].*$//; s/,? [iI][nN][cC]\.? *$//;' <<< "$shortName" | head -c 28 | sed 's/ *$//' )"
+
+    # Line Breakdown:
+    #   index  format    len  description
+    #   1-10   '%-10s'   10   Ticker symbol, left justified.
+    #   11     ' '       1    Space.
+    # bold coloring on
+    #   12-24  '%13.6f'  13   Value: 6 whole digits, 1 decimal, 6 fractional digits.
+    #                         This will be more than 13 characters for values over 999,999.99999.
+    # color reset
+    #   25     ' '       1    Space.
+    # up(green)/down(red) coloring on
+    #   26-38  '%+13.6f' 13   value change: 1 +/- sign, 5 whole digits, 1 decimal, 6 fractional digits.
+    #                         This will be more than 13 characters for values over 99,999.999999.
+    #   39     ' '       1    Space.
+    #   40-46  '%+7.2f'  7    Percent change: 1 +/- sign, 3 whole digits, 1 decimal, 2 fractional digits.
+    #                         This will be more than 7 characters for absolute values over 999.99.
+    #   47     '%%'      1    Percent symbol.
+    # color reset
+    #   48     ' '       1    Space.
+    #   49     '%1s'     1    Market state indicator character: ' ', '<', or '>'.
+    #   50     ' '       1    Space.
+    #   51-80  '[%s]'    30   Short name: 1 open bracket, up to 28 for shortname, 1 close bracket.
+    #                         This might not take up the whole 30 characters allotted for it.
     printf "%-10s $COLOR_BOLD%13.6f$COLOR_RESET $color%+13.6f %+7.2f%%$COLOR_RESET %1s [%s]\n" \
-        "$symbol" "$price" "$diff" "$percent" "$marketStateIndicator" \
-        "$( sed -E 's/( -)? [cC][lL][aA][sS][sS] [[:alnum:]].*$//' <<< "$shortName" | head -c 28 )"
+        "$symbol" "$price" "$diff" "$percent" "$marketStateIndicator" "$shortNameT"
 done
