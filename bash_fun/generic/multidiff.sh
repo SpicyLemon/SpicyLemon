@@ -126,7 +126,6 @@ multidiff () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    where_i_am="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
     multidiff "$@"
     exit $?
 fi
