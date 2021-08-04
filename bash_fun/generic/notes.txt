@@ -8,3 +8,4 @@ TODO:
         Need to research escape codes more to know exactly what should be stripped.
     Add recursive functionality to list.sh.
         Will need to keep track of directories seen (using pwd -P) to prevent infinite loops.
+    Add --pre-process <json_info|jq> option to multidiff.
