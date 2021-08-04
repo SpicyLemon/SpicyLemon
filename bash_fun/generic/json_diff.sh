@@ -36,9 +36,6 @@ EOF
         printf '%s\n' "$usage"
         return 0
     fi
-    if command -v 'setopt' > /dev/null 2>&1; then
-        setopt local_options KSH_ARRAYS
-    fi
     diff_cmd=( diff )
     while [[ "$#" -gt '2' ]]; do
         case "$1" in
@@ -145,7 +142,7 @@ EOF
     if [[ "$exit_code" -eq '0' ]]; then
         file1p="$tempd/1_$( basename "$file1" )"
         if [[ -n "$use_json_info" ]]; then
-            json_info -r --max-string 0 -f "$file1" > "$file1p"
+            json_info -r -f "$file1" > "$file1p"
             exit_code=$?
         else
             jq '.' "$file1" > "$file1p"
@@ -158,7 +155,7 @@ EOF
     if [[ "$exit_code" -eq '0' ]]; then
         file2p="$tempd/2_$( basename "$file2" )"
         if [[ -n "$use_json_info" ]]; then
-            json_info -r --max-string 0 -f "$file2" > "$file2p"
+            json_info -r -f "$file2" > "$file2p"
             exit_code=$?
         else
             jq '.' "$file2" > "$file2p"
