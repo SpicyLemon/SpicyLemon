@@ -14,34 +14,34 @@
 ) && sourced='YES' || sourced='NO'
 
 multidiff () {
-    local usage cnums ccmd cn cf cre diff_cmd is_side_by_side files sed_cmd_fmt exit_code i j fi fj ec
-    usage='Usage: multidiff [<diff flags> --] <file1> <file2> [<file3>...]\n'
-    if [[ "$#" -eq '0' ]]; then
-        printf '%s' "$usage"
-        return 0
-    fi
-    if ! command -v 'seq' > /dev/null 2>&1; then
-        printf 'Missing required command: seq\n' >&2
-        command 'seq' >&2
-        return $?
-    fi
-    if ! command -v 'diff' > /dev/null 2>&1; then
-        printf 'Missing required command: diff\n' >&2
-        command 'diff' >&2
-        return $?
-    fi
+    local cnums usage diff_cmd is_side_by_side pre_processor files files_p files_count \
+        cf ccmd cn cre sed_cmd_fmt req_cmds req_cmd exit_code tempd f fp ec i j
+    # 93 = Bright Yellow, 92 = Bright Green, 96 = Bright Cyan, 95 = Bright Purple, 91 = Bright Red, 97 = Bright White
+    # 33 = Yellow, 32 = Green, 36 = Cyan, 35 = Purple, 31 = Red, 37 = White
     cnums=( 93 92 96 95 91 97 33 32 36 35 31 37 )
-    cf=()
-    if [[ -t 1 ]]; then
-        ccmd='\033[1;100m'  # Bold + dark gray background
-        for cn in ${cnums[@]}; do
-            cf+=( "\033[${cn}m" )
-        done
-        cre='\033[0m'
-    else
-        for cn in ${cnums[@]}; do
-            cf+=( '' )
-        done
+    usage="$( cat << EOF
+Gets differences between sets of files.
+
+Usage: multidiff [[<diff args>] [--pre-process <pre-processor>] --] <file1> <file2> [<file3>...]
+
+    <file1> <file2> [<file3>...] are the files to diff. Up to ${#cnums[@]} can be supplied.
+        Diffs are done between each possible pair of files.
+        For example, with 3 files, there are 3 pairs: 1-2, 1-3, 2-3.
+        With 4 files, you would end up with 6 pairs: 1-2, 1-3, 1-4, 2-3, 2-4, 3-4.
+
+    If any arguments other than files are provided, the files must all follow a -- argument.
+
+    <diff args> are any arguments that you want provided to each diff command.
+    --pre-process <pre-processor> defines any pre-processing that should be done to each file before the diff.
+        <pre-processor> values:
+            none       This is the default. Do not do any pre-processing of the files.
+            jq         Apply the command  jq --sort-keys '.' <file>  to each file and get the differences of the results.
+            json_info  Apply the command  json_info -r -f <file>     to each file and get the differences of the results.
+EOF
+    )"
+    if [[ "$#" -eq '0' ]]; then
+        printf '%s\n\n' "$usage"
+        return 0
     fi
     if command -v 'setopt' > /dev/null 2>&1; then
         setopt local_options KSH_ARRAYS
@@ -51,8 +51,29 @@ multidiff () {
         while [[ "$#" -gt '0' ]]; do
             case "$1" in
             -h|--help)
-                printf '%s' "$usage"
+                printf '%s\n\n' "$usage"
                 return 0
+                ;;
+            --pre-process|--pre-processor|--pre-proc|--pre)
+                if [[ "$#" -lt '2' || -z "$2" ]]; then
+                    printf 'multidiff: No pre-processor provided after %s\n' "$1" >&2
+                    return 1
+                fi
+                case "$2" in
+                none|--none)
+                    pre_processor=''
+                    ;;
+                jq|--jq)
+                    pre_processor='jq'
+                    ;;
+                json_info|json-info|--json-info|--json_info)
+                    pre_processor='json_info'
+                    ;;
+                *)
+                    printf 'multidiff: Unknown pre-processor value: %s\n' "$2" >&2
+                    return 1
+                esac
+                shift
                 ;;
             --)
                 shift
@@ -69,16 +90,39 @@ multidiff () {
             shift
         done
     fi
-    files=( "$@" )
-    if [[ "${#files[@]}" -eq '0' ]]; then
-        printf 'No files provided. Did you forget the -- before the files?\n' >&2
+    files=()
+    while [[ "$#" -gt '0' ]]; do
+        if [[ -n "$1" ]]; then
+            if [[ -f "$1" ]]; then
+                files+=( "$1" )
+            else
+                printf 'multidiff: File not found: %s\n' "$1" >&2
+            fi
+        fi
+        shift
+    done
+    files_count="${#files[@]}"
+    if [[ "$files_count" -eq '0' ]]; then
+        printf 'multidiff: No files provided. Did you forget the -- before the files?\n' >&2
         return 1
-    elif [[ "${#files[@]}" -eq '1' ]]; then
-        printf 'Only one file provided.\n' >&2
+    elif [[ "$files_count" -eq '1' ]]; then
+        printf 'multidiff: Only one file provided.\n' >&2
         return 1
-    elif [[ "${#files[@]}" -gt "${#cnums[@]}" ]]; then
-        printf 'Too many files. Max: %d, Found: %d\n' "${#files[@]}" "${#cnums[@]}" >&2
+    elif [[ "$files_count" -gt "${#cnums[@]}" ]]; then
+        printf 'multidiff: Too many files. Max: %d, Found: %d\n' "${#cnums[@]}" "$files_count" >&2
         return 1
+    fi
+    cf=()
+    if [[ -t 1 ]]; then
+        ccmd='\033[1;100m'  # Bold + dark gray background
+        for cn in ${cnums[@]}; do
+            cf+=( "\033[${cn}m" )
+        done
+        cre='\033[0m'       # Color reset
+    else
+        for cn in ${cnums[@]}; do
+            cf+=( '' )
+        done
     fi
     if [[ -n "$is_side_by_side" ]]; then
         # There's no super simple way to find the middle in the side-by-side diff.
@@ -107,21 +151,76 @@ multidiff () {
     else
         sed_cmd_fmt="s/^(<.*)$/%b\\\\1$cre/; s/^(>.*)$/%b\\\\1$cre/;"
     fi
-    exit_code=0
-    for i in $( seq 0 $(( ${#files[@]} - 2 )) ); do
-        for j in $( seq $(( $i + 1 )) $(( ${#files[@]} - 1 )) ); do
-            fi="${files[$i]}"
-            fj="${files[$j]}"
-            printf "$ccmd%s ${cf[$i]}%s ${cf[$j]}%s$cre\n" "${diff_cmd[*]}" "$fi" "$fj"
-            "${diff_cmd[@]}" "$fi" "$fj" \
-                | sed -E "$( printf "$sed_cmd_fmt" "${cf[$i]}" "${cf[$j]}" )"
-            ec="${PIPESTATUS[0]}${pipestatus[0]}"
-            printf '\n'
-            if [[ "$ec" -ne '0' ]]; then
-                exit_code=$ec
-            fi
-        done
+
+    req_cmds=( 'seq' 'diff' 'basename' 'mktemp' )
+    if [[ -n "$pre_processor" ]]; then
+        req_cmds+=( "$pre_processor" )
+    fi
+    for req_cmd in "${req_cmds[@]}"; do
+        if ! command -v "$req_cmd" > /dev/null 2>&1; then
+            printf 'multidiff: Missing required command: \n' "$req_cmd" >&2
+            command "$req_cmd" >&2
+            return $?
+        fi
     done
+
+    exit_code=0
+    if [[ -z "$pre_processor" ]]; then
+        files_p=( "${files[@]}" )
+    else
+        tempd="$( mktemp -d -t multidiff )"
+        exit_code=$?
+        if [[ "$exit_code" -ne '0' ]]; then
+            printf 'multidiff: Unable to create temp directory for pre-processed files.\n' >&2
+        elif [[ "$pre_processor" == 'jq' ]]; then
+            files_p=()
+            for i in $( seq 1 $files_count ); do
+                j=$(( i - 1 ))
+                f="${files[$j]}"
+                printf -v fp '%s/%2d_%s' "$tempd" "$i" "$( basename "$f" )"
+                files_p+=( "$fp" )
+                jq --sort-keys '.' "$f" > "$fp"
+                ec=$?
+                if [[ "$ec" -ne '0' ]]; then
+                    printf 'multidiff: Invalid JSON in file %d: %s\n' "$i" "$f" >&2
+                    exit_code=$ec
+                fi
+            done
+        elif [[ "$pre_processor" == 'json_info' ]]; then
+            files_p=()
+            for i in $( seq 1 $files_count ); do
+                j=$(( i - 1 ))
+                f="${files[$j]}"
+                printf -v fp '%s/%2d_%s.info' "$tempd" "$i" "$( basename "$f" )"
+                files_p+=( "$fp" )
+                json_info -r -f "$f" > "$fp"
+                ec=$?
+                if [[ "$ec" -ne '0' ]]; then
+                    printf 'multidiff: Invalid JSON in file %d: %s\n' "$i" "$f" >&2
+                    exit_code=$ec
+                fi
+            done
+        else
+            printf 'multidiff: Unknown pre-processor type: %s\n' "$pre_processor" >&2
+            exit_code=1
+        fi
+    fi
+
+    if [[ "$exit_code" -eq '0' ]]; then
+        for i in $( seq 0 $(( files_count - 2 )) ); do
+            for j in $( seq $(( i + 1 )) $(( files_count - 1 )) ); do
+                printf "$ccmd%s ${cf[$i]}%s ${cf[$j]}%s$cre\n" "${diff_cmd[*]}" "${files[$i]}" "${files[$j]}"
+                "${diff_cmd[@]}" "${files_p[$i]}" "${files_p[$j]}" \
+                    | sed -E "$( printf "$sed_cmd_fmt" "${cf[$i]}" "${cf[$j]}" )"
+                ec="${PIPESTATUS[0]}${pipestatus[0]}"
+                printf '\n'
+                if [[ "$ec" -ne '0' ]]; then
+                    exit_code=$ec
+                fi
+            done
+        done
+    fi
+    [[ -n "$tempd" && -d "$tempd" ]] && rm -rf "$tempd" > /dev/null 2>&1
     return $exit_code
 }
 
