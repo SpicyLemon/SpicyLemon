@@ -14,7 +14,7 @@
 ) && sourced='YES' || sourced='NO'
 
 json_diff () {
-    local usage diff_cmd is_side_by_side use_json_info file1 file2 req_cmds req_cmd ccmd cf1 cf2 cre tempd file1p file2p sed_cmd_fmt exit_code
+    local usage diff_args use_json_info file1 file2
     usage="$( cat << EOF
 Usage: json_diff [<diff args>] [--use-json-info|--use-jq] <file1> <file2>
 
@@ -29,18 +29,17 @@ Usage: json_diff [<diff args>] [--use-json-info|--use-jq] <file1> <file2>
         The resulting diff will then be on the pretty-print version of the JSON.
         This is the default behavior.
     If both --use-json-info and --use-jq are provided, the last one provided is used.
-
 EOF
     )"
     if [[ "$#" -eq '0' ]]; then
-        printf '%s\n' "$usage"
+        printf '%s\n\n' "$usage"
         return 0
     fi
-    diff_cmd=( diff )
+    diff_args=()
     while [[ "$#" -gt '2' ]]; do
         case "$1" in
         -h|--help)
-            printf '%s\n' "$usage"
+            printf '%s\n\n' "$usage"
             return 0
             ;;
         --use-json-info)
@@ -49,12 +48,8 @@ EOF
         --use-jq)
             use_json_info=''
             ;;
-        -y|--side-by-side)
-            is_side_by_side='YES'
-            diff_cmd+=( "$1" )
-            ;;
         *)
-            diff_cmd+=( "$1" )
+            diff_args+=( "$1" )
             ;;
         esac
         shift
@@ -64,7 +59,7 @@ EOF
     shift
     shift
     if [[ "$file1" == '-h' || "$file1" == '--help' || "$file2" == '-h' || "$file2" == '--help' ]]; then
-        printf '%s\n' "$usage"
+        printf '%s\n\n' "$usage"
         return 0
     fi
     if [[ "$file1" == '' ]]; then
@@ -78,103 +73,42 @@ EOF
         printf 'json_diff: Unknown arguments: %s\n' "$*" >&2
         return 1
     fi
-    if [[ ! -f "$file1" ]]; then
-        printf 'json_diff: File 1 not found: %s\n' >&2
-        return 1
-    elif [[ ! -f "$file2" ]]; then
-        printf 'json_diff: File 2 not found: %s\n' >&2
-        return 1
-    fi
-    req_cmds=( 'diff' 'mktemp' 'basename' )
     if [[ -n "$use_json_info" ]]; then
-        req_cmds+=( 'json_info' )
+        diff_args+=( '--pre-processor' 'json_info' )
     else
-        req_cmds+=( 'jq' )
+        diff_args+=( '--pre-processor' 'jq' )
     fi
-    for req_cmd in "${req_cmds[@]}"; do
-        if ! command -v "$req_cmd" > /dev/null 2>&1; then
-            printf 'json_diff: Missing required command: %s\n' "$req_cmd" >&2
-            command "$req_cmd" >&2
-            return $?
-        fi
-    done
-    if [[ -t 1 ]]; then
-        ccmd='\033[1;100m'  # Bold + dark gray background
-        cf1='\033[93m'      # Bright yellow
-        cf2='\033[92m'      # Bright green
-        cre='\033[0m'       # Reset
-    fi
-    if [[ -n "$is_side_by_side" ]]; then
-        # There's no super simple way to find the middle in the side-by-side diff.
-        # I fiddled with trying to match/replace the whole line, but the greedy nature of sed makes it hard to get the middle.
-        # Example problem diff line: '# \t\t- some notes\t\t\t# \t\t- some notes
-        # The middle has the following pattern:
-        #   Either
-        #     any number of tabs
-        #     followed by one or more spaces
-        #     followed by | (changed), or < (added), or > (removed)
-        #     followed by either a tab or the end of the line.
-        #   Or
-        #     One or more tabs
-        # Example middles:
-        #   Unchanged long line: '\t'
-        #   Unchanged short line: '\t\t\t\t\t'
-        #   Changed long line: '   |\t'
-        #   Changed medium line: '\t   |\t'
-        #   Changed short line: '\t\t\t\t   |\t'
-        #   Added line: '\t\t\t\t\t\t\t   >\t'
-        #   Removed long line: '   <'
-        #   Removed medium line: '\t\t   <'
-        #   Removed short line: '\t\t\t\t   <'
-        # This messes up when the left file line has a tab, but it's about the best I'm gonna get.
-        sed_cmd_fmt="s/^/$cf1/; s/(\t* +[|<>](\t|$)|\t+)/$cre\\\\1$cf2/; s/$/$cre/;"
-    else
-        sed_cmd_fmt="s/^(<.*)$/$cf1\\\\1$cre/; s/^(>.*)$/$cf2\\\\1$cre/;"
+    if ! command -v 'multidiff' > /dev/null 2>&1; then
+        printf 'json_diff: Missing required command: multidiff\n' >&2
+        command 'multidiff' >&2
+        return $?
     fi
 
-    # From this point on, need to delete tempd before returning.
-    tempd="$( mktemp -d -t json_diff )" || return $?
-    exit_code=$?
-    if [[ "$exit_code" -ne '0' ]]; then
-        printf 'json_diff: Unable to create temp directory for pre-processed JSON files.\n' >&2
-    fi
-
-    if [[ "$exit_code" -eq '0' ]]; then
-        file1p="$tempd/1_$( basename "$file1" )"
-        if [[ -n "$use_json_info" ]]; then
-            json_info -r -f "$file1" > "$file1p"
-            exit_code=$?
-        else
-            jq '.' "$file1" > "$file1p"
-            exit_code=$?
-        fi
-        if [[ "$exit_code" -ne '0' ]]; then
-            printf 'json_diff: Invalid JSON in file 1: %s\n' "$file1" >&2
-        fi
-    fi
-    if [[ "$exit_code" -eq '0' ]]; then
-        file2p="$tempd/2_$( basename "$file2" )"
-        if [[ -n "$use_json_info" ]]; then
-            json_info -r -f "$file2" > "$file2p"
-            exit_code=$?
-        else
-            jq '.' "$file2" > "$file2p"
-            exit_code=$?
-        fi
-        if [[ "$exit_code" -ne '0' ]]; then
-            printf 'json_diff: Invalid JSON in file 2: %s\n' "$file2" >&2
-        fi
-    fi
-    if [[ "$exit_code" -eq '0' ]]; then
-        printf "$ccmd%s $cf1%s $cf2%s$cre\n" "${diff_cmd[*]}" "$file1" "$file2"
-        "${diff_cmd[@]}" "$file1p" "$file2p" | sed -E "$( printf "$sed_cmd_fmt" )"
-        exit_code="${PIPESTATUS[0]}${pipestatus[0]}"
-    fi
-    rm -rf "$tempd" > /dev/null 2>&1
-    return $exit_code
+    multidiff "${diff_args[@]}" -- "$file1" "$file2"
 }
 
 if [[ "$sourced" != 'YES' ]]; then
+    where_i_am="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )"
+    require_command () {
+        local cmd cmd_fn
+        cmd="$1"
+        if ! command -v "$cmd" > /dev/null 2>&1; then
+            cmd_fn="$where_i_am/$cmd.sh"
+            if [[ -f "$cmd_fn" ]]; then
+                source "$cmd_fn"
+                if [[ "$?" -ne '0' ]] || ! command -v "$cmd" > /dev/null 2>&1; then
+                    ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                      printf 'The file [%s] was found and sourced, but there was a problem loading the [%s] function.\n' "$cmd_fn" "$cmd" ) >&2
+                    return 1
+                fi
+            else
+                ( printf 'This script relies on the [%s] function.\n' "$cmd"
+                  printf 'The file [%s] was looked for, but not found.\n' "$cmd_fn" ) >&2
+                return 1
+            fi
+        fi
+    }
+    require_command 'multidiff' || exit $?
     json_diff "$@"
     exit $?
 fi
