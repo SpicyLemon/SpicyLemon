@@ -193,7 +193,7 @@ EOF
                 f="${files[$j]}"
                 printf -v fp '%s/%2d_%s.info' "$tempd" "$i" "$( basename "$f" )"
                 files_p+=( "$fp" )
-                json_info -r -f "$f" > "$fp"
+                json_info --max-string 0 -r -f "$f" > "$fp"
                 ec=$?
                 if [[ "$ec" -ne '0' ]]; then
                     printf 'multidiff: Invalid JSON in file %d: %s\n' "$i" "$f" >&2
