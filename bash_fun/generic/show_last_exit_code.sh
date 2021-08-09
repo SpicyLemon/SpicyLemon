@@ -24,11 +24,11 @@ unset sourced
 show_last_exit_code () {
     local exit_code=$?
     if [[ "$exit_code" -ne '0' ]]; then
-        # White text with red background, skull and bones.
-        printf '\033[97;41m \xE2\x98\xA0  %3d \033[0m' "$exit_code"
+        # White text with red background, skull.
+        printf '\033[97;41m \xF0\x9F\x92\x80 %3d \033[0m' "$exit_code"
     else
         # White text with green background, gold star.
-        printf '\033[97;42m \xE2\xAD\x90\xEF\xB8\x8F %3d \033[0m' "$exit_code"
+        printf '\033[97;42m \xE2\xAD\x90 %3d \033[0m' "$exit_code"
     fi
     return $exit_code
 }
