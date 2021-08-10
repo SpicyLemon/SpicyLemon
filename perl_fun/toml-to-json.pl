@@ -7,15 +7,6 @@
 # Date:        Aug 10, 2021
 #
 # Description: This script will convert a toml file into json.
-#              This is just a template script file.
-#              There are several TODO comments indicating what to change.
-#              Once they've been handled, those comment lines should be removed.
-#              Here is a starter list:
-#              Here is a general list (covered by other TODO comments):
-#                   TODO: Update the mainSub() sub to do what needs to be done.
-#              You shouldn't need to update the debug(), quoteAndEscape(), or mainProgram() subs.
-#              To output debug messages, use a line like:  debug('message') if ($W);
-#              I generally leave the 'Usage:' comment in this commment block with just the --help flag to reduce duplication.
 #
 # Usage:       ./toml-to-json.pl --help
 # To debug:    W=1 ./toml-to-json.pl [args]
