@@ -4,11 +4,12 @@
 #
 # Primary Functions of Interest:
 #   get_hash_price  ------------- Gets the current price of a HASH token, e.g. 0.100000000000000000.
-#   get_hash_price_for_prompt  -- Same as get_hash_price with less digits, e.g. 0.1000, and no ending newline.
+#   get_hash_price_for_prompt  -- Formats the output of get_hash_price.
 #
 # Other Functions:
-#   dlob_cache_refresh  ------------------ Gets and caches the daily price json and hash price value.
-#   dlob_cache_check_required_commands  -- Checks that some required commands are available.
+#   dlobcache  -------------------------- A wrapper over bashcache that applies standard DLOB args.
+#   dlobcache_refresh  ------------------ Gets and caches the daily price json and hash price value.
+#   dlobcache_check_required_commands  -- Checks that some required commands are available.
 #
 # Customizable Environment Variables:
 #   DLOB_C_DIR  ------------ The directory bashcache uses for this stuff.
@@ -98,13 +99,13 @@ DLOB_CN_JQ_ERROR='jq_error'                         # Any errors encountered usi
 # If a required command is missing, The exit code will be 20.
 # Otherwise, the exit code will be the same as the bashcache exit code.
 get_hash_price () {
-    if ! dlob_cache_check_required_commands > /dev/null 2>&1; then
+    if ! dlobcache_check_required_commands > /dev/null 2>&1; then
         printf '%s\n' "$DLOB_DEFAULT_VALUE"
         return 20
     fi
     local cache_read_code
     # This will either output the cached hash price if we have it, or it won't output anything.
-    bashcache read "$DLOB_CN_HASH_PRICE" -d "$DLOB_C_DIR" -a "$DLOB_C_MAX_AGE"
+    dlobcache read "$DLOB_CN_HASH_PRICE"
     cache_read_code=$?
     case "$cache_read_code" in
     0)
@@ -123,7 +124,7 @@ get_hash_price () {
         [[ "$cache_read_code" -eq '11' ]] && printf '%s\n' "$DLOB_DEFAULT_VALUE"
         # Fire off a background process to update it for next time.
         # The () > /dev/null 2>&1 here is to supress the job/pid start and stop messages.
-        ( dlob_cache_refresh & ) > /dev/null 2>&1
+        ( dlobcache_refresh & ) > /dev/null 2>&1
         ;;
     *)
         printf 'Unexpected bashcache exit code: [%d]\n' "$cache_read_code" >&2
@@ -147,27 +148,15 @@ get_hash_price_for_prompt () {
 # Other Functions
 #----------------
 
-# Usage: dlob_cache_check_required_commands
-# This checks for some required commands that have at least a little chance of not being available.
-# If a command is missing, some info will be printed to stderr and the exit code won't be 0.
-# An exit code of zero means everything is available.
-dlob_cache_check_required_commands () {
-    local r c
-    r=0
-    for c in 'curl' 'jq' 'bashcache'; do
-        if ! command -v "$c" > /dev/null 2>&1; then
-            printf 'Missing required command: %s\n' "$c" >&2
-            printf 'The functions from %s might not work correctly.\n' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" >&2
-            command "$c" >&2
-            r=$?
-        fi
-    done
-    return $r
+# Usage: dlobcache <command> <cache name> [options]
+# This is just a wrapper over bashcache to provide the standard directory and age arguments.
+dlobcache () {
+    bashcache -d "$DLOB_C_DIR" -a "$DLOB_C_MAX_AGE" "$@"
 }
 
-# Usage: dlob_cache_refresh [-v|-vv|-vvv]
+# Usage: dlobcache_refresh [-v|-vv|-vvv]
 # Gets the DLOB_DAILY_PRICE_URL, applies the DLOB_JQ_FILTER and caches it.
-dlob_cache_refresh () {
+dlobcache_refresh () {
     local v bcv val ec
     # Set the verbosity level
     v="$( sed 's/[^v]//g' <<< "$1" | awk '{print length}' )"
@@ -178,37 +167,39 @@ dlob_cache_refresh () {
     [[ "$v" -ge '2' ]] && { set | grep '^DLOB_'; printf '\n'; } >&2
 
     # Check the required commands without printing anything (unless were runnin verbosely).
-    if ! dlob_cache_check_required_commands > /dev/null 2>&1; then
-        [[ "$v" -ge '1' ]] && printf 'Missing required command(s). Run dlob_cache_check_required_commands for more info.\n' >&2
+    if ! dlobcache_check_required_commands > /dev/null 2>&1; then
+        [[ "$v" -ge '1' ]] && printf 'Missing required command(s). Run dlobcache_check_required_commands for more info.\n' >&2
         return 20
     fi
 
     # Curl the url storing both the header and output into the cache.
     [[ "$v" -ge '1' ]] && printf 'Curling url: %s ... ' "$DLOB_DAILY_PRICE_URL" >&2
+    [[ -n "$bcv" ]] && printf '\n' >&2
     curl -s "$DLOB_DAILY_PRICE_URL" \
-         --dump-header "$( bashcache file "$DLOB_CN_DAILY_PRICE_HEADER" -d "$DLOB_C_DIR" $bcv )" \
-         --output "$( bashcache file "$DLOB_CN_DAILY_PRICE_JSON" -d "$DLOB_C_DIR" $bcv )" 2> /dev/null
+         --dump-header "$( dlobcache file "$DLOB_CN_DAILY_PRICE_HEADER" $bcv )" \
+         --output "$( dlobcache file "$DLOB_CN_DAILY_PRICE_JSON" $bcv )" 2> /dev/null
     ec=$?
     [[ "$v" -ge '1' ]] && printf 'Done. Exit code: %d\n' "$ec" >&2
     if [[ "$ec" -ne '0' && "$v" -ge '1' || "$v" -ge '2' ]]; then
-        printf 'Response header file: %s\n' "$( bashcache file "$DLOB_CN_DAILY_PRICE_HEADER" -d "$DLOB_C_DIR" $bcv )" >&2
-        [[ "$v" -ge '2' ]] && bashcache read "$DLOB_CN_DAILY_PRICE_HEADER" -d "$DLOB_C_DIR" $bcv >&2
-        printf 'Response content file: %s\n' "$( bashcache file "$DLOB_CN_DAILY_PRICE_JSON" -d "$DLOB_C_DIR" $bcv )" >&2
-        [[ "$v" -ge '2' ]] && { bashcache read "$DLOB_CN_DAILY_PRICE_JSON" -d "$DLOB_C_DIR" $bcv; printf '\n\n'; } >&2
+        printf 'Response header file: %s\n' "$( dlobcache file "$DLOB_CN_DAILY_PRICE_HEADER" )" >&2
+        [[ "$v" -ge '2' ]] && dlobcache read "$DLOB_CN_DAILY_PRICE_HEADER" >&2
+        printf 'Response content file: %s\n' "$( dlobcache file "$DLOB_CN_DAILY_PRICE_JSON" )" >&2
+        [[ "$v" -ge '2' ]] && { dlobcache read "$DLOB_CN_DAILY_PRICE_JSON"; printf '\n\n'; } >&2
     fi
 
     if [[ "$ec" -eq '0' ]]; then
         # Apply the jq filter to the newly cached result to get the desired value.
         [[ "$v" -ge '1' ]] && printf 'Applying jq filter '"'"'%s'"'"' ... ' "$DLOB_JQ_FILTER" >&2
-        val="$( jq -r "$DLOB_JQ_FILTER" "$( bashcache file "$DLOB_CN_DAILY_PRICE_JSON" -d "$DLOB_C_DIR" $bcv )" 2> "$( bashcache file "$DLOB_CN_JQ_ERROR" -d "$DLOB_C_DIR" $bcv )" )"
+        [[ -n "$bcv" ]] && printf '\n' >&2
+        val="$( jq -r "$DLOB_JQ_FILTER" "$( dlobcache file "$DLOB_CN_DAILY_PRICE_JSON" $bcv )" 2> "$( dlobcache file "$DLOB_CN_JQ_ERROR" $bcv )" )"
         ec=$?
         [[ "$v" -ge '1' ]] && printf 'Done. Exit code: %d\n' "$ec" >&2
         if [[ "$ec" -ne '0' && "$v" -ge '1' || "$v" -ge '2' ]]; then
             if [[ "$ec" -eq '0' ]]; then
                 printf 'Result: %s\n' "$val" >&2
             else
-                printf 'Error file: %s\n' "$( bashcache file "$DLOB_CN_JQ_ERROR" -d "$DLOB_C_DIR" $bcv )" >&2
-                [[ "$v" -ge '2' ]] && { bashcache read "$DLOB_CN_JQ_ERROR" -d "$DLOB_C_DIR" $bcv; printf '\n'; } >&2
+                printf 'Error file: %s\n' "$( dlobcache file "$DLOB_CN_JQ_ERROR" )" >&2
+                [[ "$v" -ge '2' ]] && { dlobcache read "$DLOB_CN_JQ_ERROR"; printf '\n'; } >&2
             fi
         fi
         [[ "$v" -ge '2' ]] && printf '\n' >&2
@@ -222,13 +213,31 @@ dlob_cache_refresh () {
     fi
 
     # Write the value to the cache.
-    bashcache write "$DLOB_CN_HASH_PRICE" -d "$DLOB_C_DIR" $bcv -- "$val"
-    [[ "$v" -ge '1' ]] && printf 'Value: %s\nCached in: %s\n' "$val" "$( bashcache file "$DLOB_CN_HASH_PRICE" -d "$DLOB_C_DIR" $bcv )" >&2
+    dlobcache write "$DLOB_CN_HASH_PRICE" $bcv -- "$val"
+    [[ "$v" -ge '1' ]] && printf 'Value: %s\nCached in: %s\n' "$val" "$( dlobcache file "$DLOB_CN_HASH_PRICE" )" >&2
 
     return $ec
+}
+
+# Usage: dlobcache_check_required_commands
+# This checks for some required commands that have at least a little chance of not being available.
+# If a command is missing, some info will be printed to stderr and the exit code won't be 0.
+# An exit code of zero means everything is available.
+dlobcache_check_required_commands () {
+    local r c
+    r=0
+    for c in 'curl' 'jq' 'bashcache'; do
+        if ! command -v "$c" > /dev/null 2>&1; then
+            printf 'Missing required command: %s\n' "$c" >&2
+            printf 'The functions from %s might not work correctly.\n' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" >&2
+            command "$c" >&2
+            r=$?
+        fi
+    done
+    return $r
 }
 
 # Run the check now to print out any problems.
 # Since this stuff is desiged for use in the command prompt, it'd be horribly annoying if it were printing out errors with every prompt.
 # By running this check now, you find out about problems as the file's being sourced and can still investigate if get_hash_price_for_prompt is in your prompt.
-dlob_cache_check_required_commands
+dlobcache_check_required_commands
