@@ -49,6 +49,10 @@ Usage: bashcache <command> <cache name> [<options>]
                 $exit_code_bad_args - Invalid arguments provided to the bashcache command.
                 $exit_code_stale_data - The requested cache data is available, but stale.
                 $exit_code_no_data - The requested cache data is not available.
+        file
+            This is the same as the check command except it also outputs the filename being used.
+            This is handy when you need to provide a filename to some other program, but still want it
+            managed by bashcache.
         list
             Outputs a list of cache names.
             When supplying this command, the cache name should be omitted.
@@ -85,7 +89,7 @@ EOF
         shift
     fi
     if [[ "$cache_name" =~ ^- ]]; then
-        printf 'Cache name cannot start with a dash: [%s]\n' "$cache_name"
+        printf 'Cache name cannot start with a dash: [%s]\n' "$cache_name" >&2
         return $exit_code_bad_args
     fi
     while [[ "$#" -gt '0' && -z "$input_from_args" ]]; do
@@ -128,7 +132,7 @@ EOF
         printf 'No command provided.\n' >&2
         return $exit_code_bad_args
     fi
-    if [[ ! "$cache_command" =~ ^(write|read|check|list|delete)$ ]]; then
+    if [[ ! "$cache_command" =~ ^(write|read|check|file|list|delete)$ ]]; then
         printf 'Unknown command: [%s].\n' "$cache_command" >&2
         return $exit_code_bad_args
     fi
@@ -215,7 +219,8 @@ EOF
             return $exit_code_no_data
         fi
         ;;
-    check)
+    check|file)
+        [[ "$cache_command" == 'file' ]] && printf '%s' "$cache_file"
         if [[ -f "$cache_file" ]]; then
             if [[ -n "$( find "$cache_file" -mtime "+$max_age" )" ]]; then
                 [[ -n "$verbose" ]] && printf 'Cache is stale [%s] (older than [%s]).\n' "$cache_file" "$max_age" >&2
