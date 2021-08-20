@@ -107,24 +107,24 @@ EOF
             ;;
         write|read|check|file|list|delete)
             if [[ -n "$cache_command" ]]; then
-                printf 'Only one cache command can be provided. Found %s then %s.\n' "$cache_command" "$1" >&2
+                printf 'bashcache: Only one cache command can be provided. Found %s then %s.\n' "$cache_command" "$1" >&2
                 return $exit_code_bad_args
             fi
             cache_command="$1"
             ;;
         --)
             shift
-            [[ -n "$verbose" ]] && printf 'Getting the data from the rest of the provided arguments.\n' >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Found --. Getting input from remaining arguments.\n' >&2
             input_from_args="$*"
             set -- --
             ;;
         -*)
-            printf 'Unknown option: [%s].\n' "$1" >&2
+            printf 'bashcache: Unknown option: [%s].\n' "$1" >&2
             return $exit_code_bad_args
             ;;
         *)
             if [[ -n "$cache_name" ]]; then
-                printf 'Unknown option: [%s].\n' "$1" >&2
+                printf 'bashcache: Unknown option: [%s].\n' "$1" >&2
                 return $exit_code_bad_args
             fi
             cache_name="$1"
@@ -134,64 +134,64 @@ EOF
     done
 
     if [[ -z "$cache_command" ]]; then
-        printf 'No command provided.\n' >&2
+        printf 'bashcache: No command provided.\n' >&2
         return $exit_code_bad_args
     fi
     cache_command="$( tr '[:upper:]' '[:lower:]' <<< "$cache_command" )"
-    [[ -n "$verbose" ]] && printf 'Cache command: [%s].\n' "$cache_command" >&2
+    [[ -n "$verbose" ]] && printf 'bashcache: Cache command: [%s].\n' "$cache_command" >&2
 
     if [[ "$cache_command" != 'list' ]]; then
         if [[ -z "$cache_name" ]]; then
-            printf 'No cache name provided.\n' >&2
+            printf 'bashcache: No cache name provided.\n' >&2
             return $exit_code_bad_args
         fi
-        [[ -n "$verbose" ]] && printf 'Cache name: [%s].\n' "$cache_name" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Cache name: [%s].\n' "$cache_name" >&2
         if [[ -n "$details" ]]; then
-            printf 'Unknown option: [%s].\n' "$details" >&2
+            printf 'bashcache: Unknown option: [%s].\n' "$details" >&2
             return $exit_code_bad_args
         fi
     elif [[ -n "$cache_name" ]]; then
-        printf 'Unknown option: [%s].\n' "$cache_name" >&2
+        printf 'bashcache: Unknown option: [%s].\n' "$cache_name" >&2
         return $exit_code_bad_args
     fi
 
     if [[ -n "$cache_dir" ]]; then
-        [[ -n "$verbose" ]] && printf 'Directory provided from argument: [%s].\n' "$cache_dir" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Directory provided from argument: [%s].\n' "$cache_dir" >&2
     elif [[ -n "$BASHCACHE_DIR" ]]; then
         cache_dir="$BASHCACHE_DIR"
-        [[ -n "$verbose" ]] && printf 'Directory provided from BASHCACHE_DIR environment variable: [%s].\n' "$cache_dir" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Directory provided from BASHCACHE_DIR environment variable: [%s].\n' "$cache_dir" >&2
     else
         cache_dir="$default_cache_dir"
-        [[ -n "$verbose" ]] && printf 'Directory set from default: [%s].\n' "$cache_dir" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Directory set from default: [%s].\n' "$cache_dir" >&2
     fi
     if [[ "$cache_dir" =~ ^[^/] ]]; then
-        printf 'Invalid directory: [%s]. It must start with a slash.\n' "$cache_dir" >&2
+        printf 'bashcache: Invalid directory: [%s]. It must start with a slash.\n' "$cache_dir" >&2
         return $exit_code_bad_args
     fi
 
     if [[ -n "$max_age" ]]; then
-        [[ -n "$verbose" ]] && printf 'Max age provided from argument: [%s].\n' "$max_age" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Max age provided from argument: [%s].\n' "$max_age" >&2
     elif [[ -n "$BASHCACHE_MAX_AGE" ]]; then
         max_age="$BASHCACHE_MAX_AGE"
-        [[ -n "$verbose" ]] && printf 'Max age provided from BASHCACHE_MAX_AGE environment variable: [%s].\n' "$max_age" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Max age provided from BASHCACHE_MAX_AGE environment variable: [%s].\n' "$max_age" >&2
     else
         max_age="$default_max_age"
-        [[ -n "$verbose" ]] && printf 'Max age set from default: [%s].\n' "$max_age" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Max age set from default: [%s].\n' "$max_age" >&2
     fi
     if [[ ! "$max_age" =~ ^([[:digit:]]+[smhdw])+$ ]]; then
-        printf 'Invalid max age: [%s].\n' "$max_age" >&2
+        printf 'bashcache: Invalid max age: [%s].\n' "$max_age" >&2
         return $exit_code_bad_args
     fi
 
     if [[ ! -d "$cache_dir" ]]; then
-        [[ -n "$verbose" ]] && printf 'Creating cache directory: [%s].\n' "$cache_dir" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Creating cache directory: [%s].\n' "$cache_dir" >&2
         if ! mkdir -p "$cache_dir" 1>&2; then
-            printf 'Unable to create cache directory: [%s].\n' "$cache_dir" >&2
+            printf 'bashcache: Unable to create cache directory: [%s].\n' "$cache_dir" >&2
             return $exit_code_bad_args
         fi
-        [[ -n "$verbose" ]] && printf 'Cache directory created successfully: [%s].\n' "$cache_dir" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Cache directory created successfully: [%s].\n' "$cache_dir" >&2
     else
-        [[ -n "$verbose" ]] && printf 'Cache directory exists: [%s]\n' "$cache_dir" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Cache directory exists: [%s]\n' "$cache_dir" >&2
     fi
 
     cache_file="${cache_dir}/${cache_name}"
@@ -199,37 +199,40 @@ EOF
     case "$cache_command" in
     write)
         if [[ -n "$input_from_args" ]]; then
-            [[ -n "$verbose" ]] && printf 'Writing cache file from data provided as arguments: [%s].\n' "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Writing cache file from data provided as arguments: [%s].\n' "$cache_file" >&2
             printf '%s' "$input_from_args" > "$cache_file"
         else
-            [[ -n "$verbose" ]] && printf 'Writing cache file from data provided using stdin: [%s].\n' "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Writing cache file from data provided using stdin: [%s].\n' "$cache_file" >&2
             cat - > "$cache_file"
         fi
         if [[ -f "$cache_file" ]]; then
-            [[ -n "$verbose" ]] && printf 'Done caching %s of data in [%s].\n' "$( ls -lh "$cache_file" | awk -F " " '{print $5}' )" "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Done caching %s of data in [%s].\n' "$( ls -lh "$cache_file" | awk -F " " '{print $5}' )" "$cache_file" >&2
             return $exit_code_ok
         else
-            [[ -n "$verbose" ]] && printf 'Failed to cache data to [%s].\n' "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Failed to cache data to [%s].\n' "$cache_file" >&2
             return $exit_code_bad_args
         fi
         ;;
     read|check|file)
-        [[ "$cache_command" == 'file' ]] && printf '%s' "$cache_file"
+        if [[ "$cache_command" == 'file' ]]; then
+            printf '%s' "$cache_file"
+            [[ -n "$verbose" && -t 1 ]] && printf '\n' >&2
+        fi
         if [[ ! -f "$cache_file" ]]; then
-            [[ -n "$verbose" ]] && printf 'Cache does not exist [%s].\n' "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Cache does not exist [%s].\n' "$cache_file" >&2
             return $exit_code_no_data
         fi
         if [[ "$cache_command" == 'read' ]]; then
-            [[ -n "$verbose" ]] && printf 'Cache exists [%s], outputting data.\n' "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Cache exists [%s], outputting data.\n' "$cache_file" >&2
             [[ -n "$verbose" && -t 1 ]] && printf '[' >&2
             cat "$cache_file"
             [[ -n "$verbose" && -t 1 ]] && printf ']\n' >&2
         fi
         if [[ -n "$( find "$cache_file" -mtime "+$max_age" )" ]]; then
-            [[ -n "$verbose" ]] && printf 'Cache is stale [%s] (older than [%s]).\n' "$cache_file" "$max_age" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Cache is stale [%s] (older than [%s]).\n' "$cache_file" "$max_age" >&2
             return $exit_code_stale_data
         fi
-        [[ -n "$verbose" ]] && printf 'Cache is sufficiently fresh [%s] (not older than [%s]).\n' "$cache_file" "$max_age" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Cache is sufficiently fresh [%s] (not older than [%s]).\n' "$cache_file" "$max_age" >&2
         return $exit_code_ok
         ;;
     list)
@@ -242,30 +245,30 @@ EOF
         else
             ls "$cache_dir/"
         fi
-        [[ -n "$verbose" && ! "$( ls "$cache_dir/" )" =~ [^[:space:]] ]] && printf 'Cache directory is empty: [%s].\n' "$cache_dir" >&2
+        [[ -n "$verbose" && ! "$( ls "$cache_dir/" )" =~ [^[:space:]] ]] && printf 'bashcache: Cache directory is empty: [%s].\n' "$cache_dir" >&2
         return $exit_code_ok
         ;;
     delete)
         if [[ -f "$cache_file" ]]; then
-            [[ -n "$verbose" ]] && printf 'Deleting cache file: [%s].\n' "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Deleting cache file: [%s].\n' "$cache_file" >&2
             rm "$cache_file"
             if [[ -f "$cache_file" ]]; then
-                [[ -n "$verbose" ]] && printf 'Could not delete cache file: [%s]\n' "$cache_file" >&2
+                [[ -n "$verbose" ]] && printf 'bashcache: Could not delete cache file: [%s]\n' "$cache_file" >&2
                 return $exit_code_bad_args
             fi
-            [[ -n "$verbose" ]] && printf 'Cache file deleted: [%s]\n' "$cache_file" >&2
+            [[ -n "$verbose" ]] && printf 'bashcache: Cache file deleted: [%s]\n' "$cache_file" >&2
             return $exit_code_ok
         fi
-        [[ -n "$verbose" ]] && printf 'Cache does not exist to delete: [%s].\n' "$cache_file" >&2
+        [[ -n "$verbose" ]] && printf 'bashcache: Cache does not exist to delete: [%s].\n' "$cache_file" >&2
         return $exit_code_no_data
         ;;
     *)
-        printf 'Unknown command: [%s].\n' "$cache_command" >&2
+        printf 'bashcache: Unhandled command: [%s].\n' "$cache_command" >&2
         return $exit_code_bad_args
         ;;
     esac
 
-    [[ -n "$verbose" ]] &&  printf 'Command [%s] did not specify its own exit code. This is a bug.\n' "$cache_command" >&2
+    [[ -n "$verbose" ]] &&  printf 'bashcache: Command [%s] did not specify its own exit code. This is a bug.\n' "$cache_command" >&2
     return $exit_code_bad_args
 }
 
