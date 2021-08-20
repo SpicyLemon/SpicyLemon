@@ -83,7 +83,7 @@ Usage: bashcache <command> <cache name> [<options>]
         The -a or --age or --max-age option takes precedence over the BASHCACHE_MAX_AGE value (or default if not set)
 EOF
     )"
-    local cache_command cache_name verbose cache_dir max_age details input_from_args cache_file
+    local cache_command cache_name verbose cache_dir max_age details cache_file
     [[ "$#" -eq '0' ]] && set -- -h
     while [[ "$#" -gt '0' ]]; do
         case "$( tr '[:upper:]' '[:lower:]' <<< $1 )" in
@@ -114,9 +114,7 @@ EOF
             ;;
         --)
             shift
-            [[ -n "$verbose" ]] && printf 'bashcache: Found --. Getting input from remaining arguments.\n' >&2
-            input_from_args="$*"
-            set -- --
+            break
             ;;
         -*)
             printf 'bashcache: Unknown option: [%s].\n' "$1" >&2
@@ -198,9 +196,9 @@ EOF
 
     case "$cache_command" in
     write)
-        if [[ -n "$input_from_args" ]]; then
+        if [[ "$#" -gt '0' ]]; then
             [[ -n "$verbose" ]] && printf 'bashcache: Writing cache file from data provided as arguments: [%s].\n' "$cache_file" >&2
-            printf '%s' "$input_from_args" > "$cache_file"
+            printf '%s' "$*" > "$cache_file"
         else
             [[ -n "$verbose" ]] && printf 'bashcache: Writing cache file from data provided using stdin: [%s].\n' "$cache_file" >&2
             cat - > "$cache_file"
