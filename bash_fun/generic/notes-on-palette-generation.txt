@@ -1,0 +1,183 @@
+Bottom
+  16   17   18   19   20   21        88   89   90   91   92   93       160  161  162  163  164  165
+  22   23   24   25   26   27        94   95   96   97   98   99       166  167  168  169  170  171
+  28   29   30   31   32   33       100  101  102  103  104  105       172  173  174  175  176  177
+  34   35   36   37   38   39       106  107  108  109  110  111       178  179  180  181  182  183
+  40   41   42   43   44   45       112  113  114  115  116  117       184  185  186  187  188  189
+  46   47   48   49   50   51       118  119  120  121  122  123       190  191  192  193  194  195
+
+  52   53   54   55   56   57       124  125  126  127  128  129       196  197  198  199  200  201
+  58   59   60   61   62   63       130  131  132  133  134  135       202  203  204  205  206  207
+  64   65   66   67   68   69       136  137  138  139  140  141       208  209  210  211  212  213
+  70   71   72   73   74   75       142  143  144  145  146  147       214  215  216  217  218  219
+  76   77   78   79   80   81       148  149  150  151  152  153       220  221  222  223  224  225
+  82   83   84   85   86   87       154  155  156  157  158  159       226  227  228  229  230  231
+                                                                                                  Top
+
+Create a 6x6x6 cube of the colors as shown above. bottom up, the upper left corner goes 16, 52, 88, 124, 160, 196.
+
+Pick a random starting number (16 through 231, rand(216) + 16).
+Pick a random direction.
+The palette is then the starting number plus the next 5 in that direction.
+
+East = x + 1 => If edge, val - 5, else val + 1
+    Edges: 21 27 33 39 45 51, 57 63 69 75 81 87, 93 99 105 111 117 123, 129 135 141 147 153 159, 165 171 177 183 189 195, 201 207 213 219 225 231
+    Edge test: Val % 6 = 3
+West = x - 1 => If edge, val + 5, else val - 1
+    Edges: 16 22 28 34 40 46, 52 58 64 70 76 82, 88 94 100 106 112 118, 124 130 136 142 148 154, 160 166 172 178 184 190, 196 202 208 214 220 226
+    Edge test: Val % 6 = 4
+North = y - 1 => If edge, val + 30, else val - 6
+    Edges: 16-21, 52-57, 88-93, 124-129, 160-165, 196-201
+    Edge test: (Val - 16)%36/6 = 0
+South = y + 1 => If edge, val - 30, else val + 6
+    Edges: 46-51, 82-87, 118-123, 154-159, 190-195, 226-231
+    Edge test: (Val - 16)%36/6 = 5
+Up = z + 1 => If edge, val - 180, else val + 36
+    Edges: 196-231
+    Edges: Val >= 196
+Down = z - 1 => If edge, val + 180, else val - 36
+    Edges: 16-51
+    Edges: Val <= 51
+
+Generate palette algorithm:
+Let rand(x) be a function that generates a random integer between 0 (inclusive) and x (exclusive)
+The idea is to only move one cell at a time through the palette cube, wrapping when needed.
+I'm using for loops below in case I decide to try out moving up to 2 cells: rand(5) - 2 instead of rand(3) - 1
+If I decide I only want a max of one, though, just take out the for loops but leave their contents.
+    dx, dy, dz = 0, 0, 0
+    while dx == 0 && dy == 0 && dz == 0 {
+        dx = rand(3) - 1    // 1 = East, -1 = West
+        dy = rand(3) - 1    // 1 = South, -1 = North
+        dz = rand(3) - 1    // 1 = Up, -1 = Down
+    }
+    palette = [0,0,0,0,0,0]
+    palette[0] = rand(216) + 16
+    for i = 1 to 5 {
+        val = palette[i-1]
+        if dx < 0 {
+            for d = dx; d < 0; d++ {
+                // West
+                if val % 6 == 4 {
+                    val+=5
+                } else {
+                    val-=1
+                }
+            }
+        } else if dx > 0 {
+            for d = dx; d > 0; d-- {
+                // East
+                if val % 6 == 3 {
+                    val-=5
+                } else {
+                    val+=1
+                }
+            }
+        }
+        if dy < 0 {
+            for d = dy; d < 0; d++ {
+                // North
+                if int((val - 16)%36/6) = 0 {
+                    val+=30
+                } else {
+                    val-=6
+                }
+            }
+        } else if dy > 0 {
+            for d = dy; d > 0; d-- {
+                // South
+                if int((val - 16)%36/6) = 5 {
+                    val-=30
+                } else {
+                    val+=6
+                }
+            }
+        }
+        if dz < 0 {
+            for d = dz; d < 0; d++ {
+                // Down
+                if val <= 51 {
+                    val+=180
+                } else {
+                    val-=36
+                }
+            }
+        } else if dz > 0 {
+            for d = dz; d > 0; d-- {
+                // Up
+                if val >= 196 {
+                    val-=180
+                } else {
+                    val+=36
+                }
+            }
+        }
+        palette[i] = val
+    }
+    return palette
+
+
+
+
+
+
+ds=( North South East West Up Down )
+{ for d1 in "${ds[@]}"; do for d2 in "${ds[@]}"; do for d3 in "${ds[@]}"; do printf '%s %s %s' "$d1" "$d2" "$d3" | tr ' ' '\n' | sort -u | tr '\n' ' ' && printf '\n'; done; done; done; } | sort -u | grep -v -e 'Down.*Up' -e 'North.*South' -e 'East.*West'
+Down
+Down East
+Down East North
+Down East South
+Down North
+Down North West
+Down South
+Down South West
+Down West
+East
+East North
+East North Up
+East South
+East South Up
+East Up
+North
+North Up
+North Up West
+North West
+South
+South Up
+South Up West
+South West
+Up
+Up West
+West
+
+Directions:
+    North, South, East, West, Up, Down
+    North East, North West,
+    North Up, North Down,
+    South East, South West,
+    South Up, South Down,
+    East Up, East Down,
+    West Up, West Down,
+    North East Down, North East Up, North West Down, North West Up,
+    South East Down, South East Up, South West Down, South West Up,
+
+= 26. A 3x3x3 cube has 27 cells, Each is a direction except the center. 27-1 = 26, so that's all of them.
+
+
+
+
+for s in 15 16 231 232; do for x in -11 -10 10 11; do for y in -11 -10 10 11; do for z in -11 -10 10 11; do echo_bold "$s $x $y $z"; ./generate_palette.sh $s $x $y $z; done; done; done; done
+
+for s in 15 16 231 232 '' 'bad'; do printf 'start %5s: ' "$s"; ./generate_palette.sh "$s" 0 0 0 && printf 'good\n'; done; for d in -11 -10 10 11 '' 'bad'; do printf 'dx %5s: ' "$d"; ./generate_palette.sh 100 "$d" 0 0 && printf 'good\n'; done; for d in -11 -10 10 11 '' 'bad'; do printf 'dy %5s: ' "$d"; ./generate_palette.sh 100 0 "$d" 0 && printf 'good\n'; done; for d in -11 -10 10 11 '' 'bad'; do printf 'dz %5s: ' "$d"; ./generate_palette.sh 100 0 0 "$d" && printf 'good\n'; done
+
+
+
+
+
+
+
+
+
+
+
+
+
