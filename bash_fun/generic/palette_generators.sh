@@ -48,6 +48,10 @@ Generate a random palette vector: palette_vector_random [<start>] [<dx>] [<dy>] 
     E.g. the command  palette_vector_random '' 1 0 0  will pick a random starting point and use dx=1, dy=0, dz=0.
     dx, dy, and dz are chosen from -2, -1, 0, 1, and 2.
 
+An easy way to view these palettes in action is with the test_palette function.
+    test_palette \$( palette_vector_random )
+    If you don't have the test_palette function, source the hrr.sh file to add it.
+
 EOF
 }
 
