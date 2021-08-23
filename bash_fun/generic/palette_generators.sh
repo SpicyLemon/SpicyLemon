@@ -4,6 +4,7 @@
 # This file can also be executed to run the palette_vector_generate function without adding functions to your environment.
 #
 # File contents:
+#   palette_generators  -------> Just outputs some usage information on the stuff in here.
 #   palette_vector_generate  --> Generates a random palette.
 #   palette_vector_random  ----> Picks random numbers for palette generation and provides them to palette_vector_generate.
 #
@@ -31,6 +32,24 @@
   || [[ -n "$KSH_VERSION" && $(cd "$(dirname -- "$0")" && printf '%s' "${PWD%/}/")$(basename -- "$0") != "${.sh.file}" ]] \
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
+
+# Usage: palette_generators
+# This is really only here because some other stuff expects this file to have a function named after it.
+palette_generators () {
+    cat << EOF
+Generate a palette vector: palette_vector_generate <start> <dx> <dy> <dz>
+    All arguments are required.
+    <start> must be 16 to 231 inclusive.
+    <dx>, <dy>, and <dz> must be integers (positive or negative).
+
+Generate a random palette vector: palette_vector_random [<start>] [<dx>] [<dy>] [<dz>]
+    Any arguments that aren't provided will have random numbers generated for them.
+    To set a later argument while still getting a random earlier argument, supply '' for the random one.
+    E.g. the command  palette_vector_random '' 1 0 0  will pick a random starting point and use dx=1, dy=0, dz=0.
+    dx, dy, and dz are chosen from -2, -1, 0, 1, and 2.
+
+EOF
+}
 
 # Usage: palette_vector_generate <start> <dx> <dy> <dz>
 palette_vector_generate () {

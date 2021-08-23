@@ -60,16 +60,17 @@ __generic_do_setup () {
         'ps_grep'                  're_line'             'sdkman_fzf'           'set_title'       'show_last_exit_code'
         'string_repeat'            'strip_colors'        'strip_final_newline'  'tee_pbcopy'      'tee_strip_colors'
         'tee_strip_colors_pbcopy'  'to_date'             'to_epoch'             'ugly_json'       'list'
-        'multidiff'                'json_diff'           'b642h' 'h2b64'
+        'multidiff'                'json_diff'           'b642h' 'h2b64'        'palette_generators'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
-    # Handy command for generting this:
+    # Handy command for generating this:
     #   grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * | sed 's/ .*$//' | grep -v -E -e '^(.*).sh:\1' -e 'generic-setup.sh' | sed 's/^.*\.sh://' | sort | re_line -n 7 -d '~' -w "'" -p | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     extra_funcs_to_check=(
         'can_i'        'echo_bad'    'echo_blue'  'echo_bold'       'echo_cyan'     'echo_debug'      'echo_error'
         'echo_good'    'echo_green'  'echo_info'  'echo_red'        'echo_success'  'echo_underline'  'echo_warn'
         'echo_yellow'  'hhr'         'hr'         'pick_a_palette'  'show_colors'
+        'palette_vector_generate'    'palette_vector_random'
     )
 
     # These are commands defined externally to check on before sourcing these files.
