@@ -26,28 +26,30 @@
 # Creates a single-line horizontal rule with a message in it.
 # Usage: hr <message>
 hr () {
-    local message termwidth available sixths leftover char block section padding left_wing right_wing unset_palette i new_piece
+    local message termwidth unset_palette available piece_len leftover char block section left_wing right_wing c
     message="$*"
     termwidth=80
     if command -v "tput" > /dev/null 2>&1; then
         termwidth=$( tput cols )
     fi
-    available=$(( $termwidth - ${#message} ))
-    sixths=$(( $available / 12 ))
-    leftover=$(( $(( $available - $sixths * 12 )) / 2 ))
+    pick_a_palette && unset_palette="Yup"
+    available=$(( termwidth - ${#message} ))
+    piece_len=$(( available / ${#PALETTE[@]} / 2 ))
+    leftover=$(( available - piece_len * ${#PALETTE[@]} * 2 ))
     char='#'
     block="$( printf '%0.1s' "$char"{1..500} )"
-    section="${block:0:$sixths}"
-    padding="$( sed 's/./ /g' <<< "${block:0:$leftover}" )"
+    section="${block:0:$piece_len}"
     left_wing=''
     right_wing=''
-    pick_a_palette && unset_palette="Yup"
-    for i in ${PALETTE[*]}; do
-        new_piece="\033[38;5;${i}m${section}\033[0m"
-        left_wing="$left_wing$new_piece"
-        right_wing="$new_piece$right_wing"
+    for c in ${PALETTE[@]}; do
+        [[ "$leftover" -le '0' ]] && char=''
+        right_wing="${right_wing}\033[38;5;${c}m${char}${section}\033[0m"
+        leftover=$(( leftover - 1 ))
+        [[ "$leftover" -le '0' ]] && char=''
+        left_wing="\033[38;5;${c}m${char}${section}\033[0m${left_wing}"
+        leftover=$(( leftover - 1 ))
     done
-    printf '%b%b\033[38;5;15m%s\033[0m%b%b\n' "$padding" "$left_wing" "$message" "$right_wing" "$padding"
+    printf '%b\033[38;5;15m%s\033[0m%b\n' "$left_wing" "$message" "$right_wing"
     [[ -n "$unset_palette" ]] && unset PALETTE
     return 0
 }
