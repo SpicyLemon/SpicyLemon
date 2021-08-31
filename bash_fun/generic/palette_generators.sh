@@ -6,6 +6,7 @@
 # File contents:
 #   palette_generators  -------> Just outputs some usage information on the stuff in here.
 #   palette_vector_generate  --> Generates a random palette.
+#   palette_vector_no_wrap  ---> Generates a 6 color palette vector that doesn't wrap.
 #   palette_vector_random  ----> Picks random numbers for palette generation and provides them to palette_vector_generate.
 #
 # "private" contents:
@@ -41,6 +42,10 @@ Generate a palette vector: palette_vector_generate <start> <dx> <dy> <dz>
     All arguments are required.
     <start> must be 16 to 231 inclusive.
     <dx>, <dy>, and <dz> must be integers (positive or negative).
+
+Generate a palette vector that doesn't wrap in the cube: palette_vector_no_wrap [<choice>]
+    The <choice> is optional but must be a number from 0 to 295 (inclusive).
+    If not provided, one will be chosen randomly.
 
 Generate a random palette vector: palette_vector_random [<start>] [<dx>] [<dy>] [<dz>]
     Any arguments that aren't provided will have random numbers generated for them.
@@ -87,6 +92,229 @@ palette_vector_generate () {
     printf '%s\n' "${palette[*]}"
 }
 
+# Usage: palette_vector_no_wrap [<choice>]
+# The <choice> is optional and must be a number from 0 to 295 (inclusive).
+# If not provided, one will randomly be chosen for you.
+# This basically picks a 6-cell vector through the cube without wrapping.
+palette_vector_no_wrap () {
+    local choice
+    if [[ -n "$1" ]]; then
+        if [[ "$1" == '-h' || "$1" == '--help' ]]; then
+            printf 'Usage: palette_vector_no_wrap [<choice>]\n' >&2
+            return 0
+        fi
+        if [[ "$1" =~ [^[:digit:]] || "$1" -gt '295' ]]; then
+            printf 'Invalid choice: [%s]. Must be a number between 0 and 295 (inclusive).\n' "$1" >&2
+            return 1
+        fi
+        choice=$1
+    else
+        choice=$(( RANDOM%296 ))
+    fi
+    # Enumeration:
+    #   Vectors with exactly 1 changing dimension:
+    #       Any point on a side can be a start = 36 per side * 6 sides = 216
+    #   Vectors with exactly 2 changing dimensions:
+    #       Any point on an edge can be a start = 6 per edge * 12 edges = 72
+    #   Vectors with exactly 3 changing dimensions:
+    #       Any corner can be a start = 8.
+    #   There are 216 + 72 + 8 = 296 different 6-cell vectors through a 6x6x6 cube (without wrapping).
+    local val dx dy dz
+    [[ -n "$PVNW_DEBUG" ]] && printf 'Choice: [%3d]\n' "$choice" >&2
+    if [[ "$choice" -ge '0' && "$choice" -le '215' ]]; then
+        # These are the 1d vectors. There are 216 of them.
+        # There are two aspects: the side, and where to start on the side.
+        # The side also dictates the direction of the vector.
+        local b side
+        b=$(( choice / 6 ))     # 0 to 35: max choice (here) is 215. 215 / 6 = 35.
+        side=$(( choice % 6 ))  # 0 to 5
+        [[ -n "$PVNW_DEBUG" ]] && printf 'Choice: [%3d] = side: [%d], b: [%d]\n' "$choice" "$side" "$b" >&2
+        case "$side" in
+        # For West or East, b represents y and z, and x is 0 for West, 5 for East.
+        #   Let s = 16 + x = either 16 for West or 21 for East.
+        #   Let y = b / 6, z = b % 6, and then b = y + 6 * z.
+        #   Then
+        #       val = 16 + x + 6 * y + 36 * z
+        #       val = s + 6 * y + 36 * z
+        #       val = s + 6 * (y + 36 * z)
+        #       val = s + 6 * b
+            0) # West side: start with x = 0, constant y and z.
+                dx=1
+                dy=0
+                dz=0
+                val=$(( b * 6 + 16 ))
+                ;;
+            1) # East side: start with x = 5, constant y and z.
+                dx=-1
+                dy=0
+                dz=0
+                val=$(( b * 6 + 21 ))
+                ;;
+        # For North or South, b represents x and z, and y is 0 for North, 5 for South.
+        #   Let s = 16 + 6 * y = either 16 for North or 46 for South.
+        #   Let x = b / 6, z = b % 6, and then b = x + 6 * z.
+        #   Then
+        #       val = 16 + x + 6 * y + 36 * z
+        #       val = s + b / 6 + 36 * (b % 6)
+            2) # North side: start with y = 0, constant x and z
+                dx=0
+                dy=1
+                dz=0
+                val=$(( b % 6 * 36 + b / 6 + 16 ))
+                ;;
+            3) # South side: start with y = 5, constant x and z
+                dx=0
+                dy=-1
+                dz=0
+                val=$(( b % 6 * 36 + b / 6 + 46 ))
+                ;;
+        # For Up or Down, b represents x and y, and z is 0 for Down, 5 for Up.
+        #   Let s = 16 + 36 * z = either 16 for Down or 196 for Up.
+        #   Let x = b / 6, y = b % 6, and then b = x + 6 * y
+        #   Then
+        #       val = 16 + x + 6 * y + 36 * z
+        #       val = s + x + 6 * y
+        #       val = s + b
+            4) # Down side: start with z = 0, constant x and y
+                dx=0
+                dy=0
+                dz=1
+                val=$(( b + 16 ))
+                ;;
+            5) # Up side: start with z = 5, constant x and y
+                dx=0
+                dy=0
+                dz=-1
+                val=$(( b + 196 ))
+                ;;
+            *)
+                printf 'Bug in code palette_vector_no_wrap-1d: choice: [%s], side: [%s], b: [%s]\n' "$choice" "$side" "$b" >&2
+                return 10
+                ;;
+        esac
+    elif [[ "$choice" -ge '216' && "$choice" -le '287' ]]; then
+        # These are the 2d vectors. There are 72 of them.
+        # There are 2 aspects: The edge and the location on the edge to start.
+        # The edge has 3 aspects to it: The constant dimension and the sign of change in each of the other two dimensions.
+        # There are 6 locations to start at on each edge. Call it p, and it'll have a value from 0 to 5.
+        # There are 3 constant dimensions. Call it c, and it'll have a value of 0, 1, or 2 for z, y, or x respectively)
+        # Each rate of change has two options. Call them d1 and d2, and they'll have values 0 or 1.
+        # But to be tricky, I want consecutive choice numbers to behave a certain way.
+        # An odd numbered choice should be the reverse of the one before it. E.g. 217 is the reverse of 216.
+        # Each consecutive even number should be the next cell on the given edge.
+        # Once all 6 cells have gone there and back (12 total), then keep the constant dimension the same but rotate the vector 90 degrees.
+        # Go along the edge there and back again (another 12, for 24 total by now).
+        # Then finally move to the next constant dimension. 3 constant dimensions * 24 each = 72.
+        # So, from least significance to most, here's how that 72 breaks down:
+        #   {c: 0 to 3}{db: 0 to 1}{p: 0 to 5}{da: 0 to 1}
+        # To extract that, you start with the following equations:
+        #   i = choice - 216
+        #   da = i % 2
+        #   daq = i / 2
+        #   p = daq % 6
+        #   pq = daq / 6
+        #   db = pq % 2
+        #   dbq = pq / 2
+        #   c = dbq % 3
+        # Those can be simplified down to these:
+        #   i = choice - 216
+        #   da = i % 2
+        #   p = i / 2 % 6
+        #   db = i / 12 % 2
+        #   c = i / 24
+        # Then, in order to get the down and back behavior I want for consecutive numbers, da and db must be transformed to get d1 and d2.
+        #   If you think of da and db as a 2 bit number (0 to 4), it has ordering 00, 01, 10, 11 (0123).
+        #   But we want opposites to be consecutive, so 00, 11, 10, 01 (0321) would be a better order.
+        #   So we need to "rotate" it left 1 and then "flip" it.
+        #   start:  d = da * 2 + db
+        #   rotate: d = (d + 3) % 4 = (da * 2 + db) % 4
+        #   flip:   d = 3 - d = 3 - (da * 2 + db) % 4
+        #   Then, to skip assignment of the da and db variables, we can do this:
+        #       d = 3 - (i / 12 % 2 * 2 + i % 2 + 3) % 4
+        #   Now, you can pull d1 and d2 out of it:
+        #       d1 = d / 2
+        #       d2 = d % 2
+        # The starting value then has the coordinates where two of the dimensions must be 0 or 5
+        #   and the constant dimension has value p.
+        #   Whether each is 0 or 5 depends on d1 and d2 using simply d1*5 and d2*5.
+        #   Which dimension gets d1*5, which gets d2*5, and which gets p is dictated by the value of c.
+        #   Then, val = 16 + x + 6 * y + 36 * z is used.
+        #   But below, since the handling of c is hard-coded, the 5* multiplier is sometimes baked into the equation.
+        #   6*5 = 30, and 36*5 = 180. That's where those two numbers come from below.
+        local i p d d1 d2 c
+        i=$(( choice - 216 ))                   # 0 to 71
+        p=$(( i / 2 % 6 ))                      # 0 to 5
+        d=$(( 3 - (i/12%2*2 + i%2 + 3) % 4 ))   # 0 to 3
+        d1=$(( d / 2 ))                         # 0 to 1
+        d2=$(( d % 2 ))                         # 0 to 1
+        c=$(( i / 24 ))                         # 0 to 2: 71/24 = 2 (r 23)
+        [[ -n "$PVNW_DEBUG" ]] && printf 'Choice: [%3d] = i: [%2d], p: [%d], d1: [%d], d2: [%d], c: [%d]\n' "$choice" "$i" "$p" "$d1" "$d2" "$c" >&2
+        case "$c" in
+            0) # Constant z. Edges NW, NE, SW, SE.
+                dx=$(( 1 - d1*2 ))
+                dy=$(( 1 - d2*2 ))
+                dz=0
+                val=$(( 16 + 5*d1 + 30*d2 + 36*p ))
+                ;;
+            1) # Constant y. Edges ND, NU, SD, SU.
+                dx=$(( 1 - d1*2 ))
+                dy=0
+                dz=$(( 1 - d2*2 ))
+                val=$(( 16 + 5*d1 + 6*p + 180*d2 ))
+                ;;
+            2) # Constant x. Edges WD, WU, ED, EU.
+                dx=0
+                dy=$(( 1 - d1*2 ))
+                dz=$(( 1 - d2*2 ))
+                val=$(( 16 + p + 30*d1 + 180*d2 ))
+                ;;
+            *)
+                printf 'Bug in code palette_vector_no_wrap-2d: choice: [%s], i: [%s], p: [%s], d1: [%s], d2: [%s], c: [%s]\n' "$choice" "$i" "$p" "$d1" "$d2" "$c" >&2
+                return 10
+                ;;
+        esac
+    elif [[ "$choice" -ge '288' && "$choice" -le '295' ]]; then
+        # These are the 3d vectors. There are 8 of them.
+        # There's only one aspect: the corner.
+        # That dictates both the starting value and the direction vector.
+        # Here again, I want odd numbers to be the reverses of the numbers before them.
+        # And the math for doing that here is pretty gnarly.
+        # So, since there's only 8, I'm just going to hard code things.
+        # Set x y and z as either 0 or 1.
+        # The change in a dimension then is 1 - that value * 2, e.g. dx = 1 - x*2
+        # And then the starting coordinates should be either 0 or 5, so multiply them by 5 for that.
+        # So then val = 16 + X + 6*Y + 36*Z = 16 + 5*x + 6*5*y + 36*5*z = 16 + 5*x + 30*y + 180*z.
+        local corner x y z
+        corner=$(( choice - 288 ))  # 0 to 7
+        case "$corner" in
+            0) x=0; y=0; z=0;;
+            1) x=1; y=1; z=1;;
+            2) x=0; y=0; z=1;;
+            3) x=1; y=1; z=0;;
+            4) x=0; y=1; z=0;;
+            5) x=1; y=0; z=1;;
+            6) x=0; y=1; z=1;;
+            7) x=1; y=0; z=0;;
+            *)
+                printf 'Bug in code palette_vector_no_wrap-3d: choice: [%s], corner: [%s]\n' "$choice" "$corner" >&2
+                return 10
+                ;;
+        esac
+        [[ -n "$PVNW_DEBUG" ]] && printf 'Choice: [%3d] = corner: [%d] = (%d, %d, %d)\n' "$choice" "$corner" "$x" "$y" "$z" >&2
+        val=$(( 16 + 5*x + 30*y + 180*z ))
+        dx=$(( 1 - x*2 ))
+        dy=$(( 1 - y*2 ))
+        dz=$(( 1 - z*2 ))
+    else
+        [[ -n "$PVNW_DEBUG" ]] && printf 'Choice: [%3d] = Unknown\n' "$choice" >&2
+        # This is a bug because previous validation combined with the if/elif chain should have caught everything by now.
+        printf 'Bug in code palette_vector_no_wrap-xd: choice: [%s]\n' "$choice" "$corner" >&2
+        return 10
+    fi
+    [[ -n "$PVNW_DEBUG" ]] && printf 'Choice: [%3d] => palette_vector_generate "%d" "%d" "%d" "%d"\n' "$choice" "$val" "$dx" "$dy" "$dz" >&2
+    palette_vector_generate "$val" "$dx" "$dy" "$dz"
+}
+
 # Usage: palette_vector_random [<start>] [<dx>] [<dy>] [<dz>]
 # Arguments are positional. Provide an empty string to keep it random while setting a later one.
 # E.g. palette_vector_random '' '' 1 1
@@ -119,7 +347,7 @@ palette_vector_random () {
     else
         dz="$(( RANDOM%5 - 2 ))"
     fi
-    printf 'palette_vector_generate "%d" "%d" "%d" "%d"\n' "$val" "$dx" "$dy" "$dz" >&2
+    [[ -n "$PVR_DEBUG" ]] && printf 'palette_vector_generate "%d" "%d" "%d" "%d"\n' "$val" "$dx" "$dy" "$dz" >&2
     palette_vector_generate "$val" "$dx" "$dy" "$dz"
 }
 
@@ -128,7 +356,7 @@ palette_vector_random () {
 # Otherwise, the provided value is printed to stdout and the exit code will be 0 (true).
 # A valid color is an integer between 16 and 231 inclusive.
 __palette_validate_color () {
-    if [[ "$2" =~ [^[:digit:]] ||  "$2" -lt '16' || "$2" -gt '231' ]]; then
+    if [[ "$2" =~ [^[:digit:]] || "$2" -lt '16' || "$2" -gt '231' ]]; then
         printf 'Invalid start: [%s]. Must be a number between 16 and 231 (inclusive).\n' "$1" "$2" >&2
         printf '16'
         return 1
@@ -281,6 +509,15 @@ return 0
 #   76   77   78   79   80   81       148  149  150  151  152  153       220  221  222  223  224  225
 #   82   83   84   85   86   87       154  155  156  157  158  159       226  227  228  229  230  231
 #                                                                                                   Top
+#
+# The color 16 resides at (0,0,0); 21 at (5,0,0); 46 at (0,5,0); 196 at (0,0,5); and 231 is at (5,5,5).
+#
+# To convert from a cell value to its coordinates:
+#   x = (val - 16) % 6
+#   y = (val - 16) % 36 / 6
+#   z = (val - 16) / 36
+# To convert from coordinates to a cell value:
+#   val = 16 + x + 6 * y + 36 * z
 #
 # I chose 6 numbers for a palette because of that cube size.
 #

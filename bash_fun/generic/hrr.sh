@@ -4,17 +4,19 @@
 # This file can also be executed to run the hrr function without adding it to your environment.
 #
 # File contents:
-#   hr  --------------> Creates a single-line horizontal rule in the terminal with a message in it.
-#   hr1  -------------> Similar to hr except padding is automatically added to any message.
-#   hr3  -------------> Creates a 3-line horizontal rule in the terminal with a message in it.
-#   hrr  -------------> Same as hr3. Only here for historical reasons. Deprecated
-#   hhr  -------------> Same as hr3. Only here for historical reasons. Deprecated
-#   hr5  -------------> Creates a 5-line horizontal rule in the terminal with a message in it.
-#   hr7  -------------> Creates a 7-line horizontal rule in the terminal with a message in it.
-#   hr9  -------------> Creates a 9-line horizontal rule in the terminal with a message in it.
-#   pick_a_palette  --> Sets the PALETTE environment variable if not already set.
-#   show_all_palettes > Uses hr3 to output all the different palettes available.
-#   test_palette  ----> Outputs hr1 through hr11 using a supplied palette and optional message.
+#   hr  ---------------------> Creates a single-line horizontal rule in the terminal with a message in it.
+#   hr1  --------------------> Similar to hr except padding is automatically added to any message.
+#   hr3  --------------------> Creates a 3-line horizontal rule in the terminal with a message in it.
+#   hrr  --------------------> Same as hr3. Only here for historical reasons. Deprecated
+#   hhr  --------------------> Same as hr3. Only here for historical reasons. Deprecated
+#   hr5  --------------------> Creates a 5-line horizontal rule in the terminal with a message in it.
+#   hr7  --------------------> Creates a 7-line horizontal rule in the terminal with a message in it.
+#   hr9  --------------------> Creates a 9-line horizontal rule in the terminal with a message in it.
+#   hr11  -------------------> Creates an 11-line horizontal rule in the terminal with a message in it.
+#   pick_a_palette  ---------> Sets the PALETTE environment variable if not already set.
+#   what_palette_was_that  --> Prints out the last palette that was used.
+#   show_all_palettes  ------> Uses hr1 to output all the different palettes available.
+#   test_palette  -----------> Outputs hr1 through hr11 using a supplied palette and optional message.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -193,45 +195,64 @@ hr11 () {
 # Sets the PALETTE environment variable if it's not already set.
 # An exit code of 0 means it has not been set yet, and you are in charge of unsetting it later.
 # An exit code of 1 means that it's already set, so nothing is happening.
-# The <choice> is optional and should be a number from 0 to 17.
-# If not provided, one will be chosen randomly.
+# The <choice> is optional and should be a number.
+# If you have the palette_vector_no_wrap function available, <choice> can be a number from 0 to 295 (inclusive).
+# Otherwise, some pre-generated ones will be used and it can be a number from 0 to 17 (inclusive).
+# If palette_vector_generate is not available and a choice is provided out of the preset range,
+#   then random numbers will be picked for the palette.
+# If not provided, a <choice> will be chosen randomly.
 pick_a_palette () {
     if [[ -n "$1" || -z "${PALETTE+x}" ]]; then
         local choice
-        [[ -n "$1" ]] && choice="$1" || choice=$[RANDOM%14]
-        case "$choice" in
-            0) PALETTE=(232 236 240 244 248 252);;   # white --> black
-            1) PALETTE=(252 248 244 240 236 232);;   # white <-- black
-            2) PALETTE=(16 17 18 19 20 21);;         # blue --> black
-            3) PALETTE=(21 20 19 18 17 16);;         # blue <-- black
-            4) PALETTE=(16 22 28 34 40 46);;         # green --> black
-            5) PALETTE=(46 40 34 28 22 16);;         # green <-- black
-            6) PALETTE=(16 64 106 148 184 226);;     # yellow --> black
-            7) PALETTE=(226 184 148 106 64 16);;     # yellow <-- black
-            8) PALETTE=(16 94 130 166 202 208);;     # orange --> black
-            9) PALETTE=(208 202 166 130 94 16);;     # orange <-- black
-            10) PALETTE=(16 52 88 124 160 196);;     # red --> black
-            12) PALETTE=(196 160 124 88 52 16);;     # red <-- black
-            11) PALETTE=(16 54 92 129 165 206);;     # purple --> black
-            13) PALETTE=(206 165 129 92 54 16);;     # purple <-- black
-            14) PALETTE=(201 206 211 216 221 226);;  # purple --> yellow
-            15) PALETTE=(226 221 216 211 206 201);;  # purple <-- yellow
-            16) PALETTE=(51 80 109 138 167 196);;    # cyan --> red
-            17) PALETTE=(196 167 138 109 80 51);;    # cyan <-- red
-            # Can't get this one unless specifically asked for.
-            *) PALETTE=(16 $[RANDOM%256] $[RANDOM%256] $[RANDOM%256] $[RANDOM%256] $[RANDOM%256]);;
-        esac
+        if command -v palette_vector_no_wrap > /dev/null 2>&1; then
+            [[ -n "$1" ]] && choice="$1" || choice=$(( RANDOM%256 ))
+            PALETTE=( $( palette_vector_no_wrap $choice ) )
+        else
+            [[ -n "$1" ]] && choice="$1" || choice=$(( RANDOM%18 ))
+            case "$choice" in
+                0) PALETTE=(232 236 240 244 248 252);;   # white --> black
+                1) PALETTE=(252 248 244 240 236 232);;   # white <-- black
+                2) PALETTE=(16 17 18 19 20 21);;         # blue --> black
+                3) PALETTE=(21 20 19 18 17 16);;         # blue <-- black
+                4) PALETTE=(16 22 28 34 40 46);;         # green --> black
+                5) PALETTE=(46 40 34 28 22 16);;         # green <-- black
+                6) PALETTE=(16 64 106 148 184 226);;     # yellow --> black
+                7) PALETTE=(226 184 148 106 64 16);;     # yellow <-- black
+                8) PALETTE=(16 94 130 166 202 208);;     # orange --> black
+                9) PALETTE=(208 202 166 130 94 16);;     # orange <-- black
+                10) PALETTE=(16 52 88 124 160 196);;     # red --> black
+                12) PALETTE=(196 160 124 88 52 16);;     # red <-- black
+                11) PALETTE=(16 54 92 129 165 206);;     # purple --> black
+                13) PALETTE=(206 165 129 92 54 16);;     # purple <-- black
+                14) PALETTE=(201 206 211 216 221 226);;  # purple --> yellow
+                15) PALETTE=(226 221 216 211 206 201);;  # purple <-- yellow
+                16) PALETTE=(51 80 109 138 167 196);;    # cyan --> red
+                17) PALETTE=(196 167 138 109 80 51);;    # cyan <-- red
+                *) PALETTE=($(( 16 + RANDOM%216 )) $(( 16 + RANDOM%216 )) $(( 16 + RANDOM%216 )) $(( 16 + RANDOM%216 )) $(( 16 + RANDOM%216 )) $(( 16 + RANDOM%216 )));;
+            esac
+        fi
+        LAST_CHOICE="$choice"
+        LAST_PALETTE=( ${PALETTE[@]} )
         return 0
     fi
     return 1
 }
 
+# Usage: what_palette_was_that
+what_palette_was_that () {
+    if [[ -n "${LAST_PALETTE+x}" ]]; then
+        [[ -n "$LAST_CHOICE" ]] && printf '%3d: ' "$LAST_CHOICE"
+        printf '%s\n' "${LAST_PALETTE[*]}"
+    fi
+}
+
 # Usage: show_all_palettes
 show_all_palettes () {
-    local p
-    for p in $( seq 0 13 ); do
+    local p maxp
+    command -v palette_vector_no_wrap > /dev/null 2>&1 && maxp=295 || maxp=17
+    for p in $( seq 0 $maxp ); do
         pick_a_palette "$p"
-        hr3 "${PALETTE[*]}"
+        hr1 "$( printf '%3d:' "$p"; printf ' %3d' "${PALETTE[@]}"; )"
     done
     unset PALETTE
     return 0
