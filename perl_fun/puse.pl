@@ -4,7 +4,7 @@
 use strict;
 
 
-if (! $ARGV[0]) {
+if (! $ARGV[0] || $ARGV[0] eq '--help' || $ARGV[0] eq '-h') {
    print "usage $0 <module> [<module 2> ...]\n";
    exit(0);
 }
