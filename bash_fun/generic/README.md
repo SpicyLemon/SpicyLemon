@@ -41,7 +41,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [show_palette.sh](#user-content-show_palettesh)
   * [string_repeat.sh](#user-content-string_repeatsh)
   * [tee_strip_colors.sh](#user-content-tee_strip_colorssh)
-  * [tee_strip_colors_pbcopy.sh](#user-content-tee_strip_colors_pbcopysh)
   * [to_date.sh](#user-content-to_datesh)
   * [to_epoch.sh](#user-content-to_epochsh)
 
@@ -1042,17 +1041,6 @@ The output that goes to stdout will still contain colors, but the color informat
 Example Usage:
 ```console
 $ grep --color=always foo bar.txt | tee_strip_colors 'foo-lines-in-bar.txt'
-```
-
-### `tee_strip_colors_pbcopy.sh`
-
-[tee_strip_colors_pbcopy.sh](tee_strip_colors_pbcopy.sh) - Function/script for outputting a stream, and also stripping the color control sequences before putting it into the clipboard.
-
-The output that goes to stdout will stil contain colors, but the color information will be removed before being placed in the clipboard.
-
-Example Usage:
-```console
-$ grep --color=always foo bar.txt | tee_strip_colors_pbcopy
 ```
 
 ### `to_date.sh`
