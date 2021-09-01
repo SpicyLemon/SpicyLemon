@@ -13,7 +13,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
 * [Directory Contents](#user-content-directory-contents)
   * [generic-setup.sh](#user-content-generic-setupsh)
   * [add.sh](#user-content-addsh)
-  * [add_to_filename.sh](#user-content-add_to_filenamesh)
   * [b2h.sh](#user-content-b2hsh)
   * [b642h.sh](#user-content-b642hsh)
   * [change_word.sh](#user-content-change_wordsh)
@@ -112,34 +111,6 @@ $ printf '[%d]\n' "$( seq 6 20 | add )"
 $ printf '[%d]\n' "$( seq 6 20 | add - 1 2 3 4 5 )"
 [210]
 ```
-
-### `add_to_filename.sh`
-
-[add_to_filename.sh](add_to_filename.sh) - A function/script for adding text to one or more filename strings, just before the extensions.
-
-Simple example - Add "-v2" to the name of a document.
-```console
-$ add_to_filename "-v2" "my-important-document.doc"
-my-important-document-v2.doc
-```
-
-Multi-file example - Add "-old" to the name of every .sh file in this directory that starts with a "g":
-```console
-$ add_to_filename "-old" g*.sh
-generic-setup-old.sh
-get_shell_type-old.sh
-getlines-old.sh
-```
-
-Multi-file example coming in a stream:
-```console
-$ ls g*.sh | add_to_filename "-new" -
-generic-setup-new.sh
-get_shell_type-new.sh
-getlines-new.sh
-```
-
-This file can also be executed as a script for the same functionality.
 
 ### `b2h.sh`
 

@@ -41,11 +41,6 @@ TODO:
                 The auto-use-pbpaste part is a little nice, but doesn't save much.
             But the rest is nearly as easily done by using jq directly.
                 E.g. The -c or --clipboard option to put it into the clipboard is just as easily done with | pbcopy.
-        add_to_filename.sh
-            I can't remember when I last used this.
-            Really, something handier would be an auto-numbering system for files.
-                Similar to this, it'd go in right before the extension (or at the end if there isn't one).
-                It'd involve getting directory contents to look for other files similarly named in order to create the next numbered one.
         chrome_cors.sh
             I've no idea if this actually still even works.
             Last time I tried, I think there were complications.
