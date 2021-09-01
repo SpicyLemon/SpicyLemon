@@ -34,9 +34,6 @@ TODO:
         The hrr.sh file should probably be split out into individual files too. I don't know though, they're pretty simple, but who knows.
             That'd let some of the more palette oriented functions go into the color stuff too.
     Maybe deprecate some of the following:
-        chrome_cors.sh
-            I've no idea if this actually still even works.
-            Last time I tried, I think there were complications.
         fp.sh
             I've had some issues with this one.
             There's probably some already-made shell built-in stuff that would be better suited to solve this.

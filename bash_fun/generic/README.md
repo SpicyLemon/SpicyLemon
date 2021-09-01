@@ -16,7 +16,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [b2h.sh](#user-content-b2hsh)
   * [b642h.sh](#user-content-b642hsh)
   * [change_word.sh](#user-content-change_wordsh)
-  * [chrome_cors.sh](#user-content-chrome_corssh)
   * [echo_color.sh](#user-content-echo_colorsh)
   * [echo_do.sh](#user-content-echo_dosh)
   * [escape_escapes.sh](#user-content-escape_escapessh)
@@ -196,15 +195,6 @@ When executed:
 
 This is probably best done in a git repo containing no uncommitted changes.
 That way, it's easy to undo if there were some unintended changes.
-
-### `chrome_cors.sh`
-
-[chrome_cors.sh](chrome_cors.sh) - A function/script for opening a page in a Chrome window with CORS security disabled.
-This is handy when you're trying to set up some ajax scripts locally for a service running elsewhere that includes CORS headers in the response.
-
-```console
-$ chrome_cors my-own-page.html
-```
 
 ### `echo_color.sh`
 
