@@ -53,14 +53,14 @@ __generic_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'generic-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     func_base_file_names=(
-        'add'                      'b2h'  'change_word'   'echo_color'
-        'echo_do'                  'escape_escapes'      'fp'                   'getlines'
-        'hrr'                      'i_can'               'java_sdk_switcher'    'join_str'        'max'
-        'min'                      'multi_line_replace'  'multiply'             'print_args'
-        'ps_grep'                  're_line'             'sdkman_fzf'           'set_title'       'show_last_exit_code'
-        'string_repeat'            'strip_colors'        'strip_final_newline'  'tee_pbcopy'      'tee_strip_colors'
-        'tee_strip_colors_pbcopy'  'to_date'             'to_epoch'             'list'
-        'multidiff'                'b642h'               'h2b64'           'palette_generators'   'show_palette'
+        'add'                  'b2h'                  'b642h'               'change_word'              'echo_color'
+        'echo_do'              'escape_escapes'       'fp'                  'getlines'                 'h2b64'
+        'hrr'                  'i_can'                'java_sdk_switcher'   'join_str'                 'list'
+        'max'                  'min'                  'multi_line_replace'  'multidiff'                'multiply'
+        'palette_generators'   'print_args'           'ps_grep'             're_line'                  'sdkman_fzf'
+        'set_title'            'show_last_exit_code'  'show_palette'        'string_repeat'            'strip_colors'
+        'strip_final_newline'  'tee_pbcopy'           'tee_strip_colors'    'tee_strip_colors_pbcopy'  'to_date'
+        'to_epoch'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
