@@ -18,7 +18,7 @@
 strip_final_newline () {
     if [[ -n "$1" ]]; then
         echo -E "$1" | strip_final_newline
-        return 0
+        return $?
     fi
     awk ' { if(p) print(l); l=$0; p=1; } END { printf("%s", l); } '
 }
