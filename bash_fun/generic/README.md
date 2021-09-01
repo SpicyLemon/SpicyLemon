@@ -29,7 +29,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [i_can.sh](#user-content-i_cansh)
   * [java_sdk_switcher.sh](#user-content-java_sdk_switchersh)
   * [join_str.sh](#user-content-join_strsh)
-  * [json_diff.sh](#user-content-json_diffsh)
   * [list.sh](#user-content-listsh)
   * [max.sh](#user-content-maxsh)
   * [min.sh](#user-content-minsh)
@@ -526,29 +525,6 @@ Example Usage:
 ```console
 $ join_str ', ' $( seq 1 10 )
 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-```
-
-### `json_diff.sh`
-
-[json_diff.sh](json_diff.sh) - Function/script for comparing two json files.
-
-It uses either `json_info` or `jq` to pre-process the files, then compares the two using diff, adding some coloring. See also `multidiff.sh`.
-
-```console
-$ json_diff --help
-Usage: json_diff [<diff args>] [--use-json-info|--use-jq] <file1> <file2>
-
-    <file1> and <file2> are the filenames of the json to diff.
-        These are always assumed to be the last two arguments provided.
-
-   <diff args> are any arguments you want provided to the diff command.
-
-    --use-json-info will use the json_info function to pre-process the json files.
-        The resulting diff will then be on the output of json_info.
-    --use-jq will use the jq program to pre-process the json files.
-        The resulting diff will then be on the pretty-print version of the JSON.
-        This is the default behavior.
-    If both --use-json-info and --use-jq are provided, the last one provided is used.
 ```
 
 ### `list.sh`

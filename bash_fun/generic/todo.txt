@@ -60,8 +60,6 @@ TODO:
             Since then, though, I've figured out better ways of handling it.
             Usually it's just testing for the exact functionality I'm about to use.
                 if command -v "whatever" > /dev/null 2>&1; then ...
-        json_diff.sh
-            Just use multidiff.
         strip_colors.sh, strip_final_newline.sh, tee_pbcopy.sh, tee_strip_colors.sh, tee_strip_colors_pbcopy.sh
             Can probably just as easily be aliases.
     Add more generic preprocessing to multidiff.
