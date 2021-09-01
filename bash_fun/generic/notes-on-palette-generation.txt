@@ -171,6 +171,598 @@ for s in 15 16 231 232 '' 'bad'; do printf 'start %5s: ' "$s"; ./generate_palett
 
 
 
+Some disjointed notes about the no-wrap vectors:
+
+Corners:
+16, 21, 46, 51
+196, 201, 226, 231
+
+2*2*2 = 8 per corner, -1 for 0,0,0 = 7 per corner.
+7*8=56 vectors.
+If we don't care about direction then it's 56/2 = 28 total lines.
+
+ 16 [0,1]  [0,1]  [0,1]
+ 21 [0,-1] [0,1]  [0,1]
+ 46 [0,1]  [0,-1] [0,1]
+ 51 [0,-1] [0,-1] [0,1]
+196 [0,1]  [0,1]  [0,-1]
+201 [0,-1] [0,1]  [0,-1]
+226 [0,1]  [0,-1] [0,-1]
+231 [0,-1] [0,-1] [0,-1]
+
+# Copy the lines above then:
+pbpaste | while read val xs ys zs; do for dx in $( sed 's/[][]//g; s/,/ /;' <<< "$xs" ); do for dy in $( sed 's/[][]//g; s/,/ /;' <<< "$ys" ); do for dz in $( sed 's/[][]//g; s/,/ /;' <<< "$zs" ); do [[ "$dx" != '0' || "$dy" != '0' || "$dz" != '0' ]] && printf '%3d %2d %2d %2d\n' "$val" "$dx" "$dy" "$dz"; done; done; done; done
+
+ 16  0  0  1
+ 16  0  1  0
+ 16  0  1  1
+ 16  1  0  0
+ 16  1  0  1
+ 16  1  1  0
+ 16  1  1  1
+ 21  0  0  1
+ 21  0  1  0
+ 21  0  1  1
+ 21 -1  0  0
+ 21 -1  0  1
+ 21 -1  1  0
+ 21 -1  1  1
+ 46  0  0  1
+ 46  0 -1  0
+ 46  0 -1  1
+ 46  1  0  0
+ 46  1  0  1
+ 46  1 -1  0
+ 46  1 -1  1
+ 51  0  0  1
+ 51  0 -1  0
+ 51  0 -1  1
+ 51 -1  0  0
+ 51 -1  0  1
+ 51 -1 -1  0
+ 51 -1 -1  1
+196  0  0 -1
+196  0  1  0
+196  0  1 -1
+196  1  0  0
+196  1  0 -1
+196  1  1  0
+196  1  1 -1
+201  0  0 -1
+201  0  1  0
+201  0  1 -1
+201 -1  0  0
+201 -1  0 -1
+201 -1  1  0
+201 -1  1 -1
+226  0  0 -1
+226  0 -1  0
+226  0 -1 -1
+226  1  0  0
+226  1  0 -1
+226  1 -1  0
+226  1 -1 -1
+231  0  0 -1
+231  0 -1  0
+231  0 -1 -1
+231 -1  0  0
+231 -1  0 -1
+231 -1 -1  0
+231 -1 -1 -1
+
+pbpaste | while read val dx dy dz; do palette_vector_generate "$val" "$dx" "$dy" "$dz"; done
+16 52 88 124 160 196
+16 22 28 34 40 46
+16 58 100 142 184 226
+16 17 18 19 20 21
+16 53 90 127 164 201
+16 23 30 37 44 51
+16 59 102 145 188 231
+21 57 93 129 165 201
+21 27 33 39 45 51
+21 63 105 147 189 231
+21 20 19 18 17 16
+21 56 91 126 161 196
+21 26 31 36 41 46
+21 62 103 144 185 226
+46 82 118 154 190 226
+46 40 34 28 22 16
+46 76 106 136 166 196
+46 47 48 49 50 51
+46 83 120 157 194 231
+46 41 36 31 26 21
+46 77 108 139 170 201
+51 87 123 159 195 231
+51 45 39 33 27 21
+51 81 111 141 171 201
+51 50 49 48 47 46
+51 86 121 156 191 226
+51 44 37 30 23 16
+51 80 109 138 167 196
+196 160 124 88 52 16
+196 202 208 214 220 226
+196 166 136 106 76 46
+196 197 198 199 200 201
+196 161 126 91 56 21
+196 203 210 217 224 231
+196 167 138 109 80 51
+201 165 129 93 57 21
+201 207 213 219 225 231
+201 171 141 111 81 51
+201 200 199 198 197 196
+201 164 127 90 53 16
+201 206 211 216 221 226
+201 170 139 108 77 46
+226 190 154 118 82 46
+226 220 214 208 202 196
+226 184 142 100 58 16
+226 227 228 229 230 231
+226 191 156 121 86 51
+226 221 216 211 206 201
+226 185 144 103 62 21
+231 195 159 123 87 51
+231 225 219 213 207 201
+231 189 147 105 63 21
+231 230 229 228 227 226
+231 194 157 120 83 46
+231 224 217 210 203 196
+231 188 145 102 59 16
+
+
+
+
+
+
+16 17 18 19 20 21       <-> 21 20 19 18 17 16
+16 22 28 34 40 46       <-> 46 40 34 28 22 16
+16 23 30 37 44 51       <-> 51 44 37 30 23 16
+16 52 88 124 160 196    <-> 196 160 124 88 52 16
+16 53 90 127 164 201    <-> 201 164 127 90 53 16
+16 58 100 142 184 226   <-> 226 184 142 100 58 16
+16 59 102 145 188 231   <-> 231 188 145 102 59 16
+21 26 31 36 41 46       <-> 46 41 36 31 26 21
+21 27 33 39 45 51       <-> 51 45 39 33 27 21
+21 56 91 126 161 196    <-> 196 161 126 91 56 21
+21 57 93 129 165 201    <-> 201 165 129 93 57 21
+21 62 103 144 185 226   <-> 226 185 144 103 62 21
+21 63 105 147 189 231   <-> 231 189 147 105 63 21
+46 47 48 49 50 51       <-> 51 50 49 48 47 46
+46 76 106 136 166 196   <-> 196 166 136 106 76 46
+46 77 108 139 170 201   <-> 201 170 139 108 77 46
+46 82 118 154 190 226   <-> 226 190 154 118 82 46
+46 83 120 157 194 231   <-> 231 194 157 120 83 46
+51 80 109 138 167 196   <-> 196 167 138 109 80 51
+51 81 111 141 171 201   <-> 201 171 141 111 81 51
+51 86 121 156 191 226   <-> 226 191 156 121 86 51
+51 87 123 159 195 231   <-> 231 195 159 123 87 51
+196 197 198 199 200 201 <-> 201 200 199 198 197 196
+196 202 208 214 220 226 <-> 226 220 214 208 202 196
+196 203 210 217 224 231 <-> 231 224 217 210 203 196
+201 206 211 216 221 226 <-> 226 221 216 211 206 201
+201 207 213 219 225 231 <-> 231 225 219 213 207 201
+226 227 228 229 230 231 <-> 231 230 229 228 227 226
+
+232 236 240 244 248 252
+16 59 102 145 188 231
+252 248 244 240 236 232
+231 188 145 102 59 16
+
+232 236 240 244 248 252
+252 248 244 240 236 232
+16 94 130 166 202 208
+208 202 166 130 94 16
+16 54 92 129 165 206
+206 165 129 92 54 16
+
+ 16  17  18  19  20  21
+ 16  22  28  34  40  46
+ 16  23  30  37  44  51
+ 16  52  88 124 160 196
+ 16  53  90 127 164 201
+ 16  58 100 142 184 226
+ 16  59 102 145 188 231
+ 21  26  31  36  41  46
+ 21  27  33  39  45  51
+ 21  56  91 126 161 196
+ 21  57  93 129 165 201
+ 21  62 103 144 185 226
+ 21  63 105 147 189 231
+ 46  47  48  49  50  51
+ 46  76 106 136 166 196
+ 46  77 108 139 170 201
+ 46  82 118 154 190 226
+ 46  83 120 157 194 231
+ 51  80 109 138 167 196
+ 51  81 111 141 171 201
+ 51  86 121 156 191 226
+ 51  87 123 159 195 231
+196 197 198 199 200 201
+196 202 208 214 220 226
+196 203 210 217 224 231
+201 206 211 216 221 226
+201 207 213 219 225 231
+226 227 228 229 230 231
+
+ 21  20  19  18  17  16
+ 46  40  34  28  22  16
+ 51  44  37  30  23  16
+196 160 124  88  52  16
+201 164 127  90  53  16
+226 184 142 100  58  16
+231 188 145 102  59  16
+ 46  41  36  31  26  21
+ 51  45  39  33  27  21
+196 161 126  91  56  21
+201 165 129  93  57  21
+226 185 144 103  62  21
+231 189 147 105  63  21
+ 51  50  49  48  47  46
+196 166 136 106  76  46
+201 170 139 108  77  46
+226 190 154 118  82  46
+231 194 157 120  83  46
+196 167 138 109  80  51
+201 171 141 111  81  51
+226 191 156 121  86  51
+231 195 159 123  87  51
+201 200 199 198 197 196
+226 220 214 208 202 196
+231 224 217 210 203 196
+226 221 216 211 206 201
+231 225 219 213 207 201
+231 230 229 228 227 226
+
+Vals:
+    16   17   18   19   20   21        88   89   90   91   92   93       160  161  162  163  164  165
+    22   23   24   25   26   27        94   95   96   97   98   99       166  167  168  169  170  171
+    28   29   30   31   32   33       100  101  102  103  104  105       172  173  174  175  176  177
+    34   35   36   37   38   39       106  107  108  109  110  111       178  179  180  181  182  183
+    40   41   42   43   44   45       112  113  114  115  116  117       184  185  186  187  188  189
+    46   47   48   49   50   51       118  119  120  121  122  123       190  191  192  193  194  195
+
+    52   53   54   55   56   57       124  125  126  127  128  129       196  197  198  199  200  201
+    58   59   60   61   62   63       130  131  132  133  134  135       202  203  204  205  206  207
+    64   65   66   67   68   69       136  137  138  139  140  141       208  209  210  211  212  213
+    70   71   72   73   74   75       142  143  144  145  146  147       214  215  216  217  218  219
+    76   77   78   79   80   81       148  149  150  151  152  153       220  221  222  223  224  225
+    82   83   84   85   86   87       154  155  156  157  158  159       226  227  228  229  230  231
+
+Both:
+ 16:000  17:100  18:200  19:300  20:400  21:500    88:002  89:102  90:202  91:302  92:402  93:502   160:004 161:104 162:204 163:304 164:404 165:504
+ 22:010  23:110  24:210  25:310  26:410  27:510    94:012  95:112  96:212  97:312  98:412  99:512   166:014 167:114 168:214 169:314 170:414 171:514
+ 28:020  29:120  30:220  31:320  32:420  33:520   100:022 101:122 102:222 103:322 104:422 105:522   172:024 173:124 174:224 175:324 176:424 177:524
+ 34:030  35:130  36:230  37:330  38:430  39:530   106:032 107:132 108:232 109:332 110:432 111:532   178:034 179:134 180:234 181:334 182:434 183:534
+ 40:040  41:140  42:240  43:340  44:440  45:540   112:042 113:142 114:242 115:342 116:442 117:542   184:044 185:144 186:244 187:344 188:444 189:544
+ 46:050  47:150  48:250  49:350  50:450  51:550   118:052 119:152 120:252 121:352 122:452 123:552   190:054 191:154 192:254 193:354 194:454 195:554
+
+ 52:001  53:101  54:201  55:301  56:401  57:501   124:003 125:103 126:203 127:303 128:403 129:503   196:005 197:105 198:205 199:305 200:405 201:505
+ 58:011  59:111  60:211  61:311  62:411  63:511   130:013 131:113 132:213 133:313 134:413 135:513   202:015 203:115 204:215 205:315 206:415 207:515
+ 64:021  65:121  66:221  67:321  68:421  69:521   136:023 137:123 138:223 139:323 140:423 141:523   208:025 209:125 210:225 211:325 212:425 213:525
+ 70:031  71:131  72:231  73:331  74:431  75:531   142:033 143:133 144:233 145:333 146:433 147:533   214:035 215:135 216:235 217:335 218:435 219:535
+ 76:041  77:141  78:241  79:341  80:441  81:541   148:043 149:143 150:243 151:343 152:443 153:543   220:045 221:145 222:245 223:345 224:445 225:545
+ 82:051  83:151  84:251  85:351  86:451  87:551   154:053 155:153 156:253 157:353 158:453 159:553   226:055 227:155 228:255 229:355 230:455 231:555
+
+XYZ:
+   000  100  200  300  400  500       002  102  202  302  402  502       004  104  204  304  404  504
+   010  110  210  310  410  510       012  112  212  312  412  512       014  114  214  314  414  514
+   020  120  220  320  420  520       022  122  222  322  422  522       024  124  224  324  424  524
+   030  130  230  330  430  530       032  132  232  332  432  532       034  134  234  334  434  534
+   040  140  240  340  440  540       042  142  242  342  442  542       044  144  244  344  444  544
+   050  150  250  350  450  550       052  152  252  352  452  552       054  154  254  354  454  554
+
+   001  101  201  301  401  501       003  103  203  303  403  503       005  105  205  305  405  505
+   011  111  211  311  411  511       013  113  213  313  413  513       015  115  215  315  415  515
+   021  121  221  321  421  521       023  123  223  323  423  523       025  125  225  325  425  525
+   031  131  231  331  431  531       033  133  233  333  433  533       035  135  235  335  435  535
+   041  141  241  341  441  541       043  143  243  343  443  543       045  145  245  345  445  545
+   051  151  251  351  451  551       053  153  253  353  453  553       055  155  255  355  455  555
+
+to_xyz() { printf '%d%d%d' "$(( ($1 - 16) % 6 ))" "$(( ($1 - 16) % 36 / 6 ))" "$(( ($1 - 16) / 36 ))"; }
+to_val() { printf '%d' "$(( 16 + $1 + 6 * $2 + 36 * $3 ))"; }
+
+pbpaste | while IFS= read line; do for v in $line; do printf '%3d:%s ' "$v" "$( to_xyz "$v" )"; done; printf '\n'; done
+
+Orientation:
+    +x = East,  -x = West
+    +y = South, -y = North   (this is backwards from a normal graph)
+    +z = Up,    -z = Down
+Also, annoyingly, I seem to have taken to using the orientation ordering North/South, East/West, Up/Down, which doesn't match x, y, z, but oh well.
+
+x <= (val - 16) % 6
+y <= (val - 16) % 36 / 6
+z <= (val - 16) / 36
+and then
+val <= 16 + x + 6 * y + 36 * z
+
+Sides:
+    One or more of x, y, and z are either 0 or 5.
+    W: x = 0,?,? => (val - 16) % 6 = 0 (or val % 6 = 4)
+    E: x = 5,?,? => (val - 16) % 6 = 5 (or val % 6 = 3)
+    N: y = ?,0,? => (val - 16) % 36 / 6 = 0
+    S: y = ?,5,? => (val - 16) % 36 / 6 = 5
+    D: z = ?,?,0 => (val - 16) / 36 = 0
+    U: z = ?,?,5 => (val - 16) / 36 = 5
+Edges:
+    Two or more of x, y, and z are either 0 or 5,
+    NW: 0,0,?    ND: 0,?,0    WD: ?,0,0
+    NE: 0,5,?    NU: 0,?,5    WU: ?,0,5
+    SW: 5,0,?    SD: 5,?,0    ED: ?,5,0
+    SE: 5,5,?    SU: 5,?,5    EU: ?,5,5
+Corners:
+    All of x, y, and z are either 0 or 5.
+    NWD: 0,0,0 =>  16   NWU: 0,0,5 => 196
+    NED: 0,5,0 =>  46   NEU: 0,5,5 => 226
+    SWD: 5,0,0 =>  21   SWU: 5,0,5 => 201
+    SED: 5,5,0 =>  51   SEU: 5,5,5 => 231
+
+Value counts:
+    Side:  152
+    Edge:   56 (all are sides also)
+    Corner:  8 (all are edges and sides also)
+    Not Side:    64
+    Not Edge:   160 (includes non-sides)
+    Not Corner: 208 (includes non-sides and non-edges)
+    Side but not Edge:    96
+    Side but not Corner: 144
+    Edge but not Corner:  48
+Another representation of counts:
+            Side  Edge  Corner
+    Are      152    56       8
+    Are Not   64   160     208
+
+    Of the 152 sides:
+                Edge  Corner
+        Are       56       8
+        Are Not   96     144
+
+    Of the 56 edges:
+                Corner
+        Are          8
+        Are Not     48
+Another way to think about it:
+    There are 4 types of cells:
+        Corners: There are 8 of them.
+            Have an x, y, and z that are all either 0 or 5.
+        Edges that aren't corners: There are 48 of them.
+            Have two of x, y, and z that are either 0 or 5, and the other dimension is one of 1, 2, 3, or 4.
+        Sides that are not edges (or corners: There are 96 of them.
+            Have one of x, y, and z that are either 0 or 5, and the other dimensions are both one of 1, 2, 3, or 4.
+        Middle cells: There are 64 of them.
+            Have an x, y, and z that are all one of 1, 2, 3, or 4.
+
+1d vectors:
+    Any point on a side can be a start = 36 per side * 6 sides = 216 1d vectors
+2d vectors:
+    Any point on an edge can be a start = 6 per edge * 12 edges = 72 2d vectors
+3d vectors:
+    Start must be a corner and each corner has only one option = 8 3d vectors
+
+216 + 72 + 8 = 296 vectors that don't wrap.
+
+Let a = rand(0,295)
+a: 0-215 = 1d
+    Let b = a / 6      (0 to 35)
+    Let side = a % 6   (0 to 5)
+    side 0: W: dx =  1: start = b * 6 + 16
+    side 1: E: dx = -1: start = b * 6 + 21
+    side 2: N: dy =  1: start = (b % 6) * 36 + b / 6 + 16
+    side 3: S: dy = -1: start = (b % 6) * 36 + b / 6 + 46
+    side 4: D: dz =  1: start = b + 16
+    side 5: U: dz = -1: start = b + 196
+a: 216-287 = 2d
+    Let b = (a - 216)         (0 to 71)
+    Let p = b / 12            (0 to 5)
+    Let var_dim = b % 12 / 4  (0 to 2)
+    Let d1 = b % 4 / 2        (0 to 1)
+    Let d2 = b % 2            (0 to 1)
+    var_dim 0: start = 16 + d1*5 + 6 * d2*5 + 36 * p: vector = (1-d1*2, 1-d2*2, 0)
+    var_dim 1: start = 16 + d1*5 + 6 * p + 36 * d2*5: vector = (1-d1*2, 0, 1-d2*2)
+    var_dim 2: start = 16 + p + 6 * d1*5 + 36 * d2*5: vector = (0, 1-d1*2, 1-d2*2)
+    Or...
+        Let p = i % 6            (0 to 5)
+        Let var_dim = i / 6 / 4  (0 to 2)
+        Let d = (i / 6) % 4      (0 to 3)
+        Let d1 = d / 2           (0 to 1)
+        Let d2 = d % 2           (0 to 1)
+a: 287-294 = 3d
+    Let corner = a - 287    (0 to 8)
+    Let x = corner % 2      (0 to 1)
+    Let y = corner % 4 / 2  (0 to 1)
+    Let z = corner / 4      (0 to 1)
+    Then
+        start = 16 + x*5 + 6 * y*5 + 36 * z*5 or = 16 + x * 5 + 30 * y + 180 * z
+        dx = 1-x*2
+        dy = 1-y*2
+        dz = 1-z*2
+    Bam!
+
+
+pbpaste | while IFS= read line; do PALETTE=( $line ); hr $line; done
+
+
+
+val = 16 + x + 6 * y + 36 * z
+choice = [0,215]
+b = choice / 6     (0 to 35)
+side = choice % 6  (0 to 5)
+For West and East, b represents y and z, while x is 0 for West and 5 for East.
+    We know that both y and z must be from 0 to 5 (inclusive).
+    So we can enumerate them like this:
+        y = b % 6
+        z = b / 6
+        And b = y + 6 * z
+    Then let s = 16 + x which is then either 16 or 21.
+    Then
+        val = s + 6 * y + 36 * z
+        val = s + 6 * (y + 6 * z)
+        val = s + 6 * b
+        And we don't even specifically care what y and z are because we have the value.
+For North and South, b represents x and z, while y is 0 for North and 5 for East.
+    We know that both x and z must be from 0 to 5 (inclusive).
+    So we can enumerate them like this:
+        x = b % 6
+        z = b / 6
+        And b = x + 6 * z.
+    Since y is either 0 or 5, we can also say that s = 16 + 6 * y which is then either 16 or 46.
+    Then
+        val = s + x + 36 * z
+        val = s + b % 6 + 36 * b / 6
+        val = s + b % 6 + b * 6
+For Up and Down, b represents x and y, while z is 0 for Down and 5 for Up.
+    We know that both x and y must be from 0 to 5 (inclusive).
+    So we can enumerate them like this:
+        x = b % 6
+        y = b / 6
+        And b = x + 6 * y
+    Since z is either 0 or 5, we can also say that s = 16 + 36 * z which is either 16 or 196.
+    Then
+        val = s + x + 6 * y
+        val = s + b
+
+Have:
+    0: 0,0 => 1,1
+    1: 0,1 => 1,-1
+    2: 1,0 => -1,1
+    3: 1,1 => -1,-1
+
+
+Want:
+    0: 0,0 => 1,1 which is currently 0
+    1: 0,1 => -1,-1 which is currently 3
+    2: 1,0 => 1,-1 which is currently 2
+    3: 1,1 => -1,1 which is currently 1
+
+Or....
+    0: 0,0 => -1,-1 which is currently 3
+    1: 0,1 => 1,1 which is currently 0
+    2: 1,0 => 1,-1 which is currently 1
+    3: 1,1 => -1,1 which is currently 2
+
+Okay. Currently:
+    d1=$(( i % 4 / 2 ))     # 0 to 1: max i % 4 is 3. 3 / 2 is 1
+    d2=$(( i % 2 ))         # 0 to 1
+Instead:
+    d1=$(( (i+1) % 4 / 2 ))     # 0 to 1: max i % 4 is 3. 3 / 2 is 1
+    d2=$(( (i+1) % 2 ))         # 0 to 1
+
+
+Original:
+    d=$(( i % 4 ))
+    d1=$(( d / 2 ))
+    d2=$(( d % 2 ))
+    Choice: [216] = i: [ 0], p: [0], d1: [0], d2: [0], c: [0] => palette_vector_generate "16" "1" "1" "0"   PALETTE=( 16 23 30 37 44 51 ) A+
+    Choice: [217] = i: [ 1], p: [0], d1: [0], d2: [1], c: [0] => palette_vector_generate "46" "1" "-1" "0"  PALETTE=( 46 41 36 31 26 21 ) B-
+    Choice: [218] = i: [ 2], p: [0], d1: [1], d2: [0], c: [0] => palette_vector_generate "21" "-1" "1" "0"  PALETTE=( 21 26 31 36 41 46 ) B+
+    Choice: [219] = i: [ 3], p: [0], d1: [1], d2: [1], c: [0] => palette_vector_generate "51" "-1" "-1" "0" PALETTE=( 51 44 37 30 23 16 ) A-
+
+Desired:
+    Choice: [216] = i: [ 0], p: [0], d1: [0], d2: [0], c: [0] => palette_vector_generate "16" "1" "1" "0"   PALETTE=( 16 23 30 37 44 51 ) A+
+    Choice: [217] = i: [ 1], p: [0], d1: [1], d2: [1], c: [0] => palette_vector_generate "51" "-1" "-1" "0" PALETTE=( 51 44 37 30 23 16 ) A-
+    Choice: [218] = i: [ 2], p: [0], d1: [1], d2: [0], c: [0] => palette_vector_generate "21" "-1" "1" "0"  PALETTE=( 21 26 31 36 41 46 ) B+
+    Choice: [219] = i: [ 3], p: [0], d1: [0], d2: [1], c: [0] => palette_vector_generate "46" "1" "-1" "0"  PALETTE=( 46 41 36 31 26 21 ) B-
+    What I want:   0 => 0, 1 => 3, 2 => 2, 3 => 1 ; 0123 => 0321
+
+    0123 reverse = 3210
+    3210 rotated right 1 is 0321
+    Start with d = i % 4
+    Apply a reverse: d = 3 - d
+        d = 3 - (i % 4)
+    Apply a rotation right: d = (d + 1) % 4
+        d = ((3 - (i % 4)) + 1) % 4
+        d = (3 - i % 4 + 1) % 4
+        d = (4 - i % 4) % 4
+  Or
+    Start with d = i % 4
+    Apply a rotation left: d = (d + 3) % 4
+        d = (i % 4 + 3) % 4
+    Apply a reverse: d = 3 - d
+        d = 3 - (i % 4 + 3) % 4
+        d = 3 - (i + 3) % 4
+
+Attempt: d=$(( 3 - (i + 3) % 4 ))
+    Choice: [216] = i: [ 0], p: [0], d1: [0], d2: [0], c: [0] => palette_vector_generate "16" "1" "1" "0"   PALETTE=( 16 23 30 37 44 51 ) A+
+    Choice: [217] = i: [ 1], p: [0], d1: [1], d2: [1], c: [0] => palette_vector_generate "51" "-1" "-1" "0" PALETTE=( 51 44 37 30 23 16 ) A-
+    Choice: [218] = i: [ 2], p: [0], d1: [1], d2: [0], c: [0] => palette_vector_generate "21" "-1" "1" "0"  PALETTE=( 21 26 31 36 41 46 ) B+
+    Choice: [219] = i: [ 3], p: [0], d1: [0], d2: [1], c: [0] => palette_vector_generate "46" "1" "-1" "0"  PALETTE=( 46 41 36 31 26 21 ) B-
+
+
+
+Okay.... okay....
+For 2d vectors, i = choice - 216. There are 72 of them.
+The components of that 72 are {p:0-5}{d:0-3}{c:0-2}
+But I can split {d:0-3} into {d1:0-1}{d2:0-1} if needed, and I think I want to.
+From least significant to most significant: {c:0-2}{d2:0-1}{p:0-5}{d1:0-1}
+    This should make it pick an edge, go there and back, move to the next cell, there and back, etc.
+    Then it'll rotate keeping the same constant dimension and do it again.
+    Then it'll move to a different dimension.
+
+    Full breakdown:
+        i = choice - 216    (0 to 71)
+        d1 = i % 2          (0 to 1)
+        d1l = i / 2         (0 to 35: 71/2 = 35)
+        p = d1l % 6         (0 to 5)
+        p = i / 2 % 6       (0 to 5)
+        pl = d1l / 6        (0 to 5: 35/6 = 5)
+        pl = i / 2 / 6      (0 to 5: 71/2/6 = 5)
+        pl = i / 12         (0 to 5: 71/12 = 5)
+        d2 = pl % 2         (0 to 1)
+        d2 = i / 12 % 2     (0 to 1)
+        d2l = pl / 2        (0 to 2: 5/2 = 2)
+        c = d2l % 3         (0 to 2)
+        c = pl / 2          (0 to 2: 5/2 = 2)
+        c = i / 12 / 2      (0 to 2: 71/12/2 = 2)
+        c = i / 24          (0 to 2: 71/24 = 2)
+    Simplified:
+        i = choice - 216    (0 to 71)
+        d1 = i % 2          (0 to 1)
+        p = i / 2 % 6       (0 to 5)
+        d2 = i / 12 % 2     (0 to 1)
+        c = i / 24          (0 to 2: 71/24 = 2)
+
+If {da}{db} is a 2 bit number (0 to 4), it has the order 00, 01, 10, 11, or 0123.
+But 00 and 11 are oposites, and 01 and 10 are opposites. So the ordering we want is actually 00, 11, 10, 01, or 0321.
+To achieve this, we need to combine {da}{db}: d = da * 2 + db
+Then rotate it left: d = (d + 3) % 4 = (da * 2 + db + 3) % 4
+Then reverse it: d = 3 - d = 3 - (da * 2 + db + 3) % 4
+Then we can pull d1 and d2 out of that using
+    d1 = d / 2
+    d2 = d % 2
+
+d = 3 - (da * 2 + db + 3) % 4
+d = 3 - (i % 2 * 2 + i / 12 % 2 + 3) % 4
+
+Bah. It's going 3120?
+Swapping d1 and d2 gives 3210
+
+ 0-23:  0-11, 12-23: 216-227, 228-239 => Middle 4: 226 229
+24-47: 24-35, 36-47: 240-251, 252-263 => Middle 4: 250 253
+48-72: 48-59, 60-72: 264-275, 276-287 => Middle 4: 274 277
+
+226 229: 0321
+250 253: 0321
+274 277: 0321 Bam.
+
+
+Ugh... .3d.
+
+Currently, from 288 to 295:
+    000, 100, 010, 110, 001, 101, 011, 111 => 04261537
+    Opposites:
+        000, 111: 07
+        001, 110: 16
+        010, 101: 25
+        011, 100: 34
+    So what I want is 07162534
+    0 => 0  or  000 => 000
+    4 => 7  or  100 => 111
+    2 => 1  or  010 => 001
+    6 => 6  or  110 => 110
+    1 => 2  or  001 => 010
+    5 => 5  or  101 => 101
+    3 => 3  or  011 => 011
+    7 => 4  or  111 => 100
+
+    I don't know if I can math this one, or even want to. At least for now.
 
 
 
