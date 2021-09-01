@@ -20,7 +20,7 @@ to_date () {
     local input pieces epoch_ms ms_fractions ms s_fractions epoch_s
     input="$1"
     if [[ -z "$input" || "$input" == '-h' || "$input" == '--help' ]]; then
-        >&2 echo 'Usage: to_date <epoch in milliseconds>';
+        printf 'Usage: to_date <epoch in milliseconds>\n'
         return 0
     fi
     if [[ "$input" == 'now' ]]; then
@@ -29,7 +29,7 @@ to_date () {
     fi
     # Split out the input into milliseconds and fractional milliseconds
     if [[ "$input" =~ ^[[:digit:]]+(\.[[:digit:]]+)?$ ]]; then
-        pieces=( $( echo -E -n "$input" | tr '.' ' ' ) )
+        pieces=( $( tr '.' ' ' <<< "$input" ) )
         if [[ -n "${pieces[0]}" ]]; then
             epoch_ms="${pieces[0]}"
             ms_fractions="${pieces[1]}"
@@ -38,15 +38,15 @@ to_date () {
             ms_fractions="${pieces[2]}"
         fi
     else
-        >&2 echo "Invalid input: [$input]."
+        printf "Invalid input: [%s].\n" "$input" >&2
         return 1
     fi
-    ms="$( echo -E -n "$epoch_ms" | tail -c 3 )"
-    s_fractions="$( echo -E -n "${ms}${ms_fractions}" | sed -E 's/0+$//' )"
+    ms="$( printf '%s' "$epoch_ms" | tail -c 3 )"
+    s_fractions="$( sed -E 's/0+$//' <<< "${ms}${ms_fractions}")"
     if [[ -n "$s_fractions" ]]; then
         s_fractions=".$s_fractions"
     fi
-    epoch_s="$( echo -E -n "$epoch_ms" | sed -E 's/...$//' )"
+    epoch_s="$( sed -E 's/...$//' <<< "$epoch_ms" )"
     date -r "$epoch_s" "+%F %T${s_fractions} %z (%Z) %A"
     return 0
 }

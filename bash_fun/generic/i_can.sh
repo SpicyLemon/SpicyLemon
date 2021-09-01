@@ -14,7 +14,7 @@
 ) && sourced='YES' || sourced='NO'
 
 if [[ "$sourced" != 'YES' ]]; then
-    >&2 cat << EOF
+    cat >&2 << EOF
 This script is meant to be sourced instead of executed.
 Please run this command to enable the functionality contained in within: $( printf '\033[1;37msource %s\033[0m' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" )
 EOF
@@ -35,15 +35,15 @@ can_i () {
     local c e
     c="$@"
     if [[ -z "$c" ]]; then
-        echo -E "Usage: can_i <command>"
+        printf 'Usage: can_i <command>\n'
         return 2
     fi
     if i_can "$c"; then
-        echo -E "Yes. You can [$c]."
+        printf 'Yes. You can [%s].\n' "$c"
         return 0
     else
         e="$?"
-        echo -E "No. You cannot [$c]."
+        printf 'No. You cannot [%s].\n' "$c"
         return $e
     fi
 }

@@ -33,7 +33,7 @@
 ) && sourced='YES' || sourced='NO'
 
 if [[ "$sourced" != 'YES' ]]; then
-    >&2 cat << EOF
+    cat >&2 << EOF
 This script is meant to be sourced instead of executed.
 Please run this command to enable the functionality contained in within: $( printf '\033[1;37msource %s\033[0m' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" )
 EOF

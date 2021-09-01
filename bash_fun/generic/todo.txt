@@ -1,7 +1,5 @@
 TODO:
     Replace uses of echo with printf.
-    Correct the placement of output redirection.
-        Should be after the command.
     Replace "echo ... |" and "printf ... |" stuff with herestrings.
         To find most spots: grep -E "(echo|printf) .*\|" *
         Note that a herestring will add a newline to the end which can sometimes cause problems.
@@ -60,7 +58,7 @@ TODO:
             Since then, though, I've figured out better ways of handling it.
             Usually it's just testing for the exact functionality I'm about to use.
                 if command -v "whatever" > /dev/null 2>&1; then ...
-        strip_colors.sh, strip_final_newline.sh, tee_pbcopy.sh, tee_strip_colors.sh, tee_strip_colors_pbcopy.sh
+        i_can.sh, strip_colors.sh, strip_final_newline.sh, tee_pbcopy.sh, tee_strip_colors.sh, tee_strip_colors_pbcopy.sh
             Can probably just as easily be aliases.
     Add more generic preprocessing to multidiff.
         I picture it kind of like xargs where you supply a command to run on each file.

@@ -18,7 +18,7 @@
 # Usage: multi_line_replace <filename> <str_to_replace> <multi-line replacement text>
 multi_line_replace () {
     if [[ "$#" -ne '3' ]]; then
-        echo 'Usage: multi_line_replace <filename> <str_to_replace> <multi-line replacement text>' >&2
+        printf 'Usage: multi_line_replace <filename> <str_to_replace> <multi-line replacement text>\n' >&2
         return 1
     fi
     local filename to_replace replace_with loop_counter loop_max line_to_replace replacement_lines
