@@ -34,6 +34,7 @@ This directory contains files for stuff that has either been replaced, or is no 
 * `pretty_json.sh` - Not really handier than just typing out the jq stuff.
 * `strip_colors.sh` - Replaced with an alias: `alias strip_colors='sed -E "s/$( printf "\033" )\[[[:digit:]]+(;[[:digit:]]+)*m//g"'`
 * `strip_final_newline.sh` - Replaced with an alias: `alias strip_final_newline="awk ' { if(p) print(l); l=\$0; p=1; } END { printf("%s", l); } '"`
+* `tee_pbcopy.sh` - Replaced with an alias: `alias tee_pbcopy='tee >( strip_final_newline | pbcopy )'`
 * `text-helpers.sh` - Some old functions for converting lists of things into nicer formats.
   These are mostly replaced by the [re_line.sh](../generic/re_line.sh) function.
   Some other entries were moved into the [bash_fun/generic/](../generic) directory.

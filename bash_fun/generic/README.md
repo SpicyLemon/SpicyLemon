@@ -40,7 +40,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [show_last_exit_code.sh](#user-content-show_last_exit_codesh)
   * [show_palette.sh](#user-content-show_palettesh)
   * [string_repeat.sh](#user-content-string_repeatsh)
-  * [tee_pbcopy.sh](#user-content-tee_pbcopysh)
   * [tee_strip_colors.sh](#user-content-tee_strip_colorssh)
   * [tee_strip_colors_pbcopy.sh](#user-content-tee_strip_colors_pbcopysh)
   * [to_date.sh](#user-content-to_datesh)
@@ -1033,17 +1032,6 @@ BananaBananaBanana
 ```
 
 The output does not contain an ending newline.
-
-### `tee_pbcopy.sh`
-
-[tee_pbcopy.sh](tee_pbcopy.sh) - Function/script for outputting a stream, and also putting it into the clipboard.
-
-Using `tee`, the input stream is sent to both stdout as well as the clipboard (using `pbcopy`).
-
-Example Usage:
-```console
-$ cat foo.txt | tee_pbcopy
-```
 
 ### `tee_strip_colors.sh`
 
