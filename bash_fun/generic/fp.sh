@@ -14,44 +14,68 @@
 ) && sourced='YES' || sourced='NO'
 
 # Get the full path to a file
-# Usage: fp
-#   or   fp <filename 1> [<filename 2> ...]
-#   or   <stuff> | fp -
+# Usage: fp [-LP]
+#   or   fp [-LP] <filename 1> [<filename 2> ...]
+#   or   <stuff> | fp - [-LP]
+# The -P and -L flags are provided to pwd if provided here, and the directory in question exists.
 fp () {
-    local filenames filename fullpath fullpaths
-    if [[ "$#" -eq '1' && "$1" == '-' ]]; then
-        filenames=( $( cat - ) )
-    elif [[ "$#" -gt '0' ]]; then
-        filenames=( "$@" )
-    elif command -v "fzf" > /dev/null 2>&1; then
-        filenames=( $( ls -a | grep -v "^\.\.$" | sort -f | fzf -m --tac --cycle ) )
-    else
-        filenames=()
-    fi
+    local filenames pwdargs selections filename fullpaths fullpath justdir
+    filenames=()
+    pwdargs=()
+    while [[ "$#" -gt '0' ]]; do
+        case "$1" in
+            -L|-P) pwdargs+=( "$1" );;
+            -) filenames+=( $( cat - ) );;
+            *) filenames+=( "$1" );;
+        esac
+        shift
+    done
     if [[ "${#filenames[@]}" -eq '0' ]]; then
-        printf 'No filenames provided or selected.\n'
-        return 1
-    fi
-    if command -v "setopt" > /dev/null 2>&1; then
-        setopt local_options BASH_REMATCH KSH_ARRAYS
+        if command -v 'fzf' > /dev/null 2>&1; then
+            selections="$( ls -a | sort -f | fzf -m --tac --cycle )"
+            if [[ -z "$selections" ]]; then
+                printf 'No filenames selected.\n' >&2
+                return 1
+            fi
+            while IFS= read line; do
+                filenames+=( "$line" )
+            done <<< "$selections"
+        else
+            printf 'No filenames provided.\n' >&2
+            return 1
+        fi
     fi
     fullpaths=()
     for filename in "${filenames[@]}"; do
-        fullpath="$PWD/$filename"
-        # Convert /./ to just /
-        while [[ "$fullpath" =~ (/\./) ]]; do
-            fullpath="${fullpath/${BASH_REMATCH[1]}//}"
-        done
-        # Remove sections that go backwards. e.g. /foo/bar/baz/../myfile.txt becomes /foo/bar/myfile.txt
-        while [[ "$fullpath" =~ ([^/]+/\.\.(/|$)) ]]; do
-            fullpath="${fullpath/${BASH_REMATCH[1]}/}"
-        done
-        # If there is still a /. at the end, remove it.
-        fullpath="${fullpath%/.}"
-        fullpaths+=( "$fullpath" )
+        if [[ "$filename" == '/' ]]; then
+            # The root / directory is a special case that doesn't need extra stuff.
+            # And without this special handling, requires extra hoops in the rest of the stuff.
+            fullpaths+=( '/' )
+            continue
+        elif [[ "$filename" =~ ^/ ]]; then
+            fullpath="$filename"
+        else
+            fullpath="$( pwd )/$filename"
+        fi
+        # If the fullpath is a directory, it's a little easier.
+        if [[ -d "$fullpath" ]]; then
+            fullpaths+=( "$( cd "$fullpath"; pwd ${pwdargs[*]} )" )
+        else
+            # It's either a file, or doesn't exist, do some legwork.
+
+            # Split it into the last part and the directory holding it.
+            justfile="$( basename "$fullpath" )"
+            justdir="$( dirname "$fullpath" )"
+            # If the directory actually exists, simplify it.
+            [[ -d "$justdir" ]] && justdir="$( cd "$justdir"; pwd ${pwdargs[*]} )"
+            # Make sure it ends in a slash. It'll only not end in a slash if it's exactly '/'. E.g. when filename = /bin
+            [[ ! "$justdir" =~ /$ ]] && justdir="$justdir/"
+            # Put it back to gether and move on.
+            fullpaths+=( "${justdir}${justfile}" )
+        fi
     done
     if [[ "${#fullpaths[@]}" -eq '1' ]] && command -v "pbcopy" > /dev/null 2>&1; then
-        printf %s "${fullpaths[@]}" | pbcopy
+        printf '%s' "${fullpaths[@]}" | pbcopy
         printf '%s - copied to clipboard.\n' "${fullpaths[@]}"
         return 0
     fi

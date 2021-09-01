@@ -34,10 +34,6 @@ TODO:
         The hrr.sh file should probably be split out into individual files too. I don't know though, they're pretty simple, but who knows.
             That'd let some of the more palette oriented functions go into the color stuff too.
     Maybe deprecate some of the following:
-        fp.sh
-            I've had some issues with this one.
-            There's probably some already-made shell built-in stuff that would be better suited to solve this.
-            So maybe it's not due for deprecation, maybe it just needs an overhaul.
         i_can.sh, strip_colors.sh, strip_final_newline.sh, tee_pbcopy.sh, tee_strip_colors.sh, tee_strip_colors_pbcopy.sh
             Can probably just as easily be aliases.
     Add more generic preprocessing to multidiff.

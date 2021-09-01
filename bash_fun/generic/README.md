@@ -286,14 +286,50 @@ $ echo_color red -- This is red | escape_escapes
 
 [fp.sh](fp.sh) - Function/script for getting the full path to a file.
 
-This basically prepends your current working directory to the provided strings then corrects for any instances of `../`.
-If only a single entry is provided, and `pbcopy` is available, the result will be loaded into your clipboard.
-If no entries are provided, you will be prompted to select some from the current directory.
+If the filename in question does not start with a slash, this will prepend your current directory onto it.
+Then the path will be simplified (if it exists).
+Finally, the full path to the file is printed.
 
-Example Usage:
+If no files are provided, and fzf is available, you will be prompted to select the file(s) from the current directory.
+
+Files can also be piped in by supplying a dash as an argument: `ls | fp -`.
+
+If the path exists to be simplified, `pwd` is used to do so. If you want `-L` or `-P` provided to `pwd`, you can provide them to `fp` and they'll be passed on.
+
+If there is only one path to print, and the `pbcopy` command is available, then the path will be put into your clipboard as well as printed to stdout.
+
+Example: Get the full path to the README in the deprecated folder.
 ```console
-$ fp README.md
-/Users/spicylemon/git/SpicyLemon/bash_fun/generic/README.md - copied to clipboard.
+$ pwd
+/Users/spicylemon/git/SpicyLemon/bash_fun/generic
+$ fp ../deprecated/README.md
+/Users/spicylemon/git/SpicyLemon/bash_fun/deprecated/README.md - copied to clipboard.
+```
+
+Example: Get the full path to all the files in this folder that start with `"to_"`.
+```console
+$ pwd
+/Users/spicylemon/git/SpicyLemon/bash_fun/generic
+$ fp to_*
+/Users/spicylemon/git/SpicyLemon/bash_fun/generic/to_date.sh
+/Users/spicylemon/git/SpicyLemon/bash_fun/generic/to_epoch.sh
+```
+
+Example: Use find to find files, then get their full paths:
+```console
+$ pwd
+/Users/spicylemon/git/SpicyLemon
+$ find . -name README.md | fp -
+/Users/spicylemon/git/SpicyLemon/README.md
+/Users/spicylemon/git/SpicyLemon/js_fun/README.md
+/Users/spicylemon/git/SpicyLemon/ticker/README.md
+/Users/spicylemon/git/SpicyLemon/bash_fun/gitlab/README.md
+/Users/spicylemon/git/SpicyLemon/bash_fun/figure/README.md
+/Users/spicylemon/git/SpicyLemon/bash_fun/README.md
+/Users/spicylemon/git/SpicyLemon/bash_fun/generic/README.md
+/Users/spicylemon/git/SpicyLemon/bash_fun/deprecated/README.md
+/Users/spicylemon/git/SpicyLemon/perl_fun/README.md
+/Users/spicylemon/git/SpicyLemon/perl_fun/loan_calcs/README.md
 ```
 
 ### `getlines.sh`
@@ -307,7 +343,7 @@ Lines are printed in numerical order (as opposed to the order that they're provi
 
 Example Usage:
 ```console
-$ getlines 60-64 11-15 fp.sh
+$ getlines 86-90 11-15 fp.sh
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
   || [[ -n "$KSH_VERSION" && $(cd "$(dirname -- "$0")" && printf '%s' "${PWD%/}/")$(basename -- "$0") != "${.sh.file}" ]] \
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
