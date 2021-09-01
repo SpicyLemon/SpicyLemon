@@ -54,7 +54,7 @@ __generic_do_setup () {
     #   ls *.sh | grep -v 'generic-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     func_base_file_names=(
         'add'                      'b2h'  'change_word'   'echo_color'
-        'echo_do'                  'escape_escapes'      'fp'                   'get_shell_type'  'getlines'
+        'echo_do'                  'escape_escapes'      'fp'                   'getlines'
         'hrr'                      'i_can'               'java_sdk_switcher'    'join_str'        'max'
         'min'                      'multi_line_replace'  'multiply'             'print_args'
         'ps_grep'                  're_line'             'sdkman_fzf'           'set_title'       'show_last_exit_code'

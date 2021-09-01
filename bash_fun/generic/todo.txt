@@ -38,11 +38,6 @@ TODO:
             I've had some issues with this one.
             There's probably some already-made shell built-in stuff that would be better suited to solve this.
             So maybe it's not due for deprecation, maybe it just needs an overhaul.
-        get_shell_type.sh
-            This was originally intended so that things could be handled differently in different shells.
-            Since then, though, I've figured out better ways of handling it.
-            Usually it's just testing for the exact functionality I'm about to use.
-                if command -v "whatever" > /dev/null 2>&1; then ...
         i_can.sh, strip_colors.sh, strip_final_newline.sh, tee_pbcopy.sh, tee_strip_colors.sh, tee_strip_colors_pbcopy.sh
             Can probably just as easily be aliases.
     Add more generic preprocessing to multidiff.

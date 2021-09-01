@@ -20,7 +20,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [echo_do.sh](#user-content-echo_dosh)
   * [escape_escapes.sh](#user-content-escape_escapessh)
   * [fp.sh](#user-content-fpsh)
-  * [get_shell_type.sh](#user-content-get_shell_typesh)
   * [getlines.sh](#user-content-getlinessh)
   * [h2b64.sh](#user-content-h2b64sh)
   * [hrr.sh](#user-content-hrrsh)
@@ -295,20 +294,6 @@ Example Usage:
 ```console
 $ fp README.md
 /Users/spicylemon/git/SpicyLemon/bash_fun/generic/README.md - copied to clipboard.
-```
-
-### `get_shell_type.sh`
-
-[get_shell_type.sh](get_shell_type.sh) - Function for telling which shell is being used. Currently only recognizes bash and zsh.
-
-Originally, I was using this to split code that needed to be different for bash and zsh.
-But then I realized that it's better to do checks for specific functionality, so I don't really use this anymore.
-I didn't feel like getting rid of it, though.
-
-Example Usage:
-```console
-$ get_shell_type
-bash
 ```
 
 ### `getlines.sh`

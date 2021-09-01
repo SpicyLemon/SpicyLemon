@@ -12,7 +12,8 @@ This directory contains files for stuff that has either been replaced, or is no 
 * `generic.sh` - This is an old monolithic dumping ground of environment functions.
   It has been replaced by the contents of the [bash_fun/generic/](../generic) directory.
   If you were previously sourcing this file, you should source `generic-setup.sh` instead.
-* `get_all_system_logs` - Old system-specific function for getting all system logs.
+* `get_all_system_logs.sh` - Old system-specific function for getting all system logs.
+* `get_shell_type.sh` - Never really handy except for learning. Too specific, and it's better to just check for functionality.
 * `git-helpers.sh` - Some functions that help interact with git.
   These were awkwardly named, though.
   They've been renamed to more easily convey their purpose.
