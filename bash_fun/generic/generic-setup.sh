@@ -58,7 +58,7 @@ __generic_do_setup () {
         'hrr'                                  'java_sdk_switcher'   'join_str'                 'list'
         'max'                  'min'                  'multi_line_replace'  'multidiff'                'multiply'
         'palette_generators'   'print_args'           'ps_grep'             're_line'                  'sdkman_fzf'
-        'set_title'            'show_last_exit_code'  'show_palette'        'string_repeat'            'strip_colors'
+        'set_title'            'show_last_exit_code'  'show_palette'        'string_repeat'
         'strip_final_newline'  'tee_pbcopy'           'tee_strip_colors'    'tee_strip_colors_pbcopy'  'to_date'
         'to_epoch'
     )

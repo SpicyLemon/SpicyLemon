@@ -40,7 +40,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [show_last_exit_code.sh](#user-content-show_last_exit_codesh)
   * [show_palette.sh](#user-content-show_palettesh)
   * [string_repeat.sh](#user-content-string_repeatsh)
-  * [strip_colors.sh](#user-content-strip_colorssh)
   * [strip_final_newline.sh](#user-content-strip_final_newlinesh)
   * [tee_pbcopy.sh](#user-content-tee_pbcopysh)
   * [tee_strip_colors.sh](#user-content-tee_strip_colorssh)
@@ -1035,17 +1034,6 @@ BananaBananaBanana
 ```
 
 The output does not contain an ending newline.
-
-### `strip_colors.sh`
-
-[strip_colors.sh](strip_colors.sh) - Function/script for removing color-code control sequences from a stream.
-
-This is useful for stuff that outputs with terminal color codes, but you don't want them.
-
-Example Usage:
-```console
-$ echo_color blue -- 'testing' | strip_colors | pbcopy
-```
 
 ### `strip_final_newline.sh`
 

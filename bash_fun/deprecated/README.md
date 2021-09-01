@@ -32,6 +32,7 @@ This directory contains files for stuff that has either been replaced, or is no 
 * `json_diff.sh` - The multidiff command can do this, and is more versatile.
 * `jqq.sh` - Not needed because of herestrings. E.g. instead of `jqq "$foo" --sort-keys '.'` use `jq --sort-keys '.' <<< "$foo"`.
 * `pretty_json.sh` - Not really handier than just typing out the jq stuff.
+* `strip_colors.sh` - Replaced with an alias: `alias strip_colors='sed -E "s/$( printf "\033" )\[[[:digit:]]+(;[[:digit:]]+)*m//g"'`
 * `text-helpers.sh` - Some old functions for converting lists of things into nicer formats.
   These are mostly replaced by the [re_line.sh](../generic/re_line.sh) function.
   Some other entries were moved into the [bash_fun/generic/](../generic) directory.
