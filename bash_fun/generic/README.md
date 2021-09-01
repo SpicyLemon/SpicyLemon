@@ -35,7 +35,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [multidiff.sh](#user-content-multidiffsh)
   * [multiply.sh](#user-content-multiplysh)
   * [palette_generators.sh](#user-content-palette_generatorssh)
-  * [pretty_json.sh](#user-content-pretty_jsonsh)
   * [print_args.sh](#user-content-print_argssh)
   * [ps_grep.sh](#user-content-ps_grepsh)
   * [re_line.sh](#user-content-re_linesh)
@@ -51,7 +50,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [tee_strip_colors_pbcopy.sh](#user-content-tee_strip_colors_pbcopysh)
   * [to_date.sh](#user-content-to_datesh)
   * [to_epoch.sh](#user-content-to_epochsh)
-  * [ugly_json.sh](#user-content-ugly_jsonsh)
 
 ## Usage
 
@@ -819,33 +817,6 @@ $ show_palette $( palette_vector_no_wrap )
 
 If you care to go crazy digging through my notes, they can be found here: [notes-on-palette-generation.txt](notes-on-palette-generation.txt)
 
-### `pretty_json.sh`
-
-[pretty_json.sh](pretty_json.sh) - Function/script for using jq to make json pretty.
-
-This uses jq to make json pretty.
-It's similar to just doing `jq --sort-keys '.' <filename>` except it's got some nice bonus features.
-
-It can get the input from a file, a pipe, the clipboard, or even as a raw json string as an argument.
-It can also output to a file, stdout, or the clipboard.
-STDOUT output will always contain color though.
-That's why the ability to output to a file was added.
-File output, and clipboard output do not contain color info.
-If the input is a file, and the output is a file, the output filename can be automatically generated from the input filename.
-
-See `pretty_json --help` for more info.
-
-Example Usage:
-```console
-$ pretty_json -- '{"a":"A","b":"B"}'
-{
-  "a": "A",
-  "b": "B"
-}
-```
-
-The counterpart to this function is `ugly_json` (listed below).
-
 ### `print_args.sh`
 
 [print_args.sh](print_args.sh) - Function/script for printing out the arguments passed into it.
@@ -1177,27 +1148,4 @@ Also available:
 $ to_epoch now
 1591341279000
 ```
-
-### `ugly_json.sh`
-
-[ugly_json.sh](ugly_json.sh) - Function/script for using jq to make json ugly (compact).
-
-This is similar to just doing `jq --sort-keys -c '.' <filename>` except it's got some nice bonus features.
-
-It can get the input from a file, a pipe, the clipboard, or even as a raw json string as an argument.
-It can also output to a file, stdout, or the clipboard.
-STDOUT output will always contain color though.
-That's why the ability to output to a file was added.
-File output, and clipboard output do not contain color info.
-If the input is a file, and the output is a file, the output filename can be automatically generated from the input filename.
-
-See `ugly_json --help` for more info.
-
-Example Usage:
-```console
-$ ugly_json -- '{ "a" : "A" , "b" : "B" }'
-{"a":"A","b":"B"}
-```
-
-The counterpart to this function is `pretty_json` (listed above).
 

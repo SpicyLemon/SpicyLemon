@@ -56,10 +56,10 @@ __generic_do_setup () {
         'add'                      'b2h'  'change_word'   'chrome_cors'     'echo_color'
         'echo_do'                  'escape_escapes'      'fp'                   'get_shell_type'  'getlines'
         'hrr'                      'i_can'               'java_sdk_switcher'    'join_str'        'max'
-        'min'                      'multi_line_replace'  'multiply'             'pretty_json'     'print_args'
+        'min'                      'multi_line_replace'  'multiply'             'print_args'
         'ps_grep'                  're_line'             'sdkman_fzf'           'set_title'       'show_last_exit_code'
         'string_repeat'            'strip_colors'        'strip_final_newline'  'tee_pbcopy'      'tee_strip_colors'
-        'tee_strip_colors_pbcopy'  'to_date'             'to_epoch'             'ugly_json'       'list'
+        'tee_strip_colors_pbcopy'  'to_date'             'to_epoch'             'list'
         'multidiff'                'b642h'               'h2b64'           'palette_generators'   'show_palette'
     )
 

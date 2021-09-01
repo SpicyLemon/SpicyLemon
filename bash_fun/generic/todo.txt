@@ -34,13 +34,6 @@ TODO:
         The hrr.sh file should probably be split out into individual files too. I don't know though, they're pretty simple, but who knows.
             That'd let some of the more palette oriented functions go into the color stuff too.
     Maybe deprecate some of the following:
-        pretty_json.sh and ugly_json.sh.
-            I'm not sure how handy these ended up being.
-            Stuff that's handy though:
-                The auto-renaming pieces.
-                The auto-use-pbpaste part is a little nice, but doesn't save much.
-            But the rest is nearly as easily done by using jq directly.
-                E.g. The -c or --clipboard option to put it into the clipboard is just as easily done with | pbcopy.
         chrome_cors.sh
             I've no idea if this actually still even works.
             Last time I tried, I think there were complications.
