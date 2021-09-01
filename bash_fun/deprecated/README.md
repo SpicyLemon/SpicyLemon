@@ -25,6 +25,8 @@ This directory contains files for stuff that has either been replaced, or is no 
 * `gitlab.sh` - This is the old monolithic version of the GitLab CLI interaction functions.
   It has been replaced with a much more managable and split out set of files in the [bash_fun/gitlab/](../gitlab) directory.
   If you were previously sourcing this file, you should source `gitlab-setup.sh` instead.
+* `i_can.sh` - If this were a standard thing, it'd be useful, but for protability, I wasn't using it in any of my stuff. So I'm deprecating it.
+  I did set up an alias for it though: `alias ican='command -v > /dev/null 2>&1'`
 * `java_8_activate.sh` - Old system-specific command. The [java_sdk_switcher.sh](../gneric/java_sdk_switcher.sh) function is better.
 * `java_8_deactivate.sh` - Old system-specific command. The [java_sdk_switcher.sh](../gneric/java_sdk_switcher.sh) function is better.
 * `json_diff.sh` - The multidiff command can do this, and is more versatile.

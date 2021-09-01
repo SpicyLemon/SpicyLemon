@@ -23,7 +23,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [getlines.sh](#user-content-getlinessh)
   * [h2b64.sh](#user-content-h2b64sh)
   * [hrr.sh](#user-content-hrrsh)
-  * [i_can.sh](#user-content-i_cansh)
   * [java_sdk_switcher.sh](#user-content-java_sdk_switchersh)
   * [join_str.sh](#user-content-join_strsh)
   * [list.sh](#user-content-listsh)
@@ -465,24 +464,6 @@ $ hr11 This is a test of hr11
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
-```
-
-### `i_can.sh`
-
-[i_can.sh](i_can.sh) - Function for testing whether or not a command is available in the environment.
-
-It takes in the primary command that you want to test and exits with an exit code of 0 if the command is available, or 1 if not.
-
-This file also provides the `can_i` method that uses the `i_can` method to output whether or not a command is available.
-
-Example Usage:
-```console
-$ if i_can pbcopy; then cat README.txt | pbcopy && printf 'README.txt copied to clipboard.\n'; else printf 'Nothing happened.\n'; fi
-README.txt copied to clipboard.
-$ can_i pbpaste
-Yes. You can [pbpaste].
-$ can_i dance
-No. You cannot [dance].
 ```
 
 ### `java_sdk_switcher.sh`

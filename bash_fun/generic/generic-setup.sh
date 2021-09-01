@@ -55,7 +55,7 @@ __generic_do_setup () {
     func_base_file_names=(
         'add'                  'b2h'                  'b642h'               'change_word'              'echo_color'
         'echo_do'              'escape_escapes'       'fp'                  'getlines'                 'h2b64'
-        'hrr'                  'i_can'                'java_sdk_switcher'   'join_str'                 'list'
+        'hrr'                                  'java_sdk_switcher'   'join_str'                 'list'
         'max'                  'min'                  'multi_line_replace'  'multidiff'                'multiply'
         'palette_generators'   'print_args'           'ps_grep'             're_line'                  'sdkman_fzf'
         'set_title'            'show_last_exit_code'  'show_palette'        'string_repeat'            'strip_colors'
@@ -101,7 +101,7 @@ __generic_do_setup () {
     if [[ "${#required_external[@]}" -gt '0'  ]]; then
         __generic_if_verbose "$info" 1 "Checking for required external commands."
         for cmd_to_check in "${required_external[@]}"; do
-            if ! __generic_i_can "$cmd_to_check"; then
+            if ! command "$cmd_to_check" > /dev/null 2>&1; then
                 problems+=( "Command not found: [$cmd_to_check]." )
                 __generic_if_verbose "$error" 2 "The $cmd_to_check command was not found."
             else
@@ -158,7 +158,7 @@ __generic_do_setup () {
     # Check that the desired commands are now available.
     __generic_if_verbose "$info" 1 "Checking that functions are available."
     for entry in "${func_base_file_names[@]}" "${extra_funcs_to_check[@]}"; do
-        if ! __generic_i_can "$entry"; then
+        if ! command "$entry" > /dev/null 2>&1; then
             __generic_if_verbose "$error" 2 "Command failed to load: [$entry]."
         else
             __generic_if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
@@ -179,12 +179,6 @@ __generic_do_setup () {
     return 0
 }
 
-# Tests if a command is available.
-# Usage: if __generic_i_can "foo"; then echo "I can totally foo"; else echo "There's no way I can foo."; fi
-__generic_i_can () {
-    [[ "$#" -ne '0' ]] && command -v "$@" > /dev/null 2>&1
-}
-
 GENERIC_SETUP_VERBOSE=
 # Usage: __generic_if_verbose <level string> <indent-level> <message>
 __generic_if_verbose () {
@@ -201,7 +195,6 @@ generic_setup_exit_code=$?
 
 # Now clean up after yourself.
 unset -f __generic_do_setup
-unset -f __generic_i_can
 unset -f __generic_if_verbose
 unset GENERIC_SETUP_VERBOSE
 
