@@ -34,7 +34,7 @@ TODO:
         The hrr.sh file should probably be split out into individual files too. I don't know though, they're pretty simple, but who knows.
             That'd let some of the more palette oriented functions go into the color stuff too.
     Maybe deprecate some of the following:
-        strip_final_newline.sh, tee_pbcopy.sh, tee_strip_colors.sh, tee_strip_colors_pbcopy.sh
+        tee_pbcopy.sh, tee_strip_colors.sh, tee_strip_colors_pbcopy.sh
             Can probably just as easily be aliases.
     Add more generic preprocessing to multidiff.
         I picture it kind of like xargs where you supply a command to run on each file.

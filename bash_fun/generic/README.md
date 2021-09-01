@@ -40,7 +40,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [show_last_exit_code.sh](#user-content-show_last_exit_codesh)
   * [show_palette.sh](#user-content-show_palettesh)
   * [string_repeat.sh](#user-content-string_repeatsh)
-  * [strip_final_newline.sh](#user-content-strip_final_newlinesh)
   * [tee_pbcopy.sh](#user-content-tee_pbcopysh)
   * [tee_strip_colors.sh](#user-content-tee_strip_colorssh)
   * [tee_strip_colors_pbcopy.sh](#user-content-tee_strip_colors_pbcopysh)
@@ -1034,18 +1033,6 @@ BananaBananaBanana
 ```
 
 The output does not contain an ending newline.
-
-### `strip_final_newline.sh`
-
-[strip_final_newline.sh](strip_final_newline.sh) - Function/script for removing the final newline from a stream.
-
-This is most useful (for me) when sending stuff to pbcopy.
-If the provided text does not have a newline at the end of the last line, nothing is changed.
-
-Example Usage:
-```console
-$ cat foo.txt | strip_final_newline | pbcopy
-```
 
 ### `tee_pbcopy.sh`
 
