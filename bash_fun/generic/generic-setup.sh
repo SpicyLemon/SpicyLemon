@@ -101,7 +101,7 @@ __generic_do_setup () {
     if [[ "${#required_external[@]}" -gt '0'  ]]; then
         __generic_if_verbose "$info" 1 "Checking for required external commands."
         for cmd_to_check in "${required_external[@]}"; do
-            if ! command "$cmd_to_check" > /dev/null 2>&1; then
+            if ! command -v "$cmd_to_check" > /dev/null 2>&1; then
                 problems+=( "Command not found: [$cmd_to_check]." )
                 __generic_if_verbose "$error" 2 "The $cmd_to_check command was not found."
             else
@@ -158,7 +158,7 @@ __generic_do_setup () {
     # Check that the desired commands are now available.
     __generic_if_verbose "$info" 1 "Checking that functions are available."
     for entry in "${func_base_file_names[@]}" "${extra_funcs_to_check[@]}"; do
-        if ! command "$entry" > /dev/null 2>&1; then
+        if ! command -v "$entry" > /dev/null 2>&1; then
             __generic_if_verbose "$error" 2 "Command failed to load: [$entry]."
         else
             __generic_if_verbose "$ok" 2 "The [$entry] command is loaded and ready."
