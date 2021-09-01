@@ -12,7 +12,10 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [Program/Function Requirements](#user-content-programfunction-requirements)
 * [Directory Contents](#user-content-directory-contents)
   * [generic-setup.sh](#user-content-generic-setupsh)
+  * [add.sh](#user-content-addsh)
   * [add_to_filename.sh](#user-content-add_to_filenamesh)
+  * [b2h.sh](#user-content-b2hsh)
+  * [b642h.sh](#user-content-b642hsh)
   * [change_word.sh](#user-content-change_wordsh)
   * [chrome_cors.sh](#user-content-chrome_corssh)
   * [echo_color.sh](#user-content-echo_colorsh)
@@ -21,15 +24,27 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [fp.sh](#user-content-fpsh)
   * [get_shell_type.sh](#user-content-get_shell_typesh)
   * [getlines.sh](#user-content-getlinessh)
+  * [h2b64.sh](#user-content-h2b64sh)
   * [hrr.sh](#user-content-hrrsh)
   * [i_can.sh](#user-content-i_cansh)
+  * [java_sdk_switcher.sh](#user-content-java_sdk_switchersh)
   * [join_str.sh](#user-content-join_strsh)
+  * [json_diff.sh](#user-content-json_diffsh)
+  * [list.sh](#user-content-listsh)
+  * [max.sh](#user-content-maxsh)
+  * [min.sh](#user-content-minsh)
   * [multi_line_replace.sh](#user-content-multi_line_replacesh)
+  * [multidiff.sh](#user-content-multidiffsh)
+  * [multiply.sh](#user-content-multiplysh)
+  * [palette_generators.sh](#user-content-palette_generatorssh)
   * [pretty_json.sh](#user-content-pretty_jsonsh)
   * [print_args.sh](#user-content-print_argssh)
   * [ps_grep.sh](#user-content-ps_grepsh)
   * [re_line.sh](#user-content-re_linesh)
+  * [sdkman_fzf.sh](#user-content-sdkman_fzfsh)
+  * [set_title.sh](#user-content-set_titlesh)
   * [show_last_exit_code.sh](#user-content-show_last_exit_codesh)
+  * [show_palette.sh](#user-content-show_palettesh)
   * [string_repeat.sh](#user-content-string_repeatsh)
   * [strip_colors.sh](#user-content-strip_colorssh)
   * [strip_final_newline.sh](#user-content-strip_final_newlinesh)
@@ -64,9 +79,10 @@ These programs are used by some functions, and don't usually come pre-installed:
 
 These programs are also used, but are almost always already available:
 
-    `awk`,   `basename`,  `cat`,   `date`,  `dirname`,  `echo`,     `fzf`,
-    `grep`,  `head`,      `jq`,    `open`,  `pbcopy`,   `pbpaste`,  `printf`,
-    `ps`,    `sed`,       `tail`,  `tee`,   `tput`,     `tr`,       `/usr/libexec/java_home`
+    'cat'      'printf'    'echo'  'head'  'tail'
+    'grep'     'sed'       'awk'   'tr'    'tee'
+    'sort'     'column'    'ps'    'seq'   'date'
+    'dirname'  'basename'  'pwd'
 
 ## Directory Contents
 
@@ -82,6 +98,20 @@ $ source generic-setup.sh
 If you run into problems, you can use the `-v` option to get more information:
 ```console
 $ source generic-setup.sh -v
+```
+
+### `add.sh`
+
+[add.sh](add.sh) - A function/script for adding up numbers.
+
+Examples:
+```console
+$ printf '[%d]\n' "$( add 1 2 3 4 5 )"
+[15]
+$ printf '[%d]\n' "$( seq 6 20 | add )"
+[195]
+$ printf '[%d]\n' "$( seq 6 20 | add - 1 2 3 4 5 )"
+[210]
 ```
 
 ### `add_to_filename.sh`
@@ -111,6 +141,74 @@ getlines-new.sh
 ```
 
 This file can also be executed as a script for the same functionality.
+
+### `b2h.sh`
+
+[b2h.sh](b2h.sh) - A function/script for converting byte values to human readable ones.
+
+```console
+$ b2h --help
+Converts byte values to human readable values.
+
+Usage: b2h [flags] <value1> [<value2> ...]
+   or: <stuff that outputs values> | b2h [flags] [<values>]
+
+    Values:
+        Values must be positive numbers.
+        Any fractional portions (a period followed by digits) will be ignored.
+        Commas are okay.
+        One or more spaces will separate numbers (even if provided as the same argument).
+        Values have an upper limit based on your system.
+            e.g. a 32-bit system has a max of 2,147,483,647 -> 1.99 GiB or 2.14 GB
+                 a 64-bit system has a max of 9,223,372,036,854,775,807 -> 7.99 EiB or 9.22 EB
+        Values will be processed in the order they are provided.
+
+    Flags:
+        --help -h
+            Display help (and ignore everything else).
+        --base-ten --base-10 --ten --10 -t
+            Calculate using 1000 as the divisor instead of 1024.
+        --base-two --base-2 --two --binary -2 -b
+            Calculate using 1024 as the divisor.
+            This is the default behavior.
+            If both --base-ten and --base-two (or their aliases) are provided, whichever is last will be used.
+        --verbose -v
+            Include the original bytes value in the output.
+        --stdin -s -
+            Get values from stdin.
+            If values are also provided as arguments, the ordering depends on where in the arguments this flag is first given.
+            I.e. If this flag is before any provided values, the piped in values will be processed first.
+                 If this flag is after all provided values, the piped in values will be processed last.
+                 If this flag is between provided values, the values before it will be processed,
+                    then the piped in values, followed by the values provided after.
+            E.g. All of these commands will process the numbers 1, 2, 3, 4, and 5 in the same order.
+                printf '1 2' | b2h - 3 4 5
+                printf '4 5' | b2h 1 2 3 --stdin
+                printf '2 3 4' | b2h 1 --pipe 5
+                printf '2 3' | b2h 1 - 4 -s 5
+                    (the second instance of the flag is just ignored)
+
+```
+
+### `b642h.sh`
+
+[b642h.sh](b642h.sh) - A function/script for converting base64 encoded strings to hexadecimal.
+
+```console
+$ b642h --help
+Converts base64 values to hex.
+
+Usage: b642h <val1> [<val2>...]
+   or: <stuff> | b642h
+
+```
+
+Example:
+```console
+$ b642h VxtfaZoHQ+CWlFa0Kgb4TQ== KGBYwiamQwqmVh5xD+IOOQ==
+571b5f699a0743e0969456b42a06f84d
+286058c226a6430aa6561e710fe20e39
+```
 
 ### `change_word.sh`
 
@@ -279,30 +377,115 @@ fi
 unset sourced
 ```
 
+### `h2b64.sh`
+
+[h2b64.sh](h2b64.sh) - Function/script for converting hexadecimal to base64.
+
+```console
+$ h2b64 --help
+Converts hex values to base64.
+
+Usage: h2b64 <val1> [<val2>...]
+   or: <stuff> | h2b64
+```
+
+Example:
+```console
+$ h2b64 571b5f699a0743e0969456b42a06f84d 286058c226a6430aa6561e710fe20e39
+VxtfaZoHQ+CWlFa0Kgb4TQ==
+KGBYwiamQwqmVh5xD+IOOQ==
+```
+
 ### `hrr.sh`
 
 [hrr.sh](hrr.sh) - Function/script that outputs a colorful horizontal rule in your terminal.
 
+![various hr command results](/bash_fun/generic/screenshots/hrr-example.png)
+
 A message can be provided to include in the output too.
-You won't see it here (in this README), but it's colorized too.
 A random palette is chosen each time it's called.
 
-If you source the `hrr.sh` file, the `hrr` and `hhr` functions both become availalbe (so you don't have to remember which one it is).
-The `hr` function also becomes available.
-The `hrr` (and `hhr`) functions output 3 lines, and the `hr` function only outputs one.
-The width is determined by your environment.
+If you source the `hrr.sh` file, the following functions become available:
+- `hr`: Displays a single line without any padding added to the provided message (if provided).
+- `hr1`: Displays a single line, adding a single space to each side of the provided message.
+- `hr3`: Displays 3 lines containing a message on the middle one (if provided).
+- `hrr`: Same as `hr3`, just here for historical (hysterical?) reasons.
+- `hhr`: Same as `hr3`, just here for historical reasons.
+- `hr5`: Displays 5 lines containing a message on the middle one (if provided).
+- `hr7`: Displays 7 lines containing a message on the middle one (if provided).
+- `hr9`: Displays 9 lines containing a message on the middle one (if provided).
+- `hr11`: Displays 11 lines containing a message on the middle one (if provided).
+- `pick_a_palette`: If a palette has not already been set, it will pick a random one.
+- `what_palette_was_that`: Outputs the color codes of the palette most previously used.
+- `show_all_palettes`: Loops through all palette options and uses hr to display a message with them.
+- `test_palette`: Outputs each of the various hr heights using the provided palette and optional message.
+
+The width is determined using `tput` to get your terminal width, or if that's not available, it defaults to `80`.
 
 Example Usage:
 ```console
-$ hrr This is a test of hrr
- ################################################################################################################################################
-  ############################################################ This is a test of hrr ############################################################
- ################################################################################################################################################
+$ hr This is a test of hr
+##################################################This is a test of hr##################################################
 ```
-or
+
 ```console
-$  hr This is a test of hr
-  ############################################################ This is a test of hr ############################################################
+$ hr1 This is a test of hr1
+################################################ This is a test of hr1 #################################################
+```
+
+```console
+$ hr3 This is a test of hr3
+########################################################################################################################
+###############################################  This is a test of hr3  ################################################
+########################################################################################################################
+```
+
+```console
+$ hr5 This is a test of hr5
+########################################################################################################################
+########################################################################################################################
+##############################################   This is a test of hr5   ###############################################
+########################################################################################################################
+########################################################################################################################
+```
+
+```console
+$ hr7 This is a test of hr7
+########################################################################################################################
+########################################################################################################################
+################################################                       #################################################
+##############################################   This is a test of hr7   ###############################################
+################################################                       #################################################
+########################################################################################################################
+########################################################################################################################
+```
+
+```console
+$ hr9 This is a test of hr9
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+###############################################                         ################################################
+#############################################    This is a test of hr9    ##############################################
+###############################################                         ################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+```
+
+```console
+$ hr11 This is a test of hr11
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################        ########################################################
+##############################################                            ##############################################
+############################################     This is a test of hr11     ############################################
+##############################################                            ##############################################
+########################################################        ########################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
 ```
 
 ### `i_can.sh`
@@ -323,6 +506,14 @@ $ can_i dance
 No. You cannot [dance].
 ```
 
+### `java_sdk_switcher.sh`
+
+[java_sdk_switcher.sh](java_sdk_switcher.sh) - Function for using `sdkman` to switch your java versions in your environment.
+
+This is really only still around for historical reasons since it's just a wrapper for `sdkman_fzf use java _`.
+
+It interacts with sdkman and uses fzf to let you select the java version you want to switch to.
+
 ### `join_str.sh`
 
 [join_str.sh](join_str.sh) - Function/script for joining strings using a delimiter.
@@ -335,6 +526,139 @@ Example Usage:
 ```console
 $ join_str ', ' $( seq 1 10 )
 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+```
+
+### `json_diff.sh`
+
+[json_diff.sh](json_diff.sh) - Function/script for comparing two json files.
+
+It uses either `json_info` or `jq` to pre-process the files, then compares the two using diff, adding some coloring. See also `multidiff.sh`.
+
+```console
+$ json_diff --help
+Usage: json_diff [<diff args>] [--use-json-info|--use-jq] <file1> <file2>
+
+    <file1> and <file2> are the filenames of the json to diff.
+        These are always assumed to be the last two arguments provided.
+
+   <diff args> are any arguments you want provided to the diff command.
+
+    --use-json-info will use the json_info function to pre-process the json files.
+        The resulting diff will then be on the output of json_info.
+    --use-jq will use the jq program to pre-process the json files.
+        The resulting diff will then be on the pretty-print version of the JSON.
+        This is the default behavior.
+    If both --use-json-info and --use-jq are provided, the last one provided is used.
+```
+
+### `list.sh`
+
+[list.sh](list.sh) - Function/script for listing directory contents.
+
+Really, I just wanted an easy way to either list all directories or all files, and tell it whether or not to include hidden files, or even only look for hidden files.
+
+```console
+$ list --help
+list - lists files and/or directories.
+
+Usage: list [-f|--files|-F|--no-files] [-d|--dirs|-D|--no-dirs] [-h|--hidden|-H|--no-hidden|-I|--hidden-only]
+            [-t|--dot|-T|--no-dot] [-0|--print0|-n|--newline] [-b|--base|-a|--absolute|-B|--no-base]
+            [[--] <directory> [<directory2>...]]
+
+    -f or --files        Include files in the output.
+    -F or --no-files     Do not include files in the output.
+        If multiple of -f -F --files --no-files are given, the last one is used.
+        Default behavior depends on the presence of other flags.
+            If -d -d --dirs or --no-dirs is provided, the default is -F or --no-files
+            Otherwise, the default is -f or --files.
+
+    -d or --dirs         Include directories in the output.
+    -D or --no-dirs      Do not include directories in the output.
+        If multiple of -d -D --dirs --no-dirs are given, the last one is used.
+        Default behavior depends on the presense of other flags.
+            If -f -F --files or --no-files is provided, the default is -D or --no-dirs.
+            Otherwise, the default is -d or --dirs.
+
+    -h or --hidden       Include hidden files and/or directories in the output.
+    -H or --no-hidden    Do not include hidden files and/or directories in the ouptut.
+    -I or --hidden-only  Only include hidden files and/or directoriesi in the output.
+        If multiple of -h -H -I --hidden --no-hidden --hidden-only are given, the last one is used.
+        If none of them are given, default behavior is -H or --no-hidden.
+
+    -t or --dot          Include . as a directory for output.
+    -T or --no-dot       Do not include . as a directory for output.
+        If multiple of -t -T --dot or --no-dot are given, the last one is used.
+        If none of them are given, default behavior is -T or --no-dot.
+
+    -0 or --print0       Terminate each entry with a null character (handy with xargs -0).
+    -n or --newline      Terminate each entry with a newline character.
+        If multiple of -0 -n --print0 or --newline are given, the last one is used.
+        If none of them are given, default behavior is -n or --newline.
+
+    -b or --base        Include the base directory for each entry (as provided with the <directory> args).
+    -a or --absolute    List the absolute path to each entry.
+    -B or --no-base     Do not include the base directory for each entry.
+        If multiple of -b -a -B --base --absolute or --no-base are given, the last one is used.
+        If none of them are given, default behavior depends on the number of directories provided as arguments.
+            If zero or one are provided, -B or --no-base is the default.
+            If two or more are provided, -b or --base is the default.
+
+    [--] <directory> [<directory2>...]
+        Any number of directories can be provided as a base directory to list the contents of.
+        Any arguments that do not start with a - are taken to be directories.
+        Additionaly, any arguments provided after -- are taken to be directories.
+        So if your directory of interest starts with a dash, you must provide it after a -- argument.
+        If no directories are provided, the current directory (.) is used.
+
+Default behavior: All of these behave the same:
+    list
+    list --files --dirs --no-hidden --no-dot --newline --no-base
+    list -fdHTnB
+
+Examples:
+    Get just the (non-hidden) files in the current directory:
+        list -f
+        list -D
+    Get just the (non-hidden) directories in the current directory:
+        list -d
+        list -F
+    Get just the hidden directories in the home directory:
+        list -Id ~
+    Get ls long-format information on the hidden files in the /users/Spicylemon directory:
+        list -If0 /users/SpicyLemon | xargs -0 ls -l
+    Get ls long-format information on the entire contents of the foo/ and
+    bar/ directories (in the current directory), sorted by date, newest at the bottom,
+    and including the directories themselves:
+        list -th0 foo bar | xargs -0 ls -ldtr
+
+Exit codes:
+    0   Normal execution with output.
+    1   Normal execution but there was nothing to output.
+    2   Invalid argument provided.
+    3   Invalid directory provided.
+
+```
+
+### `max.sh`
+
+[max.sh](max.sh) - Function/script for getting the max number.
+
+```console
+$ max 17 15 3 10 8 7 4 9 11 6 13 18 19 20 1 12 2 14 5 16
+20
+$ printf '17 15 3 10 8 7 4 9 11 6 13 18 19 20 1 12 2 14 5 16' | max
+20
+```
+
+### `min.sh`
+
+[min.sh](min.sh) - Function/script for getting the minimum number.
+
+```console
+$ min 17 15 3 10 8 7 4 9 11 6 13 18 19 20 1 12 2 14 5 16
+1
+$ printf '17 15 3 10 8 7 4 9 11 6 13 18 19 20 1 12 2 14 5 16' | min
+1
 ```
 
 ### `multi_line_replace.sh`
@@ -377,6 +701,176 @@ This line contains another copy of the replacement [entry 4].
 This line contains another copy of the replacement [entry 5].
 This is the last line.
 ```
+
+### `multidiff.sh`
+
+[multidiff.sh](multidiff.sh) - Function/script for using diff to get comparisons of 2 or more files.
+
+For example, say you have three files: `a.txt`, `b.txt`, and `c.txt`. You want to compare each of them to the others.
+
+The command:
+```console
+$ multidiff a.txt b.txt c.txt
+```
+will do that.
+
+It will basically do this:
+```console
+$ diff a.txt b.txt
+$ diff a.txt c.txt
+$ diff b.txt c.txt
+```
+
+Each file is assigned its own color for the command to make it easier to identify which file is which.
+
+Json files can also be pre-processed using either `json_info` or `jq`. The diffs will then be done on the results of that pre-processing.
+
+```console
+$ multidiff --help
+Gets differences between sets of files.
+
+Usage: multidiff [[<diff args>] [--pre-process <pre-processor>] --] <file1> <file2> [<file3>...]
+
+    <file1> <file2> [<file3>...] are the files to diff. Up to 12 can be supplied.
+        Diffs are done between each possible pair of files.
+        For example, with 3 files, there are 3 pairs: 1-2, 1-3, 2-3.
+        With 4 files, you would end up with 6 pairs: 1-2, 1-3, 1-4, 2-3, 2-4, 3-4.
+
+    If any arguments other than files are provided, the files must all follow a -- argument.
+
+    <diff args> are any arguments that you want provided to each diff command.
+    --pre-process <pre-processor> defines any pre-processing that should be done to each file before the diff.
+        <pre-processor> values:
+            none       This is the default. Do not do any pre-processing of the files.
+            jq         Apply the command  jq --sort-keys '.' <file>  to each file and get the differences of the results.
+            json_info  Apply the command  json_info -r -f <file>     to each file and get the differences of the results.
+```
+
+Text file example:
+```console
+$ printf 'common line\nfile a\ncommon line 2\n' > file-a.txt
+$ printf 'common line\nfile b\ncommon line 2\n' > file-b.txt
+$ printf 'common line\nfile c\ncommon line 2\nextra line' > file-c.txt
+$ multidiff file-*.txt
+diff file-a.txt file-b.txt
+2c2
+< file a
+---
+> file b
+
+diff file-a.txt file-c.txt
+2c2
+< file a
+---
+> file c
+3a4
+> extra line
+\ No newline at end of file
+
+diff file-b.txt file-c.txt
+2c2
+< file b
+---
+> file c
+3a4
+> extra line
+\ No newline at end of file
+```
+
+Json example:
+```console
+$ printf '{"filename":"file-a.json","elements":2}' > file-a.json
+$ printf '{"filename":"file-b.json","elements":3,"extra":{}}' > file-b.json
+$ printf '{"filename":"file-c.json","elements":2,"anarray":["str1","str2"]}' > file-c.json
+$ multidiff --pre json_info -- file-*.json
+diff file-a.json file-b.json
+1,3c1,4
+< . = object: 2 keys: ["filename","elements"]
+< .filename = string: "file-a.json"
+< .elements = number: 2
+---
+> . = object: 3 keys: ["filename","elements","extra"]
+> .filename = string: "file-b.json"
+> .elements = number: 3
+> .extra = object: 0 keys: []
+
+diff file-a.json file-c.json
+1,2c1,2
+< . = object: 2 keys: ["filename","elements"]
+< .filename = string: "file-a.json"
+---
+> . = object: 3 keys: ["filename","elements","anarray"]
+> .filename = string: "file-c.json"
+3a4,6
+> .anarray = array: 2 entries: string
+> .anarray[0] = string: "str1"
+> .anarray[1] = string: "str2"
+
+diff file-b.json file-c.json
+1,4c1,6
+< . = object: 3 keys: ["filename","elements","extra"]
+< .filename = string: "file-b.json"
+< .elements = number: 3
+< .extra = object: 0 keys: []
+---
+> . = object: 3 keys: ["filename","elements","anarray"]
+> .filename = string: "file-c.json"
+> .elements = number: 2
+> .anarray = array: 2 entries: string
+> .anarray[0] = string: "str1"
+> .anarray[1] = string: "str2"
+```
+
+### `multiply.sh`
+
+[multiply.sh](multiply.sh) - Function/script for multiplying numbers together.
+
+```console
+$ multiply 2 3 5 7 11; printf '\n'
+2310
+$ printf '2 3 5 7 11' | multiply; printf '\n'
+2310
+```
+
+### `palette_generators.sh`
+
+[palette_generators.sh](palette_generators.sh) - Some functions for generating sets of color codes to use in the terminal.
+
+There are several functions in this file that revolve around the 256 color codes that can be used in escape codes to color text in your terminal, e.g. the "`100`" in `\033[38;5;100m` for text color or `\033[48;5;100m` for background color.
+
+The color codes can generally be broken down into three groups:
+- `0` to `15`: Some standard colors.
+- `16` to `231`: A set of gradients giving more color options.
+- `232` to `255`: A gradient from black to white.
+
+The `echo_color.sh` file contains a `show_colors` function that can be used to display these.
+```console
+$ source echo_color.sh
+$ show_colors --256
+```
+The `--256` flag adds this sections:
+![show colors 256 screenshot](/bash_fun/generic/screenshots/show-colors-256-screenshot.png)
+
+These functions focus on the 216 colors from `16` to `231`. They can be thought of as a 6x6x6 cube of colors where (0,0,0) is `16`, (5,0,0) is `21`, (0,5,0) is `46`, (0,0,5) is `51`, and (5,5,5) is `231`.
+
+The file contains the following functions:
+- `palette_generators`: Just outputs some information about the generators available.
+- `palette_vector_generate`: Generates a six number set of color codes that are a straight line through the cube, wrapping if needed.
+- `palette_vector_no_wrap`: Generates a six number set of color codes that are a straight line through the cube that doesn't include any wrapping.
+- `palette_vector_random`: Picks random numbers and provides them to `palette_vector_generate`.
+
+If you use the functions from `hrr.sh`, and have also sourced this file, then `palette_vector_no_wrap` is what's used by `pick_a_palette`. That file's `test_palette` function is also handy for viewing these.
+
+```console
+$ test_palette $( palette_vector_random )
+```
+
+The `show_palette` function from `show_palette.sh` is also handy for viewing these color vectors.
+```console
+$ show_palette $( palette_vector_no_wrap )
+```
+
+If you care to go crazy digging through my notes, they can be found here: [notes-on-palette-generation.txt](notes-on-palette-generation.txt)
 
 ### `pretty_json.sh`
 
@@ -504,6 +998,49 @@ Usage: re_line [-f <filename>|--file <filename>|-c|--from-clipboard|-|-p|--from-
         This is added after applying any -w or --wrap string.
 ```
 
+### `sdkman_fzf.sh`
+
+[sdkman_fzf.sh](sdkman_fzf.sh) - Function wrapper for [sdkman](https://sdkman.io/) that adds fzf selection ability to most options.
+
+You use `sdkman_fzf` the same way you would `sdkman` except if there's an argument you want to use fzf to select, give it as an underscore.
+
+Examples:
+- Select the version of java to install:
+  ```console
+  $ sdkman_fzf install java _
+  ```
+- Select the candidate(s) to list:
+  ```console
+  $ sdkman_fzf list _
+  ```
+- Select the version of ant to set as the default:
+  ```console
+  $ sdkman_fzf default ant _
+  ```
+- Select the version of java to use:
+  ```console
+  $ sdkman_fzf use java _
+  ```
+- Select a candidate and then version you want the home directory for:
+  ```console
+  $ sdkman_fzf home _ _
+  ```
+
+If none of the provided areguments are underscores, it's the same as the the `sdk` command provided by `sdkman`.
+
+I even have it aliased:
+```console
+$ alias sdk='sdkman_fzf'
+```
+
+### `set_title.sh`
+
+[set_title.sh](set_title.sh) - Function for setting the title of an iTerm window.
+
+Allows for providing the title to set, or uses some defaults if nothing is provided.
+
+If in a git repo, it'll default to the directory containing the root of the repo. Otherwise it'll just set it as the current directory.
+
 ### `show_last_exit_code.sh`
 
 [show_last_exit_code.sh](show_last_exit_code.sh) - Function for outputting an indicator of the previous command's exit code.
@@ -512,10 +1049,12 @@ This is a function I use in my command prompt to indicate the exit code of the p
 Basically, the first part of my PS1 value is `$( show_last_exit_code )`.
 Depending on your shell, you might need to turn on some extra command prompt processing for that to work, though.
 
+![show last exit code example](/bash_fun/generic/screenshots/show-last-exit-code-example.png)
+
 Example Usage:
 ```console
 $ ( exit 1; ); show_last_exit_code
- ☠    1
+ 💀   1
 ```
 and
 ```console
@@ -523,8 +1062,57 @@ $ ( exit 0; ); show_last_exit_code
  ⭐️   0
 ```
 
-You can't see it in this README, but when the exit code is zero, the background is green; otherwise it's red.
 The `show_last_exit_code` also exits with the same code as the previous command.
+
+### `show_palette.sh`
+
+[show_palette.sh](show_palette.sh) - Function/script for displaying various colors and combinations in the terminal.
+
+```console
+$ show_palette --help
+Displays color palettes in your terminal.
+
+Usage: show_palette [[-f] <fg col1> [<fg col2> ...]] [-b <bg col1> [<bg col2> ...]] [-a|--all] [-t <sample text>]
+   or: show_palette [<pair1> [<pair2> ...]] [-a|--all] [-t <sample text>]
+
+    The colors must be numbers between 0 and 255 inclusive.
+        0 to 15 are some standard colors.
+        16 to 231 are gradiented colors.
+        231 to 255 are a black to white gradient.
+
+    Desired colors can be provided in one of two ways:
+        1: Single color entries.
+            Any numbers provided first or after a -f flag are foreground colors.
+            Any numbers provided after a -b flag are background colors.
+            The -f and -b flags can be provided as many times as needed.
+            If no foreground colors are provided, 7 is used.
+            If no background colors are provided, 0 is used.
+           E.g. show_palette 16 54 92 124 162 200 -b 27
+           E.g. show_palette -b 200 -f 16 -b 162 -f 54 -b 124 -f 92
+        2: Pairs of fg,bg entries.
+            Each pair should be provided in a single argument.
+            The foreground color should be first, then a comma, then the background color.
+           E.g. show_palette '16,27' '54,27' '92,27' '124,27' '162,27' '200,27'
+           E.g. show_palette '16,200' '54,162' '92,124'
+
+    By default a number of lines are printed with the fg,bg color pair first (in the terminal default),
+        followed by some sample text in that color combination.
+        The 1st foreground color is paired with the 1st background color and printed.
+        Then the 2nd foreground color is paired with the 2nd background color and printed.
+        And so on.
+        If an unequal number of foregrounds and backgrounds are provided,
+        the smaller list cycles until the larger list has been completely shown.
+        The sample text can be changed using the -t option.
+
+    If the -a or --all flag is provided, a grid of all combinations of foreground and background colors is printed.
+        Column and row headers are printed in the terminal default.
+        The columns are the background colors.
+        The rows are the foreground colors.
+        The default sample text in this mode is the fg,bg pair.
+        This can be changed to static supplied text using the -t option.
+```
+
+![show palette example](/bash_fun/generic/screenshots/show-palette-example.png)
 
 ### `string_repeat.sh`
 
