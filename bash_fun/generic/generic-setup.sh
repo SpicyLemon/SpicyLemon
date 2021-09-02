@@ -53,13 +53,12 @@ __generic_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'generic-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     func_base_file_names=(
-        'add'                  'b2h'                 'b642h'          'change_word'       'echo_color'
-        'echo_do'              'escape_escapes'      'fp'             'getlines'          'h2b64'
-        'hrr'                  'java_sdk_switcher'   'join_str'       'list'              'max'
-        'min'                  'multi_line_replace'  'multidiff'      'multiply'          'palette_generators'
-        'print_args'           'ps_grep'             're_line'        'sdkman_fzf'        'set_title'
-        'show_last_exit_code'  'show_palette'        'string_repeat'  'tee_strip_colors'  'to_date'
-        'to_epoch'
+        'add'                 'b2h'            'b642h'             'change_word'         'echo_color'
+        'echo_do'             'fp'             'getlines'          'h2b64'               'hrr'
+        'java_sdk_switcher'   'join_str'       'list'              'max'                 'min'
+        'multi_line_replace'  'multidiff'      'multiply'          'palette_generators'  'print_args'
+        'ps_grep'             're_line'        'sdkman_fzf'        'set_title'           'show_last_exit_code'
+        'show_palette'        'string_repeat'  'tee_strip_colors'  'to_date'             'to_epoch'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
@@ -148,6 +147,11 @@ __generic_do_setup () {
         __generic_if_verbose "$info" 2 "Creating alias [tee_strip_colors_pbcopy]."
         alias tee_strip_colors_pbcopy='tee >( strip_colors | strip_final_newline | pbcopy )' \
             || __generic_if_verbose "$error" 3 'Creation of alias [tee_strip_colors_pbcopy] failed.'
+        # escape_escapes: Escapes all \033 escape characters.
+        # Usage: <stuff> | escape_escapes
+        __generic_if_verbose "$info" 2 "Creating alias [escape_escapes]."
+        alias escape_escapes='sed -E "s/$( printf "\033" )/\\\033/g"' \
+            || __generic_if_verbose "$error" 3 'Creation of alias [escape_escapes] failed.'
     __generic_if_verbose "$info" 1 "Done creating aliases."
 
     # Ensure all external commands are available.

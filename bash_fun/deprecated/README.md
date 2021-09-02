@@ -6,6 +6,7 @@ This directory contains files for stuff that has either been replaced, or is no 
 * `add_to_filename.sh` - Script for adding text before the extension in filenames. Not really used anymore though.
 * `check_system_log_timestamp_order.sh` - Old system-specific function for checking system log timestamps.
 * `chrome_cors.sh` - Haven't used it in a couple years. I'm betting Google's changed the needed options since then.
+* `escape_escapes.sh` - Deprecated in favor of an alias: alias escape_escapes='sed -E "s/$( printf "\033" )/\\\033/g"'
 * `file-helpers.sh` - Some old file formatting stuff for lists of entries.
   Most of it can now be handled by [re_line.sh](../generic/re_line.sh).
   The rest wasn't really very useful.

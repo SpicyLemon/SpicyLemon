@@ -18,7 +18,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [change_word.sh](#user-content-change_wordsh)
   * [echo_color.sh](#user-content-echo_colorsh)
   * [echo_do.sh](#user-content-echo_dosh)
-  * [escape_escapes.sh](#user-content-escape_escapessh)
   * [fp.sh](#user-content-fpsh)
   * [getlines.sh](#user-content-getlinessh)
   * [h2b64.sh](#user-content-h2b64sh)
@@ -265,16 +264,6 @@ This would go through each .sh file in the current directory, and diff that file
 The diff command would show in bold white followed by the results of the diff command.
 ```console
 $ for f in $( ls *.sh ); do echo_do diff "$f" "/some/other/dir/$f"; done
-```
-
-### `escape_escapes.sh`
-
-[escape_escapes.sh](escape_escapes.sh) - Function/script for escaping the ASCII escape character (octal `\033`, hex `\x1B`).
-
-Example Usage:
-```console
-$ echo_color red -- This is red | escape_escapes
-\033[31mThis is red\033[39m
 ```
 
 ### `fp.sh`
