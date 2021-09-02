@@ -67,10 +67,10 @@ These programs are used by some functions, and don't usually come pre-installed:
 
 These programs are also used, but are almost always already available:
 
-    'cat'      'printf'    'echo'  'head'  'tail'
-    'grep'     'sed'       'awk'   'tr'    'tee'
-    'sort'     'column'    'ps'    'seq'   'date'
-    'dirname'  'basename'  'pwd'
+    'cat'       'printf'  'head'  'tail'  'grep'
+    'sed'       'awk'     'tr'    'tee'   'sort'
+    'column'    'ps'      'seq'   'date'  'dirname'
+    'basename'  'pwd'
 
 ## Directory Contents
 

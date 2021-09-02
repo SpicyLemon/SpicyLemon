@@ -73,11 +73,14 @@ __generic_do_setup () {
 
     # These are commands defined externally to check on before sourcing these files.
     # If any aren't available, then an error message will be output and nothing will be sourced.
+    # To add or remove things and keep it nice and formatted, add an entry where you'd want it in the list.
+    # Then copy all the lines into your clipboard and ...
+    # pbpaste | re_line -p -n 5 -d '~' -b '[[:space:]]+' | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     required_external=(
-        'cat'      'printf'    'echo'  'head'  'tail'
-        'grep'     'sed'       'awk'   'tr'    'tee'
-        'sort'     'column'    'ps'    'seq'   'date'
-        'dirname'  'basename'  'pwd'
+        'cat'       'printf'  'head'  'tail'  'grep'
+        'sed'       'awk'     'tr'    'tee'   'sort'
+        'column'    'ps'      'seq'   'date'  'dirname'
+        'basename'  'pwd'
     )
 
     # These are used for verbose output as line headers.

@@ -1,7 +1,6 @@
 TODO:
-    Replace uses of echo with printf.
-    Replace "echo ... |" and "printf ... |" stuff with herestrings.
-        To find most spots: grep -E "(echo|printf) .*\|" *
+    Replace "printf ... |" stuff with herestrings.
+        To find most spots: grep -E "printf .*\|" *
         Note that a herestring will add a newline to the end which can sometimes cause problems.
     Add recursive functionality to list.sh.
         Will need to keep track of directories seen (using pwd -P) to prevent infinite loops.
