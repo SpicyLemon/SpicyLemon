@@ -90,7 +90,7 @@ EOF
     code_on_parts=()
     code_params=()
     while [[ "$#" -gt '0' && "$1" != '--' && -z "$show_examples" ]]; do
-        case "$( printf %s "$1" | tr '[:upper:]' '[:lower:]' )" in
+        case "$( tr '[:upper:]' '[:lower:]' <<< "$1" )" in
         -h|--help|help)
             printf '%b\n' "$usage"
             return 0
@@ -154,7 +154,7 @@ EOF
             ;;
         *)
             if [[ "$1" =~ ^[[:digit:]]+(([[:space:]]+|\;)[[:digit:]]+)*$ ]]; then
-                code_on_parts+=( "$( printf %s "$1" | sed -E 's/[[:space:]]+/;/g' )" )
+                code_on_parts+=( "$( sed -E 's/[[:space:]]+/;/g' <<< "$1" )" )
                 code_params+=( "$1" )
             else
                 printf 'echo_color: Invalid parameter: [%s]. Did you forget the -- ?\n' "$1" >&2
@@ -269,7 +269,7 @@ EOF
 )"
     local debug verbose show_combos show_256 text_colors background_colors effects special_formats fg_codes bg_codes effect_codes output
     while [[ "$#" -gt '0' ]]; do
-        case "$( printf '%s' "$1" | tr '[:upper:]' '[:lower:]' )" in
+        case "$( tr '[:upper:]' '[:lower:]' <<< "$1" )" in
         -h|--help)
             printf '%s\n' "$usage"
             return 0
@@ -421,7 +421,7 @@ EOF
     if [[ -n "$debug" || -n "$verbose" ]]; then
         {
             printf 'Without Interpretation:\n'
-            printf '%s\n' "$output" | escape_escapes
+            escape_escapes <<< "$output"
             printf 'With Interpretation:\n'
         } >&2
     fi

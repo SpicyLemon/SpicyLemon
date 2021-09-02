@@ -47,7 +47,7 @@ echo_do () {
                 # If this piece has a space, a single, or double quote, then it needs to be escaped and wrapped.
                 # Escape again all already escaped double quotes, then escape all double quotes.
                 # And put the whole thing in double quotes.
-                pieces_for_output+=( "\"$( printf '%s' "$cmd_piece" | sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' )\"" )
+                pieces_for_output+=( "\"$( sed -E 's/\\"/\\\\"/g; s/"/\\"/g;' <<< "$cmd_piece" )\"" )
             else
                 # Otherwise, no change is needed.
                 pieces_for_output+=( "$cmd_piece" )

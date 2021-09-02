@@ -31,7 +31,7 @@ getlines () {
         return 0
     fi
     while [[ "$#" -gt '0' ]]; do
-        case "$( printf %s "$1" | tr '[:upper:]' '[:lower:]' )" in
+        case "$( tr '[:upper:]' '[:lower:]' <<< "$1" )" in
         -h|--help)
             printf '%s' "$usage"
             return 0
