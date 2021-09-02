@@ -106,6 +106,7 @@ get_hash_price () {
     local cache_read_code
     # This will either output the cached hash price if we have it, or it won't output anything.
     dlobcache read "$DLOB_CN_HASH_PRICE"
+    printf '\n'
     cache_read_code=$?
     case "$cache_read_code" in
     0)
