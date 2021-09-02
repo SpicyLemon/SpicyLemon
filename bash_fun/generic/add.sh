@@ -28,7 +28,7 @@ add () {
             shift
         fi
     done
-    printf '%d' "$retval"
+    printf '%d\n' "$retval"
 }
 
 if [[ "$sourced" != 'YES' ]]; then

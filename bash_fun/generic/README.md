@@ -107,12 +107,12 @@ This will also create several alias:
 
 Examples:
 ```console
-$ printf '[%d]\n' "$( add 1 2 3 4 5 )"
-[15]
-$ printf '[%d]\n' "$( seq 6 20 | add )"
-[195]
-$ printf '[%d]\n' "$( seq 6 20 | add - 1 2 3 4 5 )"
-[210]
+$ add 1 2 3 4 5
+15
+$ seq 6 20 | add
+195
+$ seq 6 20 | add - 1 2 3 4 5
+210
 ```
 
 ### `b2h.sh`
@@ -761,9 +761,9 @@ diff file-b.json file-c.json
 [multiply.sh](multiply.sh) - Function/script for multiplying numbers together.
 
 ```console
-$ multiply 2 3 5 7 11; printf '\n'
+$ multiply 2 3 5 7 11
 2310
-$ printf '2 3 5 7 11' | multiply; printf '\n'
+$ printf '2 3 5 7 11' | multiply
 2310
 ```
 

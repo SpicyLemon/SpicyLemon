@@ -41,7 +41,6 @@ TODO:
             Or.... maybe turn change --pre-process jq and --pre-process json_info into just --jq and --json-info flags
             How fancy do I want to get about being able to apply multiple pre-processing commands?
                 e.g. --json-info --pre-process 'grep "\.some.subfield.'
-    Add a newline to the output of add.sh and multiply.sh
     Create a palette_walk_generate and palette_walk_random
         Usage: palette_walk_generate <start> <step1> [<step2> ...]
         Each <step> would have the format "<dx>,<dy>,<dz>".
