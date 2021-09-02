@@ -90,47 +90,83 @@ DLOB_CN_JQ_ERROR='jq_error'                         # Any errors encountered usi
 # Primary Functions of Interest
 #------------------------------
 
-# Usage: get_hash_price
+# Usage: get_hash_price [--refresh] [--no-wait]
 # Outputs the value of a HASH token (in USD), e.g. 0.105000000000000000 with a newline at the end.
-# Caching is done using bashcache so that multiple shells will have access to the same data.
-# If the cache is fresh, the value is printed, and nothing more happens.
-# If the cache is stale, the stale value is printed, and a background process is initiated to update the cache.
-# If nothing is cached yet, the DLOB_DEFAULT_VALUE value is printed, and a background process is initiated to update the cache.
-# If a required command is missing, The exit code will be 20.
-# Otherwise, the exit code will be the same as the bashcache exit code.
+# Caching with bashcache is used to prevent spamming of the api.
+# If the cache is fresh, the value is printed, and nothing special happens.
+# If the cache is empty, it will be updated then printed, which can take some time.
+# If the cache is stale (more than 10 minutes old), the known value will be printed,
+#   and a background process will be initiated to update the cache.
+# The --refresh flag can be provided to force the cache to be refreshed.
+#   By default, this happens in the foreground, and you'll have to wait for it.
+# The --no-wait flag indicates that all refreshes should happen in the background, and you want a value immediately.
+#   If the cache doesn't exist, a default is printed. Otherwise, whatever is cached is printed.
+#   If a refresh is requested or needed, it is initiated in the background.
+# Exit codes:
+#   0: The data exists and is fresh (from bashcache).
+#   1: The arguments provided to bashcache were incorrect (from bashcache).
+#   2: A required command is missing, and get_hash_price cannot work.
+#   3: Illegal arguments provided to get_hash_price.
+#   10: The cached data was available but stale (from bashcache).
+#   11: The cached data was not available (from bashcache).
 get_hash_price () {
     if ! dlobcache_check_required_commands > /dev/null 2>&1; then
         printf '%s\n' "$DLOB_DEFAULT_VALUE"
-        return 20
+        return 2
     fi
-    local cache_read_code
-    # This will either output the cached hash price if we have it, or it won't output anything.
-    dlobcache read "$DLOB_CN_HASH_PRICE"
-    printf '\n'
+    local no_wait force_refresh hash_price cache_read_code
+    while [[ "$#" -gt '0' ]]; do
+        case "$1" in
+            --no-wait) no_wait="$1";;
+            --refresh) force_refresh="$1";;
+            *)
+                printf 'Unknown argument: [%s].\n' "$1"
+                return 3
+                ;;
+        esac
+        shift
+    done
+
+    # If we're forcing a refresh, and don't mind waiting, do the refresh now.
+    [[ -n "$force_refresh" && -z "$no_wait" ]] && dlobcache_refresh
+
+    # This will either get the cached hash price if we have it, or it'll be an empty string.
+    hash_price="$( dlobcache read "$DLOB_CN_HASH_PRICE" )"
     cache_read_code=$?
-    case "$cache_read_code" in
-    0)
-        # 0 - The requested cache data is available and up-to-date.
-        # Do nothing.
-        ;;
-    1)
+
+    # If we didn't want to wait, but wanted to force a refresh, kick that off now.
+    [[ -n "$force_refresh" && -n "$no_wait" ]] && dlobcache_refresh --background
+
+    # No matter what, if there were invalid bashcache arguments, we want to know, so handle that now.
+    if [[ "$cache_read_code" -eq '1' ]]; then
         # 1 - Invalid arguments provided to the bashcache command.
         printf 'Invalid arguments to bashcache.\n' >&2
-        ;;
-    10|11)
-        # 10 - The requested cache data is available, but stale.
-        # 11 - The requested cache data is not available.
-        # Eiother way, we want to refresh the data.
-        # If it's 11, output the error value since the read command above didn't output anything.
-        [[ "$cache_read_code" -eq '11' ]] && printf '%s\n' "$DLOB_DEFAULT_VALUE"
-        # Fire off a background process to update it for next time.
-        # The () > /dev/null 2>&1 here is to supress the job/pid start and stop messages.
-        ( dlobcache_refresh & ) > /dev/null 2>&1
-        ;;
-    *)
-        printf 'Unexpected bashcache exit code: [%d]\n' "$cache_read_code" >&2
-        ;;
-    esac
+    fi
+
+    # If we aren't forcing a refresh, check the exit code to see if one is needed.
+    if [[ -z "$force_refresh" ]]; then
+        case "$cache_read_code" in
+        10)
+            # 10 - The requested cache data is available, but stale.
+            # Update the cache in the background.
+            dlobcache_refresh --background
+            ;;
+        11)
+            # 11 - The requested cache data is not available.
+            if [[ -n "$no_wait" ]]; then
+                # We don't want to wait, kick off an update in the background and move on.
+                dlobcache_refresh --background
+            else
+                # We don't mind waiting, refresh it now, wait for it, then read it.
+                dlobcache_refresh
+                hash_price="$( dlobcache read "$DLOB_CN_HASH_PRICE" )"
+                cache_read_code=$?
+            fi
+            ;;
+        esac
+    fi
+    [[ -z "$hash_price" ]] && hash_price="$DLOB_DEFAULT_VALUE"
+    printf '%s\n' "$hash_price"
     return $cache_read_code
 }
 
@@ -140,7 +176,7 @@ get_hash_price () {
 # The exit code returned from this function will be the same as the previous exit code (from before this function is called).
 get_hash_price_for_prompt () {
     local previous_exit=$?
-    printf "$DLOB_PROMPT_FORMAT" "$( get_hash_price )"
+    printf "$DLOB_PROMPT_FORMAT" "$( get_hash_price --no-wait )"
     return $previous_exit
 }
 
@@ -155,9 +191,17 @@ dlobcache () {
     bashcache -d "$DLOB_C_DIR" -a "$DLOB_C_MAX_AGE" "$@"
 }
 
-# Usage: dlobcache_refresh [-v|-vv|-vvv]
+# Usage: dlobcache_refresh [-v|-vv|-vvv|--background]
 # Gets the DLOB_DAILY_PRICE_URL, applies the DLOB_JQ_FILTER and caches it.
+# The -v -vv and -vvv flags are different levels of verbosity.
+# The --background flag will cause this to do this in the background, and return from the call immediately.
 dlobcache_refresh () {
+    if [[ "$1" == '--background' ]]; then
+        # Fire off a background process to update the cache.
+        # The () > /dev/null 2>&1 here is to supress the job/pid start and stop messages.
+        ( dlobcache_refresh & ) > /dev/null 2>&1
+        return 0
+    fi
     local v bcv val ec
     # Set the verbosity level
     v="$( sed 's/[^v]//g' <<< "$1" | awk '{print length}' )"

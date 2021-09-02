@@ -39,10 +39,29 @@ $ get_hash_price
 0.058000000000000000
 ```
 
-The `get_hash_price` function outputs the currently cached value (or a default if nothing's cached yet).
-Then, if it thinks a refresh is needed (hasn't been refreshed in 10 minutes), it'll kick off that refresh in the background.
+The `get_hash_price` function outputs the currently cached HASH price (in USD).
+If nothing is cached yet, the cache is updated and then the HASH price is printed.
+If the cached HASH price is more than 10 minutes old, a background process is initiated to update the cache.
 
-The `get_hash_price_for_prompt` function uses `get_hash_price` and reformats the output for use in a command prompt.
+To refresh the cache and get the new value:
+```console
+$ get_hash_price --refresh
+0.059000000000000000
+```
+
+To get the cached value (or default), without waiting on a refresh (e.g. when it doesn't exist yet):
+```console
+$ get_hash_price --no-wait
+0.060000000000000000
+```
+
+To get the currently cached value and force an update in the background.
+```console
+$ get_hash_price --refresh --no-wait
+0.061000000000000000
+```
+
+The `get_hash_price_for_prompt` function uses `get_hash_price --no-wait` and reformats the output for use in a command prompt.
 
 ```console
 $ PS1='$( get_hash_price_for_prompt ) $ '
@@ -51,10 +70,18 @@ $ PS1='$( get_hash_price_for_prompt ) $ '
  #⃣  0.0580  $
 ```
 
-The text color is bold white on a dark grey background.
+![screenshot of get hash price for prompt](/bash_fun/figure/get-hash-price-for-prompt-screenshot.png)
+
+Some customizations can be made through the following environment variables:
+- `DLOB_C_DIR`: The directory the data is cached in. Default is `/tmp/dlob`.
+- `DLOB_C_MAX_AGE`: The max age the cache can be to be considered still fresh. Default is `10m`.
+- `DLOB_DAILY_PRICE_URL`: The url to use to get the json with the HASH price. Default is `https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price`.
+- `DLOB_JQ_FILTER`: The filter provided to `jq` to extract the HASH price from the results of `DLOB_DAILY_PRICE_URL`. Default is `.latestDisplayPricePerDisplayUnit`.
+- `DLOB_DEFAULT_VALUE`: The value to set as the HASH price if one can't be found. Default is `-69.420000000000000000`.
+- `DLOB_PROMPT_FORMAT`: The format to apply to the HASH price to create the output of `get_hash_price_for_prompt`. Default is `\033[48;5;238;38;5;15m #\xE2\x83\xA3  %1.4f \033[0m`.
 
 The rest of the functions are to help facilitate caching.
-- `dlobcache` is a wrapper over `bashcache` supplying the directory and age desired for in here.
+- `dlobcache` is a wrapper over `bashcache` supplying the directory and max age desired for this stuff.
 - `dlobcache_refresh` actually does the work of making the API call and updating the cache.
 - `dlobcache_check_required_commands` checks to make sure some possibly missing commands are available.
 
