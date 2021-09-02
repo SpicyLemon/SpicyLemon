@@ -63,12 +63,13 @@ __generic_do_setup () {
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
     # Handy command for generating this:
-    #   grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * | sed 's/ .*$//' | grep -v -E -e '^(.*).sh:\1' -e 'generic-setup.sh' | sed 's/^.*\.sh://' | sort | re_line -n 7 -d '~' -w "'" -p | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
+    #   grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * 2> /dev/null | sed 's/ .*$//' | grep -v -E -e '^(.*).sh:\1' -e 'generic-setup.sh' | sed 's/^.*\.sh://' | grep -v '^__' | sort | re_line -n 6 -d '~' -w "'" -p | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     extra_funcs_to_check=(
-        'can_i'        'echo_bad'    'echo_blue'  'echo_bold'       'echo_cyan'     'echo_debug'      'echo_error'
-        'echo_good'    'echo_green'  'echo_info'  'echo_red'        'echo_success'  'echo_underline'  'echo_warn'
-        'echo_yellow'  'hhr'         'hr'         'pick_a_palette'  'show_colors'
-        'palette_vector_generate'    'palette_vector_random'
+        'echo_bad'               'echo_blue'       'echo_bold'          'echo_cyan'    'echo_debug'               'echo_error'
+        'echo_good'              'echo_green'      'echo_info'          'echo_red'     'echo_success'             'echo_underline'
+        'echo_warn'              'echo_yellow'     'hhr'                'hr'           'hr1'                      'hr11'
+        'hr3'                    'hr5'             'hr7'                'hr9'          'palette_vector_generate'  'palette_vector_no_wrap'
+        'palette_vector_random'  'pick_a_palette'  'show_all_palettes'  'show_colors'  'test_palette'             'what_palette_was_that'
     )
 
     # These are commands defined externally to check on before sourcing these files.
