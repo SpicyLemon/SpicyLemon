@@ -16,22 +16,38 @@
 # Usage: <stuff> | tee_strip_colors "logfile"
 tee_strip_colors () {
     if ! command -v 'strip_colors' > /dev/null 2>&1; then
-        printf 'Missing required command: strip_colors\n' >&2
-        strip_colors
+        printf 'tee_strip_colors Missing required command: strip_colors\n' >&2
+        strip_colors >&2
         return $?
     fi
-    local filename
-    filename="$1"
-    shift
+    local usage filename append
+    usage='Usage: tee_strip_colors [-a] <filename>'
+    while [[ "$#" -gt '0' ]]; do
+        case "$1" in
+            -h|--help)
+                printf '%s\n' "$usage"
+                return 0
+                ;;
+            -a) append="$1";;
+            *)
+                if [[ -n "$filename" ]]; then
+                    printf 'tee_strip_colors Unknown argument: [%s]\n' "$1" >&2
+                    return 1
+                fi
+                filename="$1"
+                ;;
+        esac
+        shift
+    done
     if [[ -z "$filename" ]]; then
-        printf 'Usage: tee_strip_colors <filename>\n' >&2
+        printf '%s\n' "$usage" >&2
         return 1
     fi
-    if [[ "$#" -gt '0' ]]; then
-        printf %s "$@" | tee_strip_colors "$filename"
-        return $?
+    if [[ -n "$append" ]]; then
+        tee >( strip_colors >> "$filename" )
+    else
+        tee >( strip_colors > "$filename" )
     fi
-    cat - > >( tee >( strip_colors >> "$filename" ) )
 }
 
 if [[ "$sourced" != 'YES' ]]; then

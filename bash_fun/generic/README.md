@@ -1038,6 +1038,13 @@ The output does not contain an ending newline.
 
 The output that goes to stdout will still contain colors, but the color information will be removed as the file is created.
 
+Supply the `-a` flag to append to the file instead of starting a new one.
+
+```console
+$ tee_strip_colors --help
+Usage: tee_strip_colors [-a] <filename>
+```
+
 Example Usage:
 ```console
 $ grep --color=always foo bar.txt | tee_strip_colors 'foo-lines-in-bar.txt'
