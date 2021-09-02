@@ -25,10 +25,13 @@ TODO:
             Or.... maybe turn change --pre-process jq and --pre-process json_info into just --jq and --json-info flags
             How fancy do I want to get about being able to apply multiple pre-processing commands?
                 e.g. --json-info --pre-process 'grep "\.some.subfield.'
+    Allow the vector length to be provided to palette_vector_generate and palette_vector_random.
     Create a palette_walk_generate and palette_walk_random
         Usage: palette_walk_generate <start> <step1> [<step2> ...]
         Each <step> would have the format "<dx>,<dy>,<dz>".
             It's either that or have each step actually be 3 arguments, but that seems like it'd get hard to keep track of.
         Any number of steps can be given.
-        Usage: palette_walk_random [<start>] [<length>]
-        Same as the other palette_vector_random function, '' can be provided to keep an arg random.
+        Usage: palette_walk_random [<start>] [<step1> [<step2> ...]] [<number of steps to add>]
+        <start> can be '' to be randomly selected.
+        Since steps have a specific format, its easy to know when they've ended, and the thing after it will be the number of steps to add.
+        If no <number of steps to add> is given, (or it's '') a random value will be picked.
