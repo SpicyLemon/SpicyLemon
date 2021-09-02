@@ -58,6 +58,7 @@ __figure_do_setup () {
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
     extra_funcs_to_check=(
+        'dlobcache'  'dlobcache_check_required_commands'  'dlobcache_refresh'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
