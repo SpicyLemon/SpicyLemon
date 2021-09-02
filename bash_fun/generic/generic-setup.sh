@@ -96,6 +96,60 @@ __generic_do_setup () {
     # And, let's get started!
     __generic_if_verbose "$info" 0 "Loading $title functions."
 
+    # Create some aliases
+    __generic_if_verbose "$info" 1 "Creating aliases."
+        # epoch: Get the current epoch in milliseconds.
+        # Usage: epoch
+        __generic_if_verbose "$info" 2 "Creating alias [epoch]."
+        alias epoch='echo $(date +%s)000' \
+            || __generic_if_verbose "$error" 3 'Creation of alias [epoch] failed.'
+        # pvar: Output something in brackets with a newline at the end. Handy for looking at variable values without messing with whitespace.
+        # Usage: pvar "$foo"
+        __generic_if_verbose "$info" 2 "Creating alias [pvar]."
+        alias pvar="printf '[%s]\n'" \
+            || __generic_if_verbose "$error" 3 'Creation of alias [pvar] failed.'
+        # strim: Get rid of all leading and trailing whitespace. But since it uses sed, there'll still be an ending newline.
+        # Usage: <stuff> | strim
+        __generic_if_verbose "$info" 2 "Creating alias [strim]."
+        alias strim="sed 's/^[[:space:]]*//; s/[[:space:]]*$//;'" \
+            || __generic_if_verbose "$error" 3 'Creation of alias [strim] failed.'
+        # strimr: Get rid of all trailing (right) whitespace. But since it uses sed, there'll still be an ending newline.
+        # Usage: <stuff> | strimr
+        __generic_if_verbose "$info" 2 "Creating alias [strimr]."
+        alias strimr="sed 's/[[:space:]]*$//'" \
+            || __generic_if_verbose "$error" 3 'Creation of alias [strimr] failed.'
+        # striml: Get rid of all leading (left) whitespace.
+        # Usage: <stuff> | striml
+        __generic_if_verbose "$info" 2 "Creating alias [striml]."
+        alias striml="sed 's/^[[:space:]]*//'" \
+            || __generic_if_verbose "$error" 3 'Creation of alias [striml] failed.'
+        # ican: silently test if a command is available. Exit code 0 = you can. Anything else = you cannot.
+        # Usage: ican 'printf'
+        __generic_if_verbose "$info" 2 "Creating alias [ican]."
+        alias ican='command -v > /dev/null 2>&1' \
+            || __generic_if_verbose "$error" 3 'Creation of alias [ican] failed.'
+        # strip_colors: Remove the color escape codes.
+        # Usage: <stuff> | strip_colors
+        __generic_if_verbose "$info" 2 "Creating alias [strip_colors]."
+        alias strip_colors='sed -E "s/$( printf "\033" )\[[[:digit:]]+(;[[:digit:]]+)*m//g"' \
+            || __generic_if_verbose "$error" 3 'Creation of alias [strip_colors] failed.'
+        # strip_final_newline: Get rid of the last character if it is a newline.
+        # Usage: <stuff> | strip_final_newline
+        __generic_if_verbose "$info" 2 "Creating alias [strip_final_newline]."
+        alias strip_final_newline="awk '{ if(p) print(l); l=\$0; p=1; } END { printf(\"%s\", l); }'" \
+            || __generic_if_verbose "$error" 3 'Creation of alias [strip_final_newline] failed.'
+        # tee_pbcopy: Output to stdout and also put it in the clipboard.
+        # Usage: <stuff> | tee_pbcopy
+        __generic_if_verbose "$info" 2 "Creating alias [tee_pbcopy]."
+        alias tee_pbcopy='tee >( strip_final_newline | pbcopy )' \
+            || __generic_if_verbose "$error" 3 'Creation of alias [tee_pbcopy] failed.'
+        # tee_strip_colors_pbcopy: Output to stdout and put it in the clipboard with colors stripped.
+        # Usage: <stuff> | tee_strip_colors_pbcopy
+        __generic_if_verbose "$info" 2 "Creating alias [tee_strip_colors_pbcopy]."
+        alias tee_strip_colors_pbcopy='tee >( strip_colors | strip_final_newline | pbcopy )' \
+            || __generic_if_verbose "$error" 3 'Creation of alias [tee_strip_colors_pbcopy] failed.'
+    __generic_if_verbose "$info" 1 "Done creating aliases."
+
     # Ensure all external commands are available.
     if [[ "${#required_external[@]}" -gt '0'  ]]; then
         __generic_if_verbose "$info" 1 "Checking for required external commands."
@@ -182,6 +236,7 @@ GENERIC_SETUP_VERBOSE=
 # Usage: __generic_if_verbose <level string> <indent-level> <message>
 __generic_if_verbose () {
     [[ -n "$GENERIC_SETUP_VERBOSE" ]] && printf '%s %b: %s%s\n' "$( date '+%F %T %Z' )" "$1" "$( printf "%$(( $2 * 2 ))s" )" "$3"
+    return 0
 }
 
 if [[ "$1" == '-v' || "$1" == '--verbose' ]]; then
@@ -197,4 +252,5 @@ unset -f __generic_do_setup
 unset -f __generic_if_verbose
 unset GENERIC_SETUP_VERBOSE
 
-return $generic_setup_exit_code
+# Trick to unset a variable but also return it. The string is created first, when the variable exists, then eval executes it.
+eval "unset generic_setup_exit_code; return $generic_setup_exit_code"
