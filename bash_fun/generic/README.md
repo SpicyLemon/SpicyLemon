@@ -100,6 +100,7 @@ This will also create several alias:
 - `tee_pbcopy`: Usage `<stuff> | tee_pbcopy`. Outputs to stdout and also puts it in the clipboard.
 - `tee_strip_colors_pbcopy`: Usage `<stuff> | tee_strip_colors_pbcopy`. Outputs to stdout and also puts the color stripped version into the clipboard.
 - `escape_escapes`: Usage `<stuff> | escape_escapes`. Escapes the escape character 033 so that it's easier to see (and color codes can be seen).
+- `fnl`: Usage `<stuff> | fnl`. Adds a final newline if there wasn't one already.
 
 ### `add.sh`
 

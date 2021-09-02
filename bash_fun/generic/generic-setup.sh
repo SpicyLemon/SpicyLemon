@@ -156,6 +156,12 @@ __generic_do_setup () {
         __generic_if_verbose "$info" 2 "Creating alias [escape_escapes]."
         alias escape_escapes='sed -E "s/$( printf "\033" )/\\\033/g"' \
             || __generic_if_verbose "$error" 3 'Creation of alias [escape_escapes] failed.'
+        # fnl: Forces a newline to be at the very end if there wasn't one already.
+        # All it really is is a sed command that won't do anything. Except sed always makes sure there's an ending newline.
+        # Usage: <stuff> | fnl
+        __generic_if_verbose "$info" 2 "Creating alias [fnl]."
+        alias fnl='sed "s/^//"' \
+            || __generic_if_verbose "$error" 3 'Creation of alias [fnl] failed.'
     __generic_if_verbose "$info" 1 "Done creating aliases."
 
     # Ensure all external commands are available.
