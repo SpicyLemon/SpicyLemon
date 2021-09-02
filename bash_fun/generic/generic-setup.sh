@@ -101,7 +101,7 @@ __generic_do_setup () {
         # epoch: Get the current epoch in milliseconds.
         # Usage: epoch
         __generic_if_verbose "$info" 2 "Creating alias [epoch]."
-        alias epoch='echo $(date +%s)000' \
+        alias epoch='printf "%d000\n" "$(date +%s)"' \
             || __generic_if_verbose "$error" 3 'Creation of alias [epoch] failed.'
         # pvar: Output something in brackets with a newline at the end. Handy for looking at variable values without messing with whitespace.
         # Usage: pvar "$foo"
