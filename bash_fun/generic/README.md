@@ -88,6 +88,19 @@ If you run into problems, you can use the `-v` option to get more information:
 $ source generic-setup.sh -v
 ```
 
+This will also create several alias:
+- `epoch`: Usage `epoch`. Outputs the epoch in milliseconds. But since date doesn't have that precision, it'll alwasy end in 000.
+- `pvar`: Usage `pvar "$foo"`. Outputs a string with brackets around it and a newline after.
+- `strim`: Usage `<stuff> | strim`. Strips leading and trailing whitespace but keeps a newline at the very end.
+- `strimr`: Usage `<stuff> | strimr`. Strips trailing (right) whitespace but keeps a newline at the very end.
+- `striml`: Usage `<stuff> | striml`. Strips leading whitespace.
+- `ican`: Usage `ican <command> && <do something with command>`. Checks if the `<command>` is available. Returns 0 if you can, 1 if you cannot.
+- `strip_colors`: Usage `<stuff> | strip_colors`. Strips the color codes out of stuff.
+- `strip_final_newline`: Usage `<stuff> | strip_final_newline`. Strips the newline off the very end (if there is one).
+- `tee_pbcopy`: Usage `<stuff> | tee_pbcopy`. Outputs to stdout and also puts it in the clipboard.
+- `tee_strip_colors_pbcopy`: Usage `<stuff> | tee_strip_colors_pbcopy`. Outputs to stdout and also puts the color stripped version into the clipboard.
+- `escape_escapes`: Usage `<stuff> | escape_escapes`. Escapes the escape character 033 so that it's easier to see (and color codes can be seen).
+
 ### `add.sh`
 
 [add.sh](add.sh) - A function/script for adding up numbers.
