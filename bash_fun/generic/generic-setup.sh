@@ -63,7 +63,7 @@ __generic_do_setup () {
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
     # Handy command for generating this:
-    #   grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * 2> /dev/null | sed 's/ .*$//' | grep -v -E -e '^(.*).sh:\1' -e 'generic-setup.sh' | sed 's/^.*\.sh://' | grep -v '^__' | sort | re_line -n 6 -d '~' -w "'" -p | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
+    #   grep -E '^[[:alnum:]_]+[[:space:]]+\([[:space:]]*\)' * 2> /dev/null | sed 's/ .*$//' | grep -v -E -e '^(.*).sh:\1$' -e 'generic-setup.sh' | sed 's/^.*\.sh://' | grep -v '^__' | sort | re_line -n 6 -d '~' -w "'" -p | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     extra_funcs_to_check=(
         'echo_bad'               'echo_blue'       'echo_bold'          'echo_cyan'    'echo_debug'               'echo_error'
         'echo_good'              'echo_green'      'echo_info'          'echo_red'     'echo_success'             'echo_underline'
