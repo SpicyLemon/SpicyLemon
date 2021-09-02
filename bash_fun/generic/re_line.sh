@@ -102,8 +102,8 @@ EOF
                 return 1
             fi
             per_line="$2"
-            min_width=
-            max_width=
+            min_width=''
+            max_width=''
             shift
             ;;
         --min|--min-width)
@@ -111,9 +111,9 @@ EOF
                 printf 'No width provided with the %s option.\n' "$2" >&2
                 return 1
             fi
-            per_line=
+            per_line=''
             min_width="$2"
-            max_width=
+            max_width=''
             shift
             ;;
         --max|--max-width)
@@ -121,8 +121,8 @@ EOF
                 printf 'No width provided with the %s option.\n' "$2" >&2
                 return 1
             fi
-            per_line=
-            min_width=
+            per_line=''
+            min_width=''
             max_width="$2"
             shift
             ;;
@@ -175,19 +175,15 @@ EOF
     done
 
     # Some final validation on provided options.
-    local input_source input_count
-    input_source="$( echo $from_filename $from_clipboard $from_pipe $from_args )"
-    input_count=0
-    [[ -n "$from_filename" ]] && input_count=$(( input_count + 1 ))
-    [[ -n "$from_clipboard" ]] && input_count=$(( input_count + 1 ))
-    [[ -n "$from_pipe" ]] && input_count=$(( input_count + 1 ))
-    [[ -n "$from_args" ]] && input_count=$(( input_count + 1 ))
-    [[ -n "$verbose" ]] && printf 'input source: [%s], input count: [%d].\n' "$input_source" "$input_count" >&2
-    if [[ "$input_count" -eq '0' ]]; then
+    local input_sources input_source
+    input_sources=( $from_filename $from_clipboard $from_pipe $from_args )
+    input_sources=( $from_filename $from_clipboard $from_pipe $from_args )
+    [[ -n "$verbose" ]] && printf 'input sources: [%s], input count: [%d].\n' "${input_sources[*]}" "${#input_sources[@]}" >&2
+    if [[ "${#input_sources[@]}" -eq '0' ]]; then
         printf 'No input defined.\n' >&2
         return 1
-    elif [[ "$input_count" -ne '1' ]]; then
-        printf 'Too many inputs defined: [%s].\n' "$input_source"
+    elif [[ "${#input_sources[@]}" -ne '1' ]]; then
+        printf 'Too many inputs defined: [%s].\n' "${input_sources[*]}" >&2
         return 1
     fi
     if [[ -n "$filename" && "$filename" != '-' && ! -f "$filename" ]]; then
@@ -205,7 +201,7 @@ EOF
     fi
 
     # Get the input and split it into entries.
-    local zwnj input orig_ifs entries line
+    local zwnj input orig_ifs entries
     #zero-width non-joiner: used to separate entries during processing
     zwnj="$( printf "\xe2\x80\x8c" )"
     if [[ -n "$from_filename" || -n "$from_pipe" ]]; then
@@ -219,7 +215,7 @@ EOF
         input="$*"
     fi
     if [[ -z "$input" ]]; then
-        printf 'The requested input source was empty: [%s].\n' "$input_source" >&2
+        printf 'The requested input source was empty: [%s].\n' "${input_sources[*]}" >&2
         return 1
     fi
     if [[ -n "$delimiter_in" ]]; then
@@ -229,18 +225,18 @@ EOF
     [[ -n "$verbose" ]] && printf 'Splitting input into entries.\n' >&2
     orig_ifs="$IFS"
     IFS="$zwnj"
-    entries=( $( tr '\n' "$zwnj" <<< "$input" ) )
+    entries=( $( printf '%s' "$input" | tr '\n' "$zwnj" ) )
     IFS="$orig_ifs"
 
     # Do the output!
     local line line_entry_count entry_index total_entries del del_no_end_sp
     local del_width del_width_no_end_sp entry entry_width line_width
-    line=
+    line=''
     line_entry_count='0'
     entry_index='0'
     total_entries="${#entries[@]}"
-    del=
-    del_no_end_sp=
+    del=''
+    del_no_end_sp=''
     if [[ -n "$delimiter_out" ]]; then
         del="$delimiter_out"
         del_no_end_sp="$( sed -E 's/[[:space:]]+$//' <<< "$delimiter_out" )"
@@ -268,8 +264,8 @@ EOF
                 for entry in "${entries[@]}"; do
                     entry_index=$(( entry_index + 1))
                     if [[ "$entry_index" -ge "$total_entries" ]]; then
-                        del=
-                        del_no_end_sp=
+                        del=''
+                        del_no_end_sp=''
                     fi
                     printf '%s' "${left}${wrap}${entry}${wrap}${right}${del}"
                 done
@@ -280,12 +276,12 @@ EOF
                     entry_index=$(( entry_index + 1))
                     entry="${left}${wrap}${entry}${wrap}${right}"
                     if [[ "$entry_index" -ge "$total_entries" ]]; then
-                        del=
-                        del_no_end_sp=
+                        del=''
+                        del_no_end_sp=''
                     fi
                     if [[ "$line_entry_count" -ge "$per_line" ]]; then
                         printf '%s\n' "${line}${entry}${del_no_end_sp}"
-                        line=
+                        line=''
                         line_entry_count=0
                     else
                         line="${line}${entry}${del}"
@@ -301,13 +297,13 @@ EOF
                 entry_width="${#entry}"
                 line_width="${#line}"
                 if [[ "$entry_index" -ge "$total_entries" ]]; then
-                    del=
-                    del_no_end_sp=
+                    del=''
+                    del_no_end_sp=''
                     del_width_no_end_sp=0
                 fi
                 if [[ "$(( line_width + entry_width + del_width_no_end_sp ))" -ge "$min_width" ]]; then
                     printf '%s\n' "${line}${entry}${del_no_end_sp}"
-                    line=
+                    line=''
                 else
                     line="${line}${entry}${del}"
                 fi
@@ -322,18 +318,18 @@ EOF
                 entry_width="${#entry}"
                 line_width="${#line}"
                 if [[ "$entry_index" -ge "$total_entries" ]]; then
-                    del=
+                    del=''
                     del_width=0
-                    del_no_end_sp=
+                    del_no_end_sp=''
                     del_width_no_end_sp=0
                 fi
                 if [[ "$(( line_width + entry_width + del_width ))" -ge "$max_width" ]]; then
                     if [[ -z "$line" ]]; then
                         printf '%s\n' "${entry}${del_no_end_sp}"
-                        line=
+                        line=''
                     elif [[ "$(( line_width + entry_width + del_width_no_end_sp ))" -le "$max_width" ]]; then
                         printf '%s\n' "${line}${entry}${del_no_end_sp}"
-                        line=
+                        line=''
                     else
                         sed -E 's/[[:space:]]+$//;' <<< "$line"
                         line="${entry}${del}"
