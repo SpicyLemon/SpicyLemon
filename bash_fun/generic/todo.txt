@@ -11,20 +11,6 @@ TODO:
         Maybe some string manipulation stuff too, e.g. string_repeate.sh and change_word.sh.
         The hrr.sh file should probably be split out into individual files too. I don't know though, they're pretty simple, but who knows.
             That'd let some of the more palette oriented functions go into the color stuff too.
-    Add more generic preprocessing to multidiff.
-        I picture it kind of like xargs where you supply a command to run on each file.
-        The output of each is put into a temp file and the diffs are done on those.
-        I'd definitely want a way to indicate that the filename should be placed in a certain spot in the command rather than at the end though.
-            It's probably a good idea to just add a -I replstr flag to the multidiff command that really only gets used if a --pre is given.
-            And if no -I was given, the filename would just go at the end of what was given.
-        I'll probably need a way to disambiguate between the pre-defined "jq" and "json_info" preprocessors though.
-            I'm not sure if just checking for specific ones is okay or not.
-            How often will the desired pre-processing command just be a single word?, e.g. stat
-                I'm guessing not much since it took me a while to find a command that's just <cmd> <filename> that might be usable.
-                I think that in almost all cases, it's going to be fine as long as the pre-defined ones are single words (or underscored).
-            Or.... maybe turn change --pre-process jq and --pre-process json_info into just --jq and --json-info flags
-            How fancy do I want to get about being able to apply multiple pre-processing commands?
-                e.g. --json-info --pre-process 'grep "\.some.subfield.'
     Allow the vector length to be provided to palette_vector_generate and palette_vector_random.
     Create a palette_walk_generate and palette_walk_random
         Usage: palette_walk_generate <start> <step1> [<step2> ...]

@@ -14,29 +14,37 @@
 ) && sourced='YES' || sourced='NO'
 
 multidiff () {
-    local cnums usage diff_cmd is_side_by_side pre_processor files files_p files_count \
-        cf ccmd cn cre sed_cmd_fmt req_cmds req_cmd exit_code tempd f fp ec i j
+    local cnums usage diff_cmd is_side_by_side pre_processor replstr files files_p files_count \
+        is_pd_pp cf ccmd cn cre sed_cmd_fmt req_cmds req_cmd exit_code tempd f fp pp_cmd ec i j
     # 93 = Bright Yellow, 92 = Bright Green, 96 = Bright Cyan, 95 = Bright Purple, 91 = Bright Red, 97 = Bright White
     # 33 = Yellow, 32 = Green, 36 = Cyan, 35 = Purple, 31 = Red, 37 = White
     cnums=( 93 92 96 95 91 97 33 32 36 35 31 37 )
     usage="$( cat << EOF
 Gets differences between sets of files.
 
-Usage: multidiff [[<diff args>] [--pre-process <pre-processor>] --] <file1> <file2> [<file3>...]
+Usage: multidiff [[<diff args>] [--pre-process <pre-processor-cmd> [--replstr <replstr>]] --] <file1> <file2> [<file3>...]
+
+    If any arguments other than files are provided, the files must all follow a -- argument.
 
     <file1> <file2> [<file3>...] are the files to diff. Up to ${#cnums[@]} can be supplied.
         Diffs are done between each possible pair of files.
         For example, with 3 files, there are 3 pairs: 1-2, 1-3, 2-3.
         With 4 files, you would end up with 6 pairs: 1-2, 1-3, 1-4, 2-3, 2-4, 3-4.
 
-    If any arguments other than files are provided, the files must all follow a -- argument.
-
     <diff args> are any arguments that you want provided to each diff command.
-    --pre-process <pre-processor> defines any pre-processing that should be done to each file before the diff.
-        <pre-processor> values:
-            none       This is the default. Do not do any pre-processing of the files.
-            jq         Apply the command  jq --sort-keys '.' <file>  to each file and get the differences of the results.
-            json_info  Apply the command  json_info -r -f <file>     to each file and get the differences of the results.
+    --pre-process <pre-processor-cmd> defines any pre-processing that should be done to each file before the diff.
+        The <pre-processor-cmd> will be run for each provided file.
+        The result will be stored in a temp file which will then be used for the diffs.
+        By default, the filename will be added to the end of the <pre-processor-cmd>.
+        If --replstr <replstr> is provided, the <pre-processor-cmd> should contain <replstr>,
+            and the first instance of it will be replaced with the filename.
+            If <replstr> is an empty string, file placement goes back to default behavior.
+            Suggested <replstr> values: '{}', 'FFFF'
+        There are some pre-defined <pre-processor-cmd>s that can be provided:
+            'jq': same as 'jq --sort "."'
+            'json-info': same as 'json_info --max-string 0 -r -f'
+        Example of args for pre-defined pre-processor: --pre-process jq
+        An empty string for <pre-processor-cmd> will deactivate pre-processing.
 EOF
     )"
     if [[ "$#" -eq '0' ]]; then
@@ -54,25 +62,20 @@ EOF
                 printf '%s\n\n' "$usage"
                 return 0
                 ;;
-            --pre-process|--pre-processor|--pre-proc|--pre)
-                if [[ "$#" -lt '2' || -z "$2" ]]; then
+            --pre|--pre-proc|--pre-process|--pre-processor)
+                if [[ "$#" -lt '2' || "$2" == '--' ]]; then
                     printf 'multidiff: No pre-processor provided after %s\n' "$1" >&2
                     return 1
                 fi
-                case "$2" in
-                none|--none)
-                    pre_processor=''
-                    ;;
-                jq|--jq)
-                    pre_processor='jq'
-                    ;;
-                json_info|json-info|--json-info|--json_info)
-                    pre_processor='json_info'
-                    ;;
-                *)
-                    printf 'multidiff: Unknown pre-processor value: %s\n' "$2" >&2
+                pre_processor="$2"
+                shift
+                ;;
+            --replstr)
+                if [[ "$#" -lt '2' || "$2" == '--' ]]; then
+                    printf 'multidiff: No replstr provided after %s\n' "$1" >&2
                     return 1
-                esac
+                fi
+                replstr="$2"
                 shift
                 ;;
             --)
@@ -152,10 +155,26 @@ EOF
         sed_cmd_fmt="s/^(<.*)$/%b\\\\1$cre/; s/^(>.*)$/%b\\\\1$cre/;"
     fi
 
-    req_cmds=( 'seq' 'diff' 'basename' 'mktemp' )
-    if [[ -n "$pre_processor" ]]; then
-        req_cmds+=( "$pre_processor" )
+    is_pd_pp='YES'
+    case "$pre_processor" in
+        jq|--jq) pre_processor="jq --sort-keys '.'";;
+        json|json_info|json-info|--json|--json_info|--json-info) pre_processor='json_info --max-string 0 -r -f';;
+        *) is_pd_pp='';;
+    esac
+    if [[ -n "$replstr" ]]; then
+        if [[ -z "$pre_processor" ]]; then
+            printf 'multidiff: A replstr cannot be provided without a pre-processor-cmd.\n' >&2
+            return 1
+        elif [[ -n "$is_pd_pp" ]]; then
+            printf 'multidiff: A replstr cannot be provided with a pre-defined pre-processor.\n' >&2
+            return 1
+        elif ! grep -q "$replstr" <<< "$pre_processor" > /dev/null 2>&1; then
+            printf 'multidiff: The replstr %s was not found in the pre-processor command: %s\n' "$replstr" "$pre_processor" >&2
+            return 1
+        fi
     fi
+
+    req_cmds=( 'seq' 'diff' 'basename' 'mktemp' )
     for req_cmd in "${req_cmds[@]}"; do
         if ! command -v "$req_cmd" > /dev/null 2>&1; then
             printf 'multidiff: Missing required command: \n' "$req_cmd" >&2
@@ -172,37 +191,25 @@ EOF
         exit_code=$?
         if [[ "$exit_code" -ne '0' ]]; then
             printf 'multidiff: Unable to create temp directory for pre-processed files.\n' >&2
-        elif [[ "$pre_processor" == 'jq' ]]; then
-            files_p=()
-            for i in $( seq 1 $files_count ); do
-                j=$(( i - 1 ))
-                f="${files[$j]}"
-                printf -v fp '%s/%2d_%s' "$tempd" "$i" "$( basename "$f" )"
-                files_p+=( "$fp" )
-                jq --sort-keys '.' "$f" > "$fp"
-                ec=$?
-                if [[ "$ec" -ne '0' ]]; then
-                    printf 'multidiff: Invalid JSON in file %d: %s\n' "$i" "$f" >&2
-                    exit_code=$ec
-                fi
-            done
-        elif [[ "$pre_processor" == 'json_info' ]]; then
-            files_p=()
-            for i in $( seq 1 $files_count ); do
-                j=$(( i - 1 ))
-                f="${files[$j]}"
-                printf -v fp '%s/%2d_%s.info' "$tempd" "$i" "$( basename "$f" )"
-                files_p+=( "$fp" )
-                json_info --max-string 0 -r -f "$f" > "$fp"
-                ec=$?
-                if [[ "$ec" -ne '0' ]]; then
-                    printf 'multidiff: Invalid JSON in file %d: %s\n' "$i" "$f" >&2
-                    exit_code=$ec
-                fi
-            done
         else
-            printf 'multidiff: Unknown pre-processor type: %s\n' "$pre_processor" >&2
-            exit_code=1
+            files_p=()
+            for i in $( seq 1 $files_count ); do
+                j=$(( i - 1 ))
+                f="${files[$j]}"
+                printf -v fp '%s/%02d_%s.pp' "$tempd" "$i" "$( basename "$f" )"
+                files_p+=( "$fp" )
+                if [[ -z "$replstr" ]]; then
+                    pp_cmd="$pre_processor '$f'"
+                else
+                    pp_cmd="$( sed "s/$replstr/'$f'/" <<< "$pre_processor" )"
+                fi
+                eval $pp_cmd > "$fp"
+                ec=$?
+                if [[ "$ec" -ne '0' ]]; then
+                    printf 'multidiff: Pre-processing command failed for file %d: %s\n' "$i" "$pp_cmd" >&2
+                    exit_code=$ec
+                fi
+            done
         fi
     fi
 
