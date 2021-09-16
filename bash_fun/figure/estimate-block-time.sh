@@ -266,6 +266,7 @@ if [[ -z "$current_height" ]]; then
     [[ -n "$verbose" ]] && printf 'Executing command: %s query block  ... ' "$PROVD" >&2
     current_block="$( "$PROVD" query block )" || exit $?
     [[ -n "$verbose" ]] && printf 'Done\n' >&2
+    provd_used='YES'
     [[ "$verbose" =~ vv ]] && jq '.' <<< "$current_block" >&2
     current_height="$( jq -r '.block.header.height' <<< "$current_block" )"
     [[ -n "$verbose" ]] && printf 'Current height looked up: [%s].\n' "$current_height" >&2
@@ -299,6 +300,7 @@ if [[ -z "$ms_per_block" ]]; then
     [[ -n "$verbose" ]] && printf 'Executing command: %s query block %s  ... ' "$PROVD" "$old_height" >&2
     old_block="$( "$PROVD" query block "$old_height" )" || exit $?
     [[ -n "$verbose" ]] && printf 'Done\n' >&2
+    provd_used='YES'
     [[ "$verbose" =~ vv ]] && jq '.' <<< "$old_block" >&2
     old_time="$( jq -r '.block.header.time' <<< "$old_block" )"
     [[ -n "$verbose" ]] && printf 'Old block date time: [%s].\n' "$old_time" >&2
@@ -307,6 +309,23 @@ if [[ -z "$ms_per_block" ]]; then
     ms_per_block="$(( ( current_ms - old_ms ) / ( current_height - old_height ) ))" || exit $?
     [[ -n "$verbose" ]] && printf 'Milliseconds per block calculated: [%s].\n' "$ms_per_block" >&2
 fi
+
+if [[ -n "$provd_used" ]]; then
+    [[ -n "$verbose" ]] && printf 'Executing command: %s config get all ... ' "$PROVD" >&2
+    config_all="$( "$PROVD" config get all 2>&1 )"
+    ec=$?
+    if [[ "$ec" -eq '0' ]]; then
+        [[ -n "$verbose" ]] && printf 'Done\n' >&2
+        moniker="$( grep '^moniker=' <<< "$config_all" | sed 's/^moniker="//; s/"$//;' )"
+        chain_id="$( grep '^chain-id=' <<< "$config_all" | sed 's/^chain-id="//; s/"$//;' )"
+    else
+        [[ -n "$verbose" ]] && printf 'Failed with code %s.\n%s' "$ec" "$config_all" >&2
+    fi
+    if [[ -n "$PIO_HOME" ]]; then
+        pio_home="$PIO_HOME"
+    fi
+fi
+
 
 ################################
 # Do the desired calculation.
@@ -362,6 +381,9 @@ fi
 #########################
 # Do the output dance!
 
+[[ -n "$pio_home" ]] && printf 'PIO Home: %s\n' "$pio_home"
+[[ -n "$chain_id" ]] && printf 'Chain-Id: %s\n' "$chain_id"
+[[ -n "$moniker" ]] && printf 'Moniker: %s\n' "$moniker"
 printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
 printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
 printf 'Elapsed milliseconds: %s = %s blocks at %s milliseconds per block.\n' "$ms_diff" "$block_diff" "$ms_per_block"
