@@ -89,6 +89,14 @@ __figure_do_setup () {
     # And, let's get started!
     __figure_if_verbose "$info" 0 "Loading $title functions."
 
+    __figure_if_verbose "$info" 1 "Creating aliases."
+        # estimate-block-time: call the estimate-block-time.sh script.
+        # Usage: estimate-block-time <args>
+        __figure_if_verbose "$info" 2 "Creating alias [estimate-block-time]."
+        alias estimate-block-time="$where_i_am/estimate-block-time.sh" \
+            || __figure_if_verbose "$error" 3 'Creation of alias [estimate-block-time] failed.'
+    __figure_if_verbose "$info" 1 "Done creating aliases."
+
     if [[ "${#required_external[@]}" -gt '0'  ]]; then
         __figure_if_verbose "$info" 1 "Checking for needed external programs and functions."
         for cmd_to_check in "${required_external[@]}"; do
