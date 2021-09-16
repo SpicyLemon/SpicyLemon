@@ -123,9 +123,9 @@ epoch_ms_to_date_time () {
     ms="$1"
     s="$(( ms / 1000 ))" || return $?
     if [[ -n "$use_gnu_date" ]]; then
-        rv="$( date -d "@$s" +'%F %T%z' )" || return $?
+        rv="$( date -d "@$s" +'%F %T %z' )" || return $?
     else
-        rv="$( date -j -f '%s' "$s" +'%F %T%z' )" || return $?
+        rv="$( date -j -f '%s' "$s" +'%F %T %z' )" || return $?
     fi
     printf '%s' "$rv"
     return 0
@@ -354,8 +354,8 @@ fi
 #########################
 # Do the output dance!
 
-printf 'Current: %-24s Height: %s\n' "$current_time_disp" "$current_height"
-printf 'Desired: %-24s Height: %s\n' "$desired_time_disp" "$desired_height"
+printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
+printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
 printf 'Elapsed milliseconds: %s = %s blocks at %s milliseconds per block.\n' "$ms_diff" "$block_diff" "$ms_per_block"
 
 
