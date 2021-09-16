@@ -195,6 +195,14 @@ while [[ "$#" -gt '0' ]]; do
     shift
 done
 
+if [[ -n "$verbose" ]]; then
+    if [[ -n "$use_gnu_date" ]]; then
+        printf 'Using Linux/GNU version of date commands.\n' >&2
+    else
+        printf 'Using Unix/Mac version of date commands.\n' >&2
+    fi
+fi
+
 ###################
 # Validate args.
 
