@@ -25,17 +25,11 @@ __git_get_all_repos () {
     if [[ -n "$GIT_REPO_DIR" && -d "$GIT_REPO_DIR" ]]; then
         base_dirs+=( "$GIT_REPO_DIR" )
     fi
-    if [[ -n "$GITLAB_REPO_DIR" && -d "$GITLAB_REPO_DIR" ]]; then
+    if [[ -n "$GITLAB_REPO_DIR" && -d "$GITLAB_REPO_DIR" ]] && ! printf '%s\n' "${base_dirs[@]}" | grep -qFx "$GITLAB_REPO_DIR"; then
         base_dirs+=( "$GITLAB_REPO_DIR" )
-    elif [[ -n "$GITLAB_BASE_DIR" && -d "$GITLAB_BASE_DIR" ]]; then
-        # GITLAB_BASE_DIR is deprecated, use GITLAB_REPO_DIR instead.
-        base_dirs+=( "$GITLAB_BASE_DIR" )
     fi
-    if [[ -n "$GITHUB_REPO_DIR" && -d "$GITHUB_REPO_DIR" ]]; then
+    if [[ -n "$GITHUB_REPO_DIR" && -d "$GITHUB_REPO_DIR" ]] && ! printf '%s\n' "${base_dirs[@]}" | grep -qFx "$GITHUB_REPO_DIR"; then
         base_dirs+=( "$GITHUB_REPO_DIR" )
-    elif [[ -n "$GITHUB_BASE_DIR" && -d "$GITHUB_BASE_DIR" ]]; then
-        # GITHUB_BASE_DIR is deprecated, use GITHUB_REPO_DIR instead.
-        base_dirs+=( "$GITHUB_BASE_DIR" )
     fi
     repos=()
     if [[ "${#base_dirs[@]}" -gt '0' ]]; then
