@@ -6,9 +6,6 @@
 # File contents:
 #   in_git_folder  --> Returns 0 (true) if currently in a git folder, or 1 (false) if not.
 #
-# Deprecated.
-#    Being replaced with alias in_git_repo='git rev-parse --is-inside-work-tree > /dev/null 2>&1'
-#
 
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
