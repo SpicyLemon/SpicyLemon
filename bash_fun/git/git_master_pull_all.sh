@@ -15,21 +15,24 @@
 
 # Usage: git_master_pull_all
 git_master_pull_all () {
-    local cwd repos repo_count repo_index successful_repos failed_repos repo repo_failed cur_branch
-    cwd="$( pwd )"
-    repos=( $( __git_get_all_repos ) )
+    local repos repo repo_count cwd repo_index successful_repos failed_repos repo_failed cur_branch
+    repos=()
+    while IFS= read -r repo; do
+        repos+=( "$repo" )
+    done <<< "$( __git_get_all_repos )"
     repo_count="${#repos[@]}"
-    repo_index=0
-    successful_repos=()
-    failed_repos=()
     if [[ "$repo_count" -le '0' ]]; then
         printf 'No repos found.\n' >&2
         return 1
     fi
+    cwd="$( pwd )"
+    repo_index=0
+    successful_repos=()
+    failed_repos=()
     for repo in "${repos[@]}"; do
         repo_index=$(( repo_index + 1 ))
-        repo_failed=
-        cur_branch=
+        repo_failed=''
+        cur_branch=''
         printf '\033[1;36m%d of %d\033[0m - \033[1;33m%s\033[0m\n' "$repo_index" "$repo_count" "$repo"
         __git_echo_do cd "$repo" || repo_failed='YES'
         if [[ -z "$repo_failed" ]]; then

@@ -14,13 +14,12 @@
 ) && sourced='YES' || sourced='NO'
 
 git_list_extra_branches () {
-    local show_all cwd repos repo branches
+    local show_all cwd repo branches
     if [[ "$1" == '-a' || "$1" == '--all' ]]; then
         show_all='YES'
     fi
     cwd="$( pwd )"
-    repos=( $( __git_get_all_repos ) )
-    for repo in "${repos[@]}"; do
+    while IFS= read -r repo; do
         cd "$repo"
         branches="$( git branch )"
         if [[ -n "$show_all" || -n "$( grep -E -v '^[* ] (master|main|develop)$' <<< "$branches" )" ]]; then
@@ -28,7 +27,7 @@ git_list_extra_branches () {
             sed -E 's/^[*] (.+)$/* '$'\033[32m''\1'$'\033[0m''/; s/^/  /;' <<< "$branches"
             printf '\n'
         fi
-    done
+    done <<< "$( __git_get_all_repos )"
     cd "$cwd"
 }
 

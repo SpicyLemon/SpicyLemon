@@ -47,7 +47,7 @@ __git_get_all_repos () {
         cd "$cwd"
     fi
     if [[ "${#repos[@]}" -gt '0' ]]; then
-        printf '%s ' "${repos[@]}"
+        printf '%s\n' "${repos[@]}"
         return 0
     fi
     return 1
