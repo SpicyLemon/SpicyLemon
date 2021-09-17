@@ -19,8 +19,9 @@ git_delete_branches () {
         printf 'git_delete_branches: Not in a git repo.\n' >&2
         return 1
     fi
-    local local_branches branches
-    local_branches="$( git branch | grep -v -E -e '^\*' -e '[[:space:]](master|main|develop)[[:space:]]*$' | sed -E 's/^ +| +$//g' | sort )"
+    local default_branch local_branches branches
+    default_branch="$( git_get_default_branch )"
+    local_branches="$( git branch | grep -v '^\*' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//g;' | grep -vFx "$default_branch" | sort )"
     if [[ -n "$local_branches" ]]; then
         branches="$( fzf --tac -m --cycle --header="Select branches to delete using tab. Press enter when ready (or esc to cancel)." <<< "$local_branches" )"
         if [[ -n "$branches" ]]; then
@@ -60,6 +61,7 @@ if [[ "$sourced" != 'YES' ]]; then
         fi
     }
     require_command 'in_git_folder' || exit $?
+    require_command 'git_get_default_branch' || exit $?
     require_command '__git_echo_do' || exit $?
     git_delete_branches "$@"
     exit $?
