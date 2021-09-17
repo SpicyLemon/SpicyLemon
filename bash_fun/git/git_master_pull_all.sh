@@ -15,7 +15,7 @@
 
 # Usage: git_master_pull_all
 git_master_pull_all () {
-    local repos repo repo_count cwd repo_index successful_repos failed_repos repo_failed cur_branch
+    local repos repo repo_count cwd repo_index successful_repos failed_repos repo_failed default_branch cur_branch
     repos=()
     while IFS= read -r repo; do
         repos+=( "$repo" )
@@ -36,9 +36,11 @@ git_master_pull_all () {
         printf '\033[1;36m%d of %d\033[0m - \033[1;33m%s\033[0m\n' "$repo_index" "$repo_count" "$repo"
         __git_echo_do cd "$repo" || repo_failed='YES'
         if [[ -z "$repo_failed" ]]; then
+            default_branch="$( git_get_default_branch )"
+            [[ -z "$default_branch" ]] && default_branch='master'
             cur_branch="$( git_branch_name )"
-            if [[ ! "$cur_branch" =~ ^(master|main)$ ]]; then
-                __git_echo_do git checkout master || __git_echo_do git checkout main || repo_failed='YES'
+            if [[ "$cur_branch" != "$default_branch" ]]; then
+                __git_echo_do git checkout "$default_branch" || repo_failed='YES'
             fi
         fi
         if [[ -z "$repo_failed" ]]; then
@@ -94,6 +96,7 @@ if [[ "$sourced" != 'YES' ]]; then
     require_command 'in_git_folder' || exit $?
     require_command '__git_get_all_repos' || exit $?
     require_command '__git_echo_do' || exit $?
+    require_command 'git_get_default_branch' || exit $?
     require_command 'git_branch_name' || exit $?
     git_master_pull_all "$@"
     exit $?

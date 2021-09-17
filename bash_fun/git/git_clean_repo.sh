@@ -15,12 +15,18 @@
 
 # Usage: git_clean_repo
 git_clean_repo () {
+    local default_branch
     if ! in_git_folder; then
         printf 'git_clean_repo: Not in a git repo.\n' >&2
         return 1
     fi
-    # Check out master
-    __git_echo_do git checkout master || __git_echo_do git checkout main || return $?
+    default_branch="$( git_get_default_branch )"
+    if [[ -z "$default_branch" ]]; then
+        printf 'git_clean_repo: No default branch found. Set one using git_set_default_branch and try again.\n' >&2
+        return 1
+    fi
+    # Check out the default branch
+    __git_echo_do git checkout "$default_branch" || return $?
     # Delete any branches if desired.
     __git_echo_do git_delete_branches
     # Do git clean: -f -> force to delete untracked files,
@@ -56,6 +62,7 @@ if [[ "$sourced" != 'YES' ]]; then
     require_command 'in_git_folder' || exit $?
     require_command '__git_echo_do' || exit $?
     require_command 'git_delete_branches' || exit $?
+    require_command 'git_get_default_branch' || exit $?
     git_clean_repo "$@"
     exit $?
 fi

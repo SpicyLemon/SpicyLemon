@@ -1,10 +1,10 @@
 #!/bin/bash
-# This file contains the git_fresh_branch function that creates a fresh branch from master.
+# This file contains the git_fresh_branch function that creates a fresh branch from the default branch.
 # This file can be sourced to add the git_fresh_branch function to your environment.
 # This file can also be executed to run the git_fresh_branch function without adding it to your environment.
 #
 # File contents:
-#   git_fresh_branch  --> Pulls master and creates a fresh branch from it.
+#   git_fresh_branch  --> Pulls the default branch and creates a fresh branch from it.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -15,7 +15,7 @@
 
 # Usage: git_fresh_branch <branch name>
 git_fresh_branch () {
-    local branch
+    local branch default_branch
     branch="$1"
     if ! in_git_folder; then
         printf 'git_fresh_branch: Not in a git repo.\n' >&2
@@ -25,8 +25,13 @@ git_fresh_branch () {
         printf 'Usage: git_fresh_branch <branch name>\n' >&2
         return 2
     fi
-    if [[ ! "$( git_branch_name )" =~ ^(master|main)$ ]]; then
-        __git_echo_do git checkout master || __git_echo_do git checkout main || return $?
+    default_branch="$( git_get_default_branch )"
+    if [[ -z "$default_branch" ]]; then
+        printf 'git_fresh_branch: No default branch found.\n' >&2
+        return 3
+    fi
+    if [[ "$( git_branch_name )" != "$default_branch" ]]; then
+        __git_echo_do git checkout "$default_branch" || return $?
     fi
     __git_echo_do git pull
     __git_echo_do git checkout -b "$branch"
@@ -56,6 +61,7 @@ if [[ "$sourced" != 'YES' ]]; then
     require_command 'in_git_folder' || exit $?
     require_command '__git_echo_do' || exit $?
     require_command 'git_branch_name' || exit $?
+    require_command 'git_get_default_branch' || exit $?
     git_fresh_branch "$@"
     exit $?
 fi
