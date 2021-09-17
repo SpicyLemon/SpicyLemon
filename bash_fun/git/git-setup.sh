@@ -91,6 +91,14 @@ __git_do_setup () {
     # And, let's get started!
     __git_if_verbose "$info" 0 "Loading $title functions."
 
+    __git_if_verbose "$info" 1 "Creating aliases."
+        # in_git_repo: returns true if in a git repo, false if not.
+        # Usage: in_git_repo && <do some git stuff>
+        __git_if_verbose "$info" 2 "Creating alias [in_git_repo]."
+        alias in_git_repo='git rev-parse --is-inside-work-tree > /dev/null 2>&1' \
+            || __git_if_verbose "$error" 3 'Creation of alias [in_git_repo] failed.'
+    __git_if_verbose "$info" 1 "Done creating aliases."
+
     if [[ "${#required_external[@]}" -gt '0'  ]]; then
         __git_if_verbose "$info" 1 "Checking for needed external programs and functions."
         for cmd_to_check in "${required_external[@]}"; do
