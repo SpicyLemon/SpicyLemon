@@ -21,7 +21,7 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-# Usage: git_pull_merge <branch>
+# Usage: github_config_as_personal
 github_config_as_personal () {
     if ! in_git_folder; then
         printf 'Not in a git repository.\n' >&2
