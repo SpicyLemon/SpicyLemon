@@ -162,6 +162,12 @@ __generic_do_setup () {
         __generic_if_verbose "$info" 2 "Creating alias [fnl]."
         alias fnl='sed "s/^//"' \
             || __generic_if_verbose "$error" 3 'Creation of alias [fnl] failed.'
+        # clearx: Similar to clear, except also clears scrollback.
+        # See: https://apple.stackexchange.com/a/318217
+        # Usage: clearx
+        __generic_if_verbose "$info" 2 "Creating alias [clearx]."
+        alias clearx="printf '\033[2J\033[3J\033[H'" \
+            || __generic_if_verbose "$error" 3 'Creation of alias [clearx] failed.'
     __generic_if_verbose "$info" 1 "Done creating aliases."
 
     # Ensure all external commands are available.
