@@ -27,7 +27,8 @@ to_epoch () {
         return 0
     fi
     # Allow for the input to be in ISO 8601 format where the date and time are combined with a T.
-    pieces=( $( tr 'T' ' ' <<< "$@" ) )
+    # Also allow for ISO 8601 time zone Z and/or no space between the time and offset.
+    pieces=( $( sed -E 's/T/ /; s/([-+][[:digit:]]+)$/ \1/; s/Z$/ +0000/;' <<< "$*" ) )
     # zsh is 1 indexed, bash is 0.
     if [[ -n "${pieces[0]}" ]]; then
         the_date="${pieces[0]}"
