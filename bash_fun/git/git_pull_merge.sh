@@ -20,6 +20,9 @@ git_pull_merge () {
         return 1
     fi
     local main_branch="$1"
+    if [[ -z "$main_branch" ]]; then
+        main_branch="$( git_get_default_branch )"
+    fi
     if [[ -z "$main_branch" || "$main_branch" == '-h' || "$main_branch" == '--help' ]]; then
         printf 'Usage: git_pull_merge <branch>\n'
         return 0
@@ -64,6 +67,7 @@ if [[ "$sourced" != 'YES' ]]; then
     require_command 'in_git_folder' || exit $?
     require_command '__git_echo_do' || exit $?
     require_command 'git_branch_name' || exit $?
+    require_command 'git_get_default_branch' || exit $?
     git_pull_merge "$@"
     exit $?
 fi
