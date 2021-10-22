@@ -122,6 +122,7 @@ EOF
         fi
     fi
     if [[ "$ec" -eq '0' ]]; then
+        __git_echo_do git_set_default_branch
         if [[ -n "$personal" ]]; then
             __git_echo_do github_config_as_personal || ec2=$?
         else
