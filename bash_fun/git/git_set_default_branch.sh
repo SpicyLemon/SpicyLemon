@@ -36,7 +36,7 @@ git_set_default_branch () {
         fi
         default_branch="$( git_branch_name )"
     fi
-    git config --local --add spicylemon.defaultbranch "$default_branch"
+    git config --local --replace-all spicylemon.defaultbranch "$default_branch"
     return $?
 }
 
