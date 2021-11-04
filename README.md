@@ -4,6 +4,7 @@ Dumping ground for fun random stuff that I've put together.
 ## Contents
 
 * `bash_fun` - Scripts and functions for doing stuff in bash (and also in other shells in most cases).
+* `go_fun` - Packages and stuff relating to Go.
 * `js_fun` - Stuff relating to javascript.
 * `perl_fun` - Stuff that I've done in Perl, and felt like sharing.
 * `ticker` - A bash script for looking up stock prices.
