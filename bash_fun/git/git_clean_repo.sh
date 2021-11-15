@@ -33,7 +33,8 @@ git_clean_repo () {
     #               -d -> recurse into untracked directories,
     #               -x -> ignore standard ignore rules
     #               -e .idea -> but leave the .idea directory alone
-    __git_echo_do git clean -fdx -e .idea
+    #               -e .envrc -> and leave the .envrc file alone
+    __git_echo_do git clean -fdx -e .idea -e .envrc
     # And get the most recent info, pruning all stale branch references
     __git_echo_do git fetch -p
 }
