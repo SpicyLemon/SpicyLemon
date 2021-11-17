@@ -53,12 +53,12 @@ __figure_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'figure-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
-        'b642id'  'get_hash_price'  'id2b64'
+        'b642id'  'get_hash_price'  'id2b64' 'query_prov_using_next_key'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
     extra_funcs_to_check=(
-        'dlobcache'  'dlobcache_check_required_commands'  'dlobcache_refresh'  'get_hash_price_for_prompt'
+        'dlobcache'  'dlobcache_check_required_commands'  'dlobcache_refresh'  'get_hash_price_for_prompt' 'prov_node'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
