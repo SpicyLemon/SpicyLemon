@@ -91,6 +91,7 @@ $ source generic-setup.sh -v
 This will also create several alias:
 - `epoch`: Usage `epoch`. Outputs the epoch in milliseconds. But since date doesn't have that precision, it'll alwasy end in 000.
 - `pvar`: Usage `pvar "$foo"`. Outputs a string with brackets around it and a newline after.
+- `pevar`: Usage `pevar "$foo"`. Outputs a string in its shell-quoted (escaped) format with a newline after it.
 - `strim`: Usage `<stuff> | strim`. Strips leading and trailing whitespace but keeps a newline at the very end.
 - `strimr`: Usage `<stuff> | strimr`. Strips trailing (right) whitespace but keeps a newline at the very end.
 - `striml`: Usage `<stuff> | striml`. Strips leading whitespace.
