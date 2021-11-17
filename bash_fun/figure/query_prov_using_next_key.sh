@@ -18,17 +18,13 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-if [[ "$sourced" != 'YES' ]]; then
-    cat >&2 << EOF
-This script is meant to be sourced instead of executed.
-Please run this command to enable the functionality contained in within: $( printf '\033[1;37msource %s\033[0m' "$( basename "$0" 2> /dev/null || basename "$BASH_SOURCE" )" )
-EOF
-    exit 1
-fi
-unset sourced
+MODE_TESTNET='tcp://rpc-0.test.provenance.io:26657'
+NODE_MAINNET='tcp://rpc-0.provenance.io:26657'
 
-export MODE_TESTNET='tcp://rpc-0.test.provenance.io:26657'
-export NODE_MAINNET='tcp://rpc-0.provenance.io:26657'
+if [[ "$sourced" == 'YES' ]]; then
+    export MODE_TESTNET
+    export NODE_MAINNET
+fi
 
 # Usage: prov_node
 # If the USE_PROD environment variable isn't set, or is set to one of 'f', 'false', 'n', 'no' (ignoring case),
@@ -226,3 +222,10 @@ EOF
     return 0
 }
 
+if [[ "$sourced" != 'YES' ]]; then
+    query_prov_using_next_key "$@"
+    exit $?
+fi
+unset sourced
+
+return 0

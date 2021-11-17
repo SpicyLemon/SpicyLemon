@@ -9,6 +9,7 @@ These scripts/functions are specific to activities associated with Figure Techno
 * `get_hash_price.sh` - This file has some functions used to display the HASH (Provenance utility coin) price in my command prompt.
 * `b642id.sh` - Converts base64 encoded strings into a `MetadataAddress`, and display it's various pieces.
 * `id2b64.sh` - Converts hex values (meant to make up a `MetadataAddress`) into a base64 encoded string.
+* `query_prov_using_next_key.sh` - Gets multiple pages of a paginated provenanced query.
 
 ## Details
 
@@ -112,3 +113,53 @@ AANhGlOv5EOnqFVbYpszHKs=
 ```
 
 It's counterpart is the `b642id` function.
+
+### `query_prov_using_next_key`
+
+[query_prov_using_next_key.sh](query_prov_using_next_key.sh) - Function/script for getting multiple pages of a paginated provenanced query.
+
+```
+Usage: query_prov_using_next_key {qp args} {query args}
+
+  {qp args} are arguments specific to query_prov_using_next_key:
+      --qp-start {index}     Indicates the index number to start the counting at (for the filenames).
+                             Default is 1.
+      --qp-max-reqs {count}  Indicates the maximum number of pages to retrieve.
+                             Default is 1000 - {start index}
+      --qp-no-node           Flag indicating you do not want the --node query arg provided automatically.
+                             Note: If the {query args} contain a --node then this -qp-no-node flag is meaningless.
+      --qp-fn-base {string}  The beginning of the result filenames.
+                             Default is based on the {query args}. See Below for more info.
+      --qp-fn-ext {string}   The ending of th eresult filenames.
+                             Default is '.json'.
+                             If -o yaml or --output yaml is provided, the default is '.yaml' instead.
+
+  {query args} are arguments for the   provenanced q   command.
+      For the most part, they are directly provided to the command each time.
+      There are a few special cases, though:
+        --o or -output   If not provided in {query args}, --output json is added.
+        --node           If not provided in {query args}, and --qp-no-node is not provided, then
+                         a default is provided.
+                         If the the USE_PROD environment variable is not set, or is set to 'n', 'no', 'f', or 'false',
+                         then the default --node is ''. Otherwise the default is 'tcp://rpc-0.provenance.io:26657'.
+        --page-key       If provided in {query args} it is only used for the first query. All subsquent queries
+                         will use the next key from the previous query.
+
+  The {qp args} and {query args} can be intertwined. E.g. you can provide --qp-start {index} as the last arguments.
+
+Output is stored to files in your current directory. Each filename has the format '{base}{index}{ext}'.
+    The {base} is either the provided --qp-fn-base value or else a default based on {query args}.
+    The {index} is a 4 digit number (i.e. the first page will be '0001').
+    The {ext} is either the provided --qp-fn-ext or else a default based on the --output.
+
+The default {base} comes from the {query args}. The intent is to make it reflect the query being run.
+All {query arg} entries up to (but not including) the first entry that starts with a dash is taken to be the query being run.
+The entries of the query being run are joined using dashes and a dash is added to the end of it to make the default {base}.
+If the first or second query arg starts with a dash, then a --qp-fn-base must be provided.
+
+Example:
+  query_prov_using_next_key --qp-start 21 --qp-max-reqs 5 md scopes all --page-key 'AhjMOuIYQEm8GQYRpYkgcg=='
+      Runs the   provenanced q md scopes all   query up to 5 times starting with the provided page key.
+      The first result will be stored in md-scopes-all-0021.json and if there are enough results for 5 pages,
+      the last result will be stored in md-scopes-all-0025.json.
+```
