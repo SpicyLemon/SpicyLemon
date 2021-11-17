@@ -111,6 +111,10 @@ __generic_do_setup () {
         __generic_if_verbose "$info" 2 "Creating alias [pvar]."
         alias pvar="printf '[%s]\n'" \
             || __generic_if_verbose "$error" 3 'Creation of alias [pvar] failed.'
+        # Usage: pevar "$foo"
+        __generic_if_verbose "$info" 2 "Creating alias [pevar]."
+        alias pevar="printf '%q\n'" \
+            || __generic_if_verbose "$error" 3 'Creation of alias [pevar] failed.'
         # strim: Get rid of all leading and trailing whitespace. But since it uses sed, there'll still be an ending newline.
         # Usage: <stuff> | strim
         __generic_if_verbose "$info" 2 "Creating alias [strim]."
