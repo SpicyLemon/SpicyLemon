@@ -9,7 +9,7 @@
 # Description: This script will take in a <matches file> and <main file> and output
 #              lines from the <main file> that match lines in the <matches file>.
 #              Each line from the <matches file> is used only once and in order.
-#              An <main file> line is a match if the first unused line of
+#              A <main file> line is a match if the first unused line of
 #              <matches file> is a substring of the <main file> line.
 #
 # Usage:       ./sorted-find.pl --help
@@ -175,7 +175,7 @@ sub usage {
         'This script will take in a <matches file> and <main file> and output',
         'lines from the <main file> that match lines in the <matches file>.',
         'Each line from the <matches file> is used only once and in order.',
-        'An <main file> line is a match if the first unused line of',
+        'A <main file> line is a match if the first unused line of',
         '<matches file> is a substring of the <main file> line.',
     );
     my @simple_usage = (
