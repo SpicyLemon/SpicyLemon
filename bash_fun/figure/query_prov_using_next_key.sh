@@ -9,7 +9,7 @@
 #   prov_node  -- Get the --node value for either mainnet or testnet based on the USE_PROD env var.
 #
 # Exported Environment Variables:
-#   MODE_TESTNET  -- A --node value for testnet.
+#   NODE_TESTNET  -- A --node value for testnet.
 #   NODE_MAINNET  -- A --node value for mainnet.
 
 # Determine if this script was invoked by being executed or sourced.
@@ -18,11 +18,11 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-MODE_TESTNET='tcp://rpc-0.test.provenance.io:26657'
+NODE_TESTNET='tcp://rpc-0.test.provenance.io:26657'
 NODE_MAINNET='tcp://rpc-0.provenance.io:26657'
 
 if [[ "$sourced" == 'YES' ]]; then
-    export MODE_TESTNET
+    export NODE_TESTNET
     export NODE_MAINNET
 fi
 
