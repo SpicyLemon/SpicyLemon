@@ -381,9 +381,6 @@ func GetEnvVarBool(name string) (bool, error) {
 // If, when debug is on, you want starting/ending messages,
 // but when debug is off, you still the function duration, then use:
 //    defer FuncEndingAlways(FuncStarting())
-// If all you want is the timing of a function (regardless of debug state,
-// and without a starting message), then use:
-//    defer FuncTime(time.Now, "function name")
 
 // FuncStarting outputs that a function is starting (if debug is true).
 // It returns the params needed by FuncEnding or FuncEndingAlways.
