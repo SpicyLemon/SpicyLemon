@@ -386,7 +386,7 @@ func GetEnvVarBool(name string) (bool, error) {
 // It returns the params needed by FuncEnding or FuncEndingAlways.
 //
 // Arguments provided will be converted to stings using %v and included as part of the function name.
-// Only values needed to differentiate start/stop output lines should be provided.
+// Minimal values needed to differentiate start/stop output lines should be provided.
 // Long strings and complex structs should be avoided.
 //
 // Example 1: In a function named "foo", you have this:
@@ -420,7 +420,7 @@ func FuncStarting(a ...interface{}) (time.Time, string) {
 
 const done_fmt = "Done. Duration: [%s]."
 
-// FuncEnding outputs that a function is ending (if debugging).
+// FuncEnding decrements the function depth and, if debug is on, outputs to stderr that how long a function took.
 // Args will usually come from FuncStarting().
 //
 // This differs from FuncEndingAlways in that this only outputs something if debugging is turned on.
@@ -431,12 +431,12 @@ func FuncEnding(start time.Time, name string) {
 		funcDepth--
 	}
 	if debug {
-		d := time.Since(start)
-		StderrAs(name, done_fmt, d)
+		StderrAs(name, done_fmt, time.Since(start))
 	}
 }
 
 // FuncEndingAlways decrements the function depth and outputs how long a function took.
+// If debug is on, output is to stderr, otherwise to stdout.
 //
 // This differs from FuncEnding in that this will always do the output (regardless of degub state).
 //
@@ -445,11 +445,10 @@ func FuncEndingAlways(start time.Time, name string) {
 	if funcDepth > 0 {
 		funcDepth--
 	}
-	d := time.Since(start)
 	if debug {
-		StderrAs(name, done_fmt, d)
+		StderrAs(name, done_fmt, time.Since(start))
 	} else {
-		StdoutAs(name, done_fmt, d)
+		StdoutAs(name, done_fmt, time.Since(start))
 	}
 }
 
