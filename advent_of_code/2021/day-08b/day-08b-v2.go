@@ -148,25 +148,25 @@ func StrMinus(a, b string) []rune {
 // .    f  e    f  .    f  e    f  .    f
 //  gggg    gggg    ....    gggg    gggg
 //
-// Segments:        Ons:                            Offs:
-//  2: 1             a: 0, 2, 3, 4, 5, 6, 8, 9       a: 1, 4
-//  3: 7             b: 0, 4, 5, 6, 8, 9             b: 1, 2, 3, 7
-//  4: 4             c: 0, 1, 2, 3, 4, 7, 8, 9       c: 5, 6
-//  5: 2, 3, 5       d: 2, 3, 4, 5, 6, 8, 9          d: 0, 1, 7
-//  6: 0, 6, 9       e: 0, 2, 6, 8                   e: 1, 3, 4, 5, 7, 9
-//  7: 8             f: 0, 1, 3, 4, 5, 6, 7, 8, 9    f: 2
-//                   g: 0, 2, 3, 4, 5, 8, 9          g: 1, 4, 7
-// To Decode:
-//  1 = entry with length 2.
-//  4 = entry with length 4.
-//  7 = entry with length 3.
-//  8 = entry with length 7.
-//    bd = segments in 4 but not 1.
-//  5 = entry with length 5 with both b and d segemtns.
-//    c = segemnt in 1 but not 5.
-//  6 = entry with length 6 with no c.
-//  9 = entry with length 6 that isn't 6 and has all segemnts in 5.
-//  0 = entry with length 6 that isn't 6 or 9.
+// Segments:    	Ons:                            	Offs:
+//  2: 1        	 a: 0, 2, 3, 4, 5, 6, 8, 9      	 a: 1, 4
+//  3: 7        	 b: 0, 4, 5, 6, 8, 9            	 b: 1, 2, 3, 7
+//  4: 4        	 c: 0, 1, 2, 3, 4, 7, 8, 9      	 c: 5, 6
+//  5: 2, 3, 5  	 d: 2, 3, 4, 5, 6, 8, 9         	 d: 0, 1, 7
+//  6: 0, 6, 9  	 e: 0, 2, 6, 8                  	 e: 1, 3, 4, 5, 7, 9
+//  7: 8        	 f: 0, 1, 3, 4, 5, 6, 7, 8, 9   	 f: 2
+//              	 g: 0, 2, 3, 4, 5, 8, 9         	 g: 1, 4, 7
+// To Decode:                                                       	Alternatively:
+//  1 = entry with length 2.                                        	  1 = entry with length 2
+//  4 = entry with length 4.                                        	  4 = entry with length 4.
+//  7 = entry with length 3.                                        	  7 = entry with length 3.
+//  8 = entry with length 7.                                        	  8 = entry with length 7.
+//    bd = segments in 4 but not 1.                                 	  9 = entry with length 6 and all segments of 4.
+//  5 = entry with length 5 with both b and d segemtns.             	  0 = entry with length 6 that isn't 9 and has all segments of 1.
+//    c = segemnt in 1 but not 5.                                   	  6 = entry with length 6 that isn't 0 or 9.
+//  6 = entry with length 6 with no c.                              	  3 = entry with length 5 and all segments of 1.
+//  9 = entry with length 6 that isn't 6 and has all segemnts in 5. 	  5 = entry with length 5 and all segments are in 6.
+//  0 = entry with length 6 that isn't 6 or 9.                      	  2 = entry with length 5 that isn't 3 or 5.
 //    e = segment in 8 but not 9.
 //  2 = entry with length 5 with e in it.
 //  3 = entry with length 5 that isn't 2 or 5.
