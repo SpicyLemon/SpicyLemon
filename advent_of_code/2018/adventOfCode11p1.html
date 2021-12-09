@@ -1,0 +1,216 @@
+<html>
+<head><title>Advent Of Code 2018 - 11p1</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(Number(element));
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var gridSerialNumber = input[0];
+        var gridWidth = valueOrDefault(input[1], 300);
+        var gridHeight = valueOrDefault(input[2], 300);
+        var subGridWidth = valueOrDefault(input[3], 3);
+        var subGridHeight = valueOrDefault(input[4], 3);
+        console.log({ 
+            gridSerialNumber: gridSerialNumber, 
+            gridWidth: gridWidth, 
+            gridHeight: gridHeight, 
+            subGridWidth: subGridWidth, 
+            subGridHeight: subGridHeight
+        });
+        var cells = createCells(gridWidth, gridHeight, gridSerialNumber);
+        var subGrid = getSubGridMinMax(cells, subGridWidth, subGridHeight);
+        return "max: (" + subGrid.max.x + ", " + subGrid.max.y + ") = " + subGrid.max.value + "\n"
+             + "min: (" + subGrid.min.x + ", " + subGrid.min.y + ") = " + subGrid.min.value + "\n"
+             + gridToString(cells);
+    };
+
+    var powerLevel = function(x, y, serialNumber) {
+        var rackId = x + 10;
+        var powerLevel = ((rackId * y) % 1000 + serialNumber % 1000) * rackId;
+        var retval = toInt(powerLevel / 100) % 10 - 5;
+        return retval;
+    };
+
+    var createCells = function(width, height, serialNumber) {
+        var cells = dim([height+1, width+1], 0);
+        for (var y = 1; y <= height; y++) {
+            for (var x = 1; x <= width; x++) {
+                cells[y][x] = powerLevel(x, y, serialNumber);
+            }
+        }
+        return cells;
+    };
+
+    var getSubGridMinMax = function(cells, subGridWidth, subGridHeight) {
+        var height = cells.length - 1;
+        var width = cells[0].length - 1;
+        var max = subGridWidth * subGridHeight * -5;
+        var min = subGridWidth * subGridHeight * 5;
+        var maxX = 0;
+        var maxY = 0;
+        var minX = 0;
+        var minY = 0;
+        var y, x, sgy, sgx;
+        for (y = 1; y <= height - subGridHeight + 1; y++) {
+            for (x = 1; x <= width - subGridWidth + 1; x++) {
+                let subGridPowerLevel = 0;
+                for (sgy = 0; sgy < subGridHeight; sgy++) {
+                    for (sgx = 0; sgx < subGridWidth; sgx++) {
+                        subGridPowerLevel += cells[y+sgy][x+sgx];
+                    }
+                }
+                if (subGridPowerLevel > max) {
+                    max = subGridPowerLevel;
+                    maxX = x;
+                    maxY = y;
+                }
+                if (subGridPowerLevel < min) {
+                    min = subGridPowerLevel;
+                    minX = x;
+                    minY = y;
+                }
+            }
+        }
+        return { max: { value: max, x: maxX, y: maxY }, min: { value: min, x: minX, y: minY } };
+    }
+
+
+    var valueOrDefault = function (value, defefaultValue) {
+       return typeof value === 'undefined' ? defefaultValue : value;
+    };
+
+    var dim = function (dimensions, default_value) {
+       var retval = [], i;
+       if (!isArray(dimensions)) {
+          dimensions = [ dimensions ];
+       }
+       for (i = 0; i < dimensions[0]; i += 1) {
+          if (dimensions.length == 1) {
+             retval[i] = default_value;
+          }
+          else {
+             retval[i] = this.dim(dimensions.slice(1), default_value);
+          }
+       }
+       return retval;
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    var toInt = function(value) {
+       return Math[value < 0 ? 'ceil' : 'floor'](value);
+    };
+
+    var gridToString = function(grid) {
+        var lines = [];
+        grid.forEach(function(row) {
+            var entries = [];
+            row.forEach(function(entry) {
+                entries.push(('  ' + entry).slice(-2));
+            })
+            lines.push(entries.join(' '));
+        });
+        return lines.join("\n");
+    }
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker.");
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">18</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

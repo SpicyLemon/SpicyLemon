@@ -1,0 +1,208 @@
+<html>
+<head><title>Advent Of Code 2018 - 03p2</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        document.getElementById("result").innerHTML = "Calculating...";
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var results = solver(puzzleInput);
+        document.getElementById("result").innerHTML = results;
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        var lineRegex = /#(\d+)\s+@\s+(\d+),(\d+):\s+(\d+)x(\d+)/;
+        input.split(/\n/).forEach(function(line) {
+            var pieces = line.match(lineRegex);
+            if (pieces) {
+                retval.push(TYPES.square({
+                    claim: pieces[1],
+                    left: pieces[2],
+                    top: pieces[3],
+                    width: pieces[4],
+                    height: pieces[5]
+                }));
+            }
+            else {
+                console.log("'" + line + "' did not parse.");
+            }
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var squares = parseInput(puzzleInput);
+        var fabric = createFabric(squares);
+        squares.forEach(function(square) {
+            //console.log(fabric.toString());
+            fabric.markSquare(square);
+        });
+        //console.log(fabric.toString());
+        return findGoodPieces(squares, fabric);
+    };
+
+    var createFabric = function(squares) {
+        var maxRight = 0;
+        var maxBottom = 0;
+        squares.forEach(function(square) {
+            //console.log(square);
+            var right = square.right;
+            var bottom = square.bottom;
+            if (right > maxRight) {
+                maxRight = right;
+            }
+            if (bottom > maxBottom) {
+                maxBottom = bottom;
+            }
+        });
+        return TYPES.fabric({width: maxRight+1, height: maxBottom+1});
+    };
+
+    var countOverlaps = function(fabric) {
+        var retval = 0;
+        for(var x = 0; x < fabric.width; x++) {
+            for (var y = 0; y < fabric.height; y++) {
+                var claims = getProperties(fabric.get(x, y));
+                if (isArray(claims) && claims.length > 1) {
+                    retval += 1;
+                }
+            }
+        }
+        return retval;
+    };
+
+    var findGoodPieces = function(squares, fabric) {
+        var claimFlags = {};
+        squares.forEach(function(square) {
+            claimFlags[square.claim] = true;
+        });
+        for (var x = 0; x < fabric.width; x++) {
+            for (var y = 0; y < fabric.height; y++) {
+                if (fabric.area[x][y]) {
+                    claims = getProperties(fabric.area[x][y]);
+                    if (claims.length > 1) {
+                        claims.forEach(function(claim) {
+                            claimFlags[claim] = false;
+                        });
+                    }
+                }
+            }
+        }
+        var retval = [];
+        getProperties(claimFlags).forEach(function(claim) {
+            if (claimFlags[claim]) {
+                retval.push(claim);
+            }
+        });
+        return retval;
+    };
+
+    var TYPES = {
+        square: function (spec) {
+            var that = {};
+
+            that.claim = valueOrDefault(spec["claim"], "no claim");
+            ["left", "top", "width", "height"].forEach(function(p) {
+                that[p] = valueOrDefault(Number(spec[p]), 0);
+            });
+
+            that.right = that.left + that.width;
+            that.bottom = that.top + that.height;
+
+            that.toString = function() {
+                return "#" + that.claim + " @ " + that.left + "," + that.top + ": " + that.width + "x" + that.height;
+            };
+
+            return that;
+        },
+
+        fabric: function(spec) {
+            var that = {}, area;
+
+            that.width = valueOrDefault(spec.width, 1);
+            that.height = valueOrDefault(spec.height, 1);
+            console.log("Creating area " + that.width + " by " + that.height);
+            that.area = dim([that.width, that.height], null);
+
+            that.mark = function(x, y, claim) {
+                //console.log("Marking x=" + x + " y=" + y + " for " + claim);
+                if (!that.area[x][y]) {
+                    that.area[x][y] = {};
+                }
+                that.area[x][y][claim] = true;
+            }
+
+            that.markSquare = function(square) {
+                for (var w = 0; w < square.width; w++) {
+                    for (var h = 0; h < square.height; h++) {
+                        that.mark(square.left + w, square.top + h, square.claim);
+                    }
+                }
+            }
+
+            that.get = function(x, y) {
+                return that.area[x][y];
+            }
+
+            that.toString = function() {
+                var retval = "";
+                for (var x = 0; x < that.width; x++) {
+                    for (var y = 0; y < that.height; y++) {
+                        var props = getProperties(that.area[x][y]);
+                        retval += props.length == 0 ? "." : props.length == 1 ? "O" : "X";
+                    }
+                    retval += "\n";
+                }
+                return retval;
+            }
+
+            return that;
+        }
+    };
+
+    var valueOrDefault = function (value, defefaultValue) {
+       return typeof value === 'undefined' ? defefaultValue : value;
+    };
+
+    var dim = function (dimensions, default_value) {
+       var retval = [], i;
+       if (!isArray(dimensions)) {
+          dimensions = [ dimensions ];
+       }
+       for (i = 0; i < dimensions[0]; i += 1) {
+          if (dimensions.length == 1) {
+             retval[i] = default_value;
+          }
+          else {
+             retval[i] = dim(dimensions.slice(1), default_value);
+          }
+       }
+       return retval;
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    var getProperties = function (obj) {
+       var retval = [];
+       for (prop in obj) {
+          if (obj.hasOwnProperty(prop)) {
+             retval.push(prop);
+          }
+       }
+       return retval;
+    };
+</script>
+<body>
+<textarea id="puzzle_input">#1 @ 1,3: 4x4
+#2 @ 3,1: 4x4
+#3 @ 5,5: 2x2</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<pre id="result"></pre>
+<script type="text/javascript">
+</script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<html>
+<head><title>Advent Of Code 2018 - 14p2</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(element);
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var toFind = input[0];
+        var workList = TYPES.workList();
+        workList.addScore(3710);
+        workList.elf1 = workList.scores.head;
+        workList.elf2 = workList.elf1.next;
+        var tailStrings = [];
+        while (!tailStrings.includes(toFind)) {
+            workList.doWork();
+            tailStrings = [ 
+                workList.scores.getTailString(toFind.length), 
+                workList.scores.getTailString(toFind.length + 1).substring(0,toFind.length)
+            ];
+            if (workList.scores.count % 10000 === 0) {
+                console.log("score counts: " + workList.scores.count);
+            }
+        }
+        var retval = workList.scores.count - toFind.length - tailStrings.indexOf(toFind);
+        return retval + "\n" + workList.toString();
+    };
+
+    var TYPES = {
+        workList: function(spec) {
+            var that = {
+                elf1: null,
+                elf2: null,
+                scores: TYPES.doublyLinkedList()
+            };
+
+            that.addScore = function(value) {
+                ('' + value).split("").forEach(function(char) {
+                    that.scores.push(Number(char));
+                });
+            };
+
+            that.doWork = function() {
+                that.addScore(that.elf1.getData() + that.elf2.getData());
+                var elf1Move = that.elf1.getData() + 1;
+                var elf2Move = that.elf2.getData() + 1;
+                while (elf1Move > 0) {
+                    that.elf1 = that.elf1.next;
+                    if (that.elf1 === null) {
+                        that.elf1 = that.scores.head;
+                    }
+                    elf1Move--;
+                }
+                while (elf2Move > 0) {
+                    that.elf2 = that.elf2.next;
+                    if (that.elf2 === null) {
+                        that.elf2 = that.scores.head;
+                    }
+                    elf2Move--;
+                }
+            };
+
+            that.toString = function() {
+                var pieces = [];
+                var cur = that.scores.head;
+                while (cur !== null) {
+                    if (that.elf1 === cur) {
+                        pieces.push("(" + cur.getData() + ")");
+                    }
+                    else if (that.elf2 === cur) {
+                        pieces.push("[" + cur.getData() + "]");
+                    }
+                    else {
+                        pieces.push(" " + cur.getData() + " ");
+                    }
+                    cur = cur.next;
+                }
+                return pieces.join("");
+            };
+
+            return that;
+        },
+
+        doublyLinkedListNode: function(spec) {
+            var that = {
+                previous: null,
+                next: null
+            };
+            var data = spec.data;
+            if (spec.previous) {
+                that.previous = spec.previous;
+            }
+            if (spec.next) {
+                that.next = spec.next;
+            }
+
+            that.getData = function() {
+                return data;
+            };
+
+            return that;
+        },
+
+        doublyLinkedList: function() {
+            var that = {
+                head: null,
+                tail: null,
+                count: 0
+            };
+
+            that.push = function(value) {
+                var newNode = TYPES.doublyLinkedListNode({data: value, previous: that.tail});
+                if (that.tail !== null) {
+                    that.tail.next = newNode;
+                }
+                that.tail = newNode;
+                if (that.head === null) {
+                    that.head = newNode;
+                }
+                that.count++;
+            };
+
+            that.pop = function() {
+                var retvalNode = that.tail;
+                var retval = null;
+                if (retvalNode !== null) {
+                    that.tail = that.tail.previous;
+                    retvalNode.previous = null;
+                    if (that.tail !== null) {
+                        that.tail.next = null;
+                    }
+                    that.count--;
+                    retval = retvalNode.getData();
+                }
+                return retval;
+            };
+
+            that.unshift = function(value) {
+                var newNode = TYPES.doublyLinkedListNode({data: value, previous: that.head});
+                if (that.head !== null) {
+                    that.head.previous = newNode;
+                }
+                that.head = newNode;
+                if (that.tail === null) {
+                    that.tail = newNode;
+                }
+                that.count++;
+            };
+
+            that.shift = function() {
+                var retvalNode = that.head;
+                var retval = null;
+                if (retvalNode !== null) {
+                    that.head = that.head.next;
+                    retvalNode.next = null;
+                    if (that.head !== null) {
+                        that.head.previous = null;
+                    }
+                    that.count--;
+                    retval = retvalNode.getData();
+                }
+                return retval;
+            };
+
+            that.getTailString = function(length) {
+                var retval = '';
+                var cur = that.tail;
+                while (cur !== null && retval.length < length) {
+                    retval = cur.getData() + retval;
+                    cur = cur.previous;
+                }
+                return retval;
+            };
+
+            return that;
+        }
+    };
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">51589</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

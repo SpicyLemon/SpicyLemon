@@ -1,0 +1,327 @@
+<html>
+<head><title>Advent Of Code 2018 - 16p1</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        var samples = [];
+        var instructions = [];
+        var inSample = false;
+        var startingRegisters = [0, 0, 0, 0];
+        input.split(/\n/).forEach(function(line) {
+            if (line.match(/^\s*$/)) {
+                inSample = false;
+            }
+            else if (line.match(/^Start/)) {
+                startingRegisters = parseRegisters(line);
+            }
+            else if (line.match(/^Before/)) {
+                inSample = true;
+                samples.push(TYPES.sample());
+                samples[samples.length-1].before = parseRegisters(line);
+            }
+            else if (line.match(/^After/)) {
+                samples[samples.length-1].after = parseRegisters(line);
+                inSample = false;
+            }
+            else {
+                let pieces = line.match(/(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/);
+                if (pieces && pieces.length > 4) {
+                    var instruction = TYPES.instruction({ 
+                        opcode: Number(pieces[1]), 
+                        a: Number(pieces[2]), 
+                        b: Number(pieces[3]), 
+                        c: Number(pieces[4]) 
+                    });
+                    if (inSample) {
+                        samples[samples.length-1].instruction = instruction;
+                    }
+                    else {
+                        instructions.push(instruction);
+                    }
+                }
+                else {
+                    console.log("Failed to parse input: '" + line + "'");
+                }
+            }
+        });
+        return { samples: samples, instructions: instructions, startingRegisters: startingRegisters };
+    };
+
+    var parseRegisters = function(line) {
+        var pieces = line.match(/\[(\d+),\s+(\d+),\s+(\d+),\s+(\d+)\]/);
+        if (pieces && pieces.length > 4) {
+            return [ Number(pieces[1]), Number(pieces[2]), Number(pieces[3]), Number(pieces[4]) ];
+        }
+        return [];
+    }
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var result = 0;
+        input.samples.forEach(function(sample) {
+            let matchCount = 0;
+            getProperties(opcodes).forEach(function(op) {
+                let registers = copyArray(sample.before);
+                opcodes[op].apply(sample.instruction.a, sample.instruction.b, sample.instruction.c, registers);
+                if (arraysAreEqual(registers, sample.after)) {
+                    matchCount++;
+                }
+            })
+            if (matchCount >= 3) {
+                result++;
+            }
+        });
+        return result;
+    };
+
+    var opcodeMap = [
+    ];
+
+    var opcodes = {
+        addr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] + registers[b];
+            }
+        },
+        addi: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] + b;
+            }
+        },
+        mulr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] * registers[b];
+            }
+        },
+        muli: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] * b;
+            }
+        },
+        banr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] & registers[b];
+            }
+        },
+        bani: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] & b;
+            }
+        },
+        borr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] | registers[b];
+            }
+        },
+        bori: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] | b;
+            }
+        },
+        setr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a];
+            }
+        },
+        seti: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a;
+            }
+        },
+        gtir: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a > registers[b] ? 1 : 0;
+            }
+        },
+        gtri: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] > b ? 1 : 0;
+            }
+        },
+        gtrr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] > registers[b] ? 1 : 0;
+            }
+        },
+        eqir: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a === registers[b] ? 1 : 0;
+            }
+        },
+        eqri: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] === b ? 1 : 0;
+            }
+        },
+        eqrr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] === registers[b] ? 1 : 0;
+            }
+        }
+    };
+
+    var TYPES = {
+        instruction: function(spec) {
+            var that = {
+                opcode: spec.opcode,
+                a: spec.a,
+                b: spec.b,
+                c: spec.c,
+            };
+
+            that.equals = function(other) {
+                return that.opcode === other.opcode 
+                    && that.a === other.a
+                    && that.b === other.b
+                    && that.c === other.c
+            };
+            that.toString = function() {
+                return that.opcode + " " + that.a + " " + that.b + " " + that.c;
+            }
+
+            return that;
+        },
+
+        sample: function() {
+            var that = {
+                before: [],
+                instruction: null,
+                after: []
+            };
+
+            that.toString = function() {
+                return "Before: [" + that.before.join(", ") + "]\n"
+                     + that.instruction.toString() + "\n"
+                     + "After:  [" + that.after.join(", ") + "]";
+            };
+
+            return that;
+        },
+    };
+
+    var copyArray = function(array) {
+        var retval = [];
+        array.forEach(function(element) {
+            retval.push(element);
+        });
+        return retval;
+    };
+
+    var arraysAreEqual = function(array1, array2) {
+        var retval = array1.length === array2.length;
+        if (retval) {
+            let i;
+            for(i = 0; i < array1.length && retval; i++) {
+                retval = array1[i] === array2[i];
+            }
+        }
+        return retval;
+    };
+
+    var getProperties = function (obj) {
+       var retval = [];
+       for (prop in obj) {
+          if (obj.hasOwnProperty(prop)) {
+             retval.push(prop);
+          }
+       }
+       return retval;
+    };
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<style>
+textarea {
+    font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+</style>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">Before: [3, 2, 1, 1]
+9 2 1 2
+After:  [3, 2, 2, 1]</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

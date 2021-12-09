@@ -1,0 +1,139 @@
+<html>
+<head><title>Advent Of Code 2018 - 07p2</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        document.getElementById("result").innerHTML = "calculating...";
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var baseTime = Number(document.getElementById("base_time").value);
+        var workerCount = Number(document.getElementById("worker_count").value);
+        var t0 = performance.now();
+        var results = solver(puzzleInput, baseTime, workerCount);
+        var t1 = performance.now();
+        document.getElementById("result").innerHTML = results;
+        document.getElementById("time").innerHTML = '' + (t1 - t0) + ' ms';
+    };
+
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\n/).forEach(function(line) {
+            var parts = line.match(/Step (\w) must be finished before step (\w) can begin/);
+            if (parts && parts.length > 0) {
+                retval.push({from: parts[1], to: parts[2]});
+            }
+            else {
+                console.log("failed to parse '" + line + "'");
+            }
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput, baseTime, workerCount) {
+        var instructions = parseInput(puzzleInput);
+        var instructionMap = createInstructionMap(instructions, baseTime);
+        console.log(instructionMap);
+        var done = [];
+        var workingOn = [];
+        var canDo = getCanDoList(instructionMap, done, workingOn);
+        var time = 0;
+        while ((canDo.length > 0 || workingOn.length > 0) && time < 10000) {
+            console.log({time: time, canDo: canDo, workingOn: workingOn, instructionMap: instructionMap});
+            while (canDo.length > 0 && workingOn.length < workerCount) {
+                workingOn.push(canDo.shift());
+            }
+            var newlyDone = [];
+            workingOn.forEach(function(name) {
+                instructionMap[name].timeSpent++;
+                if (instructionMap[name].timeSpent >= instructionMap[name].completionTime) {
+                    newlyDone.push(name);
+                }
+            });
+            newlyDone.forEach(function(name) {
+                done.push(name);
+                workingOn.splice(workingOn.indexOf(name), 1);
+            });
+            canDo = getCanDoList(instructionMap, done, workingOn);
+            time++;
+        }
+        return "" + time + ": " + done.join("");
+    };
+
+    var createInstructionMap = function(instructions, baseTime) {
+        var retval = {};
+        instructions.forEach(function(instruction) {
+            if (retval[instruction.from] === undefined) {
+                retval[instruction.from] = TYPES.instruction({name: instruction.from, baseTime: baseTime});
+            }
+            retval[instruction.from].mustBeDoneBefore.push(instruction.to);
+            if (retval[instruction.to] === undefined) {
+                retval[instruction.to] = TYPES.instruction({name: instruction.to, baseTime: baseTime});
+            }
+            retval[instruction.to].cannotBeDoneBefore.push(instruction.from);
+        });
+        return retval;
+    };
+
+    var getCanDoList = function(instructionMap, done, workingOn) {
+        var retval = [];
+        getProperties(instructionMap).forEach(function(name) {
+            if (!done.includes(name) && !workingOn.includes(name)) {
+                if (instructionMap[name].cannotBeDoneBefore.length == 0) {
+                    retval.push(name);
+                }
+                else if (done.length > 0) {
+                    var ready = true;
+                    instructionMap[name].cannotBeDoneBefore.forEach(function(doneName) {
+                        if (!done.includes(doneName)) {
+                            ready = false;
+                        }
+                    });
+                    if (ready) {
+                        retval.push(name);
+                    }
+                }
+            }
+        });
+        return retval.sort();
+    };
+
+    var TYPES = {
+        instruction: function(spec) {
+            var that = {
+                name: spec.name,
+                cannotBeDoneBefore: [],
+                mustBeDoneBefore: [],
+                completionTime: spec.baseTime + chars.indexOf(spec.name) + 1,
+                timeSpent: 0
+            };
+
+            return that;
+        }
+    };
+
+    var getProperties = function (obj) {
+       var retval = [];
+       for (prop in obj) {
+          if (obj.hasOwnProperty(prop)) {
+             retval.push(prop);
+          }
+       }
+       return retval;
+    };
+
+</script>
+<body>
+<input type="text" id="base_time" value="0" /><br />
+<input type="text" id="worker_count" value="2" /><br />
+<textarea id="puzzle_input" rows="10" cols="100">Step C must be finished before step A can begin.
+Step C must be finished before step F can begin.
+Step A must be finished before step B can begin.
+Step A must be finished before step D can begin.
+Step B must be finished before step E can begin.
+Step D must be finished before step E can begin.
+Step F must be finished before step E can begin.</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

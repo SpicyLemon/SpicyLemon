@@ -1,0 +1,349 @@
+<html>
+<head><title>Advent Of Code 2018 - 17p1</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\n/).forEach(function(line) {
+            let parts = line.match(/([xy])=(\d+),\s+([xy])=(\d+)\.+(\d+)/);
+            if (parts && parts.length > 5) {
+                let spec = {};
+                spec[parts[1]+"1"] = Number(parts[2]);
+                spec[parts[1]+"2"] = Number(parts[2]);
+                spec[parts[3]+"1"] = Number(parts[4]);
+                spec[parts[3]+"2"] = Number(parts[5]);
+                retval.push(TYPES.line(spec));
+            }
+            else if (!line.match(/^\s*$/)) {
+                console.log("Error parsing '" + line + "'");
+            }
+        });
+        return retval;
+    };
+
+    var SAND = ".";
+    var CLAY = "#";
+    var WATER = "~";
+    var DRIP = "|";
+    var SPRING = "+";
+
+    var solver = function(puzzleInput) {
+        var lines = parseInput(puzzleInput);
+        var limits = getLimits(lines);
+        var leftx = limits.xmin - 1;
+        var topy = limits.ymin - 1;
+        var scan = dim([limits.ymax - limits.ymin + 2, limits.xmax - limits.xmin + 3], SAND);
+        markSpring(scan, leftx, topy, 500, 0);
+        drawLinesOnScan(scan, lines, leftx, topy);
+        runWater(scan, 0);
+        var result = countWater(scan);
+        return result + "\n\n" + drawScan(scan, leftx, topy);
+    };
+
+    var getLimits = function(lines) {
+        var retval = {
+            xmin: null,
+            xmax: null,
+            ymin: null,
+            ymax: null
+        };
+        lines.forEach(function(line) {
+            if (retval.xmin === null || line.x1 < retval.xmin) {
+                retval.xmin = line.x1;
+            }
+            if (retval.xmax === null || line.x2 > retval.xmax) {
+                retval.xmax = line.x2;
+            }
+            if (retval.ymin === null || line.y1 < retval.ymin) {
+                retval.ymin = line.y1;
+            }
+            if (retval.ymax === null || line.y2 > retval.ymax) {
+                retval.ymax = line.y2;
+            }
+        });
+        return retval;
+    };
+
+    var markSpring = function(scan, leftx, topy, x, y) {
+        var row = topy < y ? y - topy : 0;
+        var col = x - leftx;
+        scan[row][col] = SPRING;
+    };
+
+    var drawLinesOnScan = function(scan, lines, leftx, topy) {
+        lines.forEach(function(line) {
+            let x, y;
+            for(y = line.y1; y <= line.y2; y++) {
+                for (x = line.x1; x <= line.x2; x++) {
+                    scan[y-topy][x-leftx] = CLAY;
+                }
+            }
+        });
+    }
+
+    var drawScan = function(scan, leftx, topy) {
+        var lines = scan.map(r => r.join(""));
+        let r;
+        for (r = 0; r < lines.length; r++) {
+            let curVal = r + topy;
+            lines[r] = "" + ("     " + curVal).slice(-5) + ": " + lines[r];
+        }
+        let topLines = [
+            "       ",
+            "       ",
+            "       ",
+            "       ",
+        ];
+        let c;
+        for (c = 0; c < scan[0].length; c++) {
+            let curVal = c + leftx;
+            let curValDigits = ("    " + curVal).slice(-4).split("");
+            let d;
+            for (d = 0; d < 4; d++) {
+                topLines[d] += curValDigits[d];
+            }
+        }
+        return topLines.join("\n") + "\n" + lines.join("\n");
+    };
+
+    var runWater = function(scan, maxIter) {
+        var sources = [];
+        let x, y;
+        for (x = 0; x < scan[0].length; x++) {
+            if (scan[0][x] === "+") {
+                sources.push({x: x, y: 0});
+            }
+        }
+        let iter = 0;
+        while (sources.length > 0) {
+            var newSources = [];
+            sources.forEach(function(source) {
+                if (source.y + 1 > scan.length - 1) {
+                    //do nothing, we've hit bottom.
+                }
+                else if (scan[source.y][source.x] === WATER) {
+                    source.y--;
+                    newSources.push(source);
+                }
+                else if (scan[source.y+1][source.x] === DRIP) {
+                    //do nothing, we've hit another source
+                }
+                else if (scan[source.y+1][source.x] === SAND) {
+                    console.log("Dripping at (" + source.x + "," + (source.y+1) + ")");
+                    scan[source.y+1][source.x] = DRIP;
+                    source.y++;
+                    newSources.push(source);
+                }
+                else if (scan[source.y+1][source.x] === CLAY || scan[source.y+1][source.x] === WATER) {
+                    let fillLeft = source.x - 1;
+                    let fillRight = source.x + 1;
+                    while ((scan[source.y][fillLeft] === SAND || scan[source.y][fillLeft] === DRIP) 
+                            && scan[source.y+1][fillLeft] !== SAND) {
+                        fillLeft--;
+                    }
+                    while ((scan[source.y][fillRight] === SAND || scan[source.y][fillRight] === DRIP)
+                            && scan[source.y+1][fillRight] !== SAND) {
+                        fillRight++;
+                    }
+                    let leftWall = scan[source.y][fillLeft] === CLAY;
+                    let rightWall = scan[source.y][fillRight] === CLAY;
+                    if (leftWall && rightWall) {
+                        console.log("Filling from " + (fillLeft+1) + " to " + (fillRight-1) + " at y = " + source.y);
+                        for (x = fillLeft + 1; x < fillRight; x++) {
+                            scan[source.y][x] = WATER;
+                        }
+                        source.y--;
+                        newSources.push(source);
+                    }
+                    else {
+                        let startX = leftWall ? fillLeft + 1 : fillLeft;
+                        let endX = rightWall ? fillRight - 1 : fillRight;
+                        console.log("Dripping from " + startX + " to " + endX + " at y = " + source.y);
+                        for (x = startX; x <= endX; x++) {
+                            scan[source.y][x] = DRIP;
+                        }
+                        if (!leftWall) {
+                            console.log("New source at (" + startX + "," + source.y + ")");
+                            newSources.push({x: startX, y: source.y});
+                        }
+                        if (!rightWall) {
+                            console.log("New source at (" + endX + "," + source.y + ")");
+                            newSources.push({x: endX, y: source.y});
+                        }
+                    }
+                }
+                else {
+                    throw new Error("Unexpected structure found: '" + scan[source.y+1][source.x] + "'"
+                                    + " at (" + source.x + "," + (source.y + 1) + ")");
+                }
+            });
+            iter++;
+            if (maxIter > 0 && iter > maxIter) {
+                sources = [];
+            }
+            else {
+                sources = newSources;
+            }
+        }
+    }
+
+    var countWater = function(scan) {
+        return scan.map(r => r.filter(v => v === WATER).length).reduce((t, c) => t + c);
+    }
+
+    var TYPES = {
+        line: function(spec) {
+            var that = {
+                x1: spec.x1,
+                x2: spec.x2,
+                y1: spec.y1,
+                y2: spec.y2
+            };
+
+            if (that.x1 > that.x2) {
+                let temp = that.x1;
+                that.x1 = that.x2;
+                that.x2 = temp;
+            }
+            if (that.y1 > that.y2) {
+                let temp = that.y1;
+                that.y1 = that.y2;
+                that.y2 = temp;
+            }
+
+            that.isHorizontal = function() {
+                return that.y1 === that.y2;
+            };
+
+            that.isVertical = function() {
+                return that.x1 === that.x2;
+            };
+
+            return that;
+        }
+    };
+
+    var dim = function (dimensions, default_value) {
+       var retval = [], i;
+       if (!isArray(dimensions)) {
+          dimensions = [ dimensions ];
+       }
+       for (i = 0; i < dimensions[0]; i += 1) {
+          if (dimensions.length == 1) {
+             retval[i] = default_value;
+          }
+          else {
+             retval[i] = this.dim(dimensions.slice(1), default_value);
+          }
+       }
+       return retval;
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<style>
+textarea {
+    font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+</style>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">x=495, y=2..7
+y=7, x=495..501
+x=501, y=3..7
+x=498, y=2..4
+x=506, y=1..2
+x=498, y=10..13
+x=504, y=10..13
+y=13, x=498..504</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

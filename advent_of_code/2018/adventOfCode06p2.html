@@ -1,0 +1,261 @@
+<html>
+<head><title>Advent Of Code 2018 - 06p2</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        document.getElementById("result").innerHTML = "calculating...";
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var threshold = Number(document.getElementById("threshold").value);
+        var t0 = performance.now();
+        var results = solver(puzzleInput, threshold);
+        var t1 = performance.now();
+        document.getElementById("result").innerHTML = results;
+        document.getElementById("time").innerHTML = '' + (t1 - t0) + ' ms';
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\n/).forEach(function(line) {
+            var pieces = line.match(/(\d+), (\d+)/);
+            if (pieces && pieces.length > 0) {
+                retval.push({x: Number(pieces[1]), y: Number(pieces[2]) });
+            }
+        });
+        console.log(retval);
+        return retval;
+    };
+
+    var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+
+    var solver = function(puzzleInput, threshold) {
+        var coords = parseInput(puzzleInput);
+        addLabelsToCoords(coords);
+        var maxes = getMaxes(coords);
+        var distances = dim([maxes.y + 2, maxes.x + 2], 0);
+        calculateDistancesToCoords(coords, distances);
+        var map = convertDistancesToMap(distances, threshold);
+        var result = countHashesOnMap(map);
+        addCoordsToMap(coords, map);
+        return "" + result + "\n\n" + drawMap(map);
+    };
+
+    var calculateDistancesToCoords = function(coords, map) {
+        var maxX = map[0].length - 1;
+        var maxY = map.length - 1;
+        for (var y = 0; y <= maxY; y++) {
+            for (var x = 0; x <= maxX; x++) {
+                var totalDistance = 0;
+                coords.forEach(function(coord) {
+                    totalDistance += Math.abs(x - coord.x) + Math.abs(y - coord.y);
+                })
+                map[y][x] = totalDistance;
+            }
+        }
+    };
+
+    var convertDistancesToMap = function(distances, threshold) {
+        var maxX = distances[0].length - 1;
+        var maxY = distances.length - 1;
+        var retval = dim([maxX+1, maxY+1], ".");
+        for (var y = 0; y <= maxY; y++) {
+            for (var x = 0; x <= maxX; x++) {
+                if (distances[y][x] < threshold) {
+                    retval[y][x] = "#";
+                }
+            }
+        }
+        return retval;
+    };
+
+    var countHashesOnMap = function(map) {
+        var maxX = map[0].length - 1;
+        var maxY = map.length - 1;
+        var retval = 0;
+        for (var y = 0; y <= maxY; y++) {
+            for (var x = 0; x <= maxX; x++) {
+                if (map[y][x] === "#") {
+                    retval++;
+                }
+            }
+        }
+        return retval;
+    }
+
+    var addCoordsToMap = function(coords, map) {
+        coords.forEach(function(coord) {
+            map[coord.y][coord.x] = coord.label;
+        });
+    };
+
+    var calculateAreas = function(map) {
+        var retval = {};
+        var maxX = map[0].length - 1;
+        var maxY = map.length - 1;
+        for (var y = 0; y <= maxY; y++) {
+            for (var x = 0; x <= maxX; x++) {
+                if (map[y][x] !== " ") {
+                    if (retval[map[y][x]] === undefined) {
+                        retval[map[y][x]] = 0;
+                    }
+                    retval[map[y][x]]++;
+                }
+            }
+        }
+        return retval;
+    }
+
+    var removeEdgeCases = function(counts, map) {
+        var maxX = map[0].length - 1;
+        var maxY = map.length - 1;
+        for (var y = 0; y <= maxY; y++) {
+            if (counts[map[y][0]] !== undefined) {
+                delete counts[map[y][0]];
+            }
+            if (counts[map[y][maxX]] !== undefined) {
+                delete counts[map[y][maxX]];
+            }
+        }
+        for (var x = 0; x <= maxX; x++) {
+            if (counts[map[0][x]] !== undefined) {
+                delete counts[map[0][x]];
+            }
+            if (counts[map[maxY][x]] !== undefined) {
+                delete counts[map[maxY][x]];
+            }
+        }
+    }
+
+    var fillMap = function(map) {
+        var changes = 1;
+        while (changes > 0) {
+            changes = grow(map);
+        }
+    }
+
+    var grow = function(map) {
+        var maxX = map[0].length - 1;
+        var maxY = map.length - 1;
+        var newCoords = [];
+        for (var y = 0; y <= maxY; y++) {
+            for (var x = 0; x <= maxX; x++) {
+                if (map[y][x] === ".") {
+                    let left = x > 0 ? map[y][x-1] : ".";
+                    let right = x < maxX ? map[y][x+1] : ".";
+                    let top = y > 0 ? map[y-1][x] : ".";
+                    let bottom = y < maxY ? map[y+1][x] : ".";
+                    let neighbors = [];
+                    if (left !== ".") {
+                        neighbors.push(left);
+                    }
+                    if (right !== "." && !isIn(right, neighbors)) {
+                        neighbors.push(right);
+                    }
+                    if (top !== "." && !isIn(top, neighbors)) {
+                        neighbors.push(top);
+                    }
+                    if (bottom !== "." && !isIn(bottom, neighbors)) {
+                        neighbors.push(bottom);
+                    }
+                    if (neighbors.length === 1) {
+                        newCoords.push({x: x, y: y, label: neighbors[0]});
+                    }
+                    else if (neighbors.length > 1) {
+                        newCoords.push({x: x, y: y, label: " "});
+                    }
+                }
+            }
+        }
+        addCoordsToMap(newCoords, map);
+        return newCoords.length;
+    }
+
+    var addLabelsToCoords = function(coords) {
+        if (chars.length < coords.length) {
+            console.log("There are not enough chars to add to the coords.");
+            return;
+        }
+        for (var i = 0; i < coords.length; i++) {
+            coords[i].label = chars[i];
+        }
+        return;
+    };
+
+    var getMaxes = function(coords) {
+        var maxX = 0;
+        var maxY = 0;
+        coords.forEach(function(coord) {
+            if (coord.x > maxX) {
+                maxX = coord.x;
+            }
+            if (coord.y > maxY) {
+                maxY = coord.y;
+            }
+        });
+        return {x: maxX, y: maxY};
+    };
+
+    var drawMap = function(map) {
+        var lines = [];
+        map.forEach(function(row) {
+            lines.push(row.join(""));
+        });
+        return lines.join("\n");
+    };
+
+    var dim = function (dimensions, default_value) {
+       var retval = [], i;
+       if (!isArray(dimensions)) {
+          dimensions = [ dimensions ];
+       }
+       for (i = 0; i < dimensions[0]; i += 1) {
+          if (dimensions.length == 1) {
+             retval[i] = default_value;
+          }
+          else {
+             retval[i] = this.dim(dimensions.slice(1), default_value);
+          }
+       }
+       return retval;
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    var isIn = function(value, array) {
+       var retval = false, el, i;
+       for (i = 0; i < array.length; i += 1) {
+          el = array[i];
+          if (el === value) {
+             retval = true;
+             break;
+          }
+       }
+       return retval;
+    };
+
+    var getProperties = function (obj) {
+       var retval = [];
+       for (prop in obj) {
+          if (obj.hasOwnProperty(prop)) {
+             retval.push(prop);
+          }
+       }
+       return retval;
+    };
+</script>
+<body>
+<input type="text" id="threshold" value="32" /> <br />
+<textarea id="puzzle_input" rows="10" cols="100">1, 1
+1, 6
+8, 3
+3, 4
+5, 5
+8, 9</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

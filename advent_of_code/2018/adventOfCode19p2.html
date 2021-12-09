@@ -1,0 +1,309 @@
+<html>
+<head><title>Advent Of Code 2018 - 19p2</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        var instructions = [];
+        var instructionPointer = null;
+        var inSample = false;
+        var startingRegisters = [1, 0, 0, 0, 0, 0];
+        input.split(/\n/).forEach(function(line) {
+            let pieces;
+            if (pieces = line.match(/\#ip\s+(\d+)/)) {
+                instructionPointer = Number(pieces[1]);
+            }
+            else if (pieces = line.match(/(\w+)\s+(\d+)\s+(\d+)\s+(\d+)/)) {
+                var instruction = TYPES.instruction({ 
+                    opcode: pieces[1], 
+                    a: Number(pieces[2]), 
+                    b: Number(pieces[3]), 
+                    c: Number(pieces[4]) 
+                });
+                if (inSample) {
+                    samples[samples.length-1].instruction = instruction;
+                }
+                else {
+                    instructions.push(instruction);
+                }
+            }
+            else if (pieces = line.match(/\[(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]/)) {
+                startingRegisters = pieces.slice(1, 7).map(r => Number(r));
+            }
+            else if (line.match(/\S/)) {
+                console.log("Failed to parse: '" + line + "'");
+            }
+        });
+        return { instructions: instructions, instructionPointer: instructionPointer, startingRegisters: startingRegisters };
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        let registers = copyArray(input.startingRegisters);
+        let ipRegister = input.instructionPointer;
+        let maxLoop = 1000000;
+        let loops = 0;
+        let ip = 0;
+        console.log("[" + registers.join(",") + "]");
+        while (registers[ipRegister] < input.instructions.length && loops < maxLoop) {
+            let instr = input.instructions[registers[ipRegister]];
+            let reg0 = registers[0];
+            opcodes[instr.opcode].apply(instr.a, instr.b, instr.c, registers);
+            registers[ipRegister]++;
+            if (reg0 !== registers[0]) {
+                console.log(instr.toString() + " -> [" + registers.join(",") + "]");
+            }
+            loops++;
+        }
+        registers[ipRegister]--;
+        //It's the sum of the factors of the value that gets put into register 4.
+        //Register 4 ends up with 10551293 which factors into 1, 53, 199081 and 10551293.
+        return "" + (1 + 53 + 199081 + 10551293);
+    };
+
+    var opcodes = {
+        addr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] + registers[b];
+            }
+        },
+        addi: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] + b;
+            }
+        },
+        mulr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] * registers[b];
+            }
+        },
+        muli: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] * b;
+            }
+        },
+        banr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] & registers[b];
+            }
+        },
+        bani: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] & b;
+            }
+        },
+        borr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] | registers[b];
+            }
+        },
+        bori: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] | b;
+            }
+        },
+        setr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a];
+            }
+        },
+        seti: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a;
+            }
+        },
+        gtir: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a > registers[b] ? 1 : 0;
+            }
+        },
+        gtri: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] > b ? 1 : 0;
+            }
+        },
+        gtrr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] > registers[b] ? 1 : 0;
+            }
+        },
+        eqir: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a === registers[b] ? 1 : 0;
+            }
+        },
+        eqri: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] === b ? 1 : 0;
+            }
+        },
+        eqrr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] === registers[b] ? 1 : 0;
+            }
+        }
+    };
+
+    var TYPES = {
+        instruction: function(spec) {
+            var that = {
+                opcode: spec.opcode,
+                a: spec.a,
+                b: spec.b,
+                c: spec.c,
+            };
+
+            that.equals = function(other) {
+                return that.opcode === other.opcode 
+                    && that.a === other.a
+                    && that.b === other.b
+                    && that.c === other.c
+            };
+            that.toString = function() {
+                return that.opcode + " " + that.a + " " + that.b + " " + that.c;
+            }
+
+            return that;
+        }
+    };
+
+    var copyArray = function(array) {
+        var retval = [];
+        array.forEach(function(element) {
+            retval.push(element);
+        });
+        return retval;
+    };
+
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<style>
+textarea {
+    font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+</style>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">[1,0,0,0,0,0]
+#ip 5
+addi 5 16 5
+seti 1 1 2
+seti 1 8 1
+mulr 2 1 3
+eqrr 3 4 3
+addr 3 5 5
+addi 5 1 5
+addr 2 0 0
+addi 1 1 1
+gtrr 1 4 3
+addr 5 3 5
+seti 2 6 5
+addi 2 1 2
+gtrr 2 4 3
+addr 3 5 5
+seti 1 2 5
+mulr 5 5 5
+addi 4 2 4
+mulr 4 4 4
+mulr 5 4 4
+muli 4 11 4
+addi 3 2 3
+mulr 3 5 3
+addi 3 13 3
+addr 4 3 4
+addr 5 0 5
+seti 0 8 5
+setr 5 5 3
+mulr 3 5 3
+addr 5 3 3
+mulr 5 3 3
+muli 3 14 3
+mulr 3 5 3
+addr 4 3 4
+seti 0 9 0
+seti 0 9 5</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

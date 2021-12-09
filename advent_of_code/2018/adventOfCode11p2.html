@@ -1,0 +1,251 @@
+<html>
+<head><title>Advent Of Code 2018 - 11p2</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(Number(element));
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var gridSerialNumber = input[0];
+        var maxSize = 300;
+        console.log({ 
+            gridSerialNumber: gridSerialNumber, 
+        });
+        var cells = createCells(maxSize, maxSize, gridSerialNumber);
+        var sumsToCorner = calculateSumsToCorner(cells);
+        var maxSubGrid = findMaxSubGrid(sumsToCorner);
+        var subGrid = getSubGrid(cells, maxSubGrid.x, maxSubGrid.y, maxSubGrid.size);
+        var subGridSum = sumGrid(subGrid);
+        return "" + maxSubGrid.x + "," + maxSubGrid.y + "," + maxSubGrid.size + " = " + maxSubGrid.max + "\n\n"
+             + gridToString(subGrid) + "\n\n"
+             + subGridSum;
+
+        var subGrid = getSubGrid(cells, x, y, size);
+        var subGridSum = sumGrid(subGrid);
+        var subGridSumEasy = getSubCellTotal(sumsToCorner, x, y, size);
+        return "" + x + "," + y + "," + size + " = " + subGridSumEasy + "\n"
+             + gridToString(subGrid) + "\n\n"
+             + "sum: " + subGridSum + "\n\n"
+             + gridToString(cells) + "\n\n"
+             + gridToString(sumsToCorner);
+    };
+
+    var powerLevel = function(x, y, serialNumber) {
+        var rackId = x + 10;
+        var powerLevel = ((rackId * y) % 1000 + serialNumber % 1000) * rackId;
+        var retval = toInt(powerLevel / 100) % 10 - 5;
+        return retval;
+    };
+
+    var createCells = function(width, height, serialNumber) {
+        var cells = dim([height+1, width+1], 0);
+        for (var y = 1; y <= height; y++) {
+            for (var x = 1; x <= width; x++) {
+                cells[y][x] = powerLevel(x, y, serialNumber);
+            }
+        }
+        return cells;
+    };
+
+    var calculateSumsToCorner = function(cells) {
+        var height = cells.length - 1;
+        var width = cells[0].length - 1;
+        var retval = dim([height + 1, width + 1], 0);
+        var x, y;
+        for (y = 1; y <= height; y++) {
+            for (x = 1; x <= width; x++) {
+                retval[y][x] = retval[y-1][x] + retval[y][x-1] - retval[y-1][x-1] + cells[y][x];
+            }
+        }
+        return retval;
+    };
+
+    var getSubCellTotal = function(sums, x, y, size) {
+        return sums[y+size-1][x+size-1] - sums[y - 1][x+size-1] - sums[y+size-1][x - 1] + sums[y - 1][x - 1];
+    };
+
+    var findMaxSubGrid = function(sums) {
+        var height = sums.length - 1;
+        var width = sums.length - 1;
+        var retval = {
+            max: width * height * -5,
+            x: 0,
+            y: 0,
+            size: 0
+        };
+        var x, y, size;
+        for (size = 2; size <= height; size++) {
+            for (y = 1; y <= height - size; y++) {
+                for (x = 1; x <= width - size; x++) {
+                    var total = getSubCellTotal(sums, x, y, size);
+                    if (total > retval.max) {
+                        retval.max = total;
+                        retval.x = x;
+                        retval.y = y;
+                        retval.size = size;
+                    }
+                }
+            }
+        }
+        return retval;
+    }
+
+    var getSubGrid = function(cells, x, y, size) {
+        var retval = dim([size, size], 0);
+        var dx, dy;
+        for (dy = 0; dy < size; dy++) {
+            for (dx = 0; dx < size; dx++) {
+                retval[dy][dx] = cells[dy+y][dx+x];
+            }
+        }
+        return retval;
+    };
+
+    var sumGrid = function(grid) {
+        var retval = 0;
+        grid.forEach(function(row) {
+            row.forEach(function(cell) {
+                retval += cell;
+            });
+        });
+        return retval;
+    };
+
+    var valueOrDefault = function (value, defefaultValue) {
+       return typeof value === 'undefined' ? defefaultValue : value;
+    };
+
+    var dim = function (dimensions, default_value) {
+       var retval = [], i;
+       if (!isArray(dimensions)) {
+          dimensions = [ dimensions ];
+       }
+       for (i = 0; i < dimensions[0]; i += 1) {
+          if (dimensions.length == 1) {
+             retval[i] = default_value;
+          }
+          else {
+             retval[i] = this.dim(dimensions.slice(1), default_value);
+          }
+       }
+       return retval;
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    var toInt = function(value) {
+       return Math[value < 0 ? 'ceil' : 'floor'](value);
+    };
+
+    var gridToString = function(grid) {
+        var lines = [];
+        grid.forEach(function(row) {
+            var entries = [];
+            row.forEach(function(entry) {
+                entries.push(('      ' + entry).slice(-2));
+            })
+            lines.push(entries.join(' '));
+        });
+        return lines.join("\n");
+    };
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">18</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

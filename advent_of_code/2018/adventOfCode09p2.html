@@ -1,0 +1,370 @@
+<html>
+<head><title>Advent Of Code 2018 - 09p2</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(element);
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var numberOfPlayers = input[0];
+        var nubmerOfMarbles = input[1];
+        var playerMarbles = [];
+        for (var player = 0; player < numberOfPlayers; player++) {
+            playerMarbles[player] = [];
+        }
+        var circle = TYPES.marbleCircle();
+        console.log(circle.toString());
+        var currentPlayer = 0;
+        for (var marbleValue = 1; marbleValue <= nubmerOfMarbles; marbleValue++) {
+            let turnResults = circle.playTurn(marbleValue);
+            if (turnResults.length > 0) {
+                playerMarbles[currentPlayer] = playerMarbles[currentPlayer].concat(turnResults);
+            }
+            if (marbleValue <= 30) {
+                console.log(circle.toString());
+            }
+            currentPlayer = (currentPlayer + 1) % numberOfPlayers;
+            if (marbleValue % 1000 === 0) {
+                console.log("Current Marble: " + marbleValue);
+            }
+        }
+        var playerScores = [];
+        for (var player = 0; player < numberOfPlayers; player++) {
+            playerScores[player] = getSum(playerMarbles[player], 0);
+        }
+        return getMax(playerScores, 0);
+    };
+
+    var TYPES = {
+        doublyLinkedListNode: function(spec) {
+            var that = {
+                previous: null,
+                next: null
+            };
+            var data = spec.data;
+            if (spec.previous) {
+                that.previous = spec.previous;
+            }
+            if (spec.next) {
+                that.next = spec.next;
+            }
+
+            that.getData = function() {
+                return data;
+            };
+
+            return that;
+        },
+
+        circularDoublyLinkedList: function() {
+            var that = {};
+            var current = null;
+            var numberOfValues = 0;
+
+            that.size = function() {
+                return numberOfValues;
+            }
+
+            that.addAfter = function(value) {
+                var node = TYPES.doublyLinkedListNode({data: value});
+                if (current === null) {
+                    current = node;
+                    node.next = node;
+                    node.previous = node;
+                }
+                else {
+                    current.next.previous = node;
+                    node.next = current.next;
+                    current.next = node;
+                    node.previous = current;
+                }
+                numberOfValues++;
+            };
+
+            that.addBefore = function(value) {
+                var node = TYPES.doublyLinkedListNode({data: value});
+                if (current === null) {
+                    current = node;
+                    node.next = node;
+                    node.previous = node;
+                }
+                else {
+                    current.previous.next = node;
+                    node.previous = current.previous;
+                    current.previous = node;
+                    node.next = current;
+                }
+                numberOfValues++;
+            };
+
+            that.moveNext = function() {
+                if (current) {
+                    current = current.next;
+                }
+            };
+
+            that.movePrevious = function() {
+                if (current) {
+                    current = current.previous;
+                }
+            };
+
+            that.getCurrentValue = function() {
+                return current ? current.getData() : null;
+            };
+
+            that.removeCurrentGoNext = function() {
+                var toRemove = current;
+                current.next.previous = current.previous;
+                current.previous.next = current.next;
+                current = current.next;
+                numberOfValues--;
+                toRemove.next = null;
+                toRemove.previous = null;
+                return toRemove.getData();
+            };
+
+            that.removeCurrentGoPrevious = function() {
+                var toRemove = current;
+                current.next.previous = current.previous;
+                current.previous.next = current.next;
+                current = current.previous;
+                numberOfValues--;
+                toRemove.next = null;
+                toRemove.previous = null;
+                return toRemove.getData();
+            };
+
+            that.toString = function() {
+                var retval = current ? "(" + current.getData() + ")" : '{empty}';
+                var cur = current;
+                for (var i = 1; i < numberOfValues; i++) {
+                    cur = cur.next;
+                    retval += " " + cur.getData() + " ";
+                }
+                return retval;
+            };
+
+            return that;
+        },
+
+        marbleCircle: function() {
+            var that = TYPES.circularDoublyLinkedList();
+
+            that.addMarble = function(value) {
+                that.moveNext();
+                that.addAfter(value);
+                that.moveNext();
+            };
+
+            that.removeMarble = function() {
+                that.movePrevious();
+                that.movePrevious();
+                that.movePrevious();
+                that.movePrevious();
+                that.movePrevious();
+                that.movePrevious();
+                that.movePrevious();
+                return that.removeCurrentGoNext();
+            };
+
+            that.playTurn = function(marbleValue) {
+                var retval = [];
+                if (marbleValue % 23 === 0) {
+                    retval.push(marbleValue);
+                    retval.push(that.removeMarble());
+                }
+                else {
+                    that.addMarble(marbleValue);
+                }
+                return retval;
+            };
+
+            that.addAfter(0);
+
+            return that;
+        },
+
+        circle: function() {
+            var that = {};
+            var currentLocation = 0;
+            var circle = [0];
+
+            that.getCurrentLocation = function(value) {
+                return currentLocation;
+            }
+
+            that.addToCircle = function(value) {
+                if (circle.length == 1) {
+                    circle.push(value);
+                    currentLocation = 1;
+                } else {
+                    let leftMarbleIndex = (currentLocation + 2) % (circle.length);
+                    if (leftMarbleIndex === 0) {
+                        circle.push(value);
+                        currentLocation = circle.length - 1;
+                    }
+                    else {
+                        circle.splice(leftMarbleIndex, 0, value);
+                        currentLocation = leftMarbleIndex;
+                    }
+                }
+            };
+
+            that.removeFromCircle = function() {
+                var toRemove = (currentLocation - 7 + circle.length) % circle.length;
+                var retval = toRemove === 0                 ? circle.shift() : 
+                             toRemove === circle.length - 1 ? circle.pop() : 
+                                                              circle.splice(toRemove, 1)[0];
+                currentLocation = toRemove % circle.length;
+                return retval;
+            }
+
+            that.playTurn = function(value) {
+                var retval = [];
+                if (value % 23 === 0) {
+                    retval.push(value);
+                    retval.push(that.removeFromCircle());
+                    console.log("" + padLeft(retval[0], 4) + ": Removing marble " + padLeft(retval[1], 4) + ". There are " + padLeft(circle.length, 4) + " marbles left.");
+                } else {
+                    that.addToCircle(value);
+                }
+                return retval;
+            }
+
+            that.toString = function() {
+                var entryLength = getMax(circle, 0).length + 2;
+                var retval = '';
+                circle.forEach(function(value, index) {
+                    let piece = ' '.repeat(entryLength);
+                    if (index === currentLocation) {
+                        piece += "(" + value + ")";
+                    }
+                    else {
+                        piece += " " + value + " ";
+                    }
+                    retval += piece.padStart(entryLength, ' ');
+                });
+                return retval;
+            };
+
+            return that;
+        }
+    };
+
+    var padLeft = function(value, length) {
+        return "" + ("" + value).padStart(length, ' ');
+    }
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    var getMax = function(array, defaultValue) {
+        return !isArray(array) || array.length === 0 ? defaultValue : 
+                    array.reduce(function(max, newVal) { return newVal > max ? newVal : max });
+    }
+
+    var getSum = function(array, defaultValue) {
+        return !isArray(array) || array.length === 0 ? defaultValue : 
+                    array.reduce(function(tot, newVal) { return tot + newVal; });
+    }
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker.");
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">9 25</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

@@ -1,0 +1,833 @@
+<html>
+<head><title>Advent Of Code 2018 - 15p2</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var WALL = "#";
+    var FLOOR = ".";
+    var GOBLIN = "G";
+    var ELF = "E";
+    var LEFT = "Left";
+    var RIGHT = "Right";
+    var UP = "Up";
+    var DOWN = "Down";
+    var STAYPUT = "Stay Put";
+    var directionOrder = [ UP, LEFT, RIGHT, DOWN ];
+
+    var parseInput = function(input) {
+        var map = [];
+        var goblins = [];
+        var elves = [];
+        input.split(/\n/).forEach(function(line) {
+            map.push([]);
+            line.split("").forEach(function(char) {
+                switch (char) {
+                    case WALL:
+                    case FLOOR:
+                        map[map.length-1].push(char);
+                        break;
+                    case GOBLIN:
+                        goblins.push(TYPES.being({x: map[map.length-1].length, y: map.length - 1, char: char }));
+                        map[map.length-1].push(FLOOR);
+                        break;
+                    case ELF:
+                        elves.push(TYPES.being({x: map[map.length-1].length, y: map.length - 1, char: char }));
+                        map[map.length-1].push(FLOOR);
+                        break;
+                    case " ":
+                        break;
+                    default: 
+                        throw new Error("unknown character in input: '" + char + "'");
+                }
+            });
+        });
+        return { map: map, goblins: goblins, elves: elves };
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var map = input.map;
+        var startingElves = input.elves;
+        var startingGoblins = input.goblins;
+        var elfPower = 4;
+        var beings = copyAndCombineBeingsLists(startingElves, startingGoblins, elfPower);
+        var counts = getBeingCounts(beings);
+        var step = 0;
+        var steps = [ getStepString(step, map, beings) ];
+        while (counts.elves > 0 && counts.goblins > 0) {
+            step++;
+            beings = doTurn(map, beings);
+            beings.sort(beingSorter);
+            if (steps.length <= 50) {
+                steps.push( getStepString(step, map, beings) );
+            }
+            newCounts = getBeingCounts(beings);
+            if (newCounts.elves < counts.elves) {
+                elfPower++;
+                beings = copyAndCombineBeingsLists(startingElves, startingGoblins, elfPower);
+                newCounts = getBeingCounts(beings);
+                step = 0;
+            }
+            counts = newCounts;
+        }
+        var retval = elfPower + "\n" + calculateOutcome(step, beings) + "\n" + calculateOutcome(step - 1, beings) + "\n\n";
+        if (steps.length <= 50) {
+            retval += steps.join("\n\n");
+        }
+        else {
+            retval += getStepString(step, map, beings);
+        }
+        return retval;
+    };
+
+    var getStepString = function(index, map, beings) {
+        return "" + index + ": " + beings.map(b => b.toString()).join(", ") + "\n" + drawMap(map, beings);
+    }
+
+    var doTurn = function(map, beings) {
+        beings.forEach(function(being) {
+            if (being.isAlive()) {
+                var nextMove = being.getNextMove(map, beings);
+                if (nextMove !== null && nextMove !== STAYPUT) {
+                    being["move" + nextMove]();
+                }
+                var target = being.getTarget(beings);
+                if (target !== null) {
+                    target.takeDamage(being.attackPower);
+                }
+            }
+        });
+        var aliveBeings = [];
+        beings.forEach(function(being) {
+            if (being.isAlive()) {
+                aliveBeings.push(being);
+            }
+        });
+        return aliveBeings;
+    };
+
+    var getBeingCounts = function(beings) {
+        var retval = {
+            goblins: 0,
+            elves: 0
+        };
+        beings.forEach(function(being) {
+            if (being.isAlive()) {
+                if (being.char === GOBLIN) {
+                    retval.goblins++;
+                }
+                else if (being.char === ELF) {
+                    retval.elves++;
+                }
+            }
+        });
+        return retval;
+    };
+
+    var calculateOutcome = function(step, beings) {
+        var hitPointTotal = beings.map(b => b.hitPoints).reduce((t, c) => t + c);
+        var outcome = step * hitPointTotal;
+        return "" + step + " * " + hitPointTotal + " = " + outcome;
+    };
+
+    var copyAndCombineBeingsLists = function(elves, goblins, elfPower) {
+        var retval = [];
+        elves.forEach(function(elf) {
+            var newElf = elf.copyOf();
+            newElf.attackPower = elfPower;
+            retval.push(newElf);
+        });
+        goblins.forEach(function(goblin) {
+            retval.push(goblin.copyOf());
+        });
+        retval.sort(beingSorter);
+        return retval;
+    }
+
+    var TYPES = {
+        location: function(spec) {
+            var that = {
+                x: spec.x,
+                y: spec.y
+            };
+
+            that.getUp = function() {
+                return TYPES.location({ x: that.x, y: that.y - 1 });
+            };
+            that.getDown = function() {
+                return TYPES.location({ x: that.x, y: that.y + 1 });
+            };
+            that.getLeft = function() {
+                return TYPES.location({ x: that.x - 1, y: that.y });
+            };
+            that.getRight = function() {
+                return TYPES.location({ x: that.x + 1, y: that.y });
+            };
+
+            that.moveUp = function() {
+                that.y--;
+            };
+            that.moveDown = function() {
+                that.y++;
+            };
+            that.moveLeft = function() {
+                that.x--;
+            };
+            that.moveRight = function() {
+                that.x++;
+            };
+
+            that.isAdjacentTo = function(other) {
+                return directionOrder.map(d => that["get" + d]().equals(other)).reduce((r,c) => r || c);
+            };
+
+            that.equals = function(other) {
+                return that.x === other.x && that.y === other.y;
+            };
+            that.toString = function() {
+                return "(" + that.x + "," + that.y + ")";
+            }
+
+            return that;
+        },
+
+        pathPiece: function(spec) {
+            var that = {
+                direction: spec.direction,
+                from: spec.from,
+                destination: valueOrDefault(spec.destination, spec.from["get" + spec.direction])
+            };
+
+            that.equals = function(other) {
+                return that.destination.equals(other.destination ? other.destination : other);
+            };
+            that.toString = function() {
+                return "From " + that.from.toString() + " going " + that.direction + " to " + that.destination.toString();
+            };
+
+            return that;
+        },
+
+        being: function(spec) {
+            var that = {
+                location: TYPES.location(spec),
+                char: spec.char,
+                hitPoints: 200,
+                attackPower: 3
+            };
+
+            that.copyOf = function() {
+                return TYPES.being({ x: that.location.x, y: that.location.y, char: that.char });
+            };
+
+            that.getX = function() {
+                return that.location.x;
+            };
+            that.getY = function() {
+                return that.location.y;
+            };
+            that.isAt = function(location) {
+                return that.location.equals(location);
+            }
+            that.isAdjacentTo = function(otherBeing) {
+                return that.location.isAdjacentTo(otherBeing.location);
+            }
+
+            that.moveLeft = function() {
+                that.location.moveLeft();
+            };
+            that.moveRight = function() {
+                that.location.moveRight();
+            };
+            that.moveUp = function() {
+                that.location.moveUp();
+            };
+            that.moveDown = function() {
+                that.location.moveDown();
+            };
+
+            that.takeDamage = function(damage) {
+                that.hitPoints -= damage;
+            };
+            that.recover = function(health) {
+                that.hitPoints += health;
+            };
+            that.isAlive = function() {
+                return that.hitPoints > 0;
+            };
+
+            that.getNextMove = function(map, beings) {
+                var nextMove = null;
+                var paths = [];
+                var deadEnds = [];
+                directionOrder.forEach(function(direction) {
+                    var newLoc = that.location["get" + direction]();
+                    if (map[newLoc.y][newLoc.x] === FLOOR) {
+                        var isOpen = true;
+                        beings.forEach(function(being) {
+                            if (being.isAlive() && being.isAt(newLoc)) {
+                                if (that.char !== being.char) {
+                                    nextMove = STAYPUT;
+                                }
+                                isOpen = false;
+                            }
+                        });
+                        if (isOpen) {
+                            var newPath = TYPES.doublyLinkedList();
+                            newPath.push(TYPES.pathPiece({ direction: direction, from: that.location, destination: newLoc }));
+                            paths.push(newPath);
+                        }
+                    }
+                });
+                while (nextMove === null && paths.length > 0) {
+                    let newPaths = [];
+                    let addedLocs = [];
+                    let pathIndex;
+                    for (pathIndex = 0; pathIndex < paths.length && nextMove === null; pathIndex++) {
+                        let curPath = paths[pathIndex];
+                        let curLoc = curPath.get(-1).destination;
+                        let addedNewPath = false;
+                        let directionIndex;
+                        for (directionIndex = 0; directionIndex < directionOrder.length && nextMove === null; directionIndex++) {
+                            let direction = directionOrder[directionIndex];
+                            let newLoc = curLoc["get" + direction]();
+                            let alreadyChecked = that.location.equals(newLoc)
+                                || paths.map(p => p.contains(newLoc)).reduce((r, c) => r || c, false)
+                                || addedLocs.map(l => l.equals(newLoc)).reduce((r, c) => r || c, false)
+                                || deadEnds.map(p => p.contains(newLoc)).reduce((r, c) => r || c, false);
+                            if (!alreadyChecked && map[newLoc.y][newLoc.x] === FLOOR) {
+                                let beingIndex;
+                                let isOpen = true;
+                                for (beingIndex = 0; beingIndex < beings.length && nextMove === null && isOpen; beingIndex++) {
+                                    let being = beings[beingIndex];
+                                    if (being.isAlive() && being.isAt(newLoc)) {
+                                        if (that.char !== being.char) {
+                                            nextMove = curPath.get(0).direction;
+                                        }
+                                        isOpen = false;
+                                    }
+                                }
+                                if (isOpen) {
+                                    let newPath = curPath.copyOf();
+                                    newPath.push(TYPES.pathPiece({ direction: direction, from: curLoc, destination: newLoc }));
+                                    newPaths.push(newPath);
+                                    addedNewPath = true;
+                                    addedLocs.push(newLoc);
+                                }
+                            }
+                        }
+                        if (!addedNewPath) {
+                            deadEnds.push(curPath);
+                        }
+                    }
+                    paths = newPaths;
+                }
+                return nextMove;
+            };
+
+            that.getTarget = function(beings) {
+                var targets = [];
+                beings.forEach(function(being) {
+                    if (being.isAlive() && that.isAdjacentTo(being) && being.char !== that.char) {
+                        targets.push({ 
+                            being: being,
+                            direction: that.getY() < being.getY() ? DOWN 
+                                         : that.getY() > being.getY() ? UP
+                                         : that.getX() < being.getX() ? RIGHT 
+                                         : LEFT
+                        });
+                    }
+                });
+                if (targets.length === 0) {
+                    return null;
+                }
+                if (targets.length === 1) {
+                    return targets[0].being;
+                }
+                let minHitPoints = targets[0].being.hitPoints;
+                let minHitPointTargets = [ targets[0] ];
+                let targetIndex;
+                for (targetIndex = 1; targetIndex < targets.length; targetIndex++) {
+                    if (targets[targetIndex].being.hitPoints < minHitPoints) {
+                        minHitPoints = targets[targetIndex].being.hitPoints;
+                        minHitPointTargets = [ targets[targetIndex] ];
+                    }
+                    else if (targets[targetIndex].being.hitPoints === minHitPoints) {
+                        minHitPointTargets.push( targets[targetIndex] );
+                    }
+                }
+                if (minHitPointTargets.length === 1) {
+                    return minHitPointTargets[0].being;
+                }
+                let directionIndex;
+                for (directionIndex = 0; directionIndex < directionOrder.length; directionIndex++) {
+                    let minHitPointTargetIndex;
+                    for (minHitPointTargetIndex = 0; minHitPointTargetIndex < minHitPointTargets.length; minHitPointTargetIndex++) {
+                        if (minHitPointTargets[minHitPointTargetIndex].direction === directionOrder[directionIndex]) {
+                            return minHitPointTargets[minHitPointTargetIndex].being;
+                        }
+                    }
+                }
+                throw new Error("Something went wrong with figuring out who to hit.");
+            }
+
+            that.equals = function(other) {
+                return that === other || 
+                        (that.char === other.char 
+                            && that.location.equals(other.location) 
+                            && that.hitPoints === other.hitPoints 
+                            && that.power === other.power);
+            };
+            that.toString = function() {
+                return that.char + that.location.toString() + ": " + that.hitPoints;
+            };
+
+            return that;
+        },
+
+        doublyLinkedListNode: function(spec) {
+            var that = {
+                previous: null,
+                next: null
+            };
+            var data = spec.data;
+            if (spec.previous) {
+                that.previous = spec.previous;
+            }
+            if (spec.next) {
+                that.next = spec.next;
+            }
+
+            that.getData = function() {
+                return data;
+            };
+
+            that.reverse = function() {
+                var temp = that.previous;
+                that.previous = that.next;
+                that.next = temp;
+            }
+
+            that.equals = function(other) {
+                return data === other.getData() || (typeof data === "object" && data.equals && data.equals(other));
+            };
+            that.toString = function() {
+                return typeof data === "object" && data.toString ? data.toString() : JSON.stringify(data);
+            };
+
+            return that;
+        },
+
+        doublyLinkedList: function() {
+            var that = {
+                head: null,
+                tail: null,
+                count: 0
+            };
+
+            that.length = function() {
+                return that.count;
+            }
+
+            that.push = function(value) {
+                var newNode = TYPES.doublyLinkedListNode({data: value, previous: that.tail});
+                if (that.tail !== null) {
+                    that.tail.next = newNode;
+                }
+                that.tail = newNode;
+                if (that.head === null) {
+                    that.head = newNode;
+                }
+                that.count++;
+            };
+
+            that.pop = function() {
+                var retvalNode = that.tail;
+                var retval = null;
+                if (retvalNode !== null) {
+                    that.tail = that.tail.previous;
+                    retvalNode.previous = null;
+                    if (that.tail !== null) {
+                        that.tail.next = null;
+                    }
+                    that.count--;
+                    retval = retvalNode.getData();
+                }
+                return retval;
+            };
+
+            that.unshift = function(value) {
+                var newNode = TYPES.doublyLinkedListNode({data: value, previous: that.head});
+                if (that.head !== null) {
+                    that.head.previous = newNode;
+                }
+                that.head = newNode;
+                if (that.tail === null) {
+                    that.tail = newNode;
+                }
+                that.count++;
+            };
+
+            that.shift = function() {
+                var retvalNode = that.head;
+                var retval = null;
+                if (retvalNode !== null) {
+                    that.head = that.head.next;
+                    retvalNode.next = null;
+                    if (that.head !== null) {
+                        that.head.previous = null;
+                    }
+                    that.count--;
+                    retval = retvalNode.getData();
+                }
+                return retval;
+            };
+
+            var getTargetIndex = function(index) {
+                return index >= 0 ? index : that.count + index;
+            };
+
+            var getNode = function(index) {
+                var targetIndex = getTargetIndex(index);
+                var retvalNode = null;
+                if (targetIndex < 0 || targetIndex > that.count - 1) {
+                    //Do Nothing
+                }
+                else if (targetIndex < that.count / 2) {
+                    let curIndex = 0;
+                    retvalNode = that.head;
+                    while (curIndex < targetIndex) {
+                        retvalNode = retvalNode.next;
+                        curIndex++;
+                    }
+                }
+                else {
+                    let curIndex = that.count - 1;
+                    retvalNode = that.tail;
+                    while (curIndex > targetIndex) {
+                        retvalNode = retvalNode.previous;
+                        curIndex--;
+                    }
+                }
+                return retvalNode;
+            };
+
+            that.get = function(index) {
+                var retvalNode = getNode(index);
+                return retvalNode !== null ? retvalNode.getData() : null;
+            };
+
+            that.insert = function(index, data) {
+                var targetIndex = getTargetIndex(index);
+                if (targetIndex < 0 || targetIndex > that.count) {
+                    throw new Error("Cannot insert into positing " + index + " on a list that contains " + that.count + " items");
+                }
+                if (targetIndex === 0) {
+                    that.unshift(data);
+                }
+                if (targetIndex === that.count) {
+                    that.push(data);
+                }
+                let leftNode = getNode(targetIndex - 1);
+                let newNode = TYPES.doublyLinkedListNode({ data: data, previous: leftNode, next: leftNode.next });
+                leftNode.next = newNode;
+                newNode.next.previous = newNode;
+                that.count++;
+            };
+
+            that.remove = function(index) {
+                var targetIndex = getTargetIndex(index);
+                if (targetIndex < 0 || targetIndex >= that.count) {
+                    throw new Error("Cannot remove from position " + index + " on a list that contains " + that.count + " items");
+                }
+                if (targetIndex === 0) {
+                    return that.shift();
+                }
+                if (targetIndex === that.count - 1) {
+                    return that.pop();
+                }
+                let toRemove = getNode(targetIndex);
+                toRemove.next.previous = toRemove.previous;
+                toRemove.previous.next = toRemove.next;
+                toRemove.next = null;
+                toRemove.previous = null;
+                that.count--;
+                return toRemove.getData();
+            };
+
+            var _slice = function(start, stopBefore, startingRetval) {
+                if (!startingRetval 
+                        || !startingRetval.push || typeof startingRetval.push !== "function"
+                        || !startingRetval.unshift || typeof startingRetval.unshift !== "function") {
+                    throw new Error("Invalid starting retval supplied to mySlice.");
+                }
+                var startIn = valueOrDefault(start, 0);
+                var stopIn = valueOrDefault(stopBefore, that.count);
+                var startIndex = startIn >= 0 ? startIn : that.count + startIn;
+                var stopIndex = stopIn >= 0 ? stopIn - 1: that.count + stopIn - 1;
+                if (startIndex > stopIndex || startIndex < 0 || stopIndex < 0 || startIndex >= that.count || stopIndex >= that.count) {
+                    return startingRetval;
+                }
+                if (startIndex === stopIndex) {
+                    startingRetval.push(that.get(startIndex));
+                    return startingRetval;
+                }
+                if (startIndex < that.count - 1 - stopIndex) {
+                    var cur = that.head;
+                    var curIndex = 0;
+                    while (curIndex <= stopIndex) {
+                        if (curIndex >= startIndex) {
+                            startingRetval.push(cur.getData());
+                        }
+                        cur = cur.next;
+                        curIndex++;
+                    }
+                    return startingRetval;
+                }
+                var cur = that.tail;
+                var curIndex = that.count - 1;
+                while (curIndex >= startIndex) {
+                    if (curIndex <= stopIndex) {
+                        startingRetval.unshift(cur.getData());
+                    }
+                    cur = cur.previous;
+                    curIndex--;
+                }
+                return startingRetval;
+            };
+
+            that.slice = function(start, stopBefore) {
+                return _slice(start, stopBefore, TYPES.doublyLinkedList());
+            };
+
+            that.sliceToArray = function(start, stopBefore) {
+                return _slice(start, stopBefore, []);
+            };
+
+            that.contains = function(otherData, directionVal) {
+                var fromHead = valueOrDefault(directionVal, 0) >= 0 ? true : false;
+                var cur = fromHead ? that.head : that.tail;
+                var retval = false;
+                while (cur !== null) {
+                    let curData = cur.getData();
+                    if (curData === otherData || (curData && curData.equals && curData.equals(otherData))) {
+                        retval = true;
+                        cur = null;
+                    }
+                    else {
+                        cur = fromHead ? cur.next : cur.previous;
+                    }
+                }
+                return retval;
+            };
+
+            that.copyOf = function() {
+                var retval = TYPES.doublyLinkedList();
+                var cur = that.head;
+                while (cur !== null) {
+                    retval.push(cur.getData());
+                    cur = cur.next;
+                }
+                return retval;
+            };
+
+            that.copyReverse = function() {
+                var retval = TYPES.doublyLinkedList();
+                var cur = that.tail;
+                while (cur != null) {
+                    retval.unshift(cur.getData());
+                    cur = cur.previous;
+                }
+                return retval;
+            };
+
+            that.reverse = function() {
+                var cur = that.head;
+                var temp = that.head;
+                that.head = that.tail;
+                that.tail = temp;
+                while (cur !== null) {
+                    temp = cur.next;
+                    cur.reverse();
+                    cur = temp;
+                }
+            };
+
+            that.toArray = function() {
+                var retval = [];
+                var cur = that.head;
+                while (cur !== null) {
+                    retval.push(cur.getData());
+                    cur = cur.next;
+                }
+                return retval;
+            };
+
+            that.join = function(delimiter, prettyPrintJson) {
+                var del = valueOrDefault(delimiter, "");
+                var retval = '';
+                var cur = that.head;
+                while (cur !== null) {
+                    let curData = cur.getData();
+                    retval += typeof curData !== "object" ? curData 
+                            : curData.toString && typeof curData.toString === "function" ? curData.toString()
+                            : prettyPrintJson ? JSON.stringify(curData, undefined, 2)
+                            : JSON.stringify(curData);;
+                    cur = cur.next;
+                    if (cur !== null) {
+                        retval += del;
+                    }
+                }
+                return retval;
+            };
+
+            that.equals = function(other) {
+                var retval = that.count === other.count;
+                var curThat = that.head;
+                var curOther = other.head;
+                while (retval && curThat !== null && curOther !== null) {
+                    let thatData = curThat.getData();
+                    let otherData = curOther.getData();
+                    if (thatData === otherData || (typeof thatData === "object" && thatData.equals && thatData.equals(otherData))) {
+                        curThat = curThat.next;
+                        curOther = curOther.next;
+                    }
+                    else {
+                        retval = false;
+                    }
+                }
+                return retval;
+            };
+            that.toString = function() {
+                return that.join("\n");
+            };
+
+            return that;
+        }
+    };
+
+    var beingSorter = function(a, b) {
+        var retval = a.getY() - b.getY();
+        if (retval === 0) {
+            retval = a.getX() - b.getX();
+        }
+        return retval;
+    }
+
+    var drawMap = function(map, beings) {
+        var cells = [];
+        map.forEach(function(row) {
+            cells.push([]);
+            row.forEach(function(cell) {
+                cells[cells.length-1].push(cell);
+            });
+        });
+        beings.forEach(function(being) {
+            cells[being.getY()][being.getX()] = being.char;
+        });
+        return cells.map(row => row.join("")).join("\n");
+    };
+
+    var valueOrDefault = function (value, defefaultValue) {
+       return typeof value === 'undefined' ? defefaultValue : value;
+    };
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<style>
+textarea {
+    font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+</style>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">#######
+#.G...#
+#...EG#
+#.#.#G#
+#..G#E#
+#.....#
+#######</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

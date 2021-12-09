@@ -1,0 +1,279 @@
+<html>
+<head><title>Advent Of Code 2018 - 04p2</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        document.getElementById("result").innerHTML = "calculating...";
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var results = solver(puzzleInput);
+        document.getElementById("result").innerHTML = results;
+    };
+
+    var daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    var asleep = "asleep";
+    var awake = "awake";
+    var start = "start";
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\n/).forEach(function(line) {
+            if (line && !line.match(/^\s+$/)) {
+                let parts = line.match(/\[((\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d))\] (Guard #(\d+) begins shift|falls asleep|wakes up)/);
+                if (isArray(parts) && parts.length > 0) {
+                    let spec = {};
+                    spec.timestamp = {
+                        entry: parts[1],
+                        year: Number(parts[2]),
+                        month: Number(parts[3]),
+                        day: Number(parts[4]),
+                        hour: Number(parts[5]),
+                        minute: Number(parts[6])
+                    }
+                    spec.entryType = parts[7] === "falls asleep" ? asleep : parts[7] === "wakes up" ? awake : start;
+                    if (parts[8] !== undefined) {
+                        spec.guard = parts[8];
+                    }
+                    retval.push(TYPES.logEntry(spec));
+                }
+                else {
+                    console.log("Failed to parse line '" + line + "'");
+                }
+            }
+        });
+        return retval.sort(by("timestamp"));
+    };
+
+    var solver = function(puzzleInput) {
+        var shifts = [];
+        parseInput(puzzleInput).forEach(function(entry) {
+            if (entry.entryType === start) {
+                shifts.push(TYPES.workShift({guard: entry.guard, date: entry.timestamp.shiftDate}));
+            }
+            else if (entry.entryType === asleep) {
+                shifts[shifts.length - 1].startSleep(entry.timestamp.minute);
+            }
+            else if (entry.entryType === awake) {
+                shifts[shifts.length - 1].startAwake(entry.timestamp.minute);
+            }
+        });
+        var shiftsString = "";
+        var totalSleep = {};
+        var shiftsByGuard = {};
+        shifts.forEach(function(workShift) {
+            shiftsString += workShift.toString() + "\n";
+            if (totalSleep[workShift.guard] === undefined) {
+                totalSleep[workShift.guard] = 0;
+            }
+            totalSleep[workShift.guard] += workShift.totalSleep();
+            if (shiftsByGuard[workShift.guard] === undefined) {
+                shiftsByGuard[workShift.guard] = [];
+            }
+            shiftsByGuard[workShift.guard].push(workShift);
+        });
+        console.log(shiftsString);
+        console.log(totalSleep);
+        var sleepCountsByGuard = {};
+        getProperties(shiftsByGuard).forEach(function(guard) {
+            sleepCountsByGuard[guard] = dim(60, 0);
+            shiftsByGuard[guard].forEach(function(workShift) {
+                for (var m = 0; m < 60; m++) {
+                    if (workShift.schedule[m] === asleep) {
+                        sleepCountsByGuard[guard][m]++;
+                    }
+                }
+            });
+        })
+        var mostOftenCount = 0;
+        var mostOftenMinute = null;
+        var maxSleepGuard = null;
+        getProperties(shiftsByGuard).forEach(function(guard) {
+            for (var m = 0; m < 60; m++) {
+                if (sleepCountsByGuard[guard][m] > mostOftenCount) {
+                    mostOftenCount = sleepCountsByGuard[guard][m];
+                    mostOftenMinute = m;
+                    maxSleepGuard = guard;
+                }
+            }
+        })
+        var retval = maxSleepGuard * mostOftenMinute;
+        return "" + maxSleepGuard + " * " + mostOftenMinute + " = " + retval;
+    };
+
+    var TYPES = {
+        timestamp: function(spec) {
+            var that = {
+                entry: spec.entry,
+                year: spec.year,
+                month: spec.month,
+                day: spec.day,
+                hour: spec.hour,
+                minute: spec.minute
+            };
+
+            var curYear = that.year;
+            var curMonth = that.month;
+            var curDay = that.day;
+            if (that.hour != 0) {
+                curDay += 1;
+                if (curDay > daysInMonth[curMonth]) {
+                    curDay = 1;
+                    curMonth += 1;
+                    if (curMonth > 12) {
+                        curMonth = 1;
+                        curYear += 1;
+                    }
+                }
+            }
+            that.shiftDate = curYear + "-" + curMonth + "-" + curDay;
+
+            that.toString = function() {
+                return that.entry;
+            };
+
+            return that;
+        },
+
+        logEntry: function(spec) {
+            var that = {
+                timestamp: TYPES.timestamp(spec.timestamp),
+                entryType: spec.entryType,
+                guard: spec.guard
+            };
+
+            that.toString = function() {
+                return that.timestamp.toString() + " - " + that.entryType + (that.guard !== undefined ? ": " + that.guard : "");
+            };
+
+            return that;
+        },
+
+        workShift: function(spec) {
+            var that = {
+                guard: spec.guard,
+                date: spec.date,
+                schedule: dim(60, awake)
+            };
+
+            that.startSleep = function(minute) {
+                for (var m = minute; m < 60; m++) {
+                    that.schedule[m] = asleep;
+                }
+            };
+
+            that.startAwake = function(minute) {
+                for (var m = minute; m < 60; m++) {
+                    that.schedule[m] = awake;
+                }
+            };
+
+            that.totalSleep = function() {
+                var retval = 0;
+                for (var m = 0; m < 60; m++) {
+                    if (that.schedule[m] === asleep) {
+                        retval++;
+                    }
+                }
+                return retval;
+            };
+
+            that.scheduleString = function() {
+                var retval = "";
+                for (var i = 0; i < 60; i++) {
+                    retval += that.schedule[i] === asleep ? "#" : ".";
+                }
+                return retval;
+            };
+
+            that.toString = function() {
+                return that.date + " " + that.guard + ": " + that.scheduleString();
+            };
+
+            return that;
+        }
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    //a better way to sort.  Takes types into account.
+    var betterSort = function (a, b) {
+       if (a === b) {
+          return 0;
+       }
+       if (typeof a === typeof b) {
+          return a < b ? -1 : 1;
+       }
+       return typeof a < typeof b ? -1 : 1;
+    };
+
+
+    //a nice easy way to sort objects.
+    //example: /* a is an array of objects */ a.sort(by('last', by('first')));
+    var by = function (name, minor) {
+       return function (o, p) {
+          if (typeof o === 'object' && typeof p === 'object' && o && p) {
+             var retval = betterSort(o[name], p[name]);
+             return typeof minor === 'function' && retval == 0 ? minor(o, p) : retval;
+          }
+          else {
+             throw {
+                name: 'Error',
+                message: 'Expected an object when sorting by ' + name,
+             };
+          }
+       };
+    };
+
+    var dim = function (dimensions, default_value) {
+       var retval = [], i;
+       if (!isArray(dimensions)) {
+          dimensions = [ dimensions ];
+       }
+       for (i = 0; i < dimensions[0]; i += 1) {
+          if (dimensions.length == 1) {
+             retval[i] = default_value;
+          }
+          else {
+             retval[i] = this.dim(dimensions.slice(1), default_value);
+          }
+       }
+       return retval;
+    };
+
+    var getProperties = function (obj) {
+       var retval = [];
+       for (prop in obj) {
+          if (obj.hasOwnProperty(prop)) {
+             retval.push(prop);
+          }
+       }
+       return retval;
+    };
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">[1518-11-01 00:00] Guard #10 begins shift
+[1518-11-01 00:05] falls asleep
+[1518-11-01 00:25] wakes up
+[1518-11-01 00:30] falls asleep
+[1518-11-01 00:55] wakes up
+[1518-11-01 23:58] Guard #99 begins shift
+[1518-11-02 00:40] falls asleep
+[1518-11-02 00:50] wakes up
+[1518-11-03 00:05] Guard #10 begins shift
+[1518-11-03 00:24] falls asleep
+[1518-11-03 00:29] wakes up
+[1518-11-04 00:02] Guard #99 begins shift
+[1518-11-04 00:36] falls asleep
+[1518-11-04 00:46] wakes up
+[1518-11-05 00:03] Guard #99 begins shift
+[1518-11-05 00:45] falls asleep
+[1518-11-05 00:55] wakes up</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<pre id="result"></pre>
+<script type="text/javascript">
+</script>
+</body>
+</html>

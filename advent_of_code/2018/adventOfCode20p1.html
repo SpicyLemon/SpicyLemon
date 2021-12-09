@@ -1,0 +1,252 @@
+<html>
+<head><title>Advent Of Code 2018 - 20p1</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = TYPES.linkedList();
+        var pieces = input.match(/\^([ENSW\|\(\)]*)\$/);
+        if (pieces && pieces.length > 1) {
+            let i;
+            console.log("Input is " + pieces[1].length + " characters long.");
+            for (i = pieces[1].length - 1; i >= 0; i--) {
+                retval.unshift(pieces[1].charAt(i));
+            }
+        }
+        else {
+            throw new Error("Invalid input.");
+        }
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var pathTrees = [];
+        while (input.head !== null) {
+            pathTrees.push(TYPES.path(input));
+            console.log("Input is now " + input.toString().length + " characters long.");
+        }
+        return pathTrees.map(pathTree => pathTree.getLongestPath()).reduce((t, c) => t + c);
+    };
+
+    var TYPES = {
+        linkedList: function() {
+            var that = {
+                head: null
+            };
+
+            that.peek = function() {
+                if (that.head !== null) {
+                    return that.head.getData();
+                }
+                return null;
+            };
+
+            that.unshift = function(data) {
+                var newNode = TYPES.linkedListNode({data: data});
+                newNode.next = that.head;
+                that.head = newNode;
+            };
+
+            that.shift = function() {
+                var retval = that.peek();
+                that.head = that.head.next;
+                return retval;
+            };
+
+            that.toString = function() {
+                var retval = "";
+                var cur = that.head;
+                while (cur !== null) {
+                    retval += cur.toString();
+                    cur = cur.next;
+                }
+                return retval;
+            };
+
+            return that;
+        },
+
+        linkedListNode: function(spec) {
+            var that = {
+                next: null,
+            };
+
+            var data = spec.data;
+            that.getData = function() {
+                return data;
+            };
+
+            that.toString = function() {
+                if (typeof data !== 'undefined' && data.toString && typeof data.toString === 'function') {
+                    return data.toString();
+                }
+                return data;
+            }
+
+            return that;
+        },
+
+        path: function(pathChars) {
+            var that = {
+                start: "",
+                options: [],
+            };
+
+            while (pathChars.peek() !== null && pathChars.peek().match(/[ENSW]/)) {
+                that.start += pathChars.shift();
+            }
+
+            if (pathChars.peek() !== null && pathChars.peek() === "(") {
+                pathChars.shift();
+                that.options.push(TYPES.path(pathChars));
+                while(pathChars.peek() === "|") {
+                    pathChars.shift();
+                    if (pathChars.peek() === ")") {
+                        that.options.forEach(function(option) {
+                            option.cutInHalf();
+                        });
+                    } else {
+                        that.options.push(TYPES.path(pathChars));
+                    }
+                }
+
+                if (pathChars.peek !== null && pathChars.peek() === ")") {
+                    pathChars.shift();
+                }
+                else {
+                    throw new Error("Failed to find close paren with '" + pathChars.toString() + "' left.");
+                }
+            }
+
+            if (pathChars.peek() !== null && pathChars.peek().match(/[ENSW\(]/)) {
+                that.options.push(TYPES.path(pathChars));
+            }
+
+            that.getLongestPath = function() {
+                var longestOption = 0;
+                that.options.forEach(function(option) {
+                    let pathLength = option.getLongestPath();
+                    if (pathLength > longestOption) {
+                        longestOption = pathLength;
+                    }
+                });
+                var retval = that.start.length + longestOption;
+                return retval;
+            };
+
+            that.cutInHalf = function() {
+                if (that.start.length % 2 === 1) {
+                    throw new Error("Cannot cut '" + that.start + "' in half!");
+                }
+                that.start = that.start.substring(0, that.start.length/2);
+                that.options.forEach(function(option) {
+                    option.cutInHalf();
+                });
+            };
+
+            return that;
+        }
+    }
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+
+    window.onkeydown = function(event) {
+        if ( event.keyCode === 27) {
+            stopTimer();
+            stopSolverWorker();
+            document.getElementById("result").innerHTML = "halted.";
+        }
+    };
+</script>
+<style>
+textarea {
+    font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+</style>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">^ENWWW(NEEE|SSE(EE|N))$</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

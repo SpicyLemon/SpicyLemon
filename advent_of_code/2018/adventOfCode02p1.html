@@ -1,0 +1,70 @@
+<html>
+<head><title>Advent Of Code 2018 - 02p1</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var results = solver(puzzleInput);
+        document.getElementById("result").innerHTML = results;
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(element);
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var count2 = 0;
+        var count3 = 0;
+        input.forEach(function(entry) {
+            var charCounts = getCharCounts(entry);
+            if (hasParameterThatEquals(charCounts, 2)) {
+                count2 += 1;
+            }
+            if (hasParameterThatEquals(charCounts, 3)) {
+                count3 += 1;
+            }
+        });
+        var result = count2 * count3;
+        return "" + count2 + " * " + count3 + " = " + result;
+    };
+
+    var hasParameterThatEquals = function(obj, value) {
+        for (var prop in obj) {
+            if (obj.hasOwnProperty(prop) && obj[prop] === value) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    var getCharCounts = function(str) {
+        var retval = {};
+        str.split("").forEach(function(c) {
+            if (c in retval) {
+                retval[c]++;
+            } else {
+                retval[c] = 1;
+            }
+        });
+        return retval;
+    }
+
+</script>
+<body>
+<textarea id="puzzle_input">abcdef
+bababc
+abbcde
+abcccd
+aabcdd
+abcdee
+ababab</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<div id="result"></div>
+<script type="text/javascript">
+</script>
+</body>
+</html>

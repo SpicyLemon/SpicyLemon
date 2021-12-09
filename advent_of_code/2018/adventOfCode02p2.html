@@ -1,0 +1,60 @@
+<html>
+<head><title>Advent Of Code 2018 - 02p1</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var results = solver(puzzleInput);
+        document.getElementById("result").innerHTML = results;
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(element);
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput).sort();
+        var result = null;
+        for (var i = 0; i < input.length - 1; i++) {
+            var input1 = input[i];
+            var input2 = input[i+1];
+            var similar = getSameChars(input1, input2);
+            if (similar.length + 1 === input1.length) {
+                result = similar;
+                break;
+            }
+        }
+        return result;
+    };
+
+    var getSameChars = function(input1, input2) {
+        var retval = '';
+        var chars1 = input1.split("");
+        var chars2 = input2.split("");
+        var minLength = chars1.length > chars2.length ? chars2.length : chars1.length;
+        for (var i = 0; i < minLength; i++) {
+            if (chars1[i] === chars2[i]) {
+                retval += chars1[i];
+            }
+        }
+        return retval;
+    };
+
+</script>
+<body>
+<textarea id="puzzle_input">abcde
+fghij
+klmno
+pqrst
+fguij
+axcye
+wvxyz</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<div id="result"></div>
+<script type="text/javascript">
+</script>
+</body>
+</html>

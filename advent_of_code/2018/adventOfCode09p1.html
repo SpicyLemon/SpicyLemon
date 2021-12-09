@@ -1,0 +1,155 @@
+<html>
+<head><title>Advent Of Code 2018 - 09p1</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        var t0;
+        var updateTime = function() {
+            if (t0) {
+                document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+            }
+        };
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var timeUpdater = window.setInterval(updateTime, 250);
+        window.setTimeout(function() {
+            t0 = performance.now();
+            var puzzleInput = document.getElementById("puzzle_input").value;
+            var results = solver(puzzleInput);
+            document.getElementById("result").innerHTML = results;
+            window.clearInterval(timeUpdater);
+            updateTime();
+        }, 1);
+    };
+
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(Number(element));
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var numberOfPlayers = input[0];
+        var nubmerOfMarbles = input[1];
+        var playerMarbles = [];
+        for (var player = 0; player < numberOfPlayers; player++) {
+            playerMarbles[player] = [];
+        }
+        var circle = TYPES.circle();
+        var currentPlayer = 0;
+        //console.log("[--]: " + circle.toString());
+        for (var marbleValue = 1; marbleValue <= nubmerOfMarbles; marbleValue++) {
+            playerMarbles[currentPlayer] = playerMarbles[currentPlayer].concat(circle.playTurn(marbleValue));
+            //if (marbleValue < 100) {
+            //    console.log("[" + ("" + (currentPlayer + 1)).padStart(2," ") + "]: " + circle.toString());
+            //}
+            currentPlayer = (currentPlayer + 1) % numberOfPlayers;
+            if (marbleValue % 1000 === 0) {
+                console.log("Current Marble: " + marbleValue);
+            }
+        }
+        var playerScores = [];
+        for (var player = 0; player < numberOfPlayers; player++) {
+            playerScores[player] = playerMarbles[player].getSum(0);
+        }
+        return playerScores.getMax();
+    };
+
+    var TYPES = {
+        circle: function(spec) {
+            var that = {};
+            var currentLocation = 0;
+            var circle = [0];
+
+            that.getCurrentLocation = function(value) {
+                return currentLocation;
+            }
+
+            that.addToCircle = function(value) {
+                if (circle.length == 1) {
+                    circle.push(value);
+                    currentLocation = 1;
+                } else {
+                    let leftMarbleIndex = (currentLocation + 2) % (circle.length);
+                    if (leftMarbleIndex === 0) {
+                        circle.push(value);
+                        currentLocation = circle.length - 1;
+                    }
+                    else {
+                        circle.splice(leftMarbleIndex, 0, value);
+                        currentLocation = leftMarbleIndex;
+                    }
+                }
+            };
+
+            that.removeFromCircle = function() {
+                var toRemove = (currentLocation - 7 + circle.length) % circle.length;
+                var retval = toRemove === 0                 ? circle.shift() : 
+                             toRemove === circle.length - 1 ? circle.pop() : 
+                                                              circle.splice(toRemove, 1)[0];
+                currentLocation = toRemove % circle.length;
+                return retval;
+            }
+
+            that.playTurn = function(value) {
+                var retval = [];
+                if (value % 23 === 0) {
+                    retval.push(value);
+                    retval.push(that.removeFromCircle());
+                    console.log("" + padLeft(retval[0], 4) + ": Removing marble " + padLeft(retval[1], 4) + ". There are " + padLeft(circle.length, 4) + " marbles left.");
+                } else {
+                    that.addToCircle(value);
+                }
+                return retval;
+            }
+
+            that.toString = function() {
+                var entryLength = circle.getMax().length + 2;
+                var retval = '';
+                circle.forEach(function(value, index) {
+                    let piece = ' '.repeat(entryLength);
+                    if (index === currentLocation) {
+                        piece += "(" + value + ")";
+                    }
+                    else {
+                        piece += " " + value + " ";
+                    }
+                    retval += piece.padStart(entryLength, ' ');
+                });
+                return retval;
+            };
+
+            return that;
+        }
+    };
+
+    var padLeft = function(value, length) {
+        return "" + ("" + value).padStart(length, ' ');
+    }
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    Array.prototype.getMax = function(defaultValue) {
+        return this.length === 0 ? defaultValue : this.reduce(function(max, newVal) { return newVal > max ? newVal : max });
+    }
+
+    Array.prototype.getSum = function(defaultValue) {
+        return this.length === 0 ? defaultValue : this.reduce(function(tot, newVal) { return tot + newVal; });
+    }
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">9 25</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<html>
+<head><title>Advent Of Code 2018 - 08p2</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        document.getElementById("result").innerHTML = "calculating...";
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var t0 = performance.now();
+        var results = solver(puzzleInput);
+        var t1 = performance.now();
+        document.getElementById("result").innerHTML = results;
+        document.getElementById("time").innerHTML = '' + (t1 - t0) + ' ms';
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(Number(element));
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var treeDefs = parseInput(puzzleInput);
+        var tree = TYPES.node(treeDefs);
+        var result = tree.getValue();
+        return "" + JSON.stringify(result) + "\n\n" + JSON.stringify(tree, undefined, 2);
+    };
+
+    var TYPES = {
+        node: function(spec) {
+            var that = {
+                childCount: 0,
+                metadataCount: 0,
+                childNodes: [],
+                metadataEntries: undefined
+            };
+            if (!isArray(spec)) {
+                throw { name: 'Error', message: 'node constructor expects an array' };
+            }
+            if (spec.length < 2) {
+                throw { name: 'Error', message: 'node constructor expecting an array of at least 2 elements.' };
+            }
+            that.childCount = spec.shift();
+            that.metadataCount = spec.shift();
+            while (that.childNodes.length < that.childCount) {
+                that.childNodes.push(TYPES.node(spec));
+            }
+            if (spec.length < that.metadataCount) {
+                throw { 
+                    name: 'Error', 
+                    message: 'metadataCount is ' + metadataCount + ' but there are only ' + spec.length + ' elements left'
+                };
+            }
+            that.metadataEntries = spec.splice(0, that.metadataCount);
+
+            that.getAllMetaData = function() {
+                var retval = [].concat(that.metadataEntries);
+                that.childNodes.forEach(function(child) {
+                    retval = retval.concat(child.getAllMetaData());
+                });
+                return retval;
+            };
+
+            that.sumAllMetaData = function() {
+                return that.getAllMetaData().reduce(function(tot, curVal) { return tot + curVal; }, 0);
+            };
+
+            that.getValue = function() {
+                var retval = 0;
+                if (that.childCount == 0) {
+                    retval = that.metadataEntries.reduce(function(tot, curVal) { return tot + curVal; }, 0);
+                } else {
+                    that.metadataEntries.forEach(function(value) {
+                        if(value <= that.childCount) {
+                            retval += that.childNodes[value - 1].getValue();
+                        }
+                    });
+                }
+                return retval;
+            };
+
+            return that;
+        }
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

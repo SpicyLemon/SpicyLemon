@@ -1,0 +1,47 @@
+<html>
+<head><title>Advent Of Code 2018 - 01p2</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var results = solver(puzzleInput);
+        document.getElementById("result").innerHTML = results;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var current = 0;
+        var i = 0;
+        var inputLength = input.length;
+        var seen = { 0: true };
+        var result = null;
+        while (result === null) {
+            current += input[i];
+            if (current in seen) {
+                result = current;
+            } else {
+                seen[current] = true;
+                i += 1;
+                if (i >= inputLength) {
+                    i = 0;
+                }
+            }
+        }
+        return result;
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\s+/).forEach(function(element) {
+            retval.push(parseInt(element, 10));
+        });
+        return retval;
+    };
+</script>
+<body>
+<textarea id="puzzle_input"></textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<div id="result"></div>
+<script type="text/javascript">
+</script>
+</body>
+</html>

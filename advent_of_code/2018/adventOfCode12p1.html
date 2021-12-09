@@ -1,0 +1,292 @@
+<html>
+<head><title>Advent Of Code 2018 - 12p1</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = { 
+            state: '',
+            rules: []
+        };
+        input.split(/\n/).forEach(function(line) {
+            var pieces = [];
+            if (pieces = line.match(/([#\.]+) => ([#\.])/)) {
+                retval.rules.push({ state: pieces[1], result: pieces[2] });
+            }
+            else if (pieces = line.match(/initial state: ([#\.]+)/)) {
+                retval.state = pieces[1];
+            }
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var states = [];
+        states.push(TYPES.state({ state: input.state, zero: 0 }));
+        while (states.length <= 200) {
+            states.push(states[states.length - 1].grow(input.rules));
+        }
+        var minNum = states.map(state => state.getLeftNumber()).reduce(reduceToMin, 0) - 1;
+        var maxNum = states.map(state => state.getRightNumber()).reduce(reduceToMax, 0) + 1;
+        return states[0].toIndexString(minNum, maxNum) + "\n"
+             + states.map(state => state.toString(minNum, maxNum)).join("\n");
+    };
+
+    var dead = ".";
+    var alive = "#";
+
+    var reduceToMin = function(min, cur) {
+        return cur < min ? cur : min;
+    }
+
+    var reduceToMax = function(max, cur) {
+        return cur > max ? cur : max;
+    }
+
+    var TYPES = {
+        state: function(spec) {
+            var that = {
+                state: valueOrDefault(spec.state, dead),
+                zero: valueOrDefault(spec.zero, 0)
+            };
+
+            that.getSubState = function(center, padding) {
+                var charStart = that.zero + center - padding;
+                var charEnd = charStart + padding + padding;
+                var loc;
+                var retval = '';
+                for (loc = charStart; loc <= charEnd; loc++) {
+                    if (loc < 0 || loc >= that.state.length) {
+                        retval += dead;
+                    }
+                    else {
+                        retval += that.state.substring(loc, loc+1);
+                    }
+                }
+                return retval;
+            };
+
+            that.getNumber = function(index) {
+                return index - that.zero;
+            };
+
+            that.getLeftNumber = function() {
+                return that.getNumber(0);
+            };
+
+            that.getRightNumber = function() {
+                return that.getNumber(that.state.length - 1);
+            };
+
+            that.getIndex = function(number) {
+                return that.zero + number;
+            };
+
+            that.isAliveAtIndex = function(index) {
+                return that.state.slice(index, index+1) === alive;
+            };
+
+            that.isAliveAtNumber = function(number) {
+                return that.isAliveAtIndex(that.getIndex(number));
+            };
+
+            that.trimLeft = function() {
+                var pieces = that.state.match(/^(\.+)/);
+                if (pieces && pieces[1]) {
+                    let toTrim = reduceToMin(pieces[1].length, that.zero);
+                    that.state = that.state.slice(toTrim);
+                    that.zero = that.zero - toTrim;
+                }
+            };
+
+            that.trimRight = function() {
+                var pieces = that.state.match(/(\.+)$/);
+                if (pieces && pieces[1]) {
+                    let toTrim = reduceToMin(pieces[1].length, that.state.length - that.zero - 1);
+                    that.state = that.state.slice(0, 0 - toTrim);
+                }
+            };
+
+            that.trim = function() {
+                that.trimLeft();
+                that.trimRight();
+            };
+
+            that.toString = function(min, max) {
+                var retval = that.state;
+                if (typeof max !== "undefined") {
+                    let rightMost = that.getRightNumber();
+                    if (max > rightMost) {
+                        retval = retval + dead.repeat(max - rightMost);
+                    }
+                    else if (max < rightMost) {
+                        retval = retval.slice(max - rightMost);
+                    }
+                }
+                if (typeof min !== "undefined") {
+                    let leftMost = that.getLeftNumber();
+                    if (min < leftMost) {
+                        retval = dead.repeat(leftMost - min) + retval;
+                    }
+                    else if (min > leftMost) {
+                        retval = retval.slice(min - leftMost);
+                    }
+                }
+                retval += "   " + that.getTotalValue();
+                return retval;
+            };
+
+            that.toIndexString = function(min, max) {
+                var charsToLeft = 0 - reduceToMin(that.zero, min);
+                var charsToRight = reduceToMax(that.state.length - that.zero - 1, max);
+                var chars = [];
+                var cur;
+                for (cur = 0 - charsToLeft; cur <= charsToRight; cur++) {
+                    chars.push(cur === 0 ? '0' : cur % 10 === 0 ? '|' : ' ');
+                }
+                return chars.join('');
+            }
+
+            that.getTotalValue = function() {
+                var retval = 0;
+                var index;
+                for (index = 0; index < that.state.length; index++) {
+                    if (that.isAliveAtIndex(index)) {
+                        retval += that.getNumber(index);
+                    }
+                }
+                return retval;
+            };
+
+            that.grow = function(rules) {
+                var padding = 2;
+                var newState = '';
+                var index;
+                for (index = 0 - padding; index < that.state.length + padding; index++) {
+                    var lookingAt = that.getSubState(that.getNumber(index), padding);
+                    var newPot = dead;
+                    rules.forEach(function(rule) {
+                        if (lookingAt === rule.state) {
+                            newPot = rule.result;
+                        }
+                    });
+                    newState += newPot;
+                }
+                var retval = TYPES.state({ state: newState, zero: that.zero + padding });
+                retval.trim();
+                return retval;
+            }
+
+            return that;
+        }
+    };
+
+    var valueOrDefault = function (value, defefaultValue) {
+       return typeof value === 'undefined' ? defefaultValue : value;
+    };
+
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">initial state: #..#.#..##......###...###
+
+...## => #
+..#.. => #
+.#... => #
+.#.#. => #
+.#.## => #
+.##.. => #
+.#### => #
+#.#.# => #
+#.### => #
+##.#. => #
+##.## => #
+###.. => #
+###.# => #
+####. => #</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

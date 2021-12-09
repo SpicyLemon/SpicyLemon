@@ -1,0 +1,41 @@
+<html>
+<head><title>Advent Of Code 2018 - 05p1</title></head>
+<script type="text/javascript">
+    var runSolver = function() {
+        document.getElementById("result").innerHTML = "calculating...";
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        var results = solver(puzzleInput);
+        document.getElementById("result").innerHTML = results;
+    };
+
+    var parseInput = function(input) {
+        return input.replace(/\s+/g, '');
+    };
+
+    var solver = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        var current = input;
+        var retval = '';
+        var pairs = [];
+        "abcdefghijklmnopqrstuvwxyz".split('').forEach(function(lc) {
+            let uc = lc.toUpperCase();
+            pairs.push(lc + uc);
+            pairs.push(uc + lc);
+        });
+        var regex = new RegExp(pairs.join('|'), "g");
+        while (current !== retval) {
+            retval = current;
+            current = current.replace(regex, '');
+        }
+        return retval + " : " + retval.length;
+    };
+
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">dabAcCaCBAcCcaDA</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver();">Solve Puzzle</button>
+<pre id="result"></pre>
+<script type="text/javascript">
+</script>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<html>
+<head><title>Advent Of Code 2018 - 10p2</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        input.split(/\n/).forEach(function(line) {
+            var parts = line.match(/position=\<\s*(-?\d+),\s*(-?\d+)\> velocity=\<\s*(-?\d+),\s*(-?\d+)\>/);
+            if (parts && parts.length > 3) {
+                retval.push(TYPES.point({x: Number(parts[1]), y: Number(parts[2]), dx: Number(parts[3]), dy: Number(parts[4])}));
+            }
+            else {
+                console.log("failed to parse '" + line + "'");
+            }
+        });
+        return retval;
+    };
+
+    var solver = function(puzzleInput) {
+        var points = parseInput(puzzleInput);
+        var sky = TYPES.sky({points: points});
+        var curWidth = sky.width();
+        var curHeight = sky.height();
+        var lastWidth = 0;
+        var lastHeight = 0;
+        do {
+            lastWidth = curWidth;
+            lastHeight = curHeight;
+            sky.move();
+            curWidth = sky.width();
+            curHeight = sky.height();
+            console.log({lastWidth: lastWidth, lastHeight: lastHeight, curWidth: curWidth, curHeight: curHeight});
+        } while (lastWidth >= curWidth && lastHeight >= curHeight);
+        sky.moveBack();
+        return sky.elapsedTime;
+    };
+
+    var TYPES = {
+        point: function(spec) {
+            var that = {
+                x: spec.x,
+                y: spec.y,
+                dx: spec.dx,
+                dy: spec.dy
+            };
+
+            that.toString = function() {
+                return "(" + that.x + ", " + that.y + ") [" + that.dx + ", " + that.dy + "]";
+            };
+
+            that.move = function() {
+                that.x += that.dx;
+                that.y += that.dy;
+            }
+
+            that.moveBack = function() {
+                that.x -= that.dx;
+                that.y -= that.dy;
+            }
+
+            return that;
+        }, 
+
+        sky: function(spec) {
+            var that = {
+                elapsedTime: 0
+            };
+            if (!spec.points) {
+                throw new Error("Missing attribute points sent to sky constructor.");
+            }
+            if (!isArray(spec.points)) {
+                throw new Error("Attribute points sent to the sky constructor must be an array.");
+            }
+            if (spec.points.length <= 0) {
+                throw new Error("No points supplied to the sky constructor.");
+            }
+            points = spec.points;
+
+            that.width = function() {
+                var min = points[0].x;
+                var max = points[0].x;
+                for (var p = 1; p < points.length; p++) {
+                    if (points[p].x < min) {
+                        min = points[p].x;
+                    }
+                    else if (points[p].x > max) {
+                        max = points[p].x;
+                    }
+                }
+                return max - min;
+            }
+
+            that.height = function() {
+                var min = points[0].y;
+                var max = points[0].y;
+                for (var p = 1; p < points.length; p++) {
+                    if (points[p].y < min) {
+                        min = points[p].y;
+                    }
+                    else if (points[p].y > max) {
+                        max = points[p].y;
+                    }
+                }
+                return max - min;
+            }
+
+            that.move = function() {
+                points.forEach(function(point) {
+                    point.move();
+                });
+                that.elapsedTime++;
+            };
+
+            that.moveBack = function() {
+                points.forEach(function(point) {
+                    point.moveBack();
+                });
+                that.elapsedTime--;
+            };
+
+            that.toString = function() {
+                var minx = points[0].x;
+                var miny = points[0].y;
+                var maxx = points[0].x;
+                var maxy = points[0].y;
+                for (var p = 1; p < points.length; p++) {
+                    if (points[p].x < minx) {
+                        minx = points[p].x;
+                    }
+                    else if (points[p].x > maxx) {
+                        maxx = points[p].x;
+                    }
+                    if (points[p].y < miny) {
+                        miny = points[p].y;
+                    }
+                    else if (points[p].y > maxy) {
+                        maxy = points[p].y;
+                    }
+                }
+                var width = maxx - minx + 2;
+                var height = maxy - miny + 2;
+                var chars = dim([height, width], '.');
+                points.forEach(function(point) {
+                    var x = width - maxx + point.x - 1;
+                    var y = height - maxy + point.y - 1;
+                    chars[y][x] = "#";
+                });
+                return gridToString(chars);
+            }
+
+            return that;
+        }
+    };
+
+    var gridToString = function(grid) {
+        var lines = [];
+        grid.forEach(function(row) {
+            lines.push(row.join(""));
+        });
+        return lines.join("\n");
+    };
+
+    var isArray = function(value) {
+       return value 
+           && typeof value === 'object' 
+           && typeof value.length === 'number'
+           && !value.propertyIsEnumerable('length');
+    };
+
+    var dim = function (dimensions, default_value) {
+       var retval = [], i;
+       if (!isArray(dimensions)) {
+          dimensions = [ dimensions ];
+       }
+       for (i = 0; i < dimensions[0]; i += 1) {
+          if (dimensions.length == 1) {
+             retval[i] = default_value;
+          }
+          else {
+             retval[i] = this.dim(dimensions.slice(1), default_value);
+          }
+       }
+       return retval;
+    };
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker.");
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+</script>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">position=< 9,  1> velocity=< 0,  2>
+position=< 7,  0> velocity=<-1,  0>
+position=< 3, -2> velocity=<-1,  1>
+position=< 6, 10> velocity=<-2, -1>
+position=< 2, -4> velocity=< 2,  2>
+position=<-6, 10> velocity=< 2, -2>
+position=< 1,  8> velocity=< 1, -1>
+position=< 1,  7> velocity=< 1,  0>
+position=<-3, 11> velocity=< 1, -2>
+position=< 7,  6> velocity=<-1, -1>
+position=<-2,  3> velocity=< 1,  0>
+position=<-4,  3> velocity=< 2,  0>
+position=<10, -3> velocity=<-1,  1>
+position=< 5, 11> velocity=< 1, -2>
+position=< 4,  7> velocity=< 0, -1>
+position=< 8, -2> velocity=< 0,  1>
+position=<15,  0> velocity=<-2,  0>
+position=< 1,  6> velocity=< 1,  0>
+position=< 8,  9> velocity=< 0, -1>
+position=< 3,  3> velocity=<-1,  1>
+position=< 0,  5> velocity=< 0, -1>
+position=<-2,  2> velocity=< 2,  0>
+position=< 5, -2> velocity=< 1,  2>
+position=< 1,  4> velocity=< 2,  1>
+position=<-2,  7> velocity=< 2, -2>
+position=< 3,  6> velocity=<-1, -1>
+position=< 5,  0> velocity=< 1,  0>
+position=<-6,  0> velocity=< 2,  0>
+position=< 5,  9> velocity=< 1, -2>
+position=<14,  7> velocity=<-2,  0>
+position=<-3,  6> velocity=< 2, -1></textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+</body>
+</html>

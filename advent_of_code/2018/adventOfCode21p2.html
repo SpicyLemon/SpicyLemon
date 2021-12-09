@@ -1,0 +1,458 @@
+<html>
+<head><title>Advent Of Code 2018 - 21p2</title></head>
+<script id="solverWorker" type="text/javascript">
+    self.onmessage = function(event) {
+        var retval = '';
+        try {
+            retval = solver(event.data);
+        }
+        catch(err) {
+            console.error(err);
+            retval = err.stack;
+        }
+        self.postMessage(retval);
+    };
+
+    var parseInput = function(input) {
+        var retval = [];
+        var instructions = [];
+        var instructionPointer = null;
+        var inSample = false;
+        var startingRegisters = [0, 0, 0, 0, 0, 0];
+        var maxLoops = 500;
+        input.split(/\n/).forEach(function(line) {
+            let pieces;
+            if (pieces = line.match(/\#ip\s+(\d+)/)) {
+                instructionPointer = Number(pieces[1]);
+            }
+            else if (pieces = line.match(/(\w+)\s+(\d+)\s+(\d+)\s+(\d+)/)) {
+                var instruction = TYPES.instruction({ 
+                    opcode: pieces[1], 
+                    a: Number(pieces[2]), 
+                    b: Number(pieces[3]), 
+                    c: Number(pieces[4]) 
+                });
+                if (inSample) {
+                    samples[samples.length-1].instruction = instruction;
+                }
+                else {
+                    instructions.push(instruction);
+                }
+            }
+            else if (pieces = line.match(/\[(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]/)) {
+                startingRegisters = pieces.slice(1, 7).map(r => Number(r));
+            }
+            else if (pieces = line.match(/^(\d+)$/)) {
+                maxLoops = Number(pieces[1]);
+            }
+            else if (line.match(/\S/)) {
+                console.log("Failed to parse: '" + line + "'");
+            }
+        });
+        return { 
+            instructions: instructions, 
+            instructionPointer: instructionPointer, 
+            startingRegisters: startingRegisters,
+            maxLoops: maxLoops
+        };
+    };
+
+    var solver = function(puzzleInput) {
+        return solverLong(puzzleInput);
+    };
+
+    var solverShort = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        let target = input.startingRegisters[0];
+        let maxLoop = input.maxLoops;
+        let exitNumbers = [];
+        let a = 65536;
+        let b = 10552971;
+        while (exitNumbers.length < maxLoop) {
+            b = ((b + a % 256) % 16777216 * 65899) % 16777216
+            if (a >= 256) {
+                a = (a / 256).toFixed();
+            }
+            else if (b !== target) {
+                exitNumbers.push(b);
+                a = b | 65536;
+                b = 10552971;
+            }
+            else if (b === 103548 && exitNumbers.length > 1) {
+                exitNumbers.push(b);
+                maxLoop = 0;
+            }
+            else {
+                exitNumbers.push(b);
+                maxLoop = 0;
+            }
+        }
+        return JSON.stringify(exitNumbers, undefined, 2);
+    };
+
+    var solverLong = function(puzzleInput) {
+        var input = parseInput(puzzleInput);
+        let registers = copyArray(input.startingRegisters);
+        let ipRegister = input.instructionPointer;
+        let maxLoop = input.maxLoops;
+        let loops = 0;
+        let ip = 0;
+        let states = [ copyArray(registers) ];
+        while (registers[ipRegister] < input.instructions.length && loops < maxLoop) {
+            let instr = input.instructions[registers[ipRegister]];
+            opcodes[instr.opcode].apply(instr.a, instr.b, instr.c, registers);
+            registers[ipRegister]++;
+            if (registers[1] === 30) {
+                states.push(copyArray(registers));
+            }
+            loops++;
+        }
+        registers[ipRegister]--;
+        return states.map((r, i) => registersToString(r, i)).join("\n");
+    };
+
+    var registersToString = function(registers, i) {
+        return " ".repeat(10 - ("" + i).length) + i + ": [" + registers.map(r => " ".repeat(15 - ("" + r).length) + r).join(",") + "]";
+    }
+
+    var opcodes = {
+        addr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] + registers[b];
+            }
+        },
+        addi: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] + b;
+            }
+        },
+        mulr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] * registers[b];
+            }
+        },
+        muli: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] * b;
+            }
+        },
+        banr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] & registers[b];
+            }
+        },
+        bani: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] & b;
+            }
+        },
+        borr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] | registers[b];
+            }
+        },
+        bori: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] | b;
+            }
+        },
+        setr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a];
+            }
+        },
+        seti: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a;
+            }
+        },
+        gtir: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a > registers[b] ? 1 : 0;
+            }
+        },
+        gtri: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] > b ? 1 : 0;
+            }
+        },
+        gtrr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] > registers[b] ? 1 : 0;
+            }
+        },
+        eqir: {
+            apply: function(a, b, c, registers) {
+                registers[c] = a === registers[b] ? 1 : 0;
+            }
+        },
+        eqri: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] === b ? 1 : 0;
+            }
+        },
+        eqrr: {
+            apply: function(a, b, c, registers) {
+                registers[c] = registers[a] === registers[b] ? 1 : 0;
+            }
+        }
+    };
+
+    var TYPES = {
+        instruction: function(spec) {
+            var that = {
+                opcode: spec.opcode,
+                a: spec.a,
+                b: spec.b,
+                c: spec.c,
+            };
+
+            that.equals = function(other) {
+                return that.opcode === other.opcode 
+                    && that.a === other.a
+                    && that.b === other.b
+                    && that.c === other.c
+            };
+            that.toString = function() {
+                return that.opcode + " " + that.a + " " + that.b + " " + that.c;
+            }
+
+            return that;
+        }
+    };
+
+    var copyArray = function(array) {
+        var retval = [];
+        array.forEach(function(element) {
+            retval.push(element);
+        });
+        return retval;
+    };
+
+</script>
+<script type="text/javascript">
+    var t0 = null;
+    var timerUpdater = null;
+    var solverWorker = undefined;
+
+    var solverBlob = new Blob([
+        document.querySelector('#solverWorker').textContent
+    ], { type: "text/javascript" });
+    var solverBlobUrl = window.URL.createObjectURL(solverBlob);
+
+    var updateTime = function() {
+        if (t0) {
+            document.getElementById("time").innerHTML = '' + (performance.now() - t0) + ' ms';
+        } 
+        else {
+            document.getElementById("time").innerHTML = '---';
+        }
+    };
+
+    var startTimer = function() {
+        if (timerUpdater === null) {
+            t0 = performance.now();
+            timerUpdater = window.setInterval(updateTime, 250);
+        }
+    }
+
+    var stopTimer = function() {
+        if (timerUpdater !== null) {
+            window.clearInterval(timerUpdater);
+            updateTime();
+            timerUpdater = null;
+            t0 = null;
+        }
+    }
+
+    var startSolverWorker = function() {
+        if (typeof(solverWorker) === "undefined") {
+            solverWorker = new Worker(solverBlobUrl);
+            solverWorker.onmessage = onMessage;
+        }
+        else {
+            console.log("Could not start worker because worker was already running.");
+        }
+    }
+
+    var stopSolverWorker = function() {
+        if (typeof(solverWorker) !== "undefined") {
+            solverWorker.terminate();
+            solverWorker = undefined;
+            console.log("Terminated solverWorker: " + new Date().toLocaleTimeString());
+        }
+    }
+
+    var onMessage = function(event) {
+        document.getElementById("result").innerHTML = event.data;
+        stopTimer();
+        stopSolverWorker();
+    };
+
+    var runSolver = function() {
+        stopTimer();
+        stopSolverWorker();
+        var startingString = "starting to calculate: " + new Date().toLocaleTimeString();
+        document.getElementById("result").innerHTML = startingString;
+        console.log(startingString);
+        var puzzleInput = document.getElementById("puzzle_input").value;
+        startSolverWorker();
+        startTimer();
+        solverWorker.postMessage(puzzleInput);
+    };
+
+    window.onkeydown = function(event) {
+        //If it's the escape key, halt the worker.
+        if (event.keyCode === 27) {
+            stopTimer();
+            stopSolverWorker();
+            document.getElementById("result").innerHTML = "halted.";
+        }
+    };
+</script>
+<style>
+textarea {
+    font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+</style>
+<body>
+<textarea id="puzzle_input" rows="10" cols="100">4000000000
+[0, 0, 0, 0, 0, 0]
+#ip 1
+seti 123 0 4
+bani 4 456 4
+eqri 4 72 4
+addr 4 1 1
+seti 0 0 1
+seti 0 2 4
+bori 4 65536 3
+seti 10552971 1 4
+bani 3 255 5
+addr 4 5 4
+bani 4 16777215 4
+muli 4 65899 4
+bani 4 16777215 4
+gtir 256 3 5
+addr 5 1 1
+addi 1 1 1
+seti 27 7 1
+seti 0 1 5
+addi 5 1 2
+muli 2 256 2
+gtrr 2 3 2
+addr 2 1 1
+addi 1 1 1
+seti 25 0 1
+addi 5 1 5
+seti 17 2 1
+setr 5 7 3
+seti 7 8 1
+eqrr 4 0 5
+addr 5 1 1
+seti 5 0 1</textarea><br />
+<button id="solve_puzzle" type="button" onclick="runSolver(); return false;">Solve Puzzle</button>
+<pre id="result"></pre>
+<pre id="time"></pre>
+<pre id="analysis">
+#ip 1
+ 0: seti 123 0 4            Set register 4 to 123
+ 1: bani 4 456 4            Binary and register 4 (123) with 456, and put it back in register 4
+ 2: eqri 4 72 4             If register 4 equals 72, set it to 1, otherwise 0
+ 3: addr 4 1 1             *add register 4 to register 1 and store it in register 1 (The program counter)
+ 4: seti 0 0 1             *Set register 1 to 0 (this is skipped if 123 & 456 equaled 72 in instruction 2).  
+                            This basicaly causes an endless loop if the binary and operator doesn't work right.
+ 5: seti 0 2 4              Set register 4 to 0 (back to starting state)
+ 6: bori 4 65536 3          Bitwise Or register 4 with 65536 and put it into register 3.
+                            65536 = 1000 0000 0000 0000
+ 7: seti 10552971 1 4       Set register 4 to 10552971.
+                            10552971 = 1010 0001 0000 0110 1000 1011
+ 8: bani 3 255 5            Binary And register 3 with 255 and store the result in register 5
+                            255 = 1111 1111
+ 9: addr 4 5 4              Add registers 4 and 5 and store it in 4.
+10: bani 4 16777215 4       Binary and register 4 with 16777215 and store it in register 4
+                            16777215 = 1111 1111 1111 1111 1111 1111
+11: muli 4 65899 4          Multiply register 4 by 65899.
+                            65899 = 0001 0000 0001 0110 1011
+12: bani 4 16777215 4       Binary and register 4 with 16777215.
+13: gtir 256 3 5            If 256 is greater than register 3, set register 5 to 1, otherwise set it to 0
+14: addr 5 1 1             *Add registers 5 and 1 and store it in 1 (the program counter)
+15: addi 1 1 1             *Add 1 to register 1 and store it in register 1 (the program counter)
+16: seti 27 7 1            *Set register 1 to 27 (the program counter)
+17: seti 0 1 5              Set register 5 to 0
+18: addi 5 1 2              Add 1 to register 5 and store it in register 2
+19: muli 2 256 2            Multiply register 2 by 256 and store it in register 2
+                            256 = 0001 0000 0000
+20: gtrr 2 3 2              If register 2 is greater than register 3, set register 2 to 1, otherwise set it to 0
+21: addr 2 1 1             *Add registers 1 and 2 and store it in 1 (the program counter)
+22: addi 1 1 1             *Add 1 to register 1 and store it it in 1 (the program counter)
+23: seti 25 0 1            *Set register 1 to 25 (the program counter)
+24: addi 5 1 5              Add 1 to register 5 and store it in register 5
+25: seti 17 2 1            *Set register 1 to 17 (the program counter)
+26: setr 5 7 3              Copy register 5 to register 3.
+27: seti 7 8 1             *Set register 1 to 7 (the program counter)
+28: eqrr 4 0 5              If register 4 is equal to register 0, set register 5 to 1 , otherwise set it to 0
+29: addr 5 1 1             *Add registers 1 and 5 and store it in register 1 (the program counter)
+30: seti 5 0 1             *Set register 1 to 5 (the program counter)
+
+
+purpose of registers:
+0: hold the number in question
+1: the program counter
+2: 
+3: 
+4: 
+5: 
+
+When we get to 28, we need register 4 to be equal to register 5.
+The first time we get to 28, register 4 is 103548. So let's try that.
+103548 = 2 * 2 * 3 * 8629 = 0001 1001 0100 0111 1100
+8629 = 0010 0001 1011 0101
+8629 * 3 = 25887 = 0110 0101 0001 1111
+
+
+Lines 0 through 5: just does the test talked about and run only once.
+Line 6: Bitwise or register 4 with 65536 and put it in register 3.  This, for the most part is adding 65536 unless it's already over that.
+Line 7: Set register 4 to 10552971
+Line 8: Mod register 3 by 256 and put it in register 5
+Line 9 through 12: Add registers 4 and 5, mod it by 16777215, multiply it by 65899 and mod it with 16777216 again and store it in 4.
+Lines 13 through 17: If register 3 is less than 256, go to line 28, otherwise set register 5 to zero.
+Lines 18 through 25: loop a lot (bulk of the loops). It finds the whole part of register 3 divided by 256 and puts it in register 5
+Lines 26 through 27: Copy register 5 (the result of the division) to register 3 and go to line 8.
+Lines 28 through 30: If register 4 equals our input, exit, otherwise, go back to line 6.
+
+a = 65536
+b = 10552971
+do
+    b = ((b + a % 256) % 16777216 * 65899) % 16777216
+    if a >= 256
+        a = (int) a / 256
+    else if b != input
+        a = b | 65536
+        b = 10552971
+    else
+        exit
+
+
+First exit at   103548.
+Second exit at 4054948.
+Third exit at  8744419.
+10552971 = 3 * 11 * 13 * 17 * 14477 = 1010 0001 0000 0110 1000 1011
+103548 = 2 * 2 * 3 * 8629 =           0000 0001 1001 0100 0111 1100
+4054948 = 2 * 2 * 101 =               0011 1101 1101 1111 1010 0100
+8744419 = prime =                     1000 0101 0110 1101 1110 0011
+...
+Eventually it gets to 4499085
+4499085 = 3 * 5 * 307 * 977 =         0100 0100 1010 0110 1000 1101
+From there it gets to 14554809 for the second time and it looks like it loops from there.
+14554809 = 3 * 3 * 3 * 3 * 179689 =   1101 1110 0001 0110 1011 1001
+
+Hmmm. So, the short version didn't seem to get the right answer.
+Eventually it gets to 16126411
+16126411 = 7 * 59 * 39047 =           1111 0110 0001 0001 1100 1011
+From there it gets to 2872680 for the second time and it looks like it loops from there.
+2872680 = 2 * 2 * 2 * 3 * 37 * 647 =  0010 1011 1101 0101 0110 1000
+That loop ends with 14256686
+14256686 = 2 * 1787 =                 1101 1001 1000 1010 0010 1110
+</pre>
+</body>
+</html>
