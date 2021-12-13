@@ -46,8 +46,9 @@ func Solve(input Input) (string, error) {
 		answer = paper.GetDotCount()
 		debugPaper(i+1, paper, answer)
 	}
+	Stdout("Final dot count: %d", answer)
 	Stdout("Final paper: %d x %d:\n%s", paper.Width, paper.Height, paper)
-	return fmt.Sprintf("%d", answer), nil
+	return "(see final paper)", nil
 }
 
 type Paper struct {
