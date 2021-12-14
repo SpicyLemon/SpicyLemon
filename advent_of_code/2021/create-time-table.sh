@@ -14,7 +14,7 @@ source ../../bash_fun/generic/re_line.sh
 if [[ -e build ]]; then
     mkdir build
 elif [[ ! -d build ]]; then
-    printf 'build is not a directory.' 2>&1
+    printf 'build is not a directory.\n' 2>&1
     exit 1
 fi
 
