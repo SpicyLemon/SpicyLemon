@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: create-time-table.sh
+# Usage: create-time-table.sh [--no-rebuild]
 
 # Make sure we're in the right directory (the one containing this script).
 curDir="$( pwd )"
@@ -18,15 +18,27 @@ elif [[ ! -d build ]]; then
     exit 1
 fi
 
-set -v
-# Clear out any previous builds
-rm build/day-* 2> /dev/null
+while [[ "$#" -gt '0' ]]; do
+    case "$1" in
+        -h|--help|hep) printf 'Usage: create-time-table.sh [--no-rebuild]\n';;
+        --no-rebuild) no_rebuild='YES';;
+        *)
+            printf 'Unknown argument: [%s]' "$1"
+            exit 1
+            ;;
+    esac
+    shift
+done
 
+set -v
 # Get a list of all the days
 all_days=( $( find . -type d -maxdepth 1 -mindepth 1 -name 'day-*' | sed 's/..//' | sort ) )
 
-# Build all the days.
-for d in "${all_days[@]}"; do go build -o build "$d/$d.go"; done
+printf 'no_rebuild = [%s]\n' "$no_rebuild"
+if [[ -z "$no_rebuild" ]]; then
+    # Build all the days.
+    for d in "${all_days[@]}"; do go build -o build "$d/$d.go"; done
+fi
 
 # Run timing an all days using go run and then pre-compiled.
 for d in "${all_days[@]}"; do
