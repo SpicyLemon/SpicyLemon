@@ -30,22 +30,22 @@ for d in "${all_days[@]}"; do go build -o build "$d/$d.go"; done
 
 # Run timing an all days using go run and then pre-compiled.
 for d in "${all_days[@]}"; do
-    printf '\ntime go run %s/%s.go %s/actual.input 2>&1\n' "$d" "$d" "$d"
+    printf '\ntime %s\n' "$d"
     time go run "$d/$d.go" "$d/actual.input" 2>&1
 done > build/all-go-run.txt 2>&1
 for d in "${all_days[@]}"; do
-    printf '\ntime build/%s %s/actual.input 2>&1\n' "$d" "$d"
+    printf '\ntime %s\n' "$d"
     time "build/$d" "$d/actual.input" 2>&1
 done > build/all-compiled-run.txt 2>&1
 
 # Extract timings for each
 grep -E '^(time|real|user|sys)' build/all-go-run.txt \
     | sed -E 's/^time.*(day-[[:digit:]][[:digit:]][ab]).*$/\1/; s/^(real|user|sys)[[:space:]]*//;' \
-    | re_line -n 4 -d ' ' - \
+    | { set +v; re_line -n 4 -d ' ' -; set -v; } \
     > build/all-go-run-times.txt
 grep -E '^(time|real|user|sys)' build/all-compiled-run.txt \
     | sed -E 's/^time.*(day-[[:digit:]][[:digit:]][ab]).*$/\1/; s/^(real|user|sys)[[:space:]]*//;' \
-    | re_line -n 4 -d ' ' - \
+    | { set +v; re_line -n 4 -d ' ' -; set -v; } \
     > build/all-compiled-run-times.txt
 {
     printf ' ~compiled~ ~ ~go run~ ~\n'
