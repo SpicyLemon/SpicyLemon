@@ -89,14 +89,14 @@ EOF
     # There's some obvious possible problems with this, but hopefully they are rare.
     # If this does become a problem, another option is to identify the <repository> while parsing arguments, and try
     #   to replicate the parsing logic that git clone uses to extract the destination directory name.
-    [[ -z "$provided_dir" ]] && dirs_pre="$( ls -d */ )"
+    [[ -z "$provided_dir" ]] && dirs_pre="$( ls -d */ 2> /dev/null )"
     __git_echo_do git clone "${git_args[@]}"
     ec=$?
     if [[ "$ec" -eq '0' ]]; then
         if [[ -z "$provided_dir" ]]; then
             # Get the new list of directories and find the new entry (hopefully not entries).
-            dirs_post="$( ls -d */ )"
-            new_dir="$( printf '%s\n%s\n' "$dirs_pre" "$dirs_post" | sort | uniq -u )"
+            dirs_post="$( ls -d */ 2> /dev/null )"
+            new_dir="$( printf '%s\n%s\n' "$dirs_pre" "$dirs_post" | sort | uniq -u | grep -v '^[[:space:]]*$' )"
         else
             new_dir="$provided_dir"
         fi
