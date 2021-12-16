@@ -41,7 +41,7 @@ func Solve(input Input) (string, error) {
 		minCosts.CalculateNext()
 	}
 	Debugf("Final Min Costs:\n%s", minCosts)
-	if !debug {
+	if !debug && input.Verbose {
 		Stdout("Final Risk Map:\n%s", minCosts.GetColoredRiskMatrixString())
 		Stdout("Min Cost Path:\n%s", minCosts.GetMinCostPathString())
 	}
@@ -416,10 +416,11 @@ func (m Matrix) String() string {
 
 // Input is a struct containing the parsed input file.
 type Input struct {
-	Risks  Matrix
-	Path   []Point
-	Points []Point
-	Count  int
+	Verbose bool
+	Risks   Matrix
+	Path    []Point
+	Points  []Point
+	Count   int
 }
 
 // String creates a mutli-line string representation of this Input.
@@ -450,6 +451,9 @@ func ParseInput(fileData []byte) (Input, error) {
 
 // ApplyParams sets input based on CLI params.
 func (i *Input) ApplyParams(params CliParams) error {
+	if params.Verbose {
+		i.Verbose = true
+	}
 	if len(params.Points) > 0 {
 		var err error
 		i.Points, err = ParsePoints(params.Points)
@@ -473,6 +477,8 @@ func (i *Input) ApplyParams(params CliParams) error {
 type CliParams struct {
 	// Debug is whether or not to output debug messages.
 	Debug bool
+	// Verbose is whether or not to print a little extra info.
+	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
@@ -490,6 +496,7 @@ func (c CliParams) String() string {
 	nameFmt := "%20s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", c.Debug),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
 		fmt.Sprintf(nameFmt+"%t", "Help Printed", c.HelpPrinted),
 		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
 		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
@@ -541,6 +548,12 @@ func GetCliParams(args []string) CliParams {
 			Debugf("Count option found: [%s], args left: %q.", args[i], args[i:])
 			var extraI int
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
+			i += extraI
+			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
+			Debugf("Verbose option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
 			i += extraI
 			rv.AppendError(err)
 		case HasOneOfPrefixesFold(args[i], "--points", "-p"):
