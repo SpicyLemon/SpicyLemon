@@ -40,8 +40,9 @@ func Solve(input Input) (string, error) {
 
 // Input is a struct containing the parsed input file.
 type Input struct {
-	Lines []string
+	Verbose bool
 	// TODO: Update the specific problem.
+	Lines []string
 }
 
 // String creates a mutli-line string representation of this Input.
@@ -71,6 +72,9 @@ func ParseInput(fileData []byte) (Input, error) {
 
 // ApplyParams sets input based on CLI params.
 func (i *Input) ApplyParams(params CliParams) {
+	if params.Verbose {
+		i.Verbose = true
+	}
 	// TODO: If there are any command-line arguments to apply to the puzzle input, pass them through in here.
 	//if params.Count != 0 {
 	//	i.Count = params.Count
@@ -85,6 +89,8 @@ func (i *Input) ApplyParams(params CliParams) {
 type CliParams struct {
 	// Debug is whether or not to output debug messages.
 	Debug bool
+	// Verbose is a flag indicating some extra output is desired.
+	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
@@ -100,6 +106,7 @@ func (c CliParams) String() string {
 	nameFmt := "%20s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", c.Debug),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
 		fmt.Sprintf(nameFmt+"%t", "Help Printed", c.HelpPrinted),
 		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
 		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
@@ -150,6 +157,12 @@ func GetCliParams(args []string) CliParams {
 			Debugf("Count option found: [%s], args left: %q.", args[i], args[i:])
 			var extraI int
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
+			i += extraI
+			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
+			Debugf("Verbose option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
 			i += extraI
 			rv.AppendError(err)
 
