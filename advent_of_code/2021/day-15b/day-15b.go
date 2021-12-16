@@ -42,6 +42,7 @@ func Solve(input Input) (string, error) {
 	}
 	Debugf("Final Min Costs:\n%s", minCosts)
 	if !debug {
+		Stdout("Final Risk Map:\n%s", minCosts.GetColoredRiskMatrixString())
 		Stdout("Min Cost Path:\n%s", minCosts.GetMinCostPathString())
 	}
 	answer := minCosts.GetMinCost(minCosts.Width-1, minCosts.Height-1)
@@ -200,49 +201,59 @@ func NewMinCostMatrix(risks Matrix) *MinCostMatrix {
 }
 
 func (m MinCostMatrix) String() string {
-	visited := []XY{}
-	minCosts := NewMatrix(m.Width, m.Height)
-	for y, r := range m.PQNodes {
-		for x, p := range r {
-			if p.Index < 0 {
-				visited = append(visited, Point{x, y})
-			}
-			minCosts[y][x] = p.MinCost
-		}
-	}
-	comeFromStrs := make([][]string, len(m.ComeFrom))
-	for y, r := range m.ComeFrom {
-		comeFromStrs[y] = make([]string, len(r))
-		for x, p := range r {
-			if p != nil {
-				comeFromStrs[y][x] = p.String()
-			} else {
-				comeFromStrs[y][x] = "(  ,  )"
-			}
-		}
-	}
-	path := []XY{}
-	if m.IsDone() {
-		path = append(path, &Point{m.Width - 1, m.Height - 1})
-		for {
-			last := path[len(path)-1]
-			next := m.ComeFrom[last.GetY()][last.GetX()]
-			if next == nil {
-				break
-			}
-			path = append(path, next)
-		}
-	}
+	visited := m.GetVisitedPoints()
+	path := m.GetMinCostPath()
 	var rv strings.Builder
 	rv.WriteString("Risks:\n")
 	rv.WriteString(CreateIndexedGridString(m.Risks.ToStringMatrix(), visited, path))
 	rv.WriteString("Come From:\n")
-	rv.WriteString(CreateIndexedGridString(comeFromStrs, visited, path))
+	rv.WriteString(CreateIndexedGridString(m.GetComeFromStringMatrix(), visited, path))
 	rv.WriteString("Min Costs:\n")
-	rv.WriteString(CreateIndexedGridString(minCosts.ToStringMatrix(), visited, path))
+	rv.WriteString(CreateIndexedGridString(m.GetMinCosts().ToStringMatrix(), visited, path))
 	rv.WriteString("Min Cost Path:\n")
-	rv.WriteString(m.GetMinCostPathString())
+	rv.WriteString(m.GetPathString(path))
 	return rv.String()
+}
+
+func (m MinCostMatrix) GetColoredRiskMatrixString() string {
+	return CreateIndexedGridString(m.Risks.ToStringMatrix(), m.GetVisitedPoints(), m.GetMinCostPath())
+}
+
+func (m MinCostMatrix) GetVisitedPoints() []XY {
+	rv := []XY{}
+	for y, r := range m.PQNodes {
+		for x, p := range r {
+			if p.Index < 0 {
+				rv = append(rv, Point{x, y})
+			}
+		}
+	}
+	return rv
+}
+
+func (m MinCostMatrix) GetMinCosts() Matrix {
+	rv := NewMatrix(m.Width, m.Height)
+	for y, r := range m.PQNodes {
+		for x, p := range r {
+			rv[y][x] = p.MinCost
+		}
+	}
+	return rv
+}
+
+func (m MinCostMatrix) GetComeFromStringMatrix() [][]string {
+	rv := make([][]string, len(m.ComeFrom))
+	for y, r := range m.ComeFrom {
+		rv[y] = make([]string, len(r))
+		for x, p := range r {
+			if p != nil {
+				rv[y][x] = p.String()
+			} else {
+				rv[y][x] = "(  ,  )"
+			}
+		}
+	}
+	return rv
 }
 
 func (m MinCostMatrix) GetMinCostPath() []XY {
@@ -265,8 +276,7 @@ func (m MinCostMatrix) GetMinCostPath() []XY {
 	return rv
 }
 
-func (m MinCostMatrix) GetMinCostPathString() string {
-	path := m.GetMinCostPath()
+func (m MinCostMatrix) GetPathString(path []XY) string {
 	if len(path) == 0 {
 		return "No minimum cost path has yet been found."
 	}
@@ -285,6 +295,10 @@ func (m MinCostMatrix) GetMinCostPathString() string {
 	}
 	rv.WriteByte('\n')
 	return rv.String()
+}
+
+func (m MinCostMatrix) GetMinCostPathString() string {
+	return m.GetPathString(m.GetMinCostPath())
 }
 
 func (m MinCostMatrix) Set(x, y, val int, comeFrom *Point) {
@@ -986,7 +1000,7 @@ func CreateIndexedGridString(vals [][]string, colorPoints []XY, highlightPoints 
 		}
 	}
 	for _, p := range highlightPoints {
-		if p.GetY() < height && p.GetX() < width {
+		if p.GetY() < height && p.GetX() < width && textFmt[p.GetY()][p.GetX()] <= 1 {
 			textFmt[p.GetY()][p.GetX()] += 2
 		}
 	}
@@ -1048,22 +1062,22 @@ func CreateIndexLineOnes(count, cellLen int) string {
 }
 
 func CreateIndexLinesTens(count, cellLen int) string {
-	cellFmt := fmt.Sprintf("%%%dc", cellLen)
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
 	var digits strings.Builder
-	for _, s := range []string{" ", "1", "2", "3", "4", "5", "6", "7", "8", "9"} {
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"} {
 		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 10))
 	}
-	rv := strings.Repeat(digits.String(), 1+count/100)
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 10) + strings.Repeat(digits.String(), 1+count/100)
 	return rv[:count*cellLen]
 }
 
 func CreateIndexLinesHundreds(count, cellLen int) string {
-	cellFmt := fmt.Sprintf("%%%dc", cellLen)
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
 	var digits strings.Builder
-	for _, s := range []string{" ", "1", "2", "3", "4", "5", "6", "7", "8", "9"} {
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"} {
 		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 100))
 	}
-	rv := strings.Repeat(digits.String(), 1+count/1000)
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 100) + strings.Repeat(digits.String(), 1+count/1000)
 	return rv[:count*cellLen]
 }
 
