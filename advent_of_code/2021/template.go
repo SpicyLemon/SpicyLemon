@@ -154,7 +154,7 @@ func GetCliParams(args []string) CliParams {
 			rv.AppendError(err)
 
 		// Positional args go last in the order they're expected.
-		case len(rv.InputFile) == 0:
+		case len(rv.InputFile) == 0 && len(args[i]) > 0 && args[i][0] != '-':
 			Debugf("Input File argument: [%s].", args[i])
 			rv.InputFile = args[i]
 		default:
