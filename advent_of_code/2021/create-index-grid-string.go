@@ -2,42 +2,141 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 )
 
 // main is the main function that gets run for this file.
 func main() {
-	vals := [][]string{
-		{"one", "two", "three", "four"},
-		{"five", "six", "seven", "eight", "nine", "ten"},
-		{"eleven"},
-		{},
-		{"twelve", "thirteen"},
-		{"fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"},
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
-	colors := []XY{
-		Point{0, 0},
-		Point{1, 1},
-		Point{2, 2},
-		Point{3, 3},
-		Point{4, 4},
-		Point{5, 5},
-		Point{0, 10},
-		Point{10, 0},
+}
+
+func run() error {
+	var width, height int
+	colors := []XY{}
+	hl := []XY{}
+	args := os.Args[1:]
+	entryVals := []string{}
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--help", "-h", "help":
+			fmt.Printf("Usage: create-index-grid-string [width [height]] [{-c|--color} <point>] [{-m|--mark} <point>] [{-v|--value} <value>]\n")
+			return nil
+		case "-c", "--color":
+			if len(args) <= i {
+				return fmt.Errorf("no argument provided after [%s]", args[i])
+			}
+			p, err := ParsePoint(args[i+1])
+			if err != nil {
+				return err
+			}
+			colors = append(colors, p)
+			i++
+		case "-m", "--mark":
+			if len(args) <= i {
+				return fmt.Errorf("no argument provided after [%s]", args[i])
+			}
+			p, err := ParsePoint(args[i+1])
+			if err != nil {
+				return err
+			}
+			hl = append(hl, p)
+			i++
+		case "-v", "--val", "--value":
+			if len(args) <= i || len(args[i+1]) == 0 {
+				return fmt.Errorf("no argument provided after [%s]", args[i])
+			}
+			if len(strings.TrimSpace(args[i+1])) == 0 {
+				entryVals = append(entryVals, args[i+1])
+			}
+			entryVals = append(entryVals, strings.Fields(args[i+1])...)
+			i++
+		default:
+			switch {
+			case width == 0:
+				var err error
+				width, err = strconv.Atoi(args[i])
+				if err != nil {
+					return err
+				}
+				if width < 1 {
+					return fmt.Errorf("width must greater than zero, found [%d]", width)
+				}
+			case height == 0:
+				var err error
+				height, err = strconv.Atoi(args[i])
+				if err != nil {
+					return err
+				}
+				if height < 1 {
+					return fmt.Errorf("height must greater than zero, found [%d]", height)
+				}
+			default:
+				return fmt.Errorf("unknown argument: [%s]", args[i])
+			}
+		}
 	}
-	hl := []XY{
-		Point{5, 0},
-		Point{4, 1},
-		Point{3, 2},
-		Point{2, 3},
-		Point{1, 4},
-		Point{0, 5},
-		Point{0, 0},
-		Point{4, 4},
-		Point{0, 10},
-		Point{10, 0},
+	var vals [][]string
+	if width != 0 {
+		if height == 0 {
+			height = width
+		}
+		i := 0
+		vals = make([][]string, height)
+		for y := range vals {
+			vals[y] = make([]string, width)
+			for x := range vals[y] {
+				if len(entryVals) > 0 {
+					vals[y][x] = entryVals[i%len(entryVals)]
+				} else {
+					vals[y][x] = fmt.Sprintf("%d", i)
+				}
+				i++
+			}
+		}
+	} else {
+		vals = [][]string{
+			{"one", "two", "three", "four"},
+			{"five", "six", "seven", "eight", "nine", "ten"},
+			{"eleven"},
+			{},
+			{"twelve", "thirteen"},
+			{"fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"},
+		}
+		height = 6
+		width = 6
+	}
+	if len(colors) == 0 {
+		for i := 0; i < height || i < width; i++ {
+			colors = append(colors, Point{i, i})
+		}
+		colors = append(colors, Point{height - 1, 0}, Point{0, width - 1})
+	}
+	if len(hl) == 0 {
+		for i := 0; i < height || i < width; i++ {
+			hl = append(hl, Point{i, width - i - 1})
+		}
+		hl = append(hl, Point{0, 0}, Point{height - 1, width - 1})
 	}
 	fmt.Println(CreateIndexedGridString(vals, colors, hl))
+	return nil
+}
+
+func ParsePoint(str string) (Point, error) {
+	parts := strings.Split(str, ",")
+	if len(parts) != 2 {
+		return Point{}, fmt.Errorf("unable to parse point: [%s]", str)
+	}
+	x, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+	if err != nil {
+		return Point{}, err
+	}
+	y, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+	return Point{x, y}, nil
 }
 
 type Point struct {
@@ -98,7 +197,7 @@ func CreateIndexedGridString(vals [][]string, colorPoints []XY, highlightPoints 
 		}
 	}
 	for _, p := range highlightPoints {
-		if p.GetY() < height && p.GetX() < width {
+		if p.GetY() < height && p.GetX() < width && textFmt[p.GetY()][p.GetX()] <= 1 {
 			textFmt[p.GetY()][p.GetX()] += 2
 		}
 	}
@@ -160,22 +259,22 @@ func CreateIndexLineOnes(count, cellLen int) string {
 }
 
 func CreateIndexLinesTens(count, cellLen int) string {
-	cellFmt := fmt.Sprintf("%%%dc", cellLen)
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
 	var digits strings.Builder
-	for _, s := range []string{" ", "1", "2", "3", "4", "5", "6", "7", "8", "9"} {
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"} {
 		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 10))
 	}
-	rv := strings.Repeat(digits.String(), 1+count/100)
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 10) + strings.Repeat(digits.String(), 1+count/100)
 	return rv[:count*cellLen]
 }
 
 func CreateIndexLinesHundreds(count, cellLen int) string {
-	cellFmt := fmt.Sprintf("%%%dc", cellLen)
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
 	var digits strings.Builder
-	for _, s := range []string{" ", "1", "2", "3", "4", "5", "6", "7", "8", "9"} {
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", " "} {
 		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 100))
 	}
-	rv := strings.Repeat(digits.String(), 1+count/1000)
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 100) + strings.Repeat(digits.String(), 1+count/1000)
 	return rv[:count*cellLen]
 }
 
