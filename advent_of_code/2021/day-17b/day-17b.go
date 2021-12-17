@@ -140,6 +140,7 @@ func GetRangeDY(target *TargetArea) []int {
 	for i := float64(1); i <= maxI; i++ {
 		mindi := int(math.Ceil((i - 1 + fmin*2/i) / 2))
 		maxdi := int(math.Floor((i - 1 + fmax*2/i) / 2))
+		Debugf("i: %f, mindi: %d, maxdi: %d", i, mindi, maxdi)
 		for val := mindi; val <= maxdi; val++ {
 			rv = appendIfNew(rv, val)
 		}
