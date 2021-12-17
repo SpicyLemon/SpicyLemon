@@ -20,7 +20,10 @@ fi
 
 while [[ "$#" -gt '0' ]]; do
     case "$1" in
-        -h|--help|hep) printf 'Usage: create-time-table.sh [--no-rebuild]\n';;
+        -h|--help|hep)
+            printf 'Usage: create-time-table.sh [--no-rebuild]\n'
+            exit 0
+            ;;
         --no-rebuild) no_rebuild='YES';;
         *)
             printf 'Unknown argument: [%s]' "$1"
