@@ -35,7 +35,7 @@ func Solve(input Input) (string, error) {
 	Debugf("Initial Min Costs:\n%s", minCosts)
 	for i := 0; i < input.Count; i++ {
 		if minCosts.IsDone() {
-			Stdout("Done after %d stesp", i)
+			Stdout("Done after %d steps", i)
 			break
 		}
 		minCosts.CalculateNext()
@@ -66,7 +66,7 @@ func ExpandRiskMatrix(m Matrix) Matrix {
 }
 
 func (m MinCostMatrix) IsDone() bool {
-	return m.PQNodes[m.Height-1][m.Width-1].Index < 0 || m.Unvisited.Len() == 0
+	return m.ComeFrom[m.Height-1][m.Width-1] != nil || m.Unvisited.Len() == 0
 }
 
 func (m *MinCostMatrix) CalculateNext() {
