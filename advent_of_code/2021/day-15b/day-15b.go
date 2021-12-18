@@ -1,12 +1,12 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -29,194 +29,444 @@ var funcDepth int
 // The string it returns should be (or include) the answer.
 func Solve(input Input) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
-	answer := 0
-	for _, note := range input.Notes {
-		answer += ReadDisplay(SortSignalsV2(note.Signals), note.Display)
+	expandedRisks := ExpandRiskMatrix(input.Risks)
+	minCosts := NewMinCostMatrix(expandedRisks)
+	minCosts.Set(0, 0, 0, nil)
+	Debugf("Initial Min Costs:\n%s", minCosts)
+	for i := 0; i < input.Count; i++ {
+		if minCosts.IsDone() {
+			Stdout("Done after %d steps", i)
+			break
+		}
+		minCosts.CalculateNext()
 	}
+	Debugf("Final Min Costs:\n%s", minCosts)
+	if !debug && input.Verbose {
+		Stdout("Final Risk Map:\n%s", minCosts.GetColoredRiskMatrixString())
+		Stdout("Min Cost Path:\n%s", minCosts.GetMinCostPathString())
+	}
+	answer := minCosts.GetMinCost(minCosts.Width-1, minCosts.Height-1)
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func SortSignalsV2(signals []string) []string {
-	// 1 = entry with length 2
-	// 4 = entry with length 4.
-	// 7 = entry with length 3.
-	// 8 = entry with length 7.
-	// 9 = entry with length 6 and all segments of 4.
-	// 0 = entry with length 6 that isn't 9 and has all segments of 1.
-	// 6 = entry with length 6 that isn't 0 or 9.
-	// 3 = entry with length 5 and all segments of 1.
-	// 5 = entry with length 5 and all segments are in 6.
-	// 2 = entry with length 5 that isn't 3 or 5.
-	// Sort the signals by number of segments.
-	byLen := map[int][]string{}
-	for _, digit := range signals {
-		l := len(digit)
-		byLen[l] = append(byLen[l], digit)
-	}
-	// Figure out which signals are each digit.
-	rv := make([]string, 10)
-	rv[1] = byLen[2][0]
-	rv[4] = byLen[4][0]
-	rv[7] = byLen[3][0]
-	rv[8] = byLen[7][0]
-	for _, digit := range byLen[6] {
-		switch {
-		case len(rv[9]) == 0 && len(StrMinus(rv[4], digit)) == 0:
-			rv[9] = digit
-		case len(rv[0]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[0] = digit
-		default:
-			rv[6] = digit
-		}
-	}
-	for _, digit := range byLen[5] {
-		switch {
-		case len(rv[3]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[3] = digit
-		case len(rv[5]) == 0 && len(StrMinus(digit, rv[6])) == 0:
-			rv[5] = digit
-		default:
-			rv[2] = digit
-		}
-	}
-	return rv
-}
-
-// ReadDisplay uses the digits to conver the display strings into its int value.
-func ReadDisplay(digits []string, display []string) int {
-	rv := 0
-	for _, disp := range display {
-		for i, digit := range digits {
-			if disp == digit {
-				rv = rv*10 + i
-				break
+func ExpandRiskMatrix(m Matrix) Matrix {
+	mw := m.Width()
+	mh := m.Height()
+	rv := NewMatrix(mw*5, mh*5)
+	for y := 0; y < mh; y++ {
+		for x := 0; x < mw; x++ {
+			for ry := 0; ry < 5; ry++ {
+				for rx := 0; rx < 5; rx++ {
+					rv[y+mh*ry][x+mw*rx] = (m[y][x]+ry+rx-1)%9 + 1
+				}
 			}
 		}
 	}
-	Debugf("%q | %4d = %q", digits, rv, display)
 	return rv
 }
 
-// StrMinus gets the runes in string a that are not in string b.
-// Strings are assumed to not have any duplicate runes.
-func StrMinus(a, b string) []rune {
-	rv := []rune{}
-	for _, r := range a {
-		if !strings.ContainsRune(b, r) {
-			rv = append(rv, r)
+func (m MinCostMatrix) IsDone() bool {
+	return m.ComeFrom[m.Height-1][m.Width-1] != nil || m.Unvisited.Len() == 0
+}
+
+func (m *MinCostMatrix) CalculateNext() {
+	if m.Unvisited.Len() == 0 {
+		return
+	}
+	node := heap.Pop(&m.Unvisited).(*PQNode)
+	if node.Loc.X > 0 {
+		m.CheckUpdateCost(node.Loc.X-1, node.Loc.Y, node.MinCost, &node.Loc)
+	}
+	if node.Loc.X < m.Width-1 {
+		m.CheckUpdateCost(node.Loc.X+1, node.Loc.Y, node.MinCost, &node.Loc)
+	}
+	if node.Loc.Y > 0 {
+		m.CheckUpdateCost(node.Loc.X, node.Loc.Y-1, node.MinCost, &node.Loc)
+	}
+	if node.Loc.Y < m.Height-1 {
+		m.CheckUpdateCost(node.Loc.X, node.Loc.Y+1, node.MinCost, &node.Loc)
+	}
+}
+
+func (m *MinCostMatrix) CheckUpdateCost(x, y, base int, comeFrom *Point) {
+	if m.PQNodes[y][x].Index >= 0 {
+		cost := base + m.Risks[y][x]
+		if cost < m.PQNodes[y][x].MinCost {
+			m.Set(x, y, cost, comeFrom)
 		}
 	}
-	return rv
 }
-
-//   0:      1:      2:      3:      4:
-//  aaaa    ....    aaaa    aaaa    ....
-// b    c  .    c  .    c  .    c  b    c
-// b    c  .    c  .    c  .    c  b    c
-//  ....    ....    dddd    dddd    dddd
-// e    f  .    f  e    .  .    f  .    f
-// e    f  .    f  e    .  .    f  .    f
-//  gggg    ....    gggg    gggg    ....
-//
-//   5:      6:      7:      8:      9:
-//  aaaa    aaaa    aaaa    aaaa    aaaa
-// b    .  b    .  .    c  b    c  b    c
-// b    .  b    .  .    c  b    c  b    c
-//  dddd    dddd    ....    dddd    dddd
-// .    f  e    f  .    f  e    f  .    f
-// .    f  e    f  .    f  e    f  .    f
-//  gggg    gggg    ....    gggg    gggg
-//
-// Segments:    	Ons:                            	Offs:
-//  2: 1        	 a: 0, 2, 3, 4, 5, 6, 8, 9      	 a: 1, 4
-//  3: 7        	 b: 0, 4, 5, 6, 8, 9            	 b: 1, 2, 3, 7
-//  4: 4        	 c: 0, 1, 2, 3, 4, 7, 8, 9      	 c: 5, 6
-//  5: 2, 3, 5  	 d: 2, 3, 4, 5, 6, 8, 9         	 d: 0, 1, 7
-//  6: 0, 6, 9  	 e: 0, 2, 6, 8                  	 e: 1, 3, 4, 5, 7, 9
-//  7: 8        	 f: 0, 1, 3, 4, 5, 6, 7, 8, 9   	 f: 2
-//              	 g: 0, 2, 3, 4, 5, 8, 9         	 g: 1, 4, 7
-// To Decode:                                                       	Alternatively:
-//  1 = entry with length 2.                                        	  1 = entry with length 2
-//  4 = entry with length 4.                                        	  4 = entry with length 4.
-//  7 = entry with length 3.                                        	  7 = entry with length 3.
-//  8 = entry with length 7.                                        	  8 = entry with length 7.
-//    bd = segments in 4 but not 1.                                 	  9 = entry with length 6 and all segments of 4.
-//  5 = entry with length 5 with both b and d segemtns.             	  0 = entry with length 6 that isn't 9 and has all segments of 1.
-//    c = segemnt in 1 but not 5.                                   	  6 = entry with length 6 that isn't 0 or 9.
-//  6 = entry with length 6 with no c.                              	  3 = entry with length 5 and all segments of 1.
-//  9 = entry with length 6 that isn't 6 and has all segemnts in 5. 	  5 = entry with length 5 and all segments are in 6.
-//  0 = entry with length 6 that isn't 6 or 9.                      	  2 = entry with length 5 that isn't 3 or 5.
-//    e = segment in 8 but not 9.
-//  2 = entry with length 5 with e in it.
-//  3 = entry with length 5 that isn't 2 or 5.
-//
 
 // -------------------------------------------------------------------------------------
 // ----------------------  Input data structures and definitions  ----------------------
 // -------------------------------------------------------------------------------------
 
-type RuneSorter []rune
-
-func (s RuneSorter) Less(i, j int) bool { return s[i] < s[j] }
-func (s RuneSorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s RuneSorter) Len() int           { return len(s) }
-
-func SortString(str string) string {
-	r := []rune(str)
-	sort.Sort(RuneSorter(r))
-	return string(r)
+// PQNode is a node for use in a priority queue.
+type PQNode struct {
+	Loc     Point
+	MinCost int
+	Index   int
 }
 
-type Note struct {
-	Signals []string
-	Display []string
+// PriorityQueue implements heap.Interface and holds PQNodes.
+type PriorityQueue []*PQNode
+
+// Len returns the length of this priority queue.
+func (pq PriorityQueue) Len() int { return len(pq) }
+
+// Less returns true if entry i is less than entry j.
+func (pq PriorityQueue) Less(i, j int) bool {
+	// If risks are different, use that for comparisons first.
+	if pq[i].MinCost != pq[j].MinCost {
+		return pq[i].MinCost < pq[j].MinCost
+	}
+	// Use x + y values now.
+	di := pq[i].Loc.X + pq[i].Loc.Y
+	dj := pq[j].Loc.X + pq[j].Loc.Y
+	if di != dj {
+		return di < dj
+	}
+	// further left first, then further up.
+	return pq[i].Loc.X < pq[j].Loc.X || pq[i].Loc.Y < pq[j].Loc.Y
 }
 
-func (n Note) String() string {
-	return fmt.Sprintf("%q | %q", n.Signals, n.Display)
+// Swap swaps the entries at i and j.
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].Index = i
+	pq[j].Index = j
+}
+
+// Push adds an node to the priority queue.
+func (pq *PriorityQueue) Push(x interface{}) {
+	node := x.(*PQNode)
+	node.Index = len(*pq)
+	*pq = append(*pq, node)
+}
+
+// Pop removes the next node from the priority queue.
+func (pq *PriorityQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	node := old[n-1]
+	old[n-1] = nil  // avoid memory leak
+	node.Index = -1 // for safety
+	*pq = old[0 : n-1]
+	return node
+}
+
+// update modifies the risk of a PQNode in the priority queue.
+func (pq *PriorityQueue) Update(node *PQNode, minCost int) {
+	node.MinCost = minCost
+	heap.Fix(pq, node.Index)
+}
+
+// MinCostMatrix is a grid with information about minimum costs to get places.
+type MinCostMatrix struct {
+	Width     int
+	Height    int
+	Risks     Matrix
+	ComeFrom  [][]*Point
+	PQNodes   [][]*PQNode
+	Unvisited PriorityQueue
+}
+
+// NewMinCostMatrix creates a new MinCostMatrix based on the provided risks matrix.
+func NewMinCostMatrix(risks Matrix) *MinCostMatrix {
+	w := risks.Width()
+	h := risks.Height()
+	rv := MinCostMatrix{
+		Width:  w,
+		Height: h,
+		Risks:  risks,
+	}
+	superMax, err := strconv.Atoi(strings.Repeat("9", len(fmt.Sprintf("%d", w*h*9))))
+	if err != nil {
+		panic(err)
+	}
+	rv.ComeFrom = make([][]*Point, h)
+	rv.Unvisited = make(PriorityQueue, 0, w*h)
+	rv.PQNodes = make([][]*PQNode, h)
+	for y := range rv.PQNodes {
+		rv.ComeFrom[y] = make([]*Point, w)
+		rv.PQNodes[y] = make([]*PQNode, w)
+		for x := range rv.PQNodes[y] {
+			node := PQNode{Point{x, y}, superMax, len(rv.Unvisited)}
+			rv.Unvisited = append(rv.Unvisited, &node)
+			rv.PQNodes[y][x] = &node
+		}
+	}
+	heap.Init(&rv.Unvisited)
+	return &rv
+}
+
+func (m MinCostMatrix) String() string {
+	visited := m.GetVisitedPoints()
+	path := m.GetMinCostPath()
+	var rv strings.Builder
+	rv.WriteString("Risks:\n")
+	rv.WriteString(CreateIndexedGridString(m.Risks.ToStringMatrix(), visited, path))
+	rv.WriteString("Come From:\n")
+	rv.WriteString(CreateIndexedGridString(m.GetComeFromStringMatrix(), visited, path))
+	rv.WriteString("Min Costs:\n")
+	rv.WriteString(CreateIndexedGridString(m.GetMinCosts().ToStringMatrix(), visited, path))
+	rv.WriteString("Min Cost Path:\n")
+	rv.WriteString(m.GetPathString(path))
+	return rv.String()
+}
+
+func (m MinCostMatrix) GetColoredRiskMatrixString() string {
+	return CreateIndexedGridString(m.Risks.ToStringMatrix(), m.GetVisitedPoints(), m.GetMinCostPath())
+}
+
+func (m MinCostMatrix) GetVisitedPoints() []XY {
+	rv := []XY{}
+	for y, r := range m.PQNodes {
+		for x, p := range r {
+			if p.Index < 0 {
+				rv = append(rv, Point{x, y})
+			}
+		}
+	}
+	return rv
+}
+
+func (m MinCostMatrix) GetMinCosts() Matrix {
+	rv := NewMatrix(m.Width, m.Height)
+	for y, r := range m.PQNodes {
+		for x, p := range r {
+			rv[y][x] = p.MinCost
+		}
+	}
+	return rv
+}
+
+func (m MinCostMatrix) GetComeFromStringMatrix() [][]string {
+	rv := make([][]string, len(m.ComeFrom))
+	for y, r := range m.ComeFrom {
+		rv[y] = make([]string, len(r))
+		for x, p := range r {
+			if p != nil {
+				rv[y][x] = p.String()
+			} else {
+				rv[y][x] = "(  ,  )"
+			}
+		}
+	}
+	return rv
+}
+
+func (m MinCostMatrix) GetMinCostPath() []XY {
+	if !m.IsDone() {
+		return nil
+	}
+	rv := []XY{&Point{m.Width - 1, m.Height - 1}}
+	for {
+		last := rv[len(rv)-1]
+		next := m.ComeFrom[last.GetY()][last.GetX()]
+		if next == nil {
+			break
+		}
+		rv = append(rv, next)
+	}
+	// And reverse it since we started at the end.
+	for i, j := 0, len(rv)-1; i < j; i, j = i+1, j-1 {
+		rv[i], rv[j] = rv[j], rv[i]
+	}
+	return rv
+}
+
+func (m MinCostMatrix) GetPathString(path []XY) string {
+	if len(path) == 0 {
+		return "No minimum cost path has yet been found."
+	}
+	pFmt := "%4d%s"
+	last := len(path) - 1
+	var rv strings.Builder
+	for i, p := range path {
+		rv.WriteString(fmt.Sprintf(pFmt, i+1, p))
+		if i != last {
+			if i%10 == 9 {
+				rv.WriteByte('\n')
+			} else {
+				rv.WriteByte(' ')
+			}
+		}
+	}
+	rv.WriteByte('\n')
+	return rv.String()
+}
+
+func (m MinCostMatrix) GetMinCostPathString() string {
+	return m.GetPathString(m.GetMinCostPath())
+}
+
+func (m MinCostMatrix) Set(x, y, val int, comeFrom *Point) {
+	node := m.PQNodes[y][x]
+	if node.Index < 0 {
+		panic(fmt.Sprintf("attempt to set min cost of (%2d,%2d) to %v on an already visited node.", x, y, val))
+	}
+	m.ComeFrom[y][x] = comeFrom
+	m.Unvisited.Update(node, val)
+}
+
+func (m MinCostMatrix) GetRisk(x, y int) int {
+	return m.Risks[y][x]
+}
+
+func (m MinCostMatrix) GetMinCost(x, y int) int {
+	return m.PQNodes[y][x].MinCost
+}
+
+type Point struct {
+	X int
+	Y int
+}
+
+func (p Point) String() string {
+	return fmt.Sprintf("(%2d,%2d)", p.X, p.Y)
+}
+
+func (p Point) GetX() int {
+	return p.X
+}
+
+func (p Point) GetY() int {
+	return p.Y
+}
+
+func ParsePoints(str string) ([]Point, error) {
+	points := strings.Split(str, ";")
+	rv := make([]Point, len(points))
+	for i, p := range points {
+		parts := strings.Split(p, ",")
+		if len(parts) != 2 {
+			return []Point{}, fmt.Errorf("unknown point string: [%s]", p)
+		}
+		x, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return []Point{}, err
+		}
+		y, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return []Point{}, err
+		}
+		rv[i] = Point{x, y}
+	}
+	return rv, nil
+}
+
+type Matrix [][]int
+
+func NewMatrix(width, height int) Matrix {
+	rv := make([][]int, height)
+	for i := range rv {
+		rv[i] = make([]int, width)
+	}
+	return rv
+}
+
+func NewInitializedMatrix(width, height, val int) Matrix {
+	rv := make([][]int, height)
+	for i := range rv {
+		rv[i] = make([]int, width)
+		for j := range rv[i] {
+			rv[i][j] = val
+		}
+	}
+	return rv
+}
+
+func (m Matrix) Height() int {
+	return len(m)
+}
+
+func (m Matrix) Width() int {
+	return len(m[0])
+}
+
+func (m Matrix) ToStringMatrix() [][]string {
+	max := 0
+	h := m.Height()
+	w := m.Width()
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if m[y][x] > max {
+				max = m[y][x]
+			}
+		}
+	}
+	cellFmt := DigitFormatForMax(max)
+	if max > 10 {
+		cellFmt = " " + cellFmt
+	}
+	rv := make([][]string, h)
+	for y := range rv {
+		rv[y] = make([]string, w)
+		for x := range rv[y] {
+			rv[y][x] = fmt.Sprintf(cellFmt, m[y][x])
+		}
+	}
+	return rv
+}
+
+func (m Matrix) String() string {
+	return CreateIndexedGridString(m.ToStringMatrix(), nil, nil)
 }
 
 // Input is a struct containing the parsed input file.
 type Input struct {
-	Notes []Note
+	Verbose bool
+	Risks   Matrix
+	Path    []Point
+	Points  []Point
+	Count   int
 }
 
 // String creates a mutli-line string representation of this Input.
 func (i Input) String() string {
-	lineFmt := DigitFormatForMax(len(i.Notes)) + ": %s\n"
-	var rv strings.Builder
-	for i, v := range i.Notes {
-		rv.WriteString(fmt.Sprintf(lineFmt, i, v))
-	}
-	return rv.String()
+	return i.Risks.String()
 }
 
 // ParseInput parses the contents of an input file into usable pieces.
 func ParseInput(fileData []byte) (Input, error) {
 	defer FuncEndingAlways(FuncStarting())
 	rv := Input{}
+	rv.Risks = [][]int{}
+	rv.Points = []Point{}
 	lines := strings.Split(string(fileData), "\n")
 	for _, line := range lines {
 		if len(line) > 0 {
-			parts := strings.Split(line, "|")
-			note := Note{}
-			for _, str := range strings.Fields(parts[0]) {
-				note.Signals = append(note.Signals, SortString(str))
+			risks := make([]int, len(line))
+			for i, r := range line {
+				risks[i] = int(r) - 48
 			}
-			for _, str := range strings.Fields(parts[1]) {
-				note.Display = append(note.Display, SortString(str))
-			}
-			rv.Notes = append(rv.Notes, note)
+			rv.Risks = append(rv.Risks, risks)
 		}
 	}
-	return rv, nil
+	var err error
+	rv.Path, err = ParsePoints("0,0;0,1;0,2;1,2;2,2;3,2;4,2;5,2;6,2;6,3;7,3;7,4;7,5;8,5;8,6;8,7;8,8;9,8;9,9")
+	return rv, err
 }
 
 // ApplyParams sets input based on CLI params.
-func (i *Input) ApplyParams(params CliParams) {
-	//if params.Count != 0 {
-	//	i.Count = params.Count
-	//}
+func (i *Input) ApplyParams(params CliParams) error {
+	if params.Verbose {
+		i.Verbose = true
+	}
+	if len(params.Points) > 0 {
+		var err error
+		i.Points, err = ParsePoints(params.Points)
+		if err != nil {
+			return err
+		}
+	}
+	if params.Count > 0 {
+		i.Count = params.Count
+	} else {
+		i.Count = 10000000000
+	}
+	return nil
 }
 
 // -------------------------------------------------------------------------------------
@@ -227,6 +477,8 @@ func (i *Input) ApplyParams(params CliParams) {
 type CliParams struct {
 	// Debug is whether or not to output debug messages.
 	Debug bool
+	// Verbose is whether or not to print a little extra info.
+	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
@@ -235,6 +487,8 @@ type CliParams struct {
 	InputFile string
 	// Count is just a generic int that can be provided.
 	Count int
+	// Points is a string identifying points of interest.
+	Points string
 }
 
 // String creates a multi-line string representing this CliParams
@@ -242,10 +496,12 @@ func (c CliParams) String() string {
 	nameFmt := "%20s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", c.Debug),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
 		fmt.Sprintf(nameFmt+"%t", "Help Printed", c.HelpPrinted),
 		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
 		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
 		fmt.Sprintf(nameFmt+"%d", "Count", c.Count),
+		fmt.Sprintf(nameFmt+"%s", "Points", c.Points),
 	}
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -292,6 +548,18 @@ func GetCliParams(args []string) CliParams {
 			Debugf("Count option found: [%s], args left: %q.", args[i], args[i:])
 			var extraI int
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
+			i += extraI
+			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
+			Debugf("Verbose option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
+			i += extraI
+			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--points", "-p"):
+			Debugf("Points option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.Points, extraI, err = ParseFlagString(args[i:])
 			i += extraI
 			rv.AppendError(err)
 
@@ -697,6 +965,136 @@ func Debugf(format string, a ...interface{}) {
 }
 
 // -------------------------------------------------------------------------------------
+// -------------------------------  Grid Formatter Stuff  ------------------------------
+// -------------------------------------------------------------------------------------
+
+type XY interface {
+	GetX() int
+	GetY() int
+}
+
+func CreateIndexedGridString(vals [][]string, colorPoints []XY, highlightPoints []XY) string {
+	// Get the height. If it's zero, there's nothing to return.
+	height := len(vals)
+	if height == 0 {
+		return ""
+	}
+	// Get the max cell length and the max row width.
+	cellLen := 0
+	width := len(vals[0])
+	for _, r := range vals {
+		if len(r) > width {
+			width = len(r)
+		}
+		for _, c := range r {
+			if len(c) > cellLen {
+				cellLen = len(c)
+			}
+		}
+	}
+	leadFmt := fmt.Sprintf("%%%dd:", len(fmt.Sprintf("%d", height)))
+	var rv strings.Builder
+	// If none of the rows have anything, just print out the row numbers.
+	if width == 0 {
+		for y := range vals {
+			rv.WriteString(fmt.Sprintf(leadFmt, y))
+			rv.WriteByte('\n')
+		}
+		return rv.String()
+	}
+	// Create a matrix indicating desired text formats.
+	textFmt := make([][]int, height)
+	for y := range textFmt {
+		textFmt[y] = make([]int, width)
+	}
+	for _, p := range colorPoints {
+		if p.GetY() < height && p.GetX() < width {
+			textFmt[p.GetY()][p.GetX()] = 1
+		}
+	}
+	for _, p := range highlightPoints {
+		if p.GetY() < height && p.GetX() < width && textFmt[p.GetY()][p.GetX()] <= 1 {
+			textFmt[p.GetY()][p.GetX()] += 2
+		}
+	}
+	// Create the index numbers accross the top.
+	if cellLen > 1 {
+		cellLen++
+	}
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
+	blankLead := strings.Repeat(" ", len(fmt.Sprintf(leadFmt, 0)))
+	topIndexLines := CreateTopIndexLines(width, cellLen)
+	for _, l := range topIndexLines {
+		rv.WriteString(fmt.Sprintf("%s%s\n", blankLead, l))
+	}
+	// Add all the line numbers, cells and extra formatting.
+	for y, r := range vals {
+		rv.WriteString(fmt.Sprintf(leadFmt, y))
+		for x := 0; x < width; x++ {
+			v := ""
+			if x < len(r) {
+				v = r[x]
+			}
+			cell := fmt.Sprintf(cellFmt, v)
+			switch textFmt[y][x] {
+			case 1: // color only
+				rv.WriteString("\033[32m" + cell + "\033[0m") // Green text
+			case 2: // highlight only
+				rv.WriteString("\033[7m" + cell + "\033[0m") // Reversed (grey back, black text)
+			case 3: // color and highlight
+				rv.WriteString("\033[97;42m" + cell + "\033[0m") // Green background, white text
+			default:
+				rv.WriteString(cell)
+			}
+		}
+		rv.WriteByte('\n')
+	}
+	return rv.String()
+}
+
+func CreateTopIndexLines(count, cellLen int) []string {
+	rv := []string{}
+	if count > 100 {
+		rv = append(rv, CreateIndexLinesHundreds(count, cellLen))
+	}
+	if count > 10 {
+		rv = append(rv, CreateIndexLinesTens(count, cellLen))
+	}
+	if count > 0 {
+		rv = append(rv, CreateIndexLineOnes(count, cellLen))
+		rv = append(rv, strings.Repeat("-", count*cellLen))
+	}
+	return rv
+}
+
+func CreateIndexLineOnes(count, cellLen int) string {
+	cellFmt := fmt.Sprintf("%%%dd", cellLen)
+	digits := fmt.Sprintf(strings.Repeat(cellFmt, 10), 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+	rv := strings.Repeat(digits, 1+count/10)
+	return rv[:count*cellLen]
+}
+
+func CreateIndexLinesTens(count, cellLen int) string {
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
+	var digits strings.Builder
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"} {
+		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 10))
+	}
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 10) + strings.Repeat(digits.String(), 1+count/100)
+	return rv[:count*cellLen]
+}
+
+func CreateIndexLinesHundreds(count, cellLen int) string {
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
+	var digits strings.Builder
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"} {
+		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 100))
+	}
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 100) + strings.Repeat(digits.String(), 1+count/1000)
+	return rv[:count*cellLen]
+}
+
+// -------------------------------------------------------------------------------------
 // --------------------------  Primary Program Running Parts  --------------------------
 // -------------------------------------------------------------------------------------
 
@@ -748,7 +1146,9 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	input.ApplyParams(params)
+	if err = input.ApplyParams(params); err != nil {
+		return err
+	}
 	Debugf("Parsed Input:\n%s", input)
 	answer, err := Solve(input)
 	if err != nil {

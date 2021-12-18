@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -29,163 +28,275 @@ var funcDepth int
 // The string it returns should be (or include) the answer.
 func Solve(input Input) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
-	answer := 0
-	for _, note := range input.Notes {
-		answer += ReadDisplay(SortSignalsV2(note.Signals), note.Display)
+	var sum *Pair
+	for _, p := range input.Pairs {
+		if sum == nil {
+			sum = p
+		} else {
+			sum = AddPairs(sum, p)
+		}
 	}
+	if debug {
+		Stderr("Sum:\n%s", sum.FancyString())
+	}
+	answer := sum.GetMagnitude()
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func SortSignalsV2(signals []string) []string {
-	// 1 = entry with length 2
-	// 4 = entry with length 4.
-	// 7 = entry with length 3.
-	// 8 = entry with length 7.
-	// 9 = entry with length 6 and all segments of 4.
-	// 0 = entry with length 6 that isn't 9 and has all segments of 1.
-	// 6 = entry with length 6 that isn't 0 or 9.
-	// 3 = entry with length 5 and all segments of 1.
-	// 5 = entry with length 5 and all segments are in 6.
-	// 2 = entry with length 5 that isn't 3 or 5.
-	// Sort the signals by number of segments.
-	byLen := map[int][]string{}
-	for _, digit := range signals {
-		l := len(digit)
-		byLen[l] = append(byLen[l], digit)
+func AddPairs(p1, p2 *Pair) *Pair {
+	rv := Pair{
+		Val: NAN,
+		X:   p1,
+		Y:   p2,
 	}
-	// Figure out which signals are each digit.
-	rv := make([]string, 10)
-	rv[1] = byLen[2][0]
-	rv[4] = byLen[4][0]
-	rv[7] = byLen[3][0]
-	rv[8] = byLen[7][0]
-	for _, digit := range byLen[6] {
-		switch {
-		case len(rv[9]) == 0 && len(StrMinus(rv[4], digit)) == 0:
-			rv[9] = digit
-		case len(rv[0]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[0] = digit
-		default:
-			rv[6] = digit
+	return rv.Reduce()
+}
+
+func (p *Pair) Reduce() *Pair {
+	orig := ""
+	if debug {
+		orig = p.FancyString()
+	}
+	for {
+		if debug {
+			Stderr("Attempting to reduce:\n%s", p.FancyString())
+		}
+		if p.DoExplode() {
+			Debugf("Explosion made.")
+			continue
+		}
+		if p.DoSplit() {
+			Debugf("Split made.")
+			continue
+		}
+		break
+	}
+	if debug {
+		Stderr("Finished reducing.\nWas:\n%sIs Now:\n%s", orig, p.FancyString())
+	}
+	return p
+}
+
+func (p *Pair) DoExplode() bool {
+	pairs := p.Enumerate(0)
+	pivot := NAN
+	var x, y int
+	for i, pair := range pairs {
+		if pair.Depth == 4 && pair.Val == NAN {
+			pivot = i
+			x = pair.X.Val
+			y = pair.Y.Val
+			pair.Val = 0
+			pair.X = nil
+			pair.Y = nil
+			break
 		}
 	}
-	for _, digit := range byLen[5] {
-		switch {
-		case len(rv[3]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[3] = digit
-		case len(rv[5]) == 0 && len(StrMinus(digit, rv[6])) == 0:
-			rv[5] = digit
-		default:
-			rv[2] = digit
+	if pivot == NAN {
+		return false
+	}
+	xto, yto := -1, -1
+	for i := pivot - 1; i >= 0; i-- {
+		if pairs[i].Val != NAN {
+			pairs[i].Val += x
+			xto = i
+			break
 		}
+	}
+	for i := pivot + 3; i < len(pairs); i++ {
+		if pairs[i].Val != NAN {
+			pairs[i].Val += y
+			yto = i
+			break
+		}
+	}
+	Debugf("Exploded at %d which spread to %d and %d", pivot, xto, yto)
+	return true
+}
+
+func (p *Pair) Enumerate(depth int) []*Pair {
+	p.Depth = depth
+	rv := []*Pair{p}
+	if p.Val == NAN {
+		rv = append(rv, p.X.Enumerate(depth+1)...)
+		rv = append(rv, p.Y.Enumerate(depth+1)...)
 	}
 	return rv
 }
 
-// ReadDisplay uses the digits to conver the display strings into its int value.
-func ReadDisplay(digits []string, display []string) int {
-	rv := 0
-	for _, disp := range display {
-		for i, digit := range digits {
-			if disp == digit {
-				rv = rv*10 + i
-				break
-			}
+// DoSplit recursively checks for and applies a split if needed. It returns true if a split was made.
+func (p *Pair) DoSplit() bool {
+	if p.Val != NAN {
+		if p.Val > 9 {
+			p.X = &Pair{Val: p.Val / 2}
+			p.Y = &Pair{Val: p.Val/2 + p.Val%2}
+			p.Val = NAN
+			return true
 		}
+		return false
 	}
-	Debugf("%q | %4d = %q", digits, rv, display)
-	return rv
+	return p.X.DoSplit() || p.Y.DoSplit()
 }
 
-// StrMinus gets the runes in string a that are not in string b.
-// Strings are assumed to not have any duplicate runes.
-func StrMinus(a, b string) []rune {
-	rv := []rune{}
-	for _, r := range a {
-		if !strings.ContainsRune(b, r) {
-			rv = append(rv, r)
-		}
+func (p Pair) GetMagnitude() int {
+	if p.Val != NAN {
+		return p.Val
 	}
-	return rv
+	return p.X.GetMagnitude()*3 + p.Y.GetMagnitude()*2
 }
-
-//   0:      1:      2:      3:      4:
-//  aaaa    ....    aaaa    aaaa    ....
-// b    c  .    c  .    c  .    c  b    c
-// b    c  .    c  .    c  .    c  b    c
-//  ....    ....    dddd    dddd    dddd
-// e    f  .    f  e    .  .    f  .    f
-// e    f  .    f  e    .  .    f  .    f
-//  gggg    ....    gggg    gggg    ....
-//
-//   5:      6:      7:      8:      9:
-//  aaaa    aaaa    aaaa    aaaa    aaaa
-// b    .  b    .  .    c  b    c  b    c
-// b    .  b    .  .    c  b    c  b    c
-//  dddd    dddd    ....    dddd    dddd
-// .    f  e    f  .    f  e    f  .    f
-// .    f  e    f  .    f  e    f  .    f
-//  gggg    gggg    ....    gggg    gggg
-//
-// Segments:    	Ons:                            	Offs:
-//  2: 1        	 a: 0, 2, 3, 4, 5, 6, 8, 9      	 a: 1, 4
-//  3: 7        	 b: 0, 4, 5, 6, 8, 9            	 b: 1, 2, 3, 7
-//  4: 4        	 c: 0, 1, 2, 3, 4, 7, 8, 9      	 c: 5, 6
-//  5: 2, 3, 5  	 d: 2, 3, 4, 5, 6, 8, 9         	 d: 0, 1, 7
-//  6: 0, 6, 9  	 e: 0, 2, 6, 8                  	 e: 1, 3, 4, 5, 7, 9
-//  7: 8        	 f: 0, 1, 3, 4, 5, 6, 7, 8, 9   	 f: 2
-//              	 g: 0, 2, 3, 4, 5, 8, 9         	 g: 1, 4, 7
-// To Decode:                                                       	Alternatively:
-//  1 = entry with length 2.                                        	  1 = entry with length 2
-//  4 = entry with length 4.                                        	  4 = entry with length 4.
-//  7 = entry with length 3.                                        	  7 = entry with length 3.
-//  8 = entry with length 7.                                        	  8 = entry with length 7.
-//    bd = segments in 4 but not 1.                                 	  9 = entry with length 6 and all segments of 4.
-//  5 = entry with length 5 with both b and d segemtns.             	  0 = entry with length 6 that isn't 9 and has all segments of 1.
-//    c = segemnt in 1 but not 5.                                   	  6 = entry with length 6 that isn't 0 or 9.
-//  6 = entry with length 6 with no c.                              	  3 = entry with length 5 and all segments of 1.
-//  9 = entry with length 6 that isn't 6 and has all segemnts in 5. 	  5 = entry with length 5 and all segments are in 6.
-//  0 = entry with length 6 that isn't 6 or 9.                      	  2 = entry with length 5 that isn't 3 or 5.
-//    e = segment in 8 but not 9.
-//  2 = entry with length 5 with e in it.
-//  3 = entry with length 5 that isn't 2 or 5.
-//
 
 // -------------------------------------------------------------------------------------
 // ----------------------  Input data structures and definitions  ----------------------
 // -------------------------------------------------------------------------------------
 
-type RuneSorter []rune
+const NAN = -9223372036854775808
 
-func (s RuneSorter) Less(i, j int) bool { return s[i] < s[j] }
-func (s RuneSorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s RuneSorter) Len() int           { return len(s) }
-
-func SortString(str string) string {
-	r := []rune(str)
-	sort.Sort(RuneSorter(r))
-	return string(r)
+type Pair struct {
+	Val   int
+	X     *Pair
+	Y     *Pair
+	Depth int
 }
 
-type Note struct {
-	Signals []string
-	Display []string
+func NewPair(str string) (*Pair, error) {
+	pair, rest, err := ParsePairString(str)
+	if err != nil {
+		return nil, err
+	}
+	if len(rest) > 0 {
+		return nil, fmt.Errorf("the ParsePairString func returned with leftovers: [%s]", rest)
+	}
+	return pair, nil
 }
 
-func (n Note) String() string {
-	return fmt.Sprintf("%q | %q", n.Signals, n.Display)
+func ParsePairString(str string) (*Pair, string, error) {
+	rv := Pair{
+		Val: NAN,
+	}
+	switch str[0] {
+	case '1':
+		rv.Val = 1
+	case '2':
+		rv.Val = 2
+	case '3':
+		rv.Val = 3
+	case '4':
+		rv.Val = 4
+	case '5':
+		rv.Val = 5
+	case '6':
+		rv.Val = 6
+	case '7':
+		rv.Val = 7
+	case '8':
+		rv.Val = 8
+	case '9':
+		rv.Val = 9
+	case '0':
+		rv.Val = 0
+	case '[':
+		var err error
+		rv.X, str, err = ParsePairString(str[1:])
+		if err != nil {
+			return nil, "", err
+		}
+		if str[0] != ',' {
+			return nil, "", fmt.Errorf("unable to parse %q expected ',', found %q", str, str[0])
+		}
+		rv.Y, str, err = ParsePairString(str[1:])
+		if err != nil {
+			return nil, "", err
+		}
+		if str[0] != ']' {
+			return nil, "", fmt.Errorf("unable to parse %q expected ']', found %q", str, str[0])
+		}
+	}
+	return &rv, str[1:], nil
+}
+
+func (p Pair) String() string {
+	if p.Val != NAN {
+		return fmt.Sprintf("%d", p.Val)
+	}
+	return fmt.Sprintf("[%s,%s]", p.X, p.Y)
+}
+
+func (p Pair) FancyString() string {
+	defer FuncEndingAlways(FuncStarting())
+	str := p.String()
+	blankLine := func() []byte {
+		rv := make([]byte, len(str))
+		for i := range rv {
+			rv[i] = ' '
+		}
+		return rv
+	}
+	lines := make([][]byte, 7)
+	for i := range lines {
+		lines[i] = blankLine()
+	}
+	maxDepth := 0
+	curDepth := 0
+	for i := range str {
+		b := str[i]
+		lines[curDepth][i] = b
+		switch b {
+		case '[', ',':
+			curDepth += 1
+			if curDepth > maxDepth {
+				maxDepth = curDepth
+			}
+			if curDepth == len(lines) {
+				lines = append(lines, blankLine())
+			}
+		case ']':
+			curDepth -= 1
+		default:
+			switch str[i+1] {
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				// Do nothing.
+			default:
+				curDepth -= 1
+			}
+		}
+	}
+	var rv strings.Builder
+	rv.WriteString("  ")
+	rv.WriteString(str)
+	rv.WriteByte('\n')
+	var cb, ce string
+	for i := 0; i <= maxDepth; i++ {
+		switch i {
+		case 4:
+			cb = "\033[97m" // Bright white
+			ce = "\033[0m"  // Color off
+		case 5:
+			cb = "\033[95m" // Bright Purple
+		case 6:
+			cb = "\033[31m" // Red
+		case 7:
+			cb = "\033[41;97m" // Bright white text with red background
+		}
+		rv.WriteString(cb)
+		rv.WriteString(fmt.Sprintf("%d:", i))
+		rv.Write(lines[i])
+		rv.WriteString(ce)
+		rv.WriteByte('\n')
+	}
+	return rv.String()
 }
 
 // Input is a struct containing the parsed input file.
 type Input struct {
-	Notes []Note
+	Verbose bool
+	Pairs   []*Pair
 }
 
 // String creates a mutli-line string representation of this Input.
 func (i Input) String() string {
-	lineFmt := DigitFormatForMax(len(i.Notes)) + ": %s\n"
+	lineFmt := DigitFormatForMax(len(i.Pairs)) + ": %s\n"
 	var rv strings.Builder
-	for i, v := range i.Notes {
+	for i, v := range i.Pairs {
 		rv.WriteString(fmt.Sprintf(lineFmt, i, v))
 	}
 	return rv.String()
@@ -198,25 +309,32 @@ func ParseInput(fileData []byte) (Input, error) {
 	lines := strings.Split(string(fileData), "\n")
 	for _, line := range lines {
 		if len(line) > 0 {
-			parts := strings.Split(line, "|")
-			note := Note{}
-			for _, str := range strings.Fields(parts[0]) {
-				note.Signals = append(note.Signals, SortString(str))
+			pair, err := NewPair(line)
+			if err != nil {
+				return rv, err
 			}
-			for _, str := range strings.Fields(parts[1]) {
-				note.Display = append(note.Display, SortString(str))
-			}
-			rv.Notes = append(rv.Notes, note)
+			rv.Pairs = append(rv.Pairs, pair)
 		}
 	}
 	return rv, nil
 }
 
 // ApplyParams sets input based on CLI params.
-func (i *Input) ApplyParams(params CliParams) {
-	//if params.Count != 0 {
-	//	i.Count = params.Count
-	//}
+func (i *Input) ApplyParams(params CliParams) error {
+	if params.Verbose {
+		i.Verbose = true
+	}
+	if len(params.Custom) > 0 {
+		i.Pairs = make([]*Pair, len(params.Custom))
+		var err error
+		for j, custom := range params.Custom {
+			i.Pairs[j], err = NewPair(custom)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // -------------------------------------------------------------------------------------
@@ -227,6 +345,8 @@ func (i *Input) ApplyParams(params CliParams) {
 type CliParams struct {
 	// Debug is whether or not to output debug messages.
 	Debug bool
+	// Verbose is a flag indicating some extra output is desired.
+	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
@@ -234,7 +354,8 @@ type CliParams struct {
 	// InputFile is the file that contains the puzzle data to solve.
 	InputFile string
 	// Count is just a generic int that can be provided.
-	Count int
+	Count  int
+	Custom []string
 }
 
 // String creates a multi-line string representing this CliParams
@@ -242,6 +363,7 @@ func (c CliParams) String() string {
 	nameFmt := "%20s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", c.Debug),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
 		fmt.Sprintf(nameFmt+"%t", "Help Printed", c.HelpPrinted),
 		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
 		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
@@ -294,9 +416,23 @@ func GetCliParams(args []string) CliParams {
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
 			i += extraI
 			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
+			Debugf("Verbose option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
+			i += extraI
+			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--custom", "-p", "--pair"):
+			Debugf("Custom option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			var custom string
+			custom, extraI, err = ParseFlagString(args[i:])
+			rv.Custom = append(rv.Custom, custom)
+			i += extraI
+			rv.AppendError(err)
 
 		// Positional args go last in the order they're expected.
-		case len(rv.InputFile) == 0:
+		case len(rv.InputFile) == 0 && len(args[i]) > 0 && args[i][0] != '-':
 			Debugf("Input File argument: [%s].", args[i])
 			rv.InputFile = args[i]
 		default:
@@ -748,7 +884,10 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	input.ApplyParams(params)
+	err = input.ApplyParams(params)
+	if err != nil {
+		return err
+	}
 	Debugf("Parsed Input:\n%s", input)
 	answer, err := Solve(input)
 	if err != nil {

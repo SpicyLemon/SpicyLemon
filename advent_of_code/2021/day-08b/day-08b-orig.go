@@ -31,149 +31,179 @@ func Solve(input Input) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
 	answer := 0
 	for _, note := range input.Notes {
-		answer += ReadDisplay(SortSignalsV2(note.Signals), note.Display)
+		answer += note.GetVal()
 	}
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func SortSignalsV2(signals []string) []string {
-	// 1 = entry with length 2
-	// 4 = entry with length 4.
-	// 7 = entry with length 3.
-	// 8 = entry with length 7.
-	// 9 = entry with length 6 and all segments of 4.
-	// 0 = entry with length 6 that isn't 9 and has all segments of 1.
-	// 6 = entry with length 6 that isn't 0 or 9.
-	// 3 = entry with length 5 and all segments of 1.
-	// 5 = entry with length 5 and all segments are in 6.
-	// 2 = entry with length 5 that isn't 3 or 5.
-	// Sort the signals by number of segments.
-	byLen := map[int][]string{}
-	for _, digit := range signals {
-		l := len(digit)
-		byLen[l] = append(byLen[l], digit)
-	}
-	// Figure out which signals are each digit.
-	rv := make([]string, 10)
-	rv[1] = byLen[2][0]
-	rv[4] = byLen[4][0]
-	rv[7] = byLen[3][0]
-	rv[8] = byLen[7][0]
-	for _, digit := range byLen[6] {
-		switch {
-		case len(rv[9]) == 0 && len(StrMinus(rv[4], digit)) == 0:
-			rv[9] = digit
-		case len(rv[0]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[0] = digit
-		default:
-			rv[6] = digit
-		}
-	}
-	for _, digit := range byLen[5] {
-		switch {
-		case len(rv[3]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[3] = digit
-		case len(rv[5]) == 0 && len(StrMinus(digit, rv[6])) == 0:
-			rv[5] = digit
-		default:
-			rv[2] = digit
-		}
-	}
-	return rv
+// Notes:
+//  2 segments: 1
+//  3 segments: 7
+//  4 segments: 4
+//  5 segments: 2, 3, 5
+//  6 segments: 0, 6, 9
+//  7 segments: 8
+// Ons:
+//  a: 0, 2, 3, 4, 5, 6, 8, 9
+//  b: 0, 4, 5, 6, 8, 9
+//  c: 0, 1, 2, 3, 4, 7, 8, 9
+//  d: 2, 3, 4, 5, 6, 8, 9
+//  e: 0, 2, 6, 8
+//  f: 0, 1, 3, 4, 5, 6, 7, 8, 9
+//  g: 0, 2, 3, 4, 5, 8, 9
+// Offs:
+//  a: 1, 4
+//  b: 1, 2, 3, 7
+//  c: 5, 6
+//  d: 0, 1, 7
+//  e: 1, 3, 4, 5, 7, 9
+//  f: 2
+//  g: 1, 4, 7
+// To Decode:
+//  1 = entry with length 2.
+//  4 = entry with length 4.
+//  7 = entry with length 3.
+//  8 = entry with length 7.
+//    bd = segments in 4 but not 1.
+//  5 = entry with length 5 with both b and d segemtns.
+//    c = segemnt in 1 but not 5.
+//  6 = entry with length 6 with no c.
+//  9 = entry with length 6 that isn't 6 and has all segemnts in 5.
+//  0 = entry with length 6 that isn't 6 or 9.
+//    e = segment in 8 but not 9.
+//  2 = entry with length 5 with e in it.
+//  3 = entry with length 5 that isn't 2 or 5.
+
+// -------------------------------------------------------------------------------------
+// ----------------------  Input data structures and definitions  ----------------------
+// -------------------------------------------------------------------------------------
+
+type SortRunes []rune
+
+func (s SortRunes) Less(i, j int) bool {
+	return s[i] < s[j]
+}
+func (s SortRunes) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s SortRunes) Len() int {
+	return len(s)
 }
 
-// ReadDisplay uses the digits to conver the display strings into its int value.
-func ReadDisplay(digits []string, display []string) int {
-	rv := 0
-	for _, disp := range display {
-		for i, digit := range digits {
-			if disp == digit {
-				rv = rv*10 + i
-				break
-			}
-		}
-	}
-	Debugf("%q | %4d = %q", digits, rv, display)
-	return rv
+type Display string
+
+func NewDisplay(str string) Display {
+	bz := []rune(str)
+	sort.Sort(SortRunes(bz))
+	return Display(bz)
 }
 
-// StrMinus gets the runes in string a that are not in string b.
-// Strings are assumed to not have any duplicate runes.
-func StrMinus(a, b string) []rune {
+func (d Display) Len() int {
+	return len(string(d))
+}
+
+func (d Display) Minus(e Display) []rune {
 	rv := []rune{}
-	for _, r := range a {
-		if !strings.ContainsRune(b, r) {
+	for _, r := range string(d) {
+		if !e.Contains(r) {
 			rv = append(rv, r)
 		}
 	}
 	return rv
 }
 
-//   0:      1:      2:      3:      4:
-//  aaaa    ....    aaaa    aaaa    ....
-// b    c  .    c  .    c  .    c  b    c
-// b    c  .    c  .    c  .    c  b    c
-//  ....    ....    dddd    dddd    dddd
-// e    f  .    f  e    .  .    f  .    f
-// e    f  .    f  e    .  .    f  .    f
-//  gggg    ....    gggg    gggg    ....
-//
-//   5:      6:      7:      8:      9:
-//  aaaa    aaaa    aaaa    aaaa    aaaa
-// b    .  b    .  .    c  b    c  b    c
-// b    .  b    .  .    c  b    c  b    c
-//  dddd    dddd    ....    dddd    dddd
-// .    f  e    f  .    f  e    f  .    f
-// .    f  e    f  .    f  e    f  .    f
-//  gggg    gggg    ....    gggg    gggg
-//
-// Segments:    	Ons:                            	Offs:
-//  2: 1        	 a: 0, 2, 3, 4, 5, 6, 8, 9      	 a: 1, 4
-//  3: 7        	 b: 0, 4, 5, 6, 8, 9            	 b: 1, 2, 3, 7
-//  4: 4        	 c: 0, 1, 2, 3, 4, 7, 8, 9      	 c: 5, 6
-//  5: 2, 3, 5  	 d: 2, 3, 4, 5, 6, 8, 9         	 d: 0, 1, 7
-//  6: 0, 6, 9  	 e: 0, 2, 6, 8                  	 e: 1, 3, 4, 5, 7, 9
-//  7: 8        	 f: 0, 1, 3, 4, 5, 6, 7, 8, 9   	 f: 2
-//              	 g: 0, 2, 3, 4, 5, 8, 9         	 g: 1, 4, 7
-// To Decode:                                                       	Alternatively:
-//  1 = entry with length 2.                                        	  1 = entry with length 2
-//  4 = entry with length 4.                                        	  4 = entry with length 4.
-//  7 = entry with length 3.                                        	  7 = entry with length 3.
-//  8 = entry with length 7.                                        	  8 = entry with length 7.
-//    bd = segments in 4 but not 1.                                 	  9 = entry with length 6 and all segments of 4.
-//  5 = entry with length 5 with both b and d segemtns.             	  0 = entry with length 6 that isn't 9 and has all segments of 1.
-//    c = segemnt in 1 but not 5.                                   	  6 = entry with length 6 that isn't 0 or 9.
-//  6 = entry with length 6 with no c.                              	  3 = entry with length 5 and all segments of 1.
-//  9 = entry with length 6 that isn't 6 and has all segemnts in 5. 	  5 = entry with length 5 and all segments are in 6.
-//  0 = entry with length 6 that isn't 6 or 9.                      	  2 = entry with length 5 that isn't 3 or 5.
-//    e = segment in 8 but not 9.
-//  2 = entry with length 5 with e in it.
-//  3 = entry with length 5 that isn't 2 or 5.
-//
+func (d Display) Equals(e Display) bool {
+	if d.Len() != e.Len() {
+		return false
+	}
+	for _, c := range string(d) {
+		if !e.Contains(c) {
+			return false
+		}
+	}
+	return true
+}
 
-// -------------------------------------------------------------------------------------
-// ----------------------  Input data structures and definitions  ----------------------
-// -------------------------------------------------------------------------------------
-
-type RuneSorter []rune
-
-func (s RuneSorter) Less(i, j int) bool { return s[i] < s[j] }
-func (s RuneSorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s RuneSorter) Len() int           { return len(s) }
-
-func SortString(str string) string {
-	r := []rune(str)
-	sort.Sort(RuneSorter(r))
-	return string(r)
+func (d Display) Contains(r rune) bool {
+	for _, s := range string(d) {
+		if r == s {
+			return true
+		}
+	}
+	return false
 }
 
 type Note struct {
-	Signals []string
-	Display []string
+	Signals []Display
+	Digits  []Display
 }
 
 func (n Note) String() string {
-	return fmt.Sprintf("%q | %q", n.Signals, n.Display)
+	return fmt.Sprintf("%q | %q", n.Signals, n.Digits)
+}
+
+func (n Note) GetVal() int {
+	byLen := map[int][]Display{}
+	for _, digit := range n.Signals {
+		l := len(digit)
+		byLen[l] = append(byLen[l], digit)
+	}
+	digits := make([]Display, 10)
+	digits[1] = byLen[2][0]
+	digits[4] = byLen[4][0]
+	digits[7] = byLen[3][0]
+	digits[8] = byLen[7][0]
+	segBD := digits[4].Minus(digits[1])
+	for _, digit := range byLen[5] {
+		if digit.Contains(segBD[0]) && digit.Contains(segBD[1]) {
+			digits[5] = digit
+			break
+		}
+	}
+	segC := digits[1].Minus(digits[5])[0]
+	for _, digit := range byLen[6] {
+		if !digit.Contains(segC) {
+			digits[6] = digit
+			break
+		}
+	}
+	for _, digit := range byLen[6] {
+		if !digits[6].Equals(digit) && len(digits[5].Minus(digit)) == 0 {
+			digits[9] = digit
+		}
+	}
+	for _, digit := range byLen[6] {
+		if !digits[6].Equals(digit) && !digits[9].Equals(digit) {
+			digits[0] = digit
+		}
+	}
+	segE := digits[8].Minus(digits[9])[0]
+	for _, digit := range byLen[5] {
+		if digit.Contains(segE) {
+			digits[2] = digit
+		}
+	}
+	for _, digit := range byLen[5] {
+		if !digits[2].Equals(digit) && !digits[5].Equals(digit) {
+			digits[3] = digit
+		}
+	}
+	rv := 0
+	for _, digit := range n.Digits {
+		found := false
+		for i, val := range digits {
+			if digit.Equals(val) {
+				rv = rv*10 + i
+				found = true
+				break
+			}
+		}
+		if !found {
+			Stderr("Digit %q not found in %q", digit, digits)
+		}
+	}
+	Debugf("%q, %q = %d", digits, n.Digits, rv)
+	return rv
 }
 
 // Input is a struct containing the parsed input file.
@@ -201,10 +231,10 @@ func ParseInput(fileData []byte) (Input, error) {
 			parts := strings.Split(line, "|")
 			note := Note{}
 			for _, str := range strings.Fields(parts[0]) {
-				note.Signals = append(note.Signals, SortString(str))
+				note.Signals = append(note.Signals, NewDisplay(str))
 			}
 			for _, str := range strings.Fields(parts[1]) {
-				note.Display = append(note.Display, SortString(str))
+				note.Digits = append(note.Digits, NewDisplay(str))
 			}
 			rv.Notes = append(rv.Notes, note)
 		}

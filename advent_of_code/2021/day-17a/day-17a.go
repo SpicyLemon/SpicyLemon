@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -29,194 +29,239 @@ var funcDepth int
 // The string it returns should be (or include) the answer.
 func Solve(input Input) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
-	answer := 0
-	for _, note := range input.Notes {
-		answer += ReadDisplay(SortSignalsV2(note.Signals), note.Display)
+	if input.Verbose || input.DX != NOT_GIVEN || input.DY != NOT_GIVEN {
+		dx := input.DX
+		dy := input.DY
+		if dx == NOT_GIVEN {
+			dx = int(math.Ceil(math.Sqrt(2.0*float64(input.Target.MinX)+0.25) - 0.5))
+		}
+		if dy == NOT_GIVEN {
+			dy = 0 - input.Target.MinY - 1
+		}
+		probe := NewProbe(dx, dy)
+		Stderr("Initial Probe: %s", probe)
+		path, isHit := probe.FireAt(input.Target)
+		Stderr("Final Probe: %s", probe)
+		Stderr("Path: %s", path)
+		if isHit {
+			Stderr("It's a hit!")
+		} else {
+			Stderr("It's a miss.")
+		}
+		if debug || input.Verbose {
+			Stderr("Drawing:\n%s", Draw(path, input.Target))
+		}
 	}
+	maxdy := 0 - input.Target.MinY - 1
+	answer := maxdy * (maxdy + 1) / 2
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func SortSignalsV2(signals []string) []string {
-	// 1 = entry with length 2
-	// 4 = entry with length 4.
-	// 7 = entry with length 3.
-	// 8 = entry with length 7.
-	// 9 = entry with length 6 and all segments of 4.
-	// 0 = entry with length 6 that isn't 9 and has all segments of 1.
-	// 6 = entry with length 6 that isn't 0 or 9.
-	// 3 = entry with length 5 and all segments of 1.
-	// 5 = entry with length 5 and all segments are in 6.
-	// 2 = entry with length 5 that isn't 3 or 5.
-	// Sort the signals by number of segments.
-	byLen := map[int][]string{}
-	for _, digit := range signals {
-		l := len(digit)
-		byLen[l] = append(byLen[l], digit)
+func Draw(pts Points, target *TargetArea) string {
+	var minX, maxX, minY, maxY int
+	if target.MinX < minX {
+		minX = target.MinX
 	}
-	// Figure out which signals are each digit.
-	rv := make([]string, 10)
-	rv[1] = byLen[2][0]
-	rv[4] = byLen[4][0]
-	rv[7] = byLen[3][0]
-	rv[8] = byLen[7][0]
-	for _, digit := range byLen[6] {
-		switch {
-		case len(rv[9]) == 0 && len(StrMinus(rv[4], digit)) == 0:
-			rv[9] = digit
-		case len(rv[0]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[0] = digit
-		default:
-			rv[6] = digit
+	if target.MaxX > maxX {
+		maxX = target.MaxX
+	}
+	if target.MinY < minY {
+		minY = target.MinY
+	}
+	if target.MaxY > maxY {
+		maxY = target.MaxY
+	}
+	for _, pt := range pts {
+		if pt.X < minX {
+			minX = pt.X
+		}
+		if pt.X > maxX {
+			maxX = pt.X
+		}
+		if pt.Y < minY {
+			minY = pt.Y
+		}
+		if pt.Y > maxY {
+			maxY = pt.Y
 		}
 	}
-	for _, digit := range byLen[5] {
-		switch {
-		case len(rv[3]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[3] = digit
-		case len(rv[5]) == 0 && len(StrMinus(digit, rv[6])) == 0:
-			rv[5] = digit
-		default:
-			rv[2] = digit
+	height := maxY - minY + 1
+	width := maxX - minX + 1
+	grid := make([][]string, height)
+	for y := range grid {
+		grid[y] = make([]string, width)
+		for x := range grid[y] {
+			grid[y][x] = "."
 		}
 	}
-	return rv
+	grid[height+minY-1][0-minX] = "S"
+	for y := target.MinY; y <= target.MaxY; y++ {
+		for x := target.MinX; x <= target.MaxX; x++ {
+			grid[height-y+minY-1][x-minX] = "T"
+		}
+	}
+	xys := make([]XY, len(pts))
+	for i, pt := range pts {
+		grid[height-pt.Y+minY-1][pt.X-minX] = "#"
+		xys[i] = &Point{pt.X - minX, height - pt.Y + minY - 1}
+	}
+	hl := []XY{}
+	last := pts[len(pts)-1]
+	if target.IsHit(last) {
+		hl = append(hl, &Point{last.X - minX, height - last.Y + minY - 1})
+	}
+	return CreateIndexedGridString(grid, xys, hl)
 }
 
-// ReadDisplay uses the digits to conver the display strings into its int value.
-func ReadDisplay(digits []string, display []string) int {
-	rv := 0
-	for _, disp := range display {
-		for i, digit := range digits {
-			if disp == digit {
-				rv = rv*10 + i
-				break
-			}
-		}
-	}
-	Debugf("%q | %4d = %q", digits, rv, display)
-	return rv
+type Probe struct {
+	Position *Point
+	Velocity *Point
+	Path     Points
 }
 
-// StrMinus gets the runes in string a that are not in string b.
-// Strings are assumed to not have any duplicate runes.
-func StrMinus(a, b string) []rune {
-	rv := []rune{}
-	for _, r := range a {
-		if !strings.ContainsRune(b, r) {
-			rv = append(rv, r)
-		}
+func NewProbe(dx, dy int) *Probe {
+	rv := Probe{
+		Position: &Point{0, 0},
+		Velocity: &Point{dx, dy},
 	}
-	return rv
+	return &rv
 }
 
-//   0:      1:      2:      3:      4:
-//  aaaa    ....    aaaa    aaaa    ....
-// b    c  .    c  .    c  .    c  b    c
-// b    c  .    c  .    c  .    c  b    c
-//  ....    ....    dddd    dddd    dddd
-// e    f  .    f  e    .  .    f  .    f
-// e    f  .    f  e    .  .    f  .    f
-//  gggg    ....    gggg    gggg    ....
-//
-//   5:      6:      7:      8:      9:
-//  aaaa    aaaa    aaaa    aaaa    aaaa
-// b    .  b    .  .    c  b    c  b    c
-// b    .  b    .  .    c  b    c  b    c
-//  dddd    dddd    ....    dddd    dddd
-// .    f  e    f  .    f  e    f  .    f
-// .    f  e    f  .    f  e    f  .    f
-//  gggg    gggg    ....    gggg    gggg
-//
-// Segments:    	Ons:                            	Offs:
-//  2: 1        	 a: 0, 2, 3, 4, 5, 6, 8, 9      	 a: 1, 4
-//  3: 7        	 b: 0, 4, 5, 6, 8, 9            	 b: 1, 2, 3, 7
-//  4: 4        	 c: 0, 1, 2, 3, 4, 7, 8, 9      	 c: 5, 6
-//  5: 2, 3, 5  	 d: 2, 3, 4, 5, 6, 8, 9         	 d: 0, 1, 7
-//  6: 0, 6, 9  	 e: 0, 2, 6, 8                  	 e: 1, 3, 4, 5, 7, 9
-//  7: 8        	 f: 0, 1, 3, 4, 5, 6, 7, 8, 9   	 f: 2
-//              	 g: 0, 2, 3, 4, 5, 8, 9         	 g: 1, 4, 7
-// To Decode:                                                       	Alternatively:
-//  1 = entry with length 2.                                        	  1 = entry with length 2
-//  4 = entry with length 4.                                        	  4 = entry with length 4.
-//  7 = entry with length 3.                                        	  7 = entry with length 3.
-//  8 = entry with length 7.                                        	  8 = entry with length 7.
-//    bd = segments in 4 but not 1.                                 	  9 = entry with length 6 and all segments of 4.
-//  5 = entry with length 5 with both b and d segemtns.             	  0 = entry with length 6 that isn't 9 and has all segments of 1.
-//    c = segemnt in 1 but not 5.                                   	  6 = entry with length 6 that isn't 0 or 9.
-//  6 = entry with length 6 with no c.                              	  3 = entry with length 5 and all segments of 1.
-//  9 = entry with length 6 that isn't 6 and has all segemnts in 5. 	  5 = entry with length 5 and all segments are in 6.
-//  0 = entry with length 6 that isn't 6 or 9.                      	  2 = entry with length 5 that isn't 3 or 5.
-//    e = segment in 8 but not 9.
-//  2 = entry with length 5 with e in it.
-//  3 = entry with length 5 that isn't 2 or 5.
-//
+func (p Probe) String() string {
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("Position: %s, Velocity: %s", p.Position, p.Velocity))
+	if len(p.Path) > 0 {
+		rv.WriteString(", Path: ")
+		rv.WriteString(p.Path.String())
+	}
+	return rv.String()
+}
+
+func (p *Probe) FireAt(target *TargetArea) (Points, bool) {
+	for !target.IsHit(p.Position) && !target.WasMissedBy(p.Position) {
+		p.Move()
+	}
+	return p.Path, target.IsHit(p.Position)
+}
+
+func (p *Probe) Move() {
+	p.Position = &Point{p.Position.X + p.Velocity.X, p.Position.Y + p.Velocity.Y}
+	p.Path = append(p.Path, p.Position)
+	if p.Velocity.X > 0 {
+		p.Velocity.X -= 1
+	}
+	p.Velocity.Y -= 1
+}
+
+type Point struct {
+	X int
+	Y int
+}
+
+func (p Point) String() string {
+	return fmt.Sprintf("(%3d,%3d)", p.X, p.Y)
+}
+
+func (p Point) GetX() int {
+	return p.X
+}
+
+func (p Point) GetY() int {
+	return p.Y
+}
+
+type Points []*Point
+
+func (p Points) String() string {
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("{%d}", len(p)))
+	for _, pt := range p {
+		rv.WriteByte(' ')
+		rv.WriteString(pt.String())
+	}
+	return rv.String()
+}
 
 // -------------------------------------------------------------------------------------
 // ----------------------  Input data structures and definitions  ----------------------
 // -------------------------------------------------------------------------------------
 
-type RuneSorter []rune
-
-func (s RuneSorter) Less(i, j int) bool { return s[i] < s[j] }
-func (s RuneSorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s RuneSorter) Len() int           { return len(s) }
-
-func SortString(str string) string {
-	r := []rune(str)
-	sort.Sort(RuneSorter(r))
-	return string(r)
+type TargetArea struct {
+	MinX int
+	MaxX int
+	MinY int
+	MaxY int
 }
 
-type Note struct {
-	Signals []string
-	Display []string
+func (t TargetArea) String() string {
+	return fmt.Sprintf("x=%d..%d, y=%d..%d", t.MinX, t.MaxX, t.MinY, t.MaxY)
 }
 
-func (n Note) String() string {
-	return fmt.Sprintf("%q | %q", n.Signals, n.Display)
+func (t TargetArea) IsHit(p *Point) bool {
+	return p.X >= t.MinX && p.X <= t.MaxX && p.Y >= t.MinY && p.Y <= t.MaxY
+}
+
+func (t TargetArea) WasMissedBy(p *Point) bool {
+	return p.X > t.MaxX || p.Y < t.MinY
 }
 
 // Input is a struct containing the parsed input file.
 type Input struct {
-	Notes []Note
+	Verbose bool
+	Target  *TargetArea
+	DX      int
+	DY      int
 }
 
 // String creates a mutli-line string representation of this Input.
 func (i Input) String() string {
-	lineFmt := DigitFormatForMax(len(i.Notes)) + ": %s\n"
-	var rv strings.Builder
-	for i, v := range i.Notes {
-		rv.WriteString(fmt.Sprintf(lineFmt, i, v))
-	}
-	return rv.String()
+	return fmt.Sprintf("Target Area: %s", i.Target)
 }
 
 // ParseInput parses the contents of an input file into usable pieces.
 func ParseInput(fileData []byte) (Input, error) {
 	defer FuncEndingAlways(FuncStarting())
 	rv := Input{}
-	lines := strings.Split(string(fileData), "\n")
-	for _, line := range lines {
-		if len(line) > 0 {
-			parts := strings.Split(line, "|")
-			note := Note{}
-			for _, str := range strings.Fields(parts[0]) {
-				note.Signals = append(note.Signals, SortString(str))
-			}
-			for _, str := range strings.Fields(parts[1]) {
-				note.Display = append(note.Display, SortString(str))
-			}
-			rv.Notes = append(rv.Notes, note)
-		}
+	line := strings.TrimPrefix(strings.TrimSpace(string(fileData)), "target area: ")
+	xy := strings.Split(line, ", ")
+	xs := strings.Split(strings.TrimPrefix(xy[0], "x="), "..")
+	ys := strings.Split(strings.TrimPrefix(xy[1], "y="), "..")
+	rv.Target = &TargetArea{}
+	var err error
+	rv.Target.MinX, err = strconv.Atoi(xs[0])
+	if err != nil {
+		return rv, err
+	}
+	rv.Target.MaxX, err = strconv.Atoi(xs[1])
+	if err != nil {
+		return rv, err
+	}
+	rv.Target.MinY, err = strconv.Atoi(ys[0])
+	if err != nil {
+		return rv, err
+	}
+	rv.Target.MaxY, err = strconv.Atoi(ys[1])
+	if err != nil {
+		return rv, err
+	}
+	if rv.Target.MinX > rv.Target.MaxX {
+		rv.Target.MinX, rv.Target.MaxX = rv.Target.MaxX, rv.Target.MinX
+	}
+	if rv.Target.MinY > rv.Target.MaxY {
+		rv.Target.MinY, rv.Target.MaxY = rv.Target.MaxY, rv.Target.MinY
 	}
 	return rv, nil
 }
 
+const NOT_GIVEN = -9223372036854775808
+
 // ApplyParams sets input based on CLI params.
 func (i *Input) ApplyParams(params CliParams) {
-	//if params.Count != 0 {
-	//	i.Count = params.Count
-	//}
+	if params.Verbose {
+		i.Verbose = true
+	}
+	i.DX = params.DX
+	i.DY = params.DY
 }
 
 // -------------------------------------------------------------------------------------
@@ -227,6 +272,8 @@ func (i *Input) ApplyParams(params CliParams) {
 type CliParams struct {
 	// Debug is whether or not to output debug messages.
 	Debug bool
+	// Verbose is a flag indicating some extra output is desired.
+	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
@@ -235,6 +282,8 @@ type CliParams struct {
 	InputFile string
 	// Count is just a generic int that can be provided.
 	Count int
+	DX    int
+	DY    int
 }
 
 // String creates a multi-line string representing this CliParams
@@ -242,10 +291,13 @@ func (c CliParams) String() string {
 	nameFmt := "%20s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", c.Debug),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
 		fmt.Sprintf(nameFmt+"%t", "Help Printed", c.HelpPrinted),
 		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
 		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
 		fmt.Sprintf(nameFmt+"%d", "Count", c.Count),
+		fmt.Sprintf(nameFmt+"%d", "DX", c.DX),
+		fmt.Sprintf(nameFmt+"%d", "DY", c.DY),
 	}
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -257,6 +309,8 @@ func GetCliParams(args []string) CliParams {
 	defer FuncEnding(FuncStarting())
 	var err error
 	rv := CliParams{}
+	rv.DX = NOT_GIVEN
+	rv.DY = NOT_GIVEN
 	for i := 0; i < len(args); i++ {
 		switch {
 		// Flag cases go first.
@@ -294,9 +348,27 @@ func GetCliParams(args []string) CliParams {
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
 			i += extraI
 			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
+			Debugf("Verbose option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
+			i += extraI
+			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--dx", "-x", "-dx"):
+			Debugf("DX option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.DX, extraI, err = ParseFlagInt(args[i:])
+			i += extraI
+			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--dy", "-y", "-dy"):
+			Debugf("DY option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			rv.DY, extraI, err = ParseFlagInt(args[i:])
+			i += extraI
+			rv.AppendError(err)
 
 		// Positional args go last in the order they're expected.
-		case len(rv.InputFile) == 0:
+		case len(rv.InputFile) == 0 && len(args[i]) > 0 && args[i][0] != '-':
 			Debugf("Input File argument: [%s].", args[i])
 			rv.InputFile = args[i]
 		default:
@@ -654,6 +726,132 @@ func GetFuncName(depth int, a ...interface{}) string {
 		name += fmt.Sprintf(": %s", strings.Join(args, ", "))
 	}
 	return name
+}
+
+type XY interface {
+	GetX() int
+	GetY() int
+}
+
+func CreateIndexedGridString(vals [][]string, colorPoints []XY, highlightPoints []XY) string {
+	// Get the height. If it's zero, there's nothing to return.
+	height := len(vals)
+	if height == 0 {
+		return ""
+	}
+	// Get the max cell length and the max row width.
+	cellLen := 0
+	width := len(vals[0])
+	for _, r := range vals {
+		if len(r) > width {
+			width = len(r)
+		}
+		for _, c := range r {
+			if len(c) > cellLen {
+				cellLen = len(c)
+			}
+		}
+	}
+	leadFmt := fmt.Sprintf("%%%dd:", len(fmt.Sprintf("%d", height)))
+	var rv strings.Builder
+	// If none of the rows have anything, just print out the row numbers.
+	if width == 0 {
+		for y := range vals {
+			rv.WriteString(fmt.Sprintf(leadFmt, y))
+			rv.WriteByte('\n')
+		}
+		return rv.String()
+	}
+	// Create a matrix indicating desired text formats.
+	textFmt := make([][]int, height)
+	for y := range textFmt {
+		textFmt[y] = make([]int, width)
+	}
+	for _, p := range colorPoints {
+		if p.GetY() < height && p.GetX() < width {
+			textFmt[p.GetY()][p.GetX()] = 1
+		}
+	}
+	for _, p := range highlightPoints {
+		if p.GetY() < height && p.GetX() < width && textFmt[p.GetY()][p.GetX()] <= 1 {
+			textFmt[p.GetY()][p.GetX()] += 2
+		}
+	}
+	// Create the index numbers accross the top.
+	if cellLen > 1 {
+		cellLen++
+	}
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
+	blankLead := strings.Repeat(" ", len(fmt.Sprintf(leadFmt, 0)))
+	topIndexLines := CreateTopIndexLines(width, cellLen)
+	for _, l := range topIndexLines {
+		rv.WriteString(fmt.Sprintf("%s%s\n", blankLead, l))
+	}
+	// Add all the line numbers, cells and extra formatting.
+	for y, r := range vals {
+		rv.WriteString(fmt.Sprintf(leadFmt, y))
+		for x := 0; x < width; x++ {
+			v := ""
+			if x < len(r) {
+				v = r[x]
+			}
+			cell := fmt.Sprintf(cellFmt, v)
+			switch textFmt[y][x] {
+			case 1: // color only
+				rv.WriteString("\033[32m" + cell + "\033[0m") // Green text
+			case 2: // highlight only
+				rv.WriteString("\033[7m" + cell + "\033[0m") // Reversed (grey back, black text)
+			case 3: // color and highlight
+				rv.WriteString("\033[97;42m" + cell + "\033[0m") // Green background, white text
+			default:
+				rv.WriteString(cell)
+			}
+		}
+		rv.WriteByte('\n')
+	}
+	return rv.String()
+}
+
+func CreateTopIndexLines(count, cellLen int) []string {
+	rv := []string{}
+	if count > 100 {
+		rv = append(rv, CreateIndexLinesHundreds(count, cellLen))
+	}
+	if count > 10 {
+		rv = append(rv, CreateIndexLinesTens(count, cellLen))
+	}
+	if count > 0 {
+		rv = append(rv, CreateIndexLineOnes(count, cellLen))
+		rv = append(rv, strings.Repeat("-", count*cellLen))
+	}
+	return rv
+}
+
+func CreateIndexLineOnes(count, cellLen int) string {
+	cellFmt := fmt.Sprintf("%%%dd", cellLen)
+	digits := fmt.Sprintf(strings.Repeat(cellFmt, 10), 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+	rv := strings.Repeat(digits, 1+count/10)
+	return rv[:count*cellLen]
+}
+
+func CreateIndexLinesTens(count, cellLen int) string {
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
+	var digits strings.Builder
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"} {
+		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 10))
+	}
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 10) + strings.Repeat(digits.String(), 1+count/100)
+	return rv[:count*cellLen]
+}
+
+func CreateIndexLinesHundreds(count, cellLen int) string {
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
+	var digits strings.Builder
+	for _, s := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", " "} {
+		digits.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), 100))
+	}
+	rv := strings.Repeat(fmt.Sprintf(cellFmt, " "), 100) + strings.Repeat(digits.String(), 1+count/1000)
+	return rv[:count*cellLen]
 }
 
 // -------------------------------------------------------------------------------------

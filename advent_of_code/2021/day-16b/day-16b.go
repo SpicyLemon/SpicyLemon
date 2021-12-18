@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -30,162 +29,234 @@ var funcDepth int
 func Solve(input Input) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
 	answer := 0
-	for _, note := range input.Notes {
-		answer += ReadDisplay(SortSignalsV2(note.Signals), note.Display)
+	for i, hex := range input.Lines {
+		Stdout("%d: hex: %s", i, hex)
+		packet, err := ParsePacketHex(hex)
+		if err != nil {
+			return "", err
+		}
+		answer = packet.CalculateValue()
+		Stdout("%d: packet (version sum = %d):\n%s", i, answer, packet)
 	}
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func SortSignalsV2(signals []string) []string {
-	// 1 = entry with length 2
-	// 4 = entry with length 4.
-	// 7 = entry with length 3.
-	// 8 = entry with length 7.
-	// 9 = entry with length 6 and all segments of 4.
-	// 0 = entry with length 6 that isn't 9 and has all segments of 1.
-	// 6 = entry with length 6 that isn't 0 or 9.
-	// 3 = entry with length 5 and all segments of 1.
-	// 5 = entry with length 5 and all segments are in 6.
-	// 2 = entry with length 5 that isn't 3 or 5.
-	// Sort the signals by number of segments.
-	byLen := map[int][]string{}
-	for _, digit := range signals {
-		l := len(digit)
-		byLen[l] = append(byLen[l], digit)
-	}
-	// Figure out which signals are each digit.
-	rv := make([]string, 10)
-	rv[1] = byLen[2][0]
-	rv[4] = byLen[4][0]
-	rv[7] = byLen[3][0]
-	rv[8] = byLen[7][0]
-	for _, digit := range byLen[6] {
-		switch {
-		case len(rv[9]) == 0 && len(StrMinus(rv[4], digit)) == 0:
-			rv[9] = digit
-		case len(rv[0]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[0] = digit
-		default:
-			rv[6] = digit
-		}
-	}
-	for _, digit := range byLen[5] {
-		switch {
-		case len(rv[3]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[3] = digit
-		case len(rv[5]) == 0 && len(StrMinus(digit, rv[6])) == 0:
-			rv[5] = digit
-		default:
-			rv[2] = digit
-		}
-	}
-	return rv
+type Packet struct {
+	Version    uint64
+	Type       uint64
+	LiteralStr string
+	Literal    uint64
+	SubPackets []*Packet
 }
 
-// ReadDisplay uses the digits to conver the display strings into its int value.
-func ReadDisplay(digits []string, display []string) int {
+func (p Packet) CalculateValue() int {
 	rv := 0
-	for _, disp := range display {
-		for i, digit := range digits {
-			if disp == digit {
-				rv = rv*10 + i
-				break
+	switch p.Type {
+	case 0: // sum
+		for _, s := range p.SubPackets {
+			rv += s.CalculateValue()
+		}
+	case 1: // product
+		rv = 1
+		for _, s := range p.SubPackets {
+			rv *= s.CalculateValue()
+		}
+	case 2: // min
+		rv = 9223372036854775807
+		for _, s := range p.SubPackets {
+			v := s.CalculateValue()
+			if v < rv {
+				rv = v
 			}
 		}
-	}
-	Debugf("%q | %4d = %q", digits, rv, display)
-	return rv
-}
-
-// StrMinus gets the runes in string a that are not in string b.
-// Strings are assumed to not have any duplicate runes.
-func StrMinus(a, b string) []rune {
-	rv := []rune{}
-	for _, r := range a {
-		if !strings.ContainsRune(b, r) {
-			rv = append(rv, r)
+	case 3: // max
+		for _, s := range p.SubPackets {
+			v := s.CalculateValue()
+			if v > rv {
+				rv = v
+			}
+		}
+	case 4: // Literal
+		rv = int(p.Literal)
+	case 5: // >
+		if p.SubPackets[0].CalculateValue() > p.SubPackets[1].CalculateValue() {
+			rv = 1
+		}
+	case 6: // <
+		if p.SubPackets[0].CalculateValue() < p.SubPackets[1].CalculateValue() {
+			rv = 1
+		}
+	case 7: // ==
+		if p.SubPackets[0].CalculateValue() == p.SubPackets[1].CalculateValue() {
+			rv = 1
 		}
 	}
 	return rv
 }
 
-//   0:      1:      2:      3:      4:
-//  aaaa    ....    aaaa    aaaa    ....
-// b    c  .    c  .    c  .    c  b    c
-// b    c  .    c  .    c  .    c  b    c
-//  ....    ....    dddd    dddd    dddd
-// e    f  .    f  e    .  .    f  .    f
-// e    f  .    f  e    .  .    f  .    f
-//  gggg    ....    gggg    gggg    ....
-//
-//   5:      6:      7:      8:      9:
-//  aaaa    aaaa    aaaa    aaaa    aaaa
-// b    .  b    .  .    c  b    c  b    c
-// b    .  b    .  .    c  b    c  b    c
-//  dddd    dddd    ....    dddd    dddd
-// .    f  e    f  .    f  e    f  .    f
-// .    f  e    f  .    f  e    f  .    f
-//  gggg    gggg    ....    gggg    gggg
-//
-// Segments:    	Ons:                            	Offs:
-//  2: 1        	 a: 0, 2, 3, 4, 5, 6, 8, 9      	 a: 1, 4
-//  3: 7        	 b: 0, 4, 5, 6, 8, 9            	 b: 1, 2, 3, 7
-//  4: 4        	 c: 0, 1, 2, 3, 4, 7, 8, 9      	 c: 5, 6
-//  5: 2, 3, 5  	 d: 2, 3, 4, 5, 6, 8, 9         	 d: 0, 1, 7
-//  6: 0, 6, 9  	 e: 0, 2, 6, 8                  	 e: 1, 3, 4, 5, 7, 9
-//  7: 8        	 f: 0, 1, 3, 4, 5, 6, 7, 8, 9   	 f: 2
-//              	 g: 0, 2, 3, 4, 5, 8, 9         	 g: 1, 4, 7
-// To Decode:                                                       	Alternatively:
-//  1 = entry with length 2.                                        	  1 = entry with length 2
-//  4 = entry with length 4.                                        	  4 = entry with length 4.
-//  7 = entry with length 3.                                        	  7 = entry with length 3.
-//  8 = entry with length 7.                                        	  8 = entry with length 7.
-//    bd = segments in 4 but not 1.                                 	  9 = entry with length 6 and all segments of 4.
-//  5 = entry with length 5 with both b and d segemtns.             	  0 = entry with length 6 that isn't 9 and has all segments of 1.
-//    c = segemnt in 1 but not 5.                                   	  6 = entry with length 6 that isn't 0 or 9.
-//  6 = entry with length 6 with no c.                              	  3 = entry with length 5 and all segments of 1.
-//  9 = entry with length 6 that isn't 6 and has all segemnts in 5. 	  5 = entry with length 5 and all segments are in 6.
-//  0 = entry with length 6 that isn't 6 or 9.                      	  2 = entry with length 5 that isn't 3 or 5.
-//    e = segment in 8 but not 9.
-//  2 = entry with length 5 with e in it.
-//  3 = entry with length 5 that isn't 2 or 5.
-//
+func (p Packet) VersionSum() int {
+	rv := int(p.Version)
+	for _, s := range p.SubPackets {
+		rv += s.VersionSum()
+	}
+	return rv
+}
+
+func (p Packet) String() string {
+	return p.PrefixedString("")
+}
+
+func (p Packet) PrefixedString(pre string) string {
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("%sVersion: %d, Type: %d\n", pre, p.Version, p.Type))
+	if len(p.LiteralStr) > 0 {
+		rv.WriteString(fmt.Sprintf("%sLiteral: %d [%s]\n", pre, p.Literal, p.LiteralStr))
+	}
+	if len(p.SubPackets) > 0 {
+		rv.WriteString(fmt.Sprintf("%sSubPackets (%d):\n", pre, len(p.SubPackets)))
+		for i, s := range p.SubPackets {
+			rv.WriteString(s.PrefixedString(fmt.Sprintf("%s%2d: ", pre, i)))
+		}
+	}
+	return rv.String()
+}
+
+func ParsePacketHex(hex string) (*Packet, error) {
+	defer FuncEnding(FuncStarting())
+	bin, err := ConvertHexStringToBinaryString(hex)
+	if err != nil {
+		return nil, err
+	}
+	p, rest, err := ParsePacketBin(bin)
+	if err != nil {
+		return nil, err
+	}
+	if len(rest) > 0 && strings.Repeat("0", len(rest)) != rest {
+		return p, fmt.Errorf("leftover bits are not all zeros: [%s]", rest)
+	}
+	return p, nil
+}
+
+// ParsePacketBin parses a binary string into a packet, and a remaining binary string
+func ParsePacketBin(bin string) (*Packet, string, error) {
+	defer FuncEnding(FuncStarting())
+	rv := Packet{}
+	var rest string
+	var err error
+	rv.Version, err = strconv.ParseUint(bin[0:3], 2, 64)
+	if err != nil {
+		return nil, "", err
+	}
+	rv.Type, err = strconv.ParseUint(bin[3:6], 2, 64)
+	if err != nil {
+		return nil, "", err
+	}
+	switch rv.Type {
+	case 4:
+		rv.LiteralStr, rest, err = ParseLiteral(bin[6:])
+		if err != nil {
+			return &rv, rest, err
+		}
+		rv.Literal, err = strconv.ParseUint(rv.LiteralStr, 2, 64)
+	default:
+		rv.SubPackets, rest, err = ParseOperator(bin[6:])
+	}
+	return &rv, rest, err
+}
+
+// ParseLiteral splits bin up into the literal value and the rest.
+func ParseLiteral(bin string) (string, string, error) {
+	defer FuncEnding(FuncStarting())
+	var rv strings.Builder
+	for i := 0; i < len(bin); i += 5 {
+		if i+5 > len(bin) {
+			break
+		}
+		rv.WriteString(bin[i+1 : i+5])
+		if bin[i] == '0' {
+			return rv.String(), bin[i+5:], nil
+		}
+	}
+	return "", "", fmt.Errorf("end of string found before finding last group in [%s]", bin)
+}
+
+func ParseOperator(bin string) ([]*Packet, string, error) {
+	defer FuncEnding(FuncStarting())
+	switch bin[0] {
+	case '0':
+		lenBin, err := strconv.ParseUint(bin[1:16], 2, 16)
+		if err != nil {
+			return nil, "", err
+		}
+		packets := []*Packet{}
+		ofInterest := bin[16 : 16+lenBin]
+		for len(ofInterest) > 0 {
+			var packet *Packet
+			packet, ofInterest, err = ParsePacketBin(ofInterest)
+			if err != nil {
+				return nil, "", err
+			}
+			packets = append(packets, packet)
+		}
+		return packets, bin[16+lenBin:], nil
+	case '1':
+		numPacks, err := strconv.ParseUint(bin[1:12], 2, 16)
+		if err != nil {
+			return nil, "", err
+		}
+		packets := make([]*Packet, numPacks)
+		rest := bin[12:]
+		for i := uint64(0); i < numPacks; i++ {
+			packets[i], rest, err = ParsePacketBin(rest)
+			if err != nil {
+				return nil, "", err
+			}
+		}
+		return packets, rest, nil
+	}
+	return nil, "", fmt.Errorf("unknown error parsing operator [%s]", bin)
+}
+
+func ConvertHexStringToBinaryString(hex string) (string, error) {
+	// Max uint64 is ffffffffffffffff as hex (16 characters) = 18,446,744,073,709,551,615 = 64 '1's as binary.
+	// Split the hex string up into strings that are at most 16 characters long. Convert each to a uint64, then to binary.
+	// First, split the hex string up into strings that are at most 16 characters long.
+	var rv strings.Builder
+	for i := 0; i < len(hex); i += 16 {
+		end := i + 16
+		if end > len(hex) {
+			end = len(hex)
+		}
+		hexChunk := hex[i:end]
+		asUi, err := strconv.ParseUint(hexChunk, 16, 64)
+		if err != nil {
+			return "", fmt.Errorf("error parsing [%s] (%d-%d): %w", hexChunk, i, end, err)
+		}
+		bin := strconv.FormatUint(asUi, 2)
+		binLen := len(hexChunk) * 4
+		withZeros := []byte(strings.Repeat("0", binLen))
+		copy(withZeros[binLen-len(bin):], []byte(bin))
+		rv.Write(withZeros)
+	}
+	return rv.String(), nil
+}
 
 // -------------------------------------------------------------------------------------
 // ----------------------  Input data structures and definitions  ----------------------
 // -------------------------------------------------------------------------------------
 
-type RuneSorter []rune
-
-func (s RuneSorter) Less(i, j int) bool { return s[i] < s[j] }
-func (s RuneSorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s RuneSorter) Len() int           { return len(s) }
-
-func SortString(str string) string {
-	r := []rune(str)
-	sort.Sort(RuneSorter(r))
-	return string(r)
-}
-
-type Note struct {
-	Signals []string
-	Display []string
-}
-
-func (n Note) String() string {
-	return fmt.Sprintf("%q | %q", n.Signals, n.Display)
-}
+// TODO: Define other needed data structures for the input.
 
 // Input is a struct containing the parsed input file.
 type Input struct {
-	Notes []Note
+	Lines []string
 }
 
 // String creates a mutli-line string representation of this Input.
 func (i Input) String() string {
-	lineFmt := DigitFormatForMax(len(i.Notes)) + ": %s\n"
+	lineFmt := DigitFormatForMax(len(i.Lines)) + ": %s\n"
 	var rv strings.Builder
-	for i, v := range i.Notes {
+	for i, v := range i.Lines {
 		rv.WriteString(fmt.Sprintf(lineFmt, i, v))
 	}
 	return rv.String()
@@ -198,15 +269,7 @@ func ParseInput(fileData []byte) (Input, error) {
 	lines := strings.Split(string(fileData), "\n")
 	for _, line := range lines {
 		if len(line) > 0 {
-			parts := strings.Split(line, "|")
-			note := Note{}
-			for _, str := range strings.Fields(parts[0]) {
-				note.Signals = append(note.Signals, SortString(str))
-			}
-			for _, str := range strings.Fields(parts[1]) {
-				note.Display = append(note.Display, SortString(str))
-			}
-			rv.Notes = append(rv.Notes, note)
+			rv.Lines = append(rv.Lines, line)
 		}
 	}
 	return rv, nil
@@ -214,9 +277,9 @@ func ParseInput(fileData []byte) (Input, error) {
 
 // ApplyParams sets input based on CLI params.
 func (i *Input) ApplyParams(params CliParams) {
-	//if params.Count != 0 {
-	//	i.Count = params.Count
-	//}
+	if len(params.Custom) > 0 {
+		i.Lines = params.Custom
+	}
 }
 
 // -------------------------------------------------------------------------------------
@@ -235,6 +298,8 @@ type CliParams struct {
 	InputFile string
 	// Count is just a generic int that can be provided.
 	Count int
+	// Custom is extra hex strings to do instead of the file contents.
+	Custom []string
 }
 
 // String creates a multi-line string representing this CliParams
@@ -246,6 +311,7 @@ func (c CliParams) String() string {
 		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
 		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
 		fmt.Sprintf(nameFmt+"%d", "Count", c.Count),
+		fmt.Sprintf(nameFmt+"%q", "Custom", c.Custom),
 	}
 	return strings.Join(lines, "\n") + "\n"
 }
@@ -294,9 +360,17 @@ func GetCliParams(args []string) CliParams {
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
 			i += extraI
 			rv.AppendError(err)
+		case HasOneOfPrefixesFold(args[i], "--hex", "--custom", "--extra"):
+			Debugf("Custom hex option found: [%s], args left: %q.", args[i], args[i:])
+			var extraI int
+			var custom string
+			custom, extraI, err = ParseFlagString(args[i:])
+			rv.Custom = append(rv.Custom, custom)
+			i += extraI
+			rv.AppendError(err)
 
 		// Positional args go last in the order they're expected.
-		case len(rv.InputFile) == 0:
+		case len(rv.InputFile) == 0 && args[i][0] != '-':
 			Debugf("Input File argument: [%s].", args[i])
 			rv.InputFile = args[i]
 		default:

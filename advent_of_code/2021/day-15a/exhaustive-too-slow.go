@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -25,168 +24,257 @@ var funcDepth int
 // ----------------------------  Solver specific functions  ----------------------------
 // -------------------------------------------------------------------------------------
 
+var PathsToEnd []RiskPath
+var MaxPath = 500
+
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
 func Solve(input Input) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
-	answer := 0
-	for _, note := range input.Notes {
-		answer += ReadDisplay(SortSignalsV2(note.Signals), note.Display)
+	rm := NewRiskMap(input.Risks)
+	MaxPath = input.MaxPath
+	Debugf("Risk Map:\n%s", rm)
+	_ = NewNodeTree(rm.Risks[0][0])
+	Debugf("Paths to the end: %d", len(PathsToEnd))
+	answer := 9223372036854775807
+	var path RiskPath
+	for _, p := range PathsToEnd {
+		t := p.Total()
+		if t < answer {
+			answer = t
+			path = p
+		}
 	}
+	Stdout("Path: %s", path)
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func SortSignalsV2(signals []string) []string {
-	// 1 = entry with length 2
-	// 4 = entry with length 4.
-	// 7 = entry with length 3.
-	// 8 = entry with length 7.
-	// 9 = entry with length 6 and all segments of 4.
-	// 0 = entry with length 6 that isn't 9 and has all segments of 1.
-	// 6 = entry with length 6 that isn't 0 or 9.
-	// 3 = entry with length 5 and all segments of 1.
-	// 5 = entry with length 5 and all segments are in 6.
-	// 2 = entry with length 5 that isn't 3 or 5.
-	// Sort the signals by number of segments.
-	byLen := map[int][]string{}
-	for _, digit := range signals {
-		l := len(digit)
-		byLen[l] = append(byLen[l], digit)
-	}
-	// Figure out which signals are each digit.
-	rv := make([]string, 10)
-	rv[1] = byLen[2][0]
-	rv[4] = byLen[4][0]
-	rv[7] = byLen[3][0]
-	rv[8] = byLen[7][0]
-	for _, digit := range byLen[6] {
-		switch {
-		case len(rv[9]) == 0 && len(StrMinus(rv[4], digit)) == 0:
-			rv[9] = digit
-		case len(rv[0]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[0] = digit
-		default:
-			rv[6] = digit
-		}
-	}
-	for _, digit := range byLen[5] {
-		switch {
-		case len(rv[3]) == 0 && len(StrMinus(rv[1], digit)) == 0:
-			rv[3] = digit
-		case len(rv[5]) == 0 && len(StrMinus(digit, rv[6])) == 0:
-			rv[5] = digit
-		default:
-			rv[2] = digit
-		}
-	}
-	return rv
+func NewNodeTree(start *Risk) *Node {
+	return AddTreeNodes(RiskPath{}, start)
 }
 
-// ReadDisplay uses the digits to conver the display strings into its int value.
-func ReadDisplay(digits []string, display []string) int {
-	rv := 0
-	for _, disp := range display {
-		for i, digit := range digits {
-			if disp == digit {
-				rv = rv*10 + i
-				break
+func AddTreeNodes(path RiskPath, next *Risk) *Node {
+	rv := Node{
+		Path: path.WithRisk(next),
+		Next: []*Node{},
+	}
+	if next.IsEnd {
+		Debugf("Path to end: %s", rv.Path)
+		PathsToEnd = append(PathsToEnd, rv.Path)
+		return &rv
+	}
+	if len(rv.Path) >= MaxPath {
+		return &rv
+	}
+	for _, r := range next.Neighbors {
+		if CanGoTo(rv.Path, r) {
+			nextNode := AddTreeNodes(rv.Path, r)
+			rv.Next = append(rv.Next, nextNode)
+		}
+	}
+	return &rv
+}
+
+func CanGoTo(path RiskPath, next *Risk) bool {
+	for i, r := range path {
+		if r.ID == next.ID {
+			return false
+		}
+		if i < len(path)-1 {
+			for _, r2 := range r.Neighbors {
+				if r2.ID == next.ID {
+					return false
+				}
 			}
 		}
 	}
-	Debugf("%q | %4d = %q", digits, rv, display)
-	return rv
+	return true
 }
 
-// StrMinus gets the runes in string a that are not in string b.
-// Strings are assumed to not have any duplicate runes.
-func StrMinus(a, b string) []rune {
-	rv := []rune{}
-	for _, r := range a {
-		if !strings.ContainsRune(b, r) {
-			rv = append(rv, r)
-		}
+type Node struct {
+	Path RiskPath
+	Next []*Node
+}
+
+func (n Node) String() string {
+	end := ""
+	switch {
+	case n.IsEnd():
+		end = " [out]"
+	case len(n.Next) > 0:
+		end = fmt.Sprintf(" + %d", len(n.Next))
+	default:
+		end = " DEAD"
+	}
+	return n.Path.String() + end
+}
+
+func (n Node) IsEnd() bool {
+	return len(n.Next) == 0 && len(n.Path) > 0 && n.Path[len(n.Path)-1].IsEnd
+}
+
+type RiskPath []*Risk
+
+func (p RiskPath) String() string {
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("%d: ", p.Total()))
+	for _, r := range p {
+		rv.WriteString(fmt.Sprintf("%d", r.RiskLevel))
+	}
+	return rv.String()
+}
+
+func (p RiskPath) Total() int {
+	rv := 0
+	for _, r := range p {
+		rv += r.RiskLevel
 	}
 	return rv
 }
 
-//   0:      1:      2:      3:      4:
-//  aaaa    ....    aaaa    aaaa    ....
-// b    c  .    c  .    c  .    c  b    c
-// b    c  .    c  .    c  .    c  b    c
-//  ....    ....    dddd    dddd    dddd
-// e    f  .    f  e    .  .    f  .    f
-// e    f  .    f  e    .  .    f  .    f
-//  gggg    ....    gggg    gggg    ....
-//
-//   5:      6:      7:      8:      9:
-//  aaaa    aaaa    aaaa    aaaa    aaaa
-// b    .  b    .  .    c  b    c  b    c
-// b    .  b    .  .    c  b    c  b    c
-//  dddd    dddd    ....    dddd    dddd
-// .    f  e    f  .    f  e    f  .    f
-// .    f  e    f  .    f  e    f  .    f
-//  gggg    gggg    ....    gggg    gggg
-//
-// Segments:    	Ons:                            	Offs:
-//  2: 1        	 a: 0, 2, 3, 4, 5, 6, 8, 9      	 a: 1, 4
-//  3: 7        	 b: 0, 4, 5, 6, 8, 9            	 b: 1, 2, 3, 7
-//  4: 4        	 c: 0, 1, 2, 3, 4, 7, 8, 9      	 c: 5, 6
-//  5: 2, 3, 5  	 d: 2, 3, 4, 5, 6, 8, 9         	 d: 0, 1, 7
-//  6: 0, 6, 9  	 e: 0, 2, 6, 8                  	 e: 1, 3, 4, 5, 7, 9
-//  7: 8        	 f: 0, 1, 3, 4, 5, 6, 7, 8, 9   	 f: 2
-//              	 g: 0, 2, 3, 4, 5, 8, 9         	 g: 1, 4, 7
-// To Decode:                                                       	Alternatively:
-//  1 = entry with length 2.                                        	  1 = entry with length 2
-//  4 = entry with length 4.                                        	  4 = entry with length 4.
-//  7 = entry with length 3.                                        	  7 = entry with length 3.
-//  8 = entry with length 7.                                        	  8 = entry with length 7.
-//    bd = segments in 4 but not 1.                                 	  9 = entry with length 6 and all segments of 4.
-//  5 = entry with length 5 with both b and d segemtns.             	  0 = entry with length 6 that isn't 9 and has all segments of 1.
-//    c = segemnt in 1 but not 5.                                   	  6 = entry with length 6 that isn't 0 or 9.
-//  6 = entry with length 6 with no c.                              	  3 = entry with length 5 and all segments of 1.
-//  9 = entry with length 6 that isn't 6 and has all segemnts in 5. 	  5 = entry with length 5 and all segments are in 6.
-//  0 = entry with length 6 that isn't 6 or 9.                      	  2 = entry with length 5 that isn't 3 or 5.
-//    e = segment in 8 but not 9.
-//  2 = entry with length 5 with e in it.
-//  3 = entry with length 5 that isn't 2 or 5.
-//
+func (p RiskPath) WithRisk(r *Risk) RiskPath {
+	rv := make([]*Risk, len(p)+1)
+	copy(rv, p)
+	rv[len(p)] = r
+	return rv
+}
+
+type RiskMap struct {
+	Risks  [][]*Risk
+	Height int
+	Width  int
+}
+
+func NewRiskMap(risks [][]int) *RiskMap {
+	rv := RiskMap{
+		Height: len(risks),
+		Width:  len(risks[0]),
+	}
+	rv.Risks = make([][]*Risk, rv.Height)
+	for i := range risks {
+		rv.Risks[i] = make([]*Risk, rv.Width)
+	}
+	// Create all of them without linking neighbors.
+	for y := 0; y < rv.Height; y++ {
+		for x := 0; x < rv.Width; x++ {
+			rv.Risks[y][x] = NewRisk(x, y, risks[y][x])
+		}
+	}
+	// Now we can connect all of them.
+	for y := 0; y < rv.Height; y++ {
+		for x := 0; x < rv.Width; x++ {
+			if x > 0 {
+				rv.Risks[y][x].AddNeighbor(rv.Risks[y][x-1])
+			}
+			if x < rv.Width-1 {
+				rv.Risks[y][x].AddNeighbor(rv.Risks[y][x+1])
+			}
+			if y > 0 {
+				rv.Risks[y][x].AddNeighbor(rv.Risks[y-1][x])
+			}
+			if y < rv.Height-1 {
+				rv.Risks[y][x].AddNeighbor(rv.Risks[y+1][x])
+			}
+		}
+	}
+	// And mark the end.
+	rv.Risks[rv.Height-1][rv.Width-1].IsEnd = true
+	return &rv
+}
+
+func (m RiskMap) String() string {
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("Risk Map: %d x %d\n", m.Width, m.Height))
+	for y := 0; y < m.Height; y++ {
+		for x := 0; x < m.Width; x++ {
+			rv.WriteString(fmt.Sprintf("%d", m.Risks[y][x].RiskLevel))
+		}
+		rv.WriteByte('\n')
+	}
+	if m.Width*m.Height < 200 {
+		for y := 0; y < m.Height; y++ {
+			for x := 0; x < m.Width; x++ {
+				rv.WriteString(m.Risks[y][x].String())
+				rv.WriteByte('\n')
+			}
+		}
+	}
+	return rv.String()
+}
+
+var LastRiskID = -1
+
+type Risk struct {
+	ID        int
+	RiskLevel int
+	X         int
+	Y         int
+	Neighbors []*Risk
+	IsEnd     bool
+}
+
+func NewRisk(x, y, riskLevel int) *Risk {
+	LastRiskID++
+	return &Risk{
+		ID:        LastRiskID,
+		RiskLevel: riskLevel,
+		X:         x,
+		Y:         y,
+		Neighbors: []*Risk{},
+	}
+}
+
+func (r Risk) String() string {
+	idFmt := DigitFormatForMax(LastRiskID)
+	nz := make([]string, len(r.Neighbors))
+	for i, n := range r.Neighbors {
+		nz[i] = fmt.Sprintf(idFmt+":%d(%2d, %2d)", n.ID, n.RiskLevel, n.X, n.Y)
+	}
+	return fmt.Sprintf(idFmt+": %d (%2d, %2d) -> [%s]", r.ID, r.RiskLevel, r.X, r.Y, strings.Join(nz, "; "))
+}
+
+func (r *Risk) AddNeighbor(q *Risk) {
+	r.Neighbors = append(r.Neighbors, q)
+	q.Neighbors = append(q.Neighbors, r)
+}
 
 // -------------------------------------------------------------------------------------
 // ----------------------  Input data structures and definitions  ----------------------
 // -------------------------------------------------------------------------------------
 
-type RuneSorter []rune
-
-func (s RuneSorter) Less(i, j int) bool { return s[i] < s[j] }
-func (s RuneSorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s RuneSorter) Len() int           { return len(s) }
-
-func SortString(str string) string {
-	r := []rune(str)
-	sort.Sort(RuneSorter(r))
-	return string(r)
-}
-
-type Note struct {
-	Signals []string
-	Display []string
-}
-
-func (n Note) String() string {
-	return fmt.Sprintf("%q | %q", n.Signals, n.Display)
-}
-
 // Input is a struct containing the parsed input file.
 type Input struct {
-	Notes []Note
+	Risks   [][]int
+	MaxPath int
 }
 
 // String creates a mutli-line string representation of this Input.
 func (i Input) String() string {
-	lineFmt := DigitFormatForMax(len(i.Notes)) + ": %s\n"
+	lineFmt := DigitFormatForMax(len(i.Risks)) + ":"
+	lineLead := strings.Repeat(" ", len(fmt.Sprintf(lineFmt, 0)))
 	var rv strings.Builder
-	for i, v := range i.Notes {
-		rv.WriteString(fmt.Sprintf(lineFmt, i, v))
+	width := len(i.Risks[0])
+	if width > 10 {
+		var l1 strings.Builder
+		for _, s := range []string{" ", "1", "2", "3", "4", "5", "6", "7", "8", "9"} {
+			l1.WriteString(strings.Repeat(s, 10))
+		}
+		rv.WriteString(lineLead)
+		rv.WriteString(l1.String()[:width])
+		rv.WriteByte('\n')
+	}
+	rv.WriteString(lineLead)
+	rv.WriteString(strings.Repeat("0123456789", 10)[:width])
+	rv.WriteByte('\n')
+	rv.WriteString(lineLead)
+	rv.WriteString(strings.Repeat("-", width))
+	rv.WriteByte('\n')
+	for i, v := range i.Risks {
+		rv.WriteString(fmt.Sprintf(lineFmt, i))
+		for _, r := range v {
+			rv.WriteString(fmt.Sprintf("%d", r))
+		}
+		rv.WriteByte('\n')
 	}
 	return rv.String()
 }
@@ -195,18 +283,15 @@ func (i Input) String() string {
 func ParseInput(fileData []byte) (Input, error) {
 	defer FuncEndingAlways(FuncStarting())
 	rv := Input{}
+	rv.Risks = [][]int{}
 	lines := strings.Split(string(fileData), "\n")
 	for _, line := range lines {
 		if len(line) > 0 {
-			parts := strings.Split(line, "|")
-			note := Note{}
-			for _, str := range strings.Fields(parts[0]) {
-				note.Signals = append(note.Signals, SortString(str))
+			risks := make([]int, len(line))
+			for i, r := range line {
+				risks[i] = int(r) - 48
 			}
-			for _, str := range strings.Fields(parts[1]) {
-				note.Display = append(note.Display, SortString(str))
-			}
-			rv.Notes = append(rv.Notes, note)
+			rv.Risks = append(rv.Risks, risks)
 		}
 	}
 	return rv, nil
@@ -214,9 +299,14 @@ func ParseInput(fileData []byte) (Input, error) {
 
 // ApplyParams sets input based on CLI params.
 func (i *Input) ApplyParams(params CliParams) {
-	//if params.Count != 0 {
-	//	i.Count = params.Count
-	//}
+	switch {
+	case params.Count != 0:
+		i.MaxPath = params.Count
+	case params.InputFile == default_input_file:
+		i.MaxPath = 25
+	default:
+		i.MaxPath = 250
+	}
 }
 
 // -------------------------------------------------------------------------------------
