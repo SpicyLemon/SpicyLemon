@@ -71,7 +71,8 @@ func ParseInput(fileData []byte) (Input, error) {
 }
 
 // ApplyParams sets input based on CLI params.
-func (i *Input) ApplyParams(params CliParams) {
+func (i *Input) ApplyParams(params CliParams) error {
+	defer FuncEnding(FuncStarting())
 	if params.Verbose {
 		i.Verbose = true
 	}
@@ -79,6 +80,7 @@ func (i *Input) ApplyParams(params CliParams) {
 	//if params.Count != 0 {
 	//	i.Count = params.Count
 	//}
+	return nil
 }
 
 // -------------------------------------------------------------------------------------
@@ -619,7 +621,10 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	input.ApplyParams(params)
+	err = input.ApplyParams(params)
+	if err != nil {
+		return err
+	}
 	Debugf("Parsed Input:\n%s", input)
 	answer, err := Solve(input)
 	if err != nil {
