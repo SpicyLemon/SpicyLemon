@@ -425,11 +425,11 @@ func GetEnvVarBool(name string) (bool, error) {
 // Standard Usage: defer FuncEnding(FuncStarting())
 //             Or: defer FuncEndingAlways(FuncStarting())
 func FuncStarting(a ...interface{}) (time.Time, string) {
+	funcDepth++
 	name := GetFuncName(1, a...)
 	if debug {
 		StderrAs(name, "Starting.")
 	}
-	funcDepth++
 	return time.Now(), name
 }
 
@@ -442,11 +442,11 @@ const done_fmt = "Done. Duration: [%s]."
 //
 // Standard Usage: defer FuncEnding(FuncStarting())
 func FuncEnding(start time.Time, name string) {
-	if funcDepth > 0 {
-		funcDepth--
-	}
 	if debug {
 		StderrAs(name, done_fmt, time.Since(start))
+	}
+	if funcDepth > -1 {
+		funcDepth--
 	}
 }
 
@@ -457,13 +457,13 @@ func FuncEnding(start time.Time, name string) {
 //
 // Usage: defer FuncEndingAlways(FuncStarting())
 func FuncEndingAlways(start time.Time, name string) {
-	if funcDepth > 0 {
-		funcDepth--
-	}
 	if debug {
 		StderrAs(name, done_fmt, time.Since(start))
 	} else {
 		StdoutAs(name, done_fmt, time.Since(start))
+	}
+	if funcDepth > -1 {
+		funcDepth--
 	}
 }
 
@@ -536,7 +536,7 @@ func GetFuncName(depth int, a ...interface{}) string {
 // GetOutputPrefix gets the prefix to add to all output.
 func GetOutputPrefix(funcName string) string {
 	tabs := ""
-	if debug {
+	if debug && funcDepth > 0 {
 		tabs = strings.Repeat("  ", funcDepth)
 	}
 	return fmt.Sprintf("(%14s) %s[%s] ", DurClock(time.Since(startTime)), tabs, funcName)
@@ -572,6 +572,10 @@ func Debugf(format string, a ...interface{}) {
 // -------------------------------------------------------------------------------------
 // --------------------------  Primary Program Running Parts  --------------------------
 // -------------------------------------------------------------------------------------
+
+func init() {
+	funcDepth = -1
+}
 
 // main is the main function that gets run for this file.
 func main() {
