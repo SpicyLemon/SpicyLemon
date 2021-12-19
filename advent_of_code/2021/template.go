@@ -11,198 +11,231 @@ import (
 	"time"
 )
 
-// debug is a flag for whether or not debug messages should be displayed.
-var debug bool
-
-// startTime is the time when the program started.
-var startTime time.Time
-
-// funcDepth is a global counter keeping track of function depth by the starting/ending function functions.
-var funcDepth int
-
-// -------------------------------------------------------------------------------------
-// ----------------------------  Solver specific functions  ----------------------------
-// -------------------------------------------------------------------------------------
-
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
-func Solve(input Input) (string, error) {
+func Solve(params *Params) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
 	// TODO: Solve the problem!
-	return "TODO", nil
+	input := ParseInput(params.Input)
+	_ = input
+	answer := -999999999999999999
+	return fmt.Sprintf("%d", answer), nil
 }
 
-// -------------------------------------------------------------------------------------
-// ----------------------  Input data structures and definitions  ----------------------
-// -------------------------------------------------------------------------------------
-
-// TODO: Define other needed data structures for the input.
-
-// Input is a struct containing the parsed input file.
 type Input struct {
-	Verbose bool
-	// TODO: Update the specific problem.
-	Lines []string
+	// TODO: Put things in here pertaining to the puzzle input
 }
 
-// String creates a mutli-line string representation of this Input.
-func (i Input) String() string {
-	// TODO: Update to reflect actual input values.
-	lineFmt := DigitFormatForMax(len(i.Lines)) + ": %s\n"
-	var rv strings.Builder
-	for i, v := range i.Lines {
-		rv.WriteString(fmt.Sprintf(lineFmt, i, v))
-	}
-	return rv.String()
-}
-
-// ParseInput parses the contents of an input file into usable pieces.
-func ParseInput(fileData []byte) (Input, error) {
-	defer FuncEndingAlways(FuncStarting())
+func ParseInput(lines []string) *Input {
 	rv := Input{}
-	lines := strings.Split(string(fileData), "\n")
-	for _, line := range lines {
-		if len(line) > 0 {
-			// TODO: Update parsing to reflect actual input
-			rv.Lines = append(rv.Lines, line)
-		}
+	// TODO: Update this to parse the lines and create the puzzle input.
+	for i, line := range lines {
+		_, _ = i, line
 	}
-	return rv, nil
-}
-
-// ApplyParams sets input based on CLI params.
-func (i *Input) ApplyParams(params CliParams) error {
-	defer FuncEnding(FuncStarting())
-	if params.Verbose {
-		i.Verbose = true
-	}
-	// TODO: If there are any command-line arguments to apply to the puzzle input, pass them through in here.
-	//if params.Count != 0 {
-	//	i.Count = params.Count
-	//}
-	return nil
+	return &rv
 }
 
 // -------------------------------------------------------------------------------------
-// -----------------------------  CLI options and parsing  -----------------------------
+// -------------------------------  Some generic stuff  --------------------------------
 // -------------------------------------------------------------------------------------
 
-// CliParams contains anything that might be provided via command-line arguments.
-type CliParams struct {
-	// Debug is whether or not to output debug messages.
-	Debug bool
+const MIN_INT8 = int8(-128)
+const MAX_INT8 = int8(127)
+const MIN_INT16 = int16(-32768)
+const MAX_INT16 = int16(32767)
+const MIN_INT32 = int32(-2147483648)
+const MAX_INT32 = int32(2147483647)
+const MIN_INT64 = int64(-9223372036854775808)
+const MAX_INT64 = int64(9223372036854775807)
+const MIN_INT = -9223372036854775808
+const MAX_INT = 9223372036854775807
+
+const MAX_UINT8 = uint8(255)
+const MAX_UINT16 = uint16(65535)
+const MAX_UINT32 = uint32(4294967295)
+const MAX_UINT64 = uint64(18446744073709551615)
+const MAX_UINT = uint(18446744073709551615)
+
+// AddLineNumbers adds line numbers to each string.
+func AddLineNumbers(lines []string, startAt int) []string {
+	if len(lines) == 0 {
+		return []string{}
+	}
+	lineFmt := DigitFormatForMax(len(lines)) + ": %s"
+	rv := make([]string, len(lines))
+	for i, line := range lines {
+		rv[i] = fmt.Sprintf(lineFmt, i+startAt, line)
+	}
+	return rv
+}
+
+// DigitFormatForMax returns a format string of the length of the provided maximum number.
+// E.g. DigitFormatForMax(10) returns "%2d"
+// DigitFormatForMax(382920) returns "%6d"
+func DigitFormatForMax(max int) string {
+	return fmt.Sprintf("%%%dd", len(fmt.Sprintf("%d", max)))
+}
+
+// -------------------------------------------------------------------------------------
+// --------------------------  CLI params and input parsing  ---------------------------
+// -------------------------------------------------------------------------------------
+
+// Params contains anything that might be provided via command-line arguments.
+type Params struct {
 	// Verbose is a flag indicating some extra output is desired.
 	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
 	Errors []error
-	// InputFile is the file that contains the puzzle data to solve.
-	InputFile string
 	// Count is just a generic int that can be provided.
 	Count int
+	// InputFile is the file that contains the puzzle data to solve.
+	InputFile string
+	// Input is the contents of the input file split on newlines.
+	Input []string
+	// Custom is a set of custom strings to provide as input.
+	Custom []string
 }
 
-// String creates a multi-line string representing this CliParams
-func (c CliParams) String() string {
-	nameFmt := "%20s: "
+// String creates a multi-line string representing this Params
+func (c Params) String() string {
+	defer FuncEnding(FuncStarting())
+	nameFmt := "%10s: "
 	lines := []string{
-		fmt.Sprintf(nameFmt+"%t", "Debug", c.Debug),
+		fmt.Sprintf(nameFmt+"%t", "Debug", debug),
 		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
 		fmt.Sprintf(nameFmt+"%t", "Help Printed", c.HelpPrinted),
 		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
-		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
 		fmt.Sprintf(nameFmt+"%d", "Count", c.Count),
+		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
+		fmt.Sprintf(nameFmt+"%d entries", "Custom", len(c.Custom)),
+		fmt.Sprintf(nameFmt+"%d entries", "Input", len(c.Input)),
+		fmt.Sprintf(nameFmt+"%d entries", "Custom", len(c.Custom)),
+	}
+	if len(c.Input) > 0 {
+		lines = append(lines, "Input:")
+		lines = append(lines, AddLineNumbers(c.Input, 0)...)
+	}
+	if len(c.Custom) > 0 {
+		lines = append(lines, "Custom Input:")
+		lines = append(lines, AddLineNumbers(c.Custom, 0)...)
 	}
 	return strings.Join(lines, "\n") + "\n"
 }
 
-const default_input_file = "example.input"
+// DEFAULT_INPUT_FILE is the default input filename
+const DEFAULT_INPUT_FILE = "example.input"
 
-// GetCliParams parses the provided args into the command's params.
-func GetCliParams(args []string) CliParams {
+// GetParams parses the provided args into the command's params.
+func GetParams(args []string) *Params {
 	defer FuncEnding(FuncStarting())
 	var err error
-	rv := CliParams{}
+	rv := Params{}
+	verboseGiven := false
 	for i := 0; i < len(args); i++ {
 		switch {
 		// Flag cases go first.
 		case IsOneOfStrFold(args[i], "--help", "-h", "help"):
 			Debugf("Help flag found: [%s].", args[i])
-			// Using fmt.Printf here instead of my stdout function because the extra formatting is annoying with help text.
-			fmt.Printf("Usage: %s [<input file>]\n", GetCmdName())
-			fmt.Printf("Default <input file> is %s\n", default_input_file)
+			lines := []string{
+				fmt.Sprintf("Usage: %s [<input file>] [<flags>]", GetMyExe()),
+				fmt.Sprintf("Default <input file> is %s", DEFAULT_INPUT_FILE),
+				"Flags:",
+				"  --debug       Turns on debugging.",
+				"  --verbose|-v  Turns on verbose output.",
+				"",
+				"Single Options:",
+				"  Providing these multiple times will overwrite the previously provided value.",
+				"  --input|-i <input file>  An option to define the input file.",
+				"  --count|-n <number>      Defines a count.",
+				"",
+				"Repeatable Options:",
+				"  Providing these multiple times will add to previously provided values.",
+				"  Values are read until the next one starts with a dash.",
+				"  To provide entries that start with a dash, you can use --flag='<value>' syntax.",
+				"  --line|-l <value 1> [<value 2> ...]  Defines custom input lines.",
+				"",
+			}
+			// Using fmt.Println here instead of my stdout function because the extra formatting is annoying with help text.
+			fmt.Println(strings.Join(lines, "\n"))
 			rv.HelpPrinted = true
 		case HasPrefixFold(args[i], "--debug"):
 			Debugf("Debug option found: [%s], args left: %q.", args[i], args[i:])
 			var extraI int
-			rv.Debug, extraI, err = ParseFlagBool(args[i:])
+			oldDebug := debug
+			debug, extraI, err = ParseFlagBool(args[i:])
 			i += extraI
 			rv.AppendError(err)
 			if err == nil {
 				switch {
-				case !debug && rv.Debug:
-					debug = rv.Debug
+				case !oldDebug && debug:
 					Stderr("Debugging enabled by CLI arguments.")
-				case debug && !rv.Debug:
+				case oldDebug && !debug:
 					Stderr("Debugging disabled by CLI arguments.")
-					debug = rv.Debug
 				}
 			}
+		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
+			Debugf("Verbose option found: [%s], args after: %q.", args[i], args[i:])
+			var extraI int
+			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
+			i += extraI
+			rv.AppendError(err)
+			verboseGiven = true
 		case HasOneOfPrefixesFold(args[i], "--input", "--input-file"):
-			Debugf("Input file option found: [%s], args left: %q.", args[i], args[i:])
+			Debugf("Input file option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
 			rv.InputFile, extraI, err = ParseFlagString(args[i:])
 			i += extraI
 			rv.AppendError(err)
 		case HasOneOfPrefixesFold(args[i], "--count", "-c", "-n"):
-			Debugf("Count option found: [%s], args left: %q.", args[i], args[i:])
+			Debugf("Count option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
 			i += extraI
 			rv.AppendError(err)
-		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
-			Debugf("Verbose option found: [%s], args left: %q.", args[i], args[i:])
+		case HasOneOfPrefixesFold(args[i], "--line", "-l", "--custom", "--val"):
+			Debugf("Custom option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
-			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
+			var vals []string
+			vals, extraI, err = ParseRepeatedFlagString(args[i:])
+			rv.Custom = append(rv.Custom, vals...)
 			i += extraI
 			rv.AppendError(err)
 
 		// Positional args go last in the order they're expected.
 		case len(rv.InputFile) == 0 && len(args[i]) > 0 && args[i][0] != '-':
-			Debugf("Input File argument: [%s].", args[i])
+			Debugf("Input File argument: [%s], args after: %q", args[i], args[i:])
 			rv.InputFile = args[i]
 		default:
-			Debugf("Unknown argument found: [%s], args left: %q.", args[i], args[i:])
+			Debugf("Unknown argument found: [%s], args after: %q.", args[i], args[i:])
 			rv.AppendError(fmt.Errorf("unknown argument %d: [%s]", i+1, args[i]))
 		}
 	}
-	rv.Debug = debug
 	if len(rv.InputFile) == 0 {
-		rv.InputFile = default_input_file
+		rv.InputFile = DEFAULT_INPUT_FILE
 	}
-	return rv
+	if !verboseGiven {
+		rv.Verbose = debug
+	}
+	return &rv
 }
 
-// -------------------------------------------------------------------------------------
-// ----------  Still CLI parsing stuff, but stuff that should need changing  -----------
-// -------------------------------------------------------------------------------------
-
-// AppendError adds an error to this CliParams as long as the error is not nil.
-func (c *CliParams) AppendError(err error) {
+// AppendError adds an error to this Params as long as the error is not nil.
+func (c *Params) AppendError(err error) {
 	if err != nil {
 		c.Errors = append(c.Errors, err)
 	}
 }
 
-// HasError returns true if this CliParams has one or more errors.
-func (c CliParams) HasError() bool {
+// HasError returns true if this Params has one or more errors.
+func (c Params) HasError() bool {
 	return len(c.Errors) != 0
 }
 
 // Error flattens the Errors slice into a single string.
-// It also makes the CliParams struct satisfy the error interface.
-func (c *CliParams) Error() string {
+// It also makes the Params struct satisfy the error interface.
+func (c *Params) Error() string {
 	switch len(c.Errors) {
 	case 0:
 		return ""
@@ -275,9 +308,11 @@ func ParseFlagString(args []string) (string, int, error) {
 			parts = strings.SplitN(args[0], " ", 2)
 		}
 		if len(parts) == 2 {
-			for _, c := range []string{`'`, `"`} {
-				if parts[1][:1] == c && parts[1][len(parts[1])-1:] == c {
-					return parts[1][1 : len(parts[1])-1], 0, nil
+			if len(parts[1]) > 1 {
+				for _, c := range []string{`'`, `"`} {
+					if parts[1][:1] == c && parts[1][len(parts[1])-1:] == c {
+						return parts[1][1 : len(parts[1])-1], 0, nil
+					}
 				}
 			}
 			return parts[1], 0, nil
@@ -288,6 +323,47 @@ func ParseFlagString(args []string) (string, int, error) {
 		return args[1], 1, nil
 	}
 	return "", 0, fmt.Errorf("no value provided after %s flag", args[0])
+}
+
+// ParseRepeatedFlagString parses a flag that allows providing multiple strings.
+//
+// The flag in question should be in args[0].
+// If args[0] contains "=" or " " then the desired value will be extracted from that string and returned.
+// Otherwise, if args[1] exists, that is returned.
+// Otherwise, an error is given.
+//
+// The first return value is the flag's string value.
+// The second return value is the number of extra arguments used.
+// The third return value is any error encountered.
+func ParseRepeatedFlagString(args []string) ([]string, int, error) {
+	if strings.ContainsAny(args[0], "= ") {
+		parts := strings.SplitN(args[0], "=", 2)
+		if len(parts) == 1 {
+			parts = strings.SplitN(args[0], " ", 2)
+		}
+		if len(parts) != 2 {
+			return []string{}, 0, fmt.Errorf("unable to split flag and value from string: [%s]", args[0])
+		}
+		if len(parts[1]) > 1 {
+			for _, c := range []string{`'`, `"`} {
+				if parts[1][:1] == c && parts[1][len(parts[1])-1:] == c {
+					parts[1] = parts[1][1 : len(parts[1])-1]
+				}
+			}
+		}
+		return parts[1:], 0, nil
+	}
+	rv := []string{}
+	for _, arg := range args[1:] {
+		if arg[0] == '-' {
+			return rv, len(rv), nil
+		}
+		rv = append(rv, arg)
+	}
+	if len(rv) >= 0 {
+		return rv, len(rv), nil
+	}
+	return rv, 0, fmt.Errorf("no values provided after %s flag", args[0])
 }
 
 // ParseFlagBool parses a boolean flag from arguments.
@@ -347,17 +423,16 @@ func ParseFlagInt(args []string) (int, int, error) {
 	return rv, used, nil
 }
 
-// GetCmdName returns the name of this program by parsing os.Args[0].
-func GetCmdName() string {
-	_, name := filepath.Split(os.Args[0])
-	return name
-}
-
-// DigitFormatForMax returns a format string of the length of the provided maximum number.
-// E.g. DigitFormatForMax(10) returns "%2d"
-// DigitFormatForMax(382920) returns "%6d"
-func DigitFormatForMax(max int) string {
-	return fmt.Sprintf("%%%dd", len(fmt.Sprintf("%d", max)))
+// ReadFile reads a file and splits it into lines.
+func ReadFile(filename string) ([]string, error) {
+	defer FuncEndingAlways(FuncStarting(filename))
+	Stdout("Reading file: %s", filename)
+	dat, err := ioutil.ReadFile(filename)
+	if err != nil {
+		Stderr("error reading file: %v", err)
+		return []string{}, err
+	}
+	return strings.Split(string(dat), "\n"), nil
 }
 
 // -------------------------------------------------------------------------------------
@@ -529,6 +604,17 @@ func GetFuncName(depth int, a ...interface{}) string {
 	return name
 }
 
+// GetMyExe returns how to execute this program by parsing os.Args[0].
+func GetMyExe() string {
+	_, name := filepath.Split(os.Args[0])
+	if i := strings.Index(os.Args[0], "/go-build"); i == -1 {
+		name = "./" + name
+	} else {
+		name = fmt.Sprintf("go run %s.go", name)
+	}
+	return name
+}
+
 // -------------------------------------------------------------------------------------
 // ---------------------------------  Output wrappers  ---------------------------------
 // -------------------------------------------------------------------------------------
@@ -573,6 +659,15 @@ func Debugf(format string, a ...interface{}) {
 // --------------------------  Primary Program Running Parts  --------------------------
 // -------------------------------------------------------------------------------------
 
+// debug is a flag for whether or not debug messages should be displayed.
+var debug bool
+
+// startTime is the time when the program started.
+var startTime time.Time
+
+// funcDepth is a global counter keeping track of function depth by the starting/ending function functions.
+var funcDepth int
+
 func init() {
 	funcDepth = -1
 }
@@ -593,44 +688,24 @@ func main() {
 	}
 }
 
-// ReadFile is a wrapper on ioutil.ReadFile(filename) that adds output and timing.
-func ReadFile(filename string) ([]byte, error) {
-	defer FuncEndingAlways(FuncStarting(filename))
-	Stdout("Reading input from file: %s", filename)
-	dat, err := ioutil.ReadFile(filename)
-	if err != nil {
-		Stderr("error reading file: %v", err)
-	}
-	return dat, err
-}
-
 // run does all the primary coordination for this program.
 // It's basically a replacement for main() that returns an error.
 func Run() error {
 	defer FuncEndingAlways(FuncStarting())
-	params := GetCliParams(os.Args[1:])
-	Debugf("CLI Params:\n%s", params)
+	params := GetParams(os.Args[1:])
 	if params.HelpPrinted {
 		return nil
 	}
+	if !params.HasError() {
+		var err error
+		params.Input, err = ReadFile(params.InputFile)
+		params.AppendError(err)
+	}
+	Debugf("Params:\n%s", *params)
 	if params.HasError() {
-		return &params
+		return params
 	}
-	dat, err := ReadFile(params.InputFile)
-	if err != nil {
-		return err
-	}
-	Debugf("Input File Contents:\n%s", dat)
-	input, err := ParseInput(dat)
-	if err != nil {
-		return err
-	}
-	err = input.ApplyParams(params)
-	if err != nil {
-		return err
-	}
-	Debugf("Parsed Input:\n%s", input)
-	answer, err := Solve(input)
+	answer, err := Solve(params)
 	if err != nil {
 		return err
 	}
