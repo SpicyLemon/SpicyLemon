@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -33,6 +34,8 @@ func Solve(input Input) (string, error) {
 	}
 	return "TODO", nil
 }
+
+var hlRx = regexp.MustCompile(`(\d\d)`)
 
 func (p Pair) FancyString() string {
 	str := p.String()
@@ -91,7 +94,7 @@ func (p Pair) FancyString() string {
 		}
 		rv.WriteString(cb)
 		rv.WriteString(fmt.Sprintf("%d:", i))
-		rv.Write(lines[i])
+		rv.Write(hlRx.ReplaceAll(lines[i], []byte("\033[7m$1\033[27m")))
 		rv.WriteString(ce)
 		rv.WriteByte('\n')
 	}

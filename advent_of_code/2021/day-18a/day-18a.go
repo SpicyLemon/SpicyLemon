@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -221,6 +222,8 @@ func (p Pair) String() string {
 	return fmt.Sprintf("[%s,%s]", p.X, p.Y)
 }
 
+var hlRx = regexp.MustCompile(`(\d\d)`)
+
 func (p Pair) FancyString() string {
 	defer FuncEndingAlways(FuncStarting())
 	str := p.String()
@@ -279,7 +282,7 @@ func (p Pair) FancyString() string {
 		}
 		rv.WriteString(cb)
 		rv.WriteString(fmt.Sprintf("%d:", i))
-		rv.Write(lines[i])
+		rv.Write(hlRx.ReplaceAll(lines[i], []byte("\033[7m$1\033[27m")))
 		rv.WriteString(ce)
 		rv.WriteByte('\n')
 	}
