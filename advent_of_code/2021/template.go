@@ -57,6 +57,23 @@ const MAX_UINT32 = uint32(4294967295)
 const MAX_UINT64 = uint64(18446744073709551615)
 const MAX_UINT = uint(18446744073709551615)
 
+// SplitParseInts splits a string using the given separator and converts each part into an int.
+// Uses strings.Split(s, sep) for the splitting and strconv.Atoi to parse it to an int.
+// Leading and trailing whitespace on each entry are ignored.
+func SplitParseInts(s string, sep string) ([]int, error) {
+	rv := []int{}
+	for _, entry := range strings.Split(s, sep) {
+		if len(entry) > 0 {
+			i, err := strconv.Atoi(strings.TrimSpace(entry))
+			if err != nil {
+				return rv, err
+			}
+			rv = append(rv, i)
+		}
+	}
+	return rv, nil
+}
+
 // AddLineNumbers adds line numbers to each string.
 func AddLineNumbers(lines []string, startAt int) []string {
 	if len(lines) == 0 {
