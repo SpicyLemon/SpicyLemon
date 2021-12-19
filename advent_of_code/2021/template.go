@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -105,23 +106,29 @@ func (c Params) String() string {
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", debug),
 		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
-		fmt.Sprintf(nameFmt+"%t", "Help Printed", c.HelpPrinted),
-		fmt.Sprintf(nameFmt+"%q", "Errors", c.Errors),
+		fmt.Sprintf(nameFmt+"%d", "Errors", len(c.Errors)),
 		fmt.Sprintf(nameFmt+"%d", "Count", c.Count),
 		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
-		fmt.Sprintf(nameFmt+"%d entries", "Custom", len(c.Custom)),
-		fmt.Sprintf(nameFmt+"%d entries", "Input", len(c.Input)),
-		fmt.Sprintf(nameFmt+"%d entries", "Custom", len(c.Custom)),
+		fmt.Sprintf(nameFmt+"%d lines", "Input", len(c.Input)),
+		fmt.Sprintf(nameFmt+"%d lines", "Custom", len(c.Custom)),
+	}
+	if len(c.Errors) > 0 {
+		lines = append(lines, fmt.Sprintf("Errors (%d):", len(c.Errors)))
+		errors := make([]string, len(c.Errors))
+		for i, err := range c.Errors {
+			errors[i] = err.Error()
+		}
+		lines = append(lines, AddLineNumbers(errors, 1)...)
 	}
 	if len(c.Input) > 0 {
-		lines = append(lines, "Input:")
+		lines = append(lines, fmt.Sprintf("Input (%d):", len(c.Input)))
 		lines = append(lines, AddLineNumbers(c.Input, 0)...)
 	}
 	if len(c.Custom) > 0 {
-		lines = append(lines, "Custom Input:")
+		lines = append(lines, fmt.Sprintf("Custom Input (%d):", len(c.Custom)))
 		lines = append(lines, AddLineNumbers(c.Custom, 0)...)
 	}
-	return strings.Join(lines, "\n") + "\n"
+	return strings.Join(lines, "\n")
 }
 
 // DEFAULT_INPUT_FILE is the default input filename
@@ -154,7 +161,7 @@ func GetParams(args []string) *Params {
 				"  Providing these multiple times will add to previously provided values.",
 				"  Values are read until the next one starts with a dash.",
 				"  To provide entries that start with a dash, you can use --flag='<value>' syntax.",
-				"  --line|-l <value 1> [<value 2> ...]  Defines custom input lines.",
+				"  --lines|-l <value 1> [<value 2> ...]  Defines custom input lines.",
 				"",
 			}
 			// Using fmt.Println here instead of my stdout function because the extra formatting is annoying with help text.
@@ -194,7 +201,7 @@ func GetParams(args []string) *Params {
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
 			i += extraI
 			rv.AppendError(err)
-		case HasOneOfPrefixesFold(args[i], "--line", "-l", "--custom", "--val"):
+		case HasOneOfPrefixesFold(args[i], "--line", "--lines", "-l", "--custom", "--val"):
 			Debugf("Custom option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
 			var vals []string
@@ -235,18 +242,18 @@ func (c Params) HasError() bool {
 
 // Error flattens the Errors slice into a single string.
 // It also makes the Params struct satisfy the error interface.
-func (c *Params) Error() string {
+func (c Params) GetError() error {
 	switch len(c.Errors) {
 	case 0:
-		return ""
+		return nil
 	case 1:
-		return c.Errors[0].Error()
+		return c.Errors[0]
 	default:
 		lines := []string{fmt.Sprintf("Found %d errors:", len(c.Errors))}
 		for i, err := range c.Errors {
 			lines = append(lines, fmt.Sprintf("  %d: %s", i, err.Error()))
 		}
-		return strings.Join(lines, "\n")
+		return errors.New(strings.Join(lines, "\n"))
 	}
 }
 
@@ -701,9 +708,9 @@ func Run() error {
 		params.Input, err = ReadFile(params.InputFile)
 		params.AppendError(err)
 	}
-	Debugf("Params:\n%s", *params)
+	Debugf("Params:\n%s", params)
 	if params.HasError() {
-		return params
+		return params.GetError()
 	}
 	answer, err := Solve(params)
 	if err != nil {
