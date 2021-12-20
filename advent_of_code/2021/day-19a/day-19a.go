@@ -7,10 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+const POINTS_PER_LINE = 10
 
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
@@ -24,45 +27,64 @@ func Solve(params *Params) (string, error) {
 	case debug:
 		Stderr("Parsed Input:\n%s", input)
 	case params.Verbose:
-		Stderr("Scanners:\n%s", input.Scanners)
+		Stderr("Scanners (%d):\n%s", len(input.Scanners), input.Scanners)
 	}
-	srots := make([]*ScannerRotations, len(input.Scanners))
+	srots := make(ScannerRotationsList, len(input.Scanners))
 	for i, scanner := range input.Scanners {
 		srots[i] = NewScannerRotations(scanner)
+	}
+	if params.Verbose {
+		Stdout("All Scanner Rotations (%d):\n%s", len(srots), srots)
 	}
 	found := make(ScannerLocationList, len(input.Scanners))
 	found[0] = NewScannerLocation(0, input.Scanners[0].Points, NewPoint(0, 0, 0))
 	newFound := 1
 	for newFound > 0 && found.CountNotFound() > 0 {
 		newFound = 0
-		for i := 1; i < len(srots)-1; i++ {
-			if found[i] != nil {
+		for nfi := 1; nfi < len(srots); nfi++ {
+			if found[nfi] != nil {
 				continue
 			}
-			for j := 0; j < len(found); j++ {
-				if found[j] == nil {
+			for fi := 0; fi < len(found); fi++ {
+				if found[fi] == nil {
 					continue
 				}
-				for _, irot := range srots[i].Rotations {
-					if m, ok := found[j].Points.TranslatesTo(irot, params.Count); ok {
-						found[i] = NewScannerLocation(i, irot, m.Shift.GetNegative())
+				for roti, nfirot := range srots[nfi].Rotations {
+					Debugf("Comparing found Scanner %d to Scanner %d rotation %d:\n%s\n%s", fi, nfi, roti, found[fi].Points, nfirot)
+					if m, ok := found[fi].Points.TranslatesTo(nfirot, params.Count); ok {
+						found[nfi] = NewScannerLocation(nfi, nfirot, m.Shift.GetNegative())
 						newFound++
 						if params.Verbose {
-							Stderr("Found match: Scanner %d %s + %s = Scanner %d %s", j, found[j].Location, m.Shift, i, found[i].Location)
+							Stderr("Found match: Scanner %d + %s = Scanner %d. Key Points: %s, %s rot %d", fi, m.Shift, nfi, found[fi].Location, found[nfi].Location, roti)
 						}
 						break
 					}
 				}
-				if found[i] != nil {
+				if found[nfi] != nil {
 					break
 				}
 			}
 		}
 	}
 	if params.Verbose {
-		Stderr("Found:\n%s", found)
+		Stderr("Found (%d of %d):\n%s", len(found)-found.CountNotFound(), len(found), found)
 	}
-	answer := -999999999999999999
+	pts := PointList{}
+	for _, f := range found {
+		if f == nil {
+			continue
+		}
+		pts = AppendIfNewPL(pts, f.Points...)
+	}
+	sort.Sort(pts)
+	if params.Verbose {
+		Stderr("Probe locations (%d):\n%s", len(pts), pts)
+	}
+	answer := len(pts)
+	if f := found.CountNotFound(); f != 0 {
+		Stderr("Located %d probes.", answer)
+		return "", fmt.Errorf("Could not locate %d scanners!!!", f)
+	}
 	return fmt.Sprintf("%d", answer), nil
 }
 
@@ -71,13 +93,13 @@ func Solve(params *Params) (string, error) {
 type PointListList []PointList
 
 func (l PointListList) String() string {
-	lineFmt := DigitFormatForMax(len(l)) + ":%s\n"
+	lineFmt := DigitFormatForMax(len(l)) + ":"
 	var rv strings.Builder
+	lastI := len(l) - 1
 	for i, pl := range l {
-		for _, line := range strings.Split(pl.String(), "\n") {
-			if len(line) > 0 {
-				rv.WriteString(fmt.Sprintf(lineFmt, i+1, line))
-			}
+		rv.WriteString(PrefixLines(fmt.Sprintf(lineFmt, i+1), pl.String()))
+		if i != lastI {
+			rv.WriteByte('\n')
 		}
 	}
 	return rv.String()
@@ -88,15 +110,21 @@ func (l PointListList) String() string {
 type ScannerRotations struct {
 	ID        int
 	Rotations PointListList
-	Rot0      PointList
 }
 
 func (s ScannerRotations) String() string {
 	var rv strings.Builder
-	rv.WriteString(fmt.Sprintf("ID: %d, Rotations: %d, Rot0 (%d):\n", s.ID, len(s.Rotations), len(s.Rot0)))
-	if len(s.Rot0) > 0 {
-		rv.WriteString(s.Rot0.String())
+	rv.WriteString(fmt.Sprintf("Scanner ID: %d, Rotations: %d:", s.ID, len(s.Rotations)))
+	if len(s.Rotations) > 0 {
 		rv.WriteByte('\n')
+		lineFmt := DigitFormatForMax(len(s.Rotations)) + ": "
+		lastI := len(s.Rotations) - 1
+		for i, rot := range s.Rotations {
+			rv.WriteString(PrefixLines(fmt.Sprintf(lineFmt, i), rot.String()))
+			if i != lastI {
+				rv.WriteByte('\n')
+			}
+		}
 	}
 	return rv.String()
 }
@@ -106,6 +134,23 @@ func NewScannerRotations(scanner *Scanner) *ScannerRotations {
 		ID:        scanner.ID,
 		Rotations: scanner.Points.GetAllRotations(),
 	}
+}
+
+// ----------  ScannerRotationsList  ------------------------------------
+
+type ScannerRotationsList []*ScannerRotations
+
+func (l ScannerRotationsList) String() string {
+	lineFmt := DigitFormatForMax(len(l)) + ": "
+	var rv strings.Builder
+	lastI := len(l) - 1
+	for i, srot := range l {
+		rv.WriteString(PrefixLines(fmt.Sprintf(lineFmt, srot.ID), srot.String()))
+		if i != lastI {
+			rv.WriteByte('\n')
+		}
+	}
+	return rv.String()
 }
 
 // ----------  ScannerLocation  -----------------------------------------
@@ -130,7 +175,15 @@ func NewScannerLocation(id int, points PointList, location *Point) *ScannerLocat
 }
 
 func (s ScannerLocation) String() string {
-	return fmt.Sprintf("Scanner ID: %d at %s, Points (%2d):\n%s", s.ID, s.Location, len(s.Points), s.Points)
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("Scanner ID: %d at %s, Points (%2d):", s.ID, s.Location, len(s.Points)))
+	if len(s.Points) > POINTS_PER_LINE-2 {
+		rv.WriteByte('\n')
+	} else {
+		rv.WriteByte(' ')
+	}
+	rv.WriteString(s.Points.String())
+	return rv.String()
 }
 
 // ----------  ScannerLocationList  -------------------------------------
@@ -139,12 +192,15 @@ type ScannerLocationList []*ScannerLocation
 
 func (l ScannerLocationList) String() string {
 	var rv strings.Builder
+	lastI := len(l) - 1
 	for i := range l {
 		if l[i] == nil {
 			rv.WriteString(fmt.Sprintf("Scanner ID %d: <unknown>", i))
-			rv.WriteByte('\n')
 		} else {
 			rv.WriteString(l[i].String())
+		}
+		if i != lastI {
+			rv.WriteByte('\n')
 		}
 	}
 	return rv.String()
@@ -277,6 +333,25 @@ func (p Point) GetNegative() *Point {
 	return NewPoint(-p.X, -p.Y, -p.Z)
 }
 
+func (p Point) Compare(o *Point) int {
+	switch {
+	case p.X < o.X:
+		return -1
+	case p.X > o.X:
+		return 1
+	case p.Y < o.Y:
+		return -1
+	case p.Y > o.Y:
+		return 1
+	case p.Z < o.Z:
+		return -1
+	case p.Z > o.Z:
+		return 1
+	default:
+		return 0
+	}
+}
+
 // ----------  PointList  -----------------------------------------------
 
 type PointList []*Point
@@ -286,16 +361,15 @@ func (l PointList) String() string {
 	lastI := len(l) - 1
 	var rv strings.Builder
 	for i, p := range l {
-		if i%10 == 0 {
+		if i%POINTS_PER_LINE == 0 && len(l) > POINTS_PER_LINE {
 			rv.WriteString(fmt.Sprintf(leadFmt, i))
 		}
 		rv.WriteByte(' ')
 		rv.WriteString(p.String())
-		if i != lastI && i%10 == 9 {
+		if i != lastI && i%POINTS_PER_LINE == POINTS_PER_LINE-1 {
 			rv.WriteByte('\n')
 		}
 	}
-	rv.WriteByte('\n')
 	return rv.String()
 }
 
@@ -308,9 +382,11 @@ func (l PointList) Contains(pt *Point) bool {
 	return false
 }
 
-func AppendIfNewPL(l PointList, pt *Point) PointList {
-	if !l.Contains(pt) {
-		l = append(l, pt)
+func AppendIfNewPL(l PointList, pts ...*Point) PointList {
+	for _, pt := range pts {
+		if !l.Contains(pt) {
+			l = append(l, pt)
+		}
 	}
 	return l
 }
@@ -329,38 +405,34 @@ func (l PointList) GetAllRotations() []PointList {
 }
 
 func (l PointList) TranslatesTo(o PointList, count int) (*Match, bool) {
-	// defer FuncEnding(FuncStarting())
-	var rvshift *Point
-	rvpl := PointList{}
-	for i, keyP := range l {
-		shift := keyP.GetShiftTo(o[0])
-		pl := PointList{}
-		for ki, kp := range l {
-			for _, op := range o {
-				if kp.GetShiftTo(op).Equals(shift) {
-					pl = append(pl, kp)
+	defer FuncEnding(FuncStarting())
+	for si, spti := range l {
+		for sj, sptj := range o {
+			shift := spti.GetShiftTo(sptj)
+			pl := PointList{}
+			for i, pti := range l {
+				if len(l)-i+len(pl) < count {
 					break
 				}
+				for _, ptj := range o {
+					if pti.GetShiftTo(ptj).Equals(shift) {
+						pl = append(pl, pti)
+						break
+					}
+				}
 			}
-			if ki+count-len(pl) >= len(l) {
-				break
+			Debugf("%2d%s - %2d%s = shift %s, matches: %d", si, sj, spti, sptj, shift, len(pl))
+			if len(pl) >= count {
+				return NewMatch(pl, shift), true
 			}
-		}
-		_ = i
-		// Debugf("%2d: %s + %s = %s, matches: %d", i, keyP, shift, o[0], len(pl))
-		if len(pl) > len(rvpl) {
-			rvshift = shift
-			rvpl = pl
-		}
-		if len(pl) == 0 {
-			break
 		}
 	}
-	if len(rvpl) < count {
-		return nil, false
-	}
-	return NewMatch(rvpl, rvshift), true
+	return nil, false
 }
+
+func (a PointList) Len() int           { return len(a) }
+func (a PointList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a PointList) Less(i, j int) bool { return a[i].Compare(a[j]) < 0 }
 
 // ----------  Scanner --------------------------------------------------
 
@@ -370,7 +442,15 @@ type Scanner struct {
 }
 
 func (s Scanner) String() string {
-	return fmt.Sprintf("Scanner ID: %d, Points (%2d):\n%s", s.ID, len(s.Points), s.Points)
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("Scanner ID: %d, Points (%2d):", s.ID, len(s.Points)))
+	if len(s.Points) > POINTS_PER_LINE-1 {
+		rv.WriteByte('\n')
+	} else {
+		rv.WriteByte(' ')
+	}
+	rv.WriteString(s.Points.String())
+	return rv.String()
 }
 
 func ParseScanner(lines []string) (*Scanner, error) {
@@ -399,8 +479,12 @@ type ScannerList []*Scanner
 
 func (l ScannerList) String() string {
 	var rv strings.Builder
-	for _, s := range l {
+	lastI := len(l) - 1
+	for i, s := range l {
 		rv.WriteString(s.String())
+		if i != lastI {
+			rv.WriteByte('\n')
+		}
 	}
 	return rv.String()
 }
@@ -432,6 +516,11 @@ func ParseInput(lines []string) (*Input, error) {
 			return nil, err
 		}
 	}
+	for i, s := range rv.Scanners {
+		if i != s.ID {
+			return nil, fmt.Errorf("scanner at index %d has id %d", i, s.ID)
+		}
+	}
 	return &rv, nil
 }
 
@@ -442,6 +531,23 @@ func (i Input) String() string {
 // -------------------------------------------------------------------------------------
 // -------------------------------  Some generic stuff  --------------------------------
 // -------------------------------------------------------------------------------------
+
+func PrefixLines(pre string, strs ...string) string {
+	var rv strings.Builder
+	lastI := len(strs) - 1
+	for i, str := range strs {
+		lines := strings.Split(str, "\n")
+		lastJ := len(lines) - 1
+		for j, line := range lines {
+			rv.WriteString(pre)
+			rv.WriteString(line)
+			if i != lastI || j != lastJ {
+				rv.WriteByte('\n')
+			}
+		}
+	}
+	return rv.String()
+}
 
 const MIN_INT8 = int8(-128)
 const MAX_INT8 = int8(127)
