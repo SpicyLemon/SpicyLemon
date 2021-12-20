@@ -16,9 +16,12 @@ import (
 // The string it returns should be (or include) the answer.
 func Solve(params *Params) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
+	input, err := ParseInput(params.Input)
+	if err != nil {
+		return "", err
+	}
+	Debugf("Parsed Input:\n%s", input)
 	// TODO: Solve the problem!
-	input := ParseInput(params.Input)
-	_ = input
 	answer := -999999999999999999
 	return fmt.Sprintf("%d", answer), nil
 }
@@ -27,13 +30,17 @@ type Input struct {
 	// TODO: Put things in here pertaining to the puzzle input
 }
 
-func ParseInput(lines []string) *Input {
+func (i Input) String() string {
+	return "TODO"
+}
+
+func ParseInput(lines []string) (*Input, error) {
 	rv := Input{}
 	// TODO: Update this to parse the lines and create the puzzle input.
 	for i, line := range lines {
 		_, _ = i, line
 	}
-	return &rv
+	return &rv, nil
 }
 
 // -------------------------------------------------------------------------------------
@@ -92,6 +99,24 @@ func AddLineNumbers(lines []string, startAt int) []string {
 // DigitFormatForMax(382920) returns "%6d"
 func DigitFormatForMax(max int) string {
 	return fmt.Sprintf("%%%dd", len(fmt.Sprintf("%d", max)))
+}
+
+// PrefixLines splits each provided string on \n then adds a prefix to each line, then puts it all back together.
+func PrefixLines(pre string, strs ...string) string {
+	var rv strings.Builder
+	lastI := len(strs) - 1
+	for i, str := range strs {
+		lines := strings.Split(str, "\n")
+		lastJ := len(lines) - 1
+		for j, line := range lines {
+			rv.WriteString(pre)
+			rv.WriteString(line)
+			if i != lastI || j != lastJ {
+				rv.WriteByte('\n')
+			}
+		}
+	}
+	return rv.String()
 }
 
 // -------------------------------------------------------------------------------------
