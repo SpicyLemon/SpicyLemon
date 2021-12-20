@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const DEFAULT_COUNT = 0
+
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
 func Solve(params *Params) (string, error) {
@@ -181,6 +183,7 @@ func GetParams(args []string) *Params {
 	defer FuncEnding(FuncStarting())
 	var err error
 	rv := Params{}
+	countGiven := false
 	verboseGiven := false
 	for i := 0; i < len(args); i++ {
 		switch {
@@ -243,6 +246,7 @@ func GetParams(args []string) *Params {
 			rv.Count, extraI, err = ParseFlagInt(args[i:])
 			i += extraI
 			rv.AppendError(err)
+			countGiven = true
 		case HasOneOfPrefixesFold(args[i], "--line", "--lines", "-l", "--custom", "--val"):
 			Debugf("Custom option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
@@ -266,6 +270,9 @@ func GetParams(args []string) *Params {
 	}
 	if !verboseGiven {
 		rv.Verbose = debug
+	}
+	if !countGiven {
+		rv.Count = DEFAULT_COUNT
 	}
 	return &rv
 }
