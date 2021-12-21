@@ -33,6 +33,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [multiply.sh](#user-content-multiplysh)
   * [palette_generators.sh](#user-content-palette_generatorssh)
   * [print_args.sh](#user-content-print_argssh)
+  * [pvarn.sh](#user-content-print_pvarnsh)
   * [ps_grep.sh](#user-content-ps_grepsh)
   * [re_line.sh](#user-content-re_linesh)
   * [sdkman_fzf.sh](#user-content-sdkman_fzfsh)
@@ -103,6 +104,7 @@ This will also create several alias:
 - `tee_strip_colors_pbcopy`: Usage `<stuff> | tee_strip_colors_pbcopy`. Outputs to stdout and also puts the color stripped version into the clipboard.
 - `escape_escapes`: Usage `<stuff> | escape_escapes`. Escapes the escape character 033 so that it's easier to see (and color codes can be seen).
 - `fnl`: Usage `<stuff> | fnl`. Adds a final newline if there wasn't one already.
+- `clearx': Usage `clearx`. Clears therminal screen and scrollback.
 
 ### `add.sh`
 
@@ -832,6 +834,17 @@ Arguments received:
  1: [turn]
  2: [down]
  3: [for=what]
+```
+
+### `pvarn.sh`
+
+[pvarn.sh](pvarn.sh) - Function for printing a variable from it's name.
+
+Example Usage:
+```console
+$ foo='bar'
+$ pvarn foo
+foo: [bar]
 ```
 
 ### `ps_grep.sh`
