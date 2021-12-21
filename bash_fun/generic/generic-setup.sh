@@ -55,7 +55,7 @@ __generic_do_setup () {
     func_base_file_names=(
         'add'                 'b2h'            'b642h'             'change_word'         'echo_color'
         'echo_do'             'fp'             'getlines'          'h2b64'               'hrr'
-        'java_sdk_switcher'   'join_str'       'list'              'max'                 'min'
+        'java_sdk_switcher'   'join_str'       'list'              'max'                 'min'           'modulo'
         'multi_line_replace'  'multidiff'      'multiply'          'palette_generators'  'print_args'    'pvarn'
         'ps_grep'             're_line'        'sdkman_fzf'        'set_title'           'show_last_exit_code'
         'show_palette'        'string_repeat'  'tee_strip_colors'  'to_date'             'to_epoch'

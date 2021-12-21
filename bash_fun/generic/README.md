@@ -27,6 +27,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [list.sh](#user-content-listsh)
   * [max.sh](#user-content-maxsh)
   * [min.sh](#user-content-minsh)
+  * [modulo.sh](#user-content-modulosh)
   * [multi_line_replace.sh](#user-content-multi_line_replacesh)
   * [multidiff.sh](#user-content-multidiffsh)
   * [multiply.sh](#user-content-multiplysh)
@@ -596,6 +597,15 @@ $ min 17 15 3 10 8 7 4 9 11 6 13 18 19 20 1 12 2 14 5 16
 1
 $ printf '17 15 3 10 8 7 4 9 11 6 13 18 19 20 1 12 2 14 5 16' | min
 1
+```
+
+### `modulo.sh`
+
+[modulo.sh](modulo.sh) - Function/script for integer division with a remainder.
+
+```console
+$ modulo 8 3
+8 / 3 = 2 r 2
 ```
 
 ### `multi_line_replace.sh`
