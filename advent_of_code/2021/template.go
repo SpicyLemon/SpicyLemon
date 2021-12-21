@@ -17,7 +17,7 @@ const DEFAULT_COUNT = 0
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
 func Solve(params *Params) (string, error) {
-	defer FuncEndingAlways(FuncStarting())
+	defer FuncEndingAlways(FuncStartingAlways())
 	input, err := ParseInput(params.Input)
 	if err != nil {
 		return "", err
@@ -482,7 +482,7 @@ func ParseFlagInt(args []string) (int, int, error) {
 // ReadFile reads a file and splits it into lines.
 func ReadFile(filename string) ([]string, error) {
 	defer FuncEndingAlways(FuncStarting(filename))
-	Stdout("Reading file: %s", filename)
+	DebugfAlways("Reading file: %s", filename)
 	dat, err := ioutil.ReadFile(filename)
 	if err != nil {
 		Stderr("error reading file: %v", err)
@@ -558,9 +558,19 @@ func GetEnvVarBool(name string) (bool, error) {
 func FuncStarting(a ...interface{}) (time.Time, string) {
 	funcDepth++
 	name := GetFuncName(1, a...)
-	if debug {
-		StderrAs(name, "Starting.")
-	}
+	DebugfAs(name, "Starting.")
+	return time.Now(), name
+}
+
+// FuncStartingAlways is the same as FuncStarting except if debug is off, output will go to stdout.
+//
+// This differs from FuncStarting in that this will always do the output (regardless of debug state).
+//
+// Usage: defer FuncEndingAlways(FuncStartingAlways())
+func FuncStartingAlways(a ...interface{}) (time.Time, string) {
+	funcDepth++
+	name := GetFuncName(1, a...)
+	DebugfAlwaysAs(name, "Starting.")
 	return time.Now(), name
 }
 
@@ -573,26 +583,19 @@ const done_fmt = "Done. Duration: [%s]."
 //
 // Standard Usage: defer FuncEnding(FuncStarting())
 func FuncEnding(start time.Time, name string) {
-	if debug {
-		StderrAs(name, done_fmt, time.Since(start))
-	}
+	DebugfAs(name, done_fmt, time.Since(start))
 	if funcDepth > -1 {
 		funcDepth--
 	}
 }
 
-// FuncEndingAlways decrements the function depth and outputs how long a function took.
-// If debug is on, output is to stderr, otherwise to stdout.
+// FuncEndingAlways is the same as FuncEnding except if debug is off, output will go to stdout.
 //
-// This differs from FuncEnding in that this will always do the output (regardless of degub state).
+// This differs from FuncEnding in that this will always do the output (regardless of debug state).
 //
 // Usage: defer FuncEndingAlways(FuncStarting())
 func FuncEndingAlways(start time.Time, name string) {
-	if debug {
-		StderrAs(name, done_fmt, time.Since(start))
-	} else {
-		StdoutAs(name, done_fmt, time.Since(start))
-	}
+	DebugfAlwaysAs(name, done_fmt, time.Since(start))
 	if funcDepth > -1 {
 		funcDepth--
 	}
@@ -708,6 +711,31 @@ func StderrAs(funcName, format string, a ...interface{}) {
 func Debugf(format string, a ...interface{}) {
 	if debug {
 		StderrAs(GetFuncName(1), format, a...)
+	}
+}
+
+// DebugfAs outputs to stderr if the debug flag is set.
+func DebugfAs(funcName, format string, a ...interface{}) {
+	if debug {
+		StderrAs(funcName, format, a...)
+	}
+}
+
+// DebugfAlways outputs to stderr if the debug flag is set, otherwise to stdout.
+func DebugfAlways(format string, a ...interface{}) {
+	if debug {
+		StderrAs(GetFuncName(1), format, a...)
+	} else {
+		StdoutAs(GetFuncName(1), format, a...)
+	}
+}
+
+// DebugfAlways outputs to stderr if the debug flag is set, otherwise to stdout.
+func DebugfAlwaysAs(funcName, format string, a ...interface{}) {
+	if debug {
+		StderrAs(funcName, format, a...)
+	} else {
+		StdoutAs(funcName, format, a...)
 	}
 }
 
