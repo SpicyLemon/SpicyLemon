@@ -30,13 +30,13 @@ func Solve(input Input) (string, error) {
 	defer FuncEndingAlways(FuncStarting())
 	answer := 0
 	for i, hex := range input.Lines {
-		Stdout("%d: hex: %s", i, hex)
+		Debugf("%d: hex: %s", i, hex)
 		packet, err := ParsePacketHex(hex)
 		if err != nil {
 			return "", err
 		}
 		answer = packet.VersionSum()
-		Stdout("%d: packet (version sum = %d):\n%s", i, answer, packet)
+		Debugf("%d: packet (version sum = %d):\n%s", i, answer, packet)
 	}
 	return fmt.Sprintf("%d", answer), nil
 }
