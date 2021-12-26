@@ -43,25 +43,37 @@ if [[ -z "$no_rebuild" ]]; then
     for d in "${all_days[@]}"; do go build -o build "$d/$d.go" || exit $?; done
 fi
 
-exec 3>&2
-# Run timing an all days using go run and then pre-compiled.
+# Run timing an all days using go run.
+exec 3>&1
+exec 4>&2
+exec 1> >( tee build/all-go-run.txt >&3 )
+exec 2>&1
 for d in "${all_days[@]}"; do
     printf '\ntime %s\n' "$d"
-    time go run "$d/$d.go" "$d/actual.input" 2>&1
+    time go run "$d/$d.go" "$d/actual.input"
     if [[ "$?" -ne '0' ]]; then
-        printf '\033[41mERROR from:\033[0m go run %s/%s.go\n' "$d" "$d" >&3
+        printf '\033[41mERROR from:\033[0m go run %s/%s.go\n' "$d" "$d" >&4
         exit 1
     fi
-done > build/all-go-run.txt 2>&1
+done
+exec 1>&3 3>&-
+exec 2>&4 4>&-
+
+# Run timing an all days using pre-compiled.
+exec 3>&1
+exec 4>&2
+exec 1> >( tee build/all-compiled-run.txt >&3 )
+exec 2>&1
 for d in "${all_days[@]}"; do
     printf '\ntime %s\n' "$d"
-    time "build/$d" "$d/actual.input" 2>&1
+    time "build/$d" "$d/actual.input"
     if [[ "$?" -ne '0' ]]; then
-        printf '\033[41mERROR from:\033[0m build/%s\n' "$d" >&3
+        printf '\033[41mERROR from:\033[0m build/%s\n' "$d" >&4
         exit 1
     fi
-done > build/all-compiled-run.txt 2>&1
-exec 3>&-
+done
+exec 1>&3 3>&-
+exec 2>&4 4>&-
 
 # Extract timings for each
 grep -E '^(time|real|user|sys)' build/all-go-run.txt \
