@@ -1,0 +1,49 @@
+day-01a: 7
+day-01b: 5
+day-02a: 15 x 10 = 150
+day-02b: 15 x 60 = 900
+day-03a: 22 * 9 = 198
+day-03b: 23 * 10 = 230
+day-04a: Draw 11, Board 2: 24 x 188 = 4512
+day-04b: 13 x 148 = 1924
+day-05a: 5
+day-05b: 12
+day-06a: 5934
+day-06b: 26984457539
+day-07a: 37
+day-07b: 168
+day-08a: 1s: 8, 4s: 6, 7s: 5, 8s: 7 = 26
+day-08b: 61229
+day-09a: 15
+day-09b: sum([9 9 14]) = 1134
+day-10a: 26397
+day-10b: Corrupt: 26397, Incomplete: 288957
+day-11a: 1656
+day-11b: 195
+day-12a: 10
+day-12b: 36
+day-13a: 17
+day-13b: From reading final paper: CEJKLUGJ
+day-14a: 1588
+day-14b: 2188189693529
+day-15a: 40
+day-15b: 315
+day-16a: 31
+day-16b: 54
+day-17a: 45
+day-17b: 112
+day-18a: 4230
+day-18b: 4647
+day-19a: 79
+day-19b: 3621 from Scanner 2 to Scanner 3
+day-20a: 35
+day-20b: 3351
+day-21a: 745 * 993 = 739785
+day-21b: 444356092776315
+day-22a: 590784
+day-22b: 2758514936282235
+day-23a: 
+day-23b: 44169
+day-24a: 51983999947999
+day-24b: 11211791111365
+day-25a: 58
