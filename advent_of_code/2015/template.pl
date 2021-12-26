@@ -20,6 +20,7 @@ use Data::Dumper;  $Data::Dumper::Sortkeys = 1;
 
 #use lib qw(.);
 
+my $DEBUG = $ENV{DEBUG};
 
 mainProgram();
 print "Done\n";
