@@ -48,7 +48,7 @@ func Solve(input Input) (string, error) {
 	}
 	Stdout("Final dot count: %d", answer)
 	Stdout("Final paper: %d x %d:\n%s", paper.Width, paper.Height, paper)
-	return "(see final paper)", nil
+	return "From reading final paper: CEJKLUGJ", nil
 }
 
 type Paper struct {
