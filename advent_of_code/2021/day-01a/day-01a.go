@@ -401,7 +401,7 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Answer:\n%s\n", answer)
+	fmt.Printf("Answer: %s\n", answer)
 	return nil
 }
 
