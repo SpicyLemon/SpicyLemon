@@ -18,15 +18,6 @@ use Data::Dumper;  $Data::Dumper::Sortkeys = 1;
 #use Time::HiRes qw(time usleep);  #this forces the time() function to return nanosecond information
 #use XML::Simple;
 
-#use easyopen qw(openr openread openw openwrite opena openappend slurpFile opend slurpDir);
-#use fake_list_data qw(d l L c w date firstname lastname fullname business address city state zip zip4 location amount purpose word rib ri r Time dateAndTime);
-#use list_helpers qw(inOneListButNotTheOther inOneStrButNotTheOther strToList strToHash strToListOfHashes isIn);
-#use logger qw(printlog dielog dieMessage logfile printlogWithBorder dielogWithBorder addBorderTo);
-#use printers; #qw(listOfHashRefs csv hash indent table listForSql breakMultiLine prettyList);
-      #$output = printers::table($data, $col_order, $delimeter);
-use Prompt;   #imports the prompt($string, $default, $required) function
-#use stats qw(getStats countMinMax mean median modes);
-
 #use lib qw(.);
 
 
@@ -46,14 +37,16 @@ sub mainProgram {
 sub mainProgramTest {
 }
 
-
 sub mainProgram1 {
 }
-
 
 sub mainProgram2 {
 }
 
+
+sub getTestStr {
+    return q^^;
+}
 
 sub getStr {
    return q^^;
