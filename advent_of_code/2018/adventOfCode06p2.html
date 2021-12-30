@@ -55,7 +55,7 @@
     var convertDistancesToMap = function(distances, threshold) {
         var maxX = distances[0].length - 1;
         var maxY = distances.length - 1;
-        var retval = dim([maxX+1, maxY+1], ".");
+        var retval = dim([maxY+1, maxX+1], ".");
         for (var y = 0; y <= maxY; y++) {
             for (var x = 0; x <= maxX; x++) {
                 if (distances[y][x] < threshold) {
