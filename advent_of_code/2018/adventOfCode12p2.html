@@ -14,7 +14,7 @@
     };
 
     var parseInput = function(input) {
-        var retval = { 
+        var retval = {
             state: '',
             rules: {}
         };
@@ -38,12 +38,17 @@
         var states = "  0: " + state.toString();
         var i;
         var iterateYears = 150;
+        var lastVal = state.getTotalValue();
+        var diff = 0;
         for (i = 1; i <= iterateYears; i++) {
             state.grow();
+            var newVal = state.getTotalValue();
+            diff = newVal - lastVal;
+            lastVal = newVal;
             states += "\n" + ("   " + i).slice(-3) + ": " + state.toString();
         }
-        //After about year 101, the value goes up 59 each year.
-        var result = state.getTotalValue() + (50000000000 - iterateYears) * 59; 
+        //After about year 101, the value goes up a equal amount each year
+        var result = state.getTotalValue() + (50000000000 - iterateYears) * diff;
         return "" + result + "\n\n" + states;
     };
 

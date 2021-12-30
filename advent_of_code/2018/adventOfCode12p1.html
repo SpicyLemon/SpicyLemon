@@ -34,7 +34,7 @@
         var input = parseInput(puzzleInput);
         var states = [];
         states.push(TYPES.state({ state: input.state, zero: 0 }));
-        while (states.length <= 200) {
+        while (states.length <= 20) {
             states.push(states[states.length - 1].grow(input.rules));
         }
         var minNum = states.map(state => state.getLeftNumber()).reduce(reduceToMin, 0) - 1;
