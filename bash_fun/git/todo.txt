@@ -2,3 +2,4 @@ TODO:
     Write a README.md
     Create an env var and function for finding the primary branch of a repo.
         Possibly use a custom git config entry for this.
+    Refactor git_commit_diff to allow git diff args to be passed in (e.g. --name-only).
