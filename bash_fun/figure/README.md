@@ -10,6 +10,7 @@ These scripts/functions are specific to activities associated with Figure Techno
 * `b642id.sh` - Converts base64 encoded strings into a `MetadataAddress`, and display it's various pieces.
 * `id2b64.sh` - Converts hex values (meant to make up a `MetadataAddress`) into a base64 encoded string.
 * `query_prov_using_next_key.sh` - Gets multiple pages of a paginated provenanced query.
+* `decode_events.sh` - Decodes the event strings returned from a tx query.
 
 ## Details
 
@@ -162,4 +163,47 @@ Example:
       Runs the   provenanced q md scopes all   query up to 5 times starting with the provided page key.
       The first result will be stored in md-scopes-all-0021.json and if there are enough results for 5 pages,
       the last result will be stored in md-scopes-all-0025.json.
+```
+
+### `decode_events`
+
+[decode_events.sh](decode_events.sh) - Function/script decoding the base64 encoded events from a tx JSON response.
+
+Either provide a JSON file or stream in some JSON with the results of a tx query and it will decode and output the events.
+The output is one line per event attribute with this format:
+```
+{JSON path to event attribute} ({event type}): "{event attribute key}" = "{event attribute value}"
+```
+
+Example Use from file:
+```console
+$ provenanced q tx --type=hash 0ABDB417D4EBDE76AA4F3F2E8CBCE71600C385E955D5F7EA980B85E44A533639 -o json > 0ABDB417.json
+$ decode_events 0ABDB417.json
+events[0].attributes[0] (coin_spent): "spender" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys"
+events[0].attributes[1] (coin_spent): "amount" = "90000000000nhash"
+events[1].attributes[0] (coin_received): "receiver" = "tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt"
+events[1].attributes[1] (coin_received): "amount" = "90000000000nhash"
+events[2].attributes[0] (transfer): "recipient" = "tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt"
+events[2].attributes[1] (transfer): "sender" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys"
+events[2].attributes[2] (transfer): "amount" = "90000000000nhash"
+events[3].attributes[0] (message): "sender" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys"
+events[4].attributes[0] (tx): "fee" = "100000000000nhash"
+events[5].attributes[0] (tx): "acc_seq" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys/170"
+events[6].attributes[0] (tx): "signature" = "Kn46lGBBbEyT8vkltURU8b0Q0h6aMQZ4mwAN5t6VclNbJAUJ7n5rJhxT9NhhUwstYcVPQZeL2AILEeFZ88mlVQ=="
+```
+
+Example Use from stream:
+```console
+$ provenanced q tx --type=hash 0ABDB417D4EBDE76AA4F3F2E8CBCE71600C385E955D5F7EA980B85E44A533639 -o json | decode_events
+events[0].attributes[0] (coin_spent): "spender" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys"
+events[0].attributes[1] (coin_spent): "amount" = "90000000000nhash"
+events[1].attributes[0] (coin_received): "receiver" = "tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt"
+events[1].attributes[1] (coin_received): "amount" = "90000000000nhash"
+events[2].attributes[0] (transfer): "recipient" = "tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt"
+events[2].attributes[1] (transfer): "sender" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys"
+events[2].attributes[2] (transfer): "amount" = "90000000000nhash"
+events[3].attributes[0] (message): "sender" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys"
+events[4].attributes[0] (tx): "fee" = "100000000000nhash"
+events[5].attributes[0] (tx): "acc_seq" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys/170"
+events[6].attributes[0] (tx): "signature" = "Kn46lGBBbEyT8vkltURU8b0Q0h6aMQZ4mwAN5t6VclNbJAUJ7n5rJhxT9NhhUwstYcVPQZeL2AILEeFZ88mlVQ=="
 ```
