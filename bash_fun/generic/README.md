@@ -16,6 +16,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [b2h.sh](#user-content-b2hsh)
   * [b642h.sh](#user-content-b642hsh)
   * [change_word.sh](#user-content-change_wordsh)
+  * [cpm.sh](#user-content-cpmsh)
   * [echo_color.sh](#user-content-echo_colorsh)
   * [echo_do.sh](#user-content-echo_dosh)
   * [fp.sh](#user-content-fpsh)
@@ -206,6 +207,26 @@ When executed:
 
 This is probably best done in a git repo containing no uncommitted changes.
 That way, it's easy to undo if there were some unintended changes.
+
+### `cpm.sh`
+
+[cpm.sh](cpm.sh) - A function/script for copying stuff to multiple places.
+
+```console
+$ cpm --help
+cpm - Copies things to multiple places (cp multiple).
+
+Usage: cpm [<flags for cp>] [--] source1 [source2 ... --] target1 [target2 ...]
+
+The <flags for cp> must come first are are anything that start with a -.
+If the first source file starts with a -, then put a -- before the source files.
+If there are multiple sources, put a -- between the sources and targets.
+
+You can also identify sources using --source <source> and targets using --target <target>.
+Similarly, the --file <entry>, --dir <entry>, --entry <entry>, and --name <entry> flags all do the same thing:
+  add the <entry> to either the sources or targets depending on it's position.
+
+```
 
 ### `echo_color.sh`
 

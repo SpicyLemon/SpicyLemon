@@ -53,7 +53,7 @@ __generic_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'generic-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     func_base_file_names=(
-        'add'                 'b2h'            'b642h'             'change_word'         'echo_color'
+        'add'                 'b2h'            'b642h'             'change_word'         'cpm'           'echo_color'
         'echo_do'             'fp'             'getlines'          'h2b64'               'hrr'
         'java_sdk_switcher'   'join_str'       'list'              'max'                 'min'           'modulo'
         'multi_line_replace'  'multidiff'      'multiply'          'palette_generators'  'print_args'    'pvarn'
