@@ -21,6 +21,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [echo_do.sh](#user-content-echo_dosh)
   * [fp.sh](#user-content-fpsh)
   * [getlines.sh](#user-content-getlinessh)
+  * [go_mod_fix.sh](#user-content-go_mod_fixsh)
   * [h2b64.sh](#user-content-h2b64sh)
   * [hrr.sh](#user-content-hrrsh)
   * [java_sdk_switcher.sh](#user-content-java_sdk_switchersh)
@@ -377,6 +378,20 @@ if [[ "$sourced" != 'YES' ]]; then
     exit $?
 fi
 unset sourced
+```
+
+### `go_mod_fix.sh`
+
+[go_mod_fix.sh](go_mod_fix.sh) - Function/script for running go mod tidy; go mod vendor; go mod fix on all go.mod files under a directory.
+
+Usage: `go_mod_fix [<root_dir>]`
+If no `<root_dir>` is provided, `.` is used.
+
+Example:
+```console
+> go_mod_fix
+./go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
+./submodule/go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
 ```
 
 ### `h2b64.sh`
