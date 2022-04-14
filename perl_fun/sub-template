@@ -9,3 +9,8 @@
 #
 # Returns      _outputs_
 ##############################################################
+sub _subName_ {
+    my $arg1 = shift;
+    debug('_subName_('.quoteAndEscape($arg1).'): starting'."\n") if ($W);
+    debug('_subName_('.quoteAndEscape($arg1).'): returning'."\n") if ($W);
+}
