@@ -74,8 +74,8 @@ EOF
     for commit_hash in "${commit_hashes[@]}"; do
         printf '> git log "%s" -n 1\n' "$commit_hash" \
             && git log "$commit_hash" -n 1 \
-            && printf '\n> git --no-pager diff %s "%s~" "%s"\n' "${diff_args[*]}" "$commit_hash" "$commit_hash" \
-            && git --no-pager diff "${diff_args[@]}" "$commit_hash~" "$commit_hash"
+            && printf '\n> git --no-pager diff "%s~" "%s" %s\n' "$commit_hash" "$commit_hash" "${diff_args[*]}" \
+            && git --no-pager diff "$commit_hash~" "$commit_hash" "${diff_args[@]}"
         exit_code=$?
         if [[ $exit_code -ne 0 ]]; then
             return_code=$exit_code
