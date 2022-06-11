@@ -75,17 +75,21 @@ $ PS1='$( get_hash_price_for_prompt ) $ '
 ![screenshot of get hash price for prompt](/bash_fun/figure/get-hash-price-for-prompt-screenshot.png)
 
 Some customizations can be made through the following environment variables:
-- `DLOB_C_DIR`: The directory the data is cached in. Default is `/tmp/dlob`.
-- `DLOB_C_MAX_AGE`: The max age the cache can be to be considered still fresh. Default is `10m`.
-- `DLOB_DAILY_PRICE_URL`: The url to use to get the json with the HASH price. Default is `https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price`.
-- `DLOB_JQ_FILTER`: The filter provided to `jq` to extract the HASH price from the results of `DLOB_DAILY_PRICE_URL`. Default is `.latestDisplayPricePerDisplayUnit`.
-- `DLOB_DEFAULT_VALUE`: The value to set as the HASH price if one can't be found. Default is `-69.420000000000000000`.
-- `DLOB_PROMPT_FORMAT`: The format to apply to the HASH price to create the output of `get_hash_price_for_prompt`. Default is `\033[48;5;238;38;5;15m #\xE2\x83\xA3  %1.4f \033[0m`.
+- `HASH_C_DIR`: The directory the data is cached in. Default is `/tmp/hash`.
+- `HASH_C_MAX_AGE`: The max age the cache can be to be considered still fresh. Default is `10m`.
+- `HASH_PRICE_URL`: The url to use to get the json with the HASH price. Default is `https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,regularMarketPrice&symbols=HASH1-USD`.
+- `HASH_JQ_FILTER`: The filter provided to `jq` to extract the HASH price from the results of `HASH_DAILY_PRICE_URL`. Default is `.quoteResponse.result[0].regularMarketPrice`.
+- `HASH_DEFAULT_VALUE`: The value to set as the HASH price if one can't be found. Default is `-69.420000000000000000`.
+- `HASH_PROMPT_FORMAT`: The format to apply to the HASH price to create the output of `get_hash_price_for_prompt`. Default is `\033[48;5;238;38;5;15m #\xE2\x83\xA3  %1.4f \033[0m`.
+
+To use DLOB for pricing:
+- `export HASH_PRICE_URL='https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price'`
+- `export HASH_JQ_FILTER='.latestDisplayPricePerDisplayUnit'`
 
 The rest of the functions are to help facilitate caching.
-- `dlobcache` is a wrapper over `bashcache` supplying the directory and max age desired for this stuff.
-- `dlobcache_refresh` actually does the work of making the API call and updating the cache.
-- `dlobcache_check_required_commands` checks to make sure some possibly missing commands are available.
+- `hashcache` is a wrapper over `bashcache` supplying the directory and max age desired for this stuff.
+- `hashcache_refresh` actually does the work of making the API call and updating the cache.
+- `hashcache_check_required_commands` checks to make sure some possibly missing commands are available.
 
 ### `b642id.sh`
 
