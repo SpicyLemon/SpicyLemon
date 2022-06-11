@@ -58,7 +58,7 @@ __figure_do_setup () {
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
     extra_funcs_to_check=(
-        'dlobcache'  'dlobcache_check_required_commands'  'dlobcache_refresh'  'get_hash_price_for_prompt' 'prov_node'
+        'hashcache'  'hashcache_check_required_commands'  'hashcache_refresh'  'get_hash_price_for_prompt' 'prov_node'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
