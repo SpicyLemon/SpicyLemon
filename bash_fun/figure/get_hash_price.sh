@@ -1,5 +1,5 @@
 #!/bin/bash
-# This file contains several functions for getting and caching HASH token info from dlob.io.
+# This file contains several functions for getting and caching HASH token info.
 # This file should be sourced to make the functions available in your environment.
 #
 # Primary Functions of Interest:
@@ -7,17 +7,17 @@
 #   get_hash_price_for_prompt  -- Formats the output of get_hash_price.
 #
 # Other Functions:
-#   dlobcache  -------------------------- A wrapper over bashcache that applies standard DLOB args.
-#   dlobcache_refresh  ------------------ Gets and caches the daily price json and hash price value.
-#   dlobcache_check_required_commands  -- Checks that some required commands are available.
+#   hashcache  -------------------------- A wrapper over bashcache that applies standard HASH args.
+#   hashcache_refresh  ------------------ Gets and caches the hash price json and hash price value.
+#   hashcache_check_required_commands  -- Checks that some required commands are available.
 #
 # Customizable Environment Variables:
-#   DLOB_C_DIR  ------------ The directory bashcache uses for this stuff.
-#   DLOB_C_MAX_AGE  -------- The maximum age of the cached data (before triggering a refresh).
-#   DLOB_DAILY_PRICE_URL  -- The URL with the needed data.
-#   DLOB_JQ_FILTER  -------- The filter to apply to the JSON result of the URL.
-#   DLOB_DEFAULT_VALUE  ---- The Hash price to use if something is going wrong.
-#   DLOB_PROMPT_FORMAT  ---- The format to use for the Hash price in a command line prompt.
+#   HASH_C_DIR  ------------ The directory bashcache uses for this stuff.
+#   HASH_C_MAX_AGE  -------- The maximum age of the cached data (before triggering a refresh).
+#   HASH_PRICE_URL  -------- The URL that will return the needed data.
+#   HASH_JQ_FILTER  -------- The filter to apply to the JSON result of the URL.
+#   HASH_DEFAULT_VALUE  ---- The Hash price to use if something is going wrong.
+#   HASH_PROMPT_FORMAT  ---- The format to use for the Hash price in a command line prompt.
 #   See below for details and defaults.
 
 # Determine if this script was invoked by being executed or sourced.
@@ -42,26 +42,26 @@ unset sourced
 
 # The directory that bashcache uses in here.
 # The path must be absolute.
-# Default is '/tmp/dlob'.
-DLOB_C_DIR="${DLOB_C_DIR:-/tmp/dlob}"
+# Default is '/tmp/hash'.
+HASH_C_DIR="${HASH_C_DIR:-/tmp/hash}"
 
 # The maximum cache age that bashcache uses in here.
 # The format is the same as used for the -atime option of the find command, without the +. E.g. '10m' or '23h' or '6d12h30m'.
 # When get_hash_price (or get_hash_price_for_prompt) is called, if the cache is older than this, a refresh is triggered.
 # Default is '10m' (ten minutes).
-DLOB_C_MAX_AGE="${DLOB_C_MAX_AGE:-10m}"
+HASH_C_MAX_AGE="${HASH_C_MAX_AGE:-10m}"
 
 # The url to request.
 # Defaults to 'https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price'.
-DLOB_DAILY_PRICE_URL="${DLOB_DAILY_PRICE_URL:-https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price}"
+HASH_PRICE_URL="${HASH_PRICE_URL:-https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price}"
 
-# The filter given to jq in order to extract the desired value out of the result found at DLOB_DAILY_PRICE_URL.
+# The filter given to jq in order to extract the desired value out of the result found at HASH_PRICE_URL.
 # Default is '.latestDisplayPricePerDisplayUnit'.
-DLOB_JQ_FILTER="${DLOB_JQ_FILTER:-.latestDisplayPricePerDisplayUnit}"
+HASH_JQ_FILTER="${HASH_JQ_FILTER:-.latestDisplayPricePerDisplayUnit}"
 
 # A value to use when either there is an error or we don't have any data yet.
 # Default is -69.42 (with a bunch of zeros to make it the same length as an expected value).
-DLOB_DEFAULT_VALUE="${DLOB_DEFAULT_VALUE:--69.420000000000000000}"
+HASH_DEFAULT_VALUE="${HASH_DEFAULT_VALUE:--69.420000000000000000}"
 
 # The format to use for the prompt.
 # Default explained:
@@ -72,7 +72,7 @@ DLOB_DEFAULT_VALUE="${DLOB_DEFAULT_VALUE:--69.420000000000000000}"
 #   Print the hash price rounded to 4 decimal places.
 #   Print one last space for padding.
 #   Turn off coloring and be done
-DLOB_PROMPT_FORMAT="${DLOB_PROMPT_FORMAT:-\033[48;5;238;38;5;15m #\xE2\x83\xA3  %1.4f \033[0m}"
+HASH_PROMPT_FORMAT="${HASH_PROMPT_FORMAT:-\033[48;5;238;38;5;15m #\xE2\x83\xA3  %1.4f \033[0m}"
 
 
 ################################
@@ -80,10 +80,10 @@ DLOB_PROMPT_FORMAT="${DLOB_PROMPT_FORMAT:-\033[48;5;238;38;5;15m #\xE2\x83\xA3  
 #-----------------------------
 
 # Define some bashcache names for storing various things.
-DLOB_CN_HASH_PRICE='hash_price'                     # The Hash Price of interest.
-DLOB_CN_DAILY_PRICE_JSON='daily_price_json'         # The full response (hopefully json) from the curl command.
-DLOB_CN_DAILY_PRICE_HEADER='daily_price_header'     # The response header from the curl command.
-DLOB_CN_JQ_ERROR='jq_error'                         # Any errors encountered using jq.
+HASH_CN_HASH_PRICE='hash_price'         # The Hash Price of interest.
+HASH_CN_PRICE_JSON='price_json'         # The full response (hopefully json) from the curl command.
+HASH_CN_PRICE_HEADER='price_header'     # The response header from the curl command.
+HASH_CN_JQ_ERROR='jq_error'             # Any errors encountered using jq.
 
 
 #################################
@@ -110,8 +110,8 @@ DLOB_CN_JQ_ERROR='jq_error'                         # Any errors encountered usi
 #   10: The cached data was available but stale (from bashcache).
 #   11: The cached data was not available (from bashcache).
 get_hash_price () {
-    if ! dlobcache_check_required_commands > /dev/null 2>&1; then
-        printf '%s\n' "$DLOB_DEFAULT_VALUE"
+    if ! hashcache_check_required_commands > /dev/null 2>&1; then
+        printf '%s\n' "$HASH_DEFAULT_VALUE"
         return 2
     fi
     local no_wait force_refresh hash_price cache_read_code
@@ -128,14 +128,14 @@ get_hash_price () {
     done
 
     # If we're forcing a refresh, and don't mind waiting, do the refresh now.
-    [[ -n "$force_refresh" && -z "$no_wait" ]] && dlobcache_refresh
+    [[ -n "$force_refresh" && -z "$no_wait" ]] && hashcache_refresh
 
     # This will either get the cached hash price if we have it, or it'll be an empty string.
-    hash_price="$( dlobcache read "$DLOB_CN_HASH_PRICE" )"
+    hash_price="$( hashcache read "$HASH_CN_HASH_PRICE" )"
     cache_read_code=$?
 
     # If we didn't want to wait, but wanted to force a refresh, kick that off now.
-    [[ -n "$force_refresh" && -n "$no_wait" ]] && dlobcache_refresh --background
+    [[ -n "$force_refresh" && -n "$no_wait" ]] && hashcache_refresh --background
 
     # No matter what, if there were invalid bashcache arguments, we want to know, so handle that now.
     if [[ "$cache_read_code" -eq '1' ]]; then
@@ -149,34 +149,34 @@ get_hash_price () {
         10)
             # 10 - The requested cache data is available, but stale.
             # Update the cache in the background.
-            dlobcache_refresh --background
+            hashcache_refresh --background
             ;;
         11)
             # 11 - The requested cache data is not available.
             if [[ -n "$no_wait" ]]; then
                 # We don't want to wait, kick off an update in the background and move on.
-                dlobcache_refresh --background
+                hashcache_refresh --background
             else
                 # We don't mind waiting, refresh it now, wait for it, then read it.
-                dlobcache_refresh
-                hash_price="$( dlobcache read "$DLOB_CN_HASH_PRICE" )"
+                hashcache_refresh
+                hash_price="$( hashcache read "$HASH_CN_HASH_PRICE" )"
                 cache_read_code=$?
             fi
             ;;
         esac
     fi
-    [[ -z "$hash_price" ]] && hash_price="$DLOB_DEFAULT_VALUE"
+    [[ -z "$hash_price" ]] && hash_price="$HASH_DEFAULT_VALUE"
     printf '%s\n' "$hash_price"
     return $cache_read_code
 }
 
 # Usage: get_hash_price_for_prompt
-# This applies the DLOB_PROMPT_FORMAT format to the result of get_hash_price.
+# This applies the HASH_PROMPT_FORMAT format to the result of get_hash_price.
 # This is intended to be used in a command prompt, e.g. PS1='$( get_hash_price_for_prompt ) $'.
 # The exit code returned from this function will be the same as the previous exit code (from before this function is called).
 get_hash_price_for_prompt () {
     local previous_exit=$?
-    printf "$DLOB_PROMPT_FORMAT" "$( get_hash_price --no-wait )"
+    printf "$HASH_PROMPT_FORMAT" "$( get_hash_price --no-wait )"
     return $previous_exit
 }
 
@@ -185,21 +185,21 @@ get_hash_price_for_prompt () {
 # Other Functions
 #----------------
 
-# Usage: dlobcache <command> <cache name> [options]
+# Usage: hashcache <command> <cache name> [options]
 # This is just a wrapper over bashcache to provide the standard directory and age arguments.
-dlobcache () {
-    bashcache -d "$DLOB_C_DIR" -a "$DLOB_C_MAX_AGE" "$@"
+hashcache () {
+    bashcache -d "$HASH_C_DIR" -a "$HASH_C_MAX_AGE" "$@"
 }
 
-# Usage: dlobcache_refresh [-v|-vv|-vvv|--background]
-# Gets the DLOB_DAILY_PRICE_URL, applies the DLOB_JQ_FILTER and caches it.
+# Usage: hashcache_refresh [-v|-vv|-vvv|--background]
+# Gets the HASH_PRICE_URL, applies the HASH_JQ_FILTER and caches it.
 # The -v -vv and -vvv flags are different levels of verbosity.
 # The --background flag will cause this to do this in the background, and return from the call immediately.
-dlobcache_refresh () {
+hashcache_refresh () {
     if [[ "$1" == '--background' ]]; then
         # Fire off a background process to update the cache.
         # The () > /dev/null 2>&1 here is to supress the job/pid start and stop messages.
-        ( dlobcache_refresh & ) > /dev/null 2>&1
+        ( hashcache_refresh & ) > /dev/null 2>&1
         return 0
     fi
     local v bcv val ec
@@ -208,43 +208,43 @@ dlobcache_refresh () {
     # If the verbosity is high enough, set the bashcache verbosity flag
     [[ "$v" -ge '3' ]] && bcv='--verbose'
 
-    # If -vv or more, output all the DLOB variables.
-    [[ "$v" -ge '2' ]] && { set | grep '^DLOB_'; printf '\n'; } >&2
+    # If -vv or more, output all the HASH variables.
+    [[ "$v" -ge '2' ]] && { set | grep '^HASH_'; printf '\n'; } >&2
 
     # Check the required commands without printing anything (unless were runnin verbosely).
-    if ! dlobcache_check_required_commands > /dev/null 2>&1; then
-        [[ "$v" -ge '1' ]] && printf 'Missing required command(s). Run dlobcache_check_required_commands for more info.\n' >&2
+    if ! hashcache_check_required_commands > /dev/null 2>&1; then
+        [[ "$v" -ge '1' ]] && printf 'Missing required command(s). Run hashcache_check_required_commands for more info.\n' >&2
         return 20
     fi
 
     # Curl the url storing both the header and output into the cache.
-    [[ "$v" -ge '1' ]] && printf 'Curling url: %s ... ' "$DLOB_DAILY_PRICE_URL" >&2
+    [[ "$v" -ge '1' ]] && printf 'Curling url: %s ... ' "$HASH_PRICE_URL" >&2
     [[ -n "$bcv" ]] && printf '\n' >&2
-    curl -s "$DLOB_DAILY_PRICE_URL" \
-         --dump-header "$( dlobcache file "$DLOB_CN_DAILY_PRICE_HEADER" $bcv )" \
-         --output "$( dlobcache file "$DLOB_CN_DAILY_PRICE_JSON" $bcv )" 2> /dev/null
+    curl -s "$HASH_PRICE_URL" \
+         --dump-header "$( hashcache file "$HASH_CN_PRICE_HEADER" $bcv )" \
+         --output "$( hashcache file "$HASH_CN_PRICE_JSON" $bcv )" 2> /dev/null
     ec=$?
     [[ "$v" -ge '1' ]] && printf 'Done. Exit code: %d\n' "$ec" >&2
     if [[ "$ec" -ne '0' && "$v" -ge '1' || "$v" -ge '2' ]]; then
-        printf 'Response header file: %s\n' "$( dlobcache file "$DLOB_CN_DAILY_PRICE_HEADER" )" >&2
-        [[ "$v" -ge '2' ]] && dlobcache read "$DLOB_CN_DAILY_PRICE_HEADER" >&2
-        printf 'Response content file: %s\n' "$( dlobcache file "$DLOB_CN_DAILY_PRICE_JSON" )" >&2
-        [[ "$v" -ge '2' ]] && { dlobcache read "$DLOB_CN_DAILY_PRICE_JSON"; printf '\n\n'; } >&2
+        printf 'Response header file: %s\n' "$( hashcache file "$HASH_CN_PRICE_HEADER" )" >&2
+        [[ "$v" -ge '2' ]] && hashcache read "$HASH_CN_PRICE_HEADER" >&2
+        printf 'Response content file: %s\n' "$( hashcache file "$HASH_CN_PRICE_JSON" )" >&2
+        [[ "$v" -ge '2' ]] && { hashcache read "$HASH_CN_PRICE_JSON"; printf '\n\n'; } >&2
     fi
 
     if [[ "$ec" -eq '0' ]]; then
         # Apply the jq filter to the newly cached result to get the desired value.
-        [[ "$v" -ge '1' ]] && printf 'Applying jq filter '"'"'%s'"'"' ... ' "$DLOB_JQ_FILTER" >&2
+        [[ "$v" -ge '1' ]] && printf 'Applying jq filter '"'"'%s'"'"' ... ' "$HASH_JQ_FILTER" >&2
         [[ -n "$bcv" ]] && printf '\n' >&2
-        val="$( jq -r "$DLOB_JQ_FILTER" "$( dlobcache file "$DLOB_CN_DAILY_PRICE_JSON" $bcv )" 2> "$( dlobcache file "$DLOB_CN_JQ_ERROR" $bcv )" )"
+        val="$( jq -r "$HASH_JQ_FILTER" "$( hashcache file "$HASH_CN_PRICE_JSON" $bcv )" 2> "$( hashcache file "$HASH_CN_JQ_ERROR" $bcv )" )"
         ec=$?
         [[ "$v" -ge '1' ]] && printf 'Done. Exit code: %d\n' "$ec" >&2
         if [[ "$ec" -ne '0' && "$v" -ge '1' || "$v" -ge '2' ]]; then
             if [[ "$ec" -eq '0' ]]; then
                 printf 'Result: %s\n' "$val" >&2
             else
-                printf 'Error file: %s\n' "$( dlobcache file "$DLOB_CN_JQ_ERROR" )" >&2
-                [[ "$v" -ge '2' ]] && { dlobcache read "$DLOB_CN_JQ_ERROR"; printf '\n'; } >&2
+                printf 'Error file: %s\n' "$( hashcache file "$HASH_CN_JQ_ERROR" )" >&2
+                [[ "$v" -ge '2' ]] && { hashcache read "$HASH_CN_JQ_ERROR"; printf '\n'; } >&2
             fi
         fi
         [[ "$v" -ge '2' ]] && printf '\n' >&2
@@ -252,23 +252,23 @@ dlobcache_refresh () {
 
     # If there as a problem, use the default value.
     if [[ "$ec" -ne '0' || -z "$val" ]]; then
-        [[ "$v" -ge '1' ]] && printf 'Using default value: %s\n' "$DLOB_DEFAULT_VALUE" >&2
-        val="$DLOB_DEFAULT_VALUE"
+        [[ "$v" -ge '1' ]] && printf 'Using default value: %s\n' "$HASH_DEFAULT_VALUE" >&2
+        val="$HASH_DEFAULT_VALUE"
         [[ "$ec" -eq '0' ]] && ec=21
     fi
 
     # Write the value to the cache.
-    dlobcache write "$DLOB_CN_HASH_PRICE" $bcv -- "$val"
-    [[ "$v" -ge '1' ]] && printf 'Value: %s\nCached in: %s\n' "$val" "$( dlobcache file "$DLOB_CN_HASH_PRICE" )" >&2
+    hashcache write "$HASH_CN_HASH_PRICE" $bcv -- "$val"
+    [[ "$v" -ge '1' ]] && printf 'Value: %s\nCached in: %s\n' "$val" "$( hashcache file "$HASH_CN_HASH_PRICE" )" >&2
 
     return $ec
 }
 
-# Usage: dlobcache_check_required_commands
+# Usage: hashcache_check_required_commands
 # This checks for some required commands that have at least a little chance of not being available.
 # If a command is missing, some info will be printed to stderr and the exit code won't be 0.
 # An exit code of zero means everything is available.
-dlobcache_check_required_commands () {
+hashcache_check_required_commands () {
     local r c
     r=0
     for c in 'curl' 'jq' 'bashcache'; do
@@ -285,4 +285,4 @@ dlobcache_check_required_commands () {
 # Run the check now to print out any problems.
 # Since this stuff is desiged for use in the command prompt, it'd be horribly annoying if it were printing out errors with every prompt.
 # By running this check now, you find out about problems as the file's being sourced and can still investigate if get_hash_price_for_prompt is in your prompt.
-dlobcache_check_required_commands
+hashcache_check_required_commands
