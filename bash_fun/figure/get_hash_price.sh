@@ -52,12 +52,16 @@ HASH_C_DIR="${HASH_C_DIR:-/tmp/hash}"
 HASH_C_MAX_AGE="${HASH_C_MAX_AGE:-10m}"
 
 # The url to request.
-# Defaults to 'https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price'.
-HASH_PRICE_URL="${HASH_PRICE_URL:-https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price}"
+# Yahoo finance: https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,regularMarketPrice&symbols=HASH1-USD
+# DLOB: https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price
+# Default is yahoo finance.
+HASH_PRICE_URL="${HASH_PRICE_URL:-https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,shortName,regularMarketPrice&symbols=HASH1-USD}"
 
 # The filter given to jq in order to extract the desired value out of the result found at HASH_PRICE_URL.
-# Default is '.latestDisplayPricePerDisplayUnit'.
-HASH_JQ_FILTER="${HASH_JQ_FILTER:-.latestDisplayPricePerDisplayUnit}"
+# yahoo finance: .quoteResponse.result[0].regularMarketPrice
+# DLOB: .latestDisplayPricePerDisplayUnit.
+# Default is yahoo finance.
+HASH_JQ_FILTER="${HASH_JQ_FILTER:-.quoteResponse.result[0].regularMarketPrice}"
 
 # A value to use when either there is an error or we don't have any data yet.
 # Default is -69.42 (with a bunch of zeros to make it the same length as an expected value).
