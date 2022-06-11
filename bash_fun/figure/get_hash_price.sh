@@ -59,7 +59,7 @@ HASH_PRICE_URL="${HASH_PRICE_URL:-https://query1.finance.yahoo.com/v7/finance/qu
 
 # The filter given to jq in order to extract the desired value out of the result found at HASH_PRICE_URL.
 # yahoo finance: .quoteResponse.result[0].regularMarketPrice
-# DLOB: .latestDisplayPricePerDisplayUnit.
+# DLOB: .latestDisplayPricePerDisplayUnit
 # Default is yahoo finance.
 HASH_JQ_FILTER="${HASH_JQ_FILTER:-.quoteResponse.result[0].regularMarketPrice}"
 
