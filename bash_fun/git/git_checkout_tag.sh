@@ -24,7 +24,7 @@ git_checkout_tag () {
     selection="$1"
     if [[ -z "$selection" ]]; then
         git fetch --tags
-        selection="$( git tag | fzf +m --cycle --header='Select the tag to checkout and press enter (or esc to cancel).' )"
+        selection="$( git tag | sort --version-sort | fzf +m --tac --cycle --header='Select the tag to checkout and press enter (or esc to cancel).' )"
     fi
     [[ -n "$selection" ]] && git checkout "$selection" -b "tag-$selection"
     return 0
