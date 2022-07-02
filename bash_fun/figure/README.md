@@ -11,6 +11,7 @@ These scripts/functions are specific to activities associated with Figure Techno
 * `id2b64.sh` - Converts hex values (meant to make up a `MetadataAddress`) into a base64 encoded string.
 * `query_prov_using_next_key.sh` - Gets multiple pages of a paginated provenanced query.
 * `decode_events.sh` - Decodes the event strings returned from a tx query.
+* `state-sync-setup.sh` - Sets up a directory to house a node that uses statesync.
 
 ## Details
 
@@ -210,4 +211,20 @@ events[3].attributes[0] (message): "sender" = "tp172yscg9eu72hknhue4sae5z3yyddxl
 events[4].attributes[0] (tx): "fee" = "100000000000nhash"
 events[5].attributes[0] (tx): "acc_seq" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys/170"
 events[6].attributes[0] (tx): "signature" = "Kn46lGBBbEyT8vkltURU8b0Q0h6aMQZ4mwAN5t6VclNbJAUJ7n5rJhxT9NhhUwstYcVPQZeL2AILEeFZ88mlVQ=="
+```
+
+### `state-sync-setup`
+
+[state-sync-setup.sh](state-sync-setup.sh) - Script that sets up the current directory to house a node that uses statesync.
+
+```console
+> ./state-sync-setup.sh --help
+Usage: state-sync-setup.sh [<provenanced command>] [<persistent provenanced args>]
+
+The <provenanced command> is the Provenanced Blockchain executable to use. The default is provenanced.
+    If provided, it must be the first argument, and it cannot start with a dash.
+The <persistent provenanced args> are any arguments to always provide with the <provenanced command>.
+    Example <persistent provenanced args>: --home ~/.provenanced --testnet
+
+Any exported PIO_ variables defined in your environment will also be used.
 ```
