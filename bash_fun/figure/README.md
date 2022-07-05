@@ -12,6 +12,7 @@ These scripts/functions are specific to activities associated with Figure Techno
 * `query_prov_using_next_key.sh` - Gets multiple pages of a paginated provenanced query.
 * `decode_events.sh` - Decodes the event strings returned from a tx query.
 * `state-sync-setup.sh` - Sets up a directory to house a node that uses statesync.
+* `cosmovisor-setup.sh` - Sets up a cosmovisor directory.
 
 ## Details
 
@@ -227,4 +228,29 @@ The <persistent provenanced args> are any arguments to always provide with the <
     Example <persistent provenanced args>: --home ~/.provenanced --testnet
 
 Any exported PIO_ variables defined in your environment will also be used.
+```
+
+### `cosmovisor-setup`
+
+[cosmovisor-setup.sh](cosmovisor-setup.sh) - Script that creates a cosmovisor directory.
+
+```console
+> ./cosmovisor-setup.sh --help
+Usage: ./cosmovisor-setup.sh [--home <daemon_home>] [--name <daemon_name>] [--path <path_to_daemon>]
+
+This script will create the initial cosmovisor directory structure.
+
+<daemon_home> is the directory that will hold the cosmovisor/ directory.
+    If not provided, the DAEMON_HOME environment variable is used.
+    If DAEMON_HOME is not defined, the PIO_HOME environment variable is used.
+    If PIO_HOME is also not defined, an error is returned.
+
+<daemon_name> is the name of the executable.
+    If not provided, the DAEMON_NAME environment variable is used.
+    If DAEMON_NAME is not defined, but a <path_to_daemon> is provided, the filename from that will be used.
+
+<path_to_daemon> is the full path to the executable.
+    If not provided, the location will be found using  command -v <daemon_name> .
+    If the executable file cannot be found, an error is returned.
+
 ```
