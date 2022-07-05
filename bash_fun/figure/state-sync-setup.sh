@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# This file will update a provenance configuration so that it's set up to start using state-sync.
+# This file will create/update a provenance configuration so that it's set up to start using state-sync.
 # Usage: state-sync-setup.sh [<provenanced command>] [<args for the command>]
 # If <provenanced command> is not provided, provenanced is used.
 # <args for the commmand> might be --testnet or --home ~/.provenanced.
@@ -15,7 +15,10 @@ while [[ "$#" > 0 ]]; do
             cat << EOF
 Usage: state-sync-setup.sh [<provenanced command>] [<persistent provenanced args>]
 
-The <provenanced command> is the Provenanced Blockchain executable to use. The default is provenanced.
+This script will update provenaned configuration to use statesync the next time the node is started.
+If the configuration files don't yet exist, they will be created.
+
+The <provenanced command> is the Provenanced Blockchain executable that this script should use. The default is provenanced.
     If provided, it must be the first argument, and it cannot start with a dash.
 The <persistent provenanced args> are any arguments to always provide with the <provenanced command>.
     Example <persistent provenanced args>: --home ~/.provenanced --testnet
