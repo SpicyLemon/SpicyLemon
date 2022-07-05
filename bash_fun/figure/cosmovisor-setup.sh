@@ -95,12 +95,14 @@ gen_bin_exe="$gen_bin/$name"
 current_ln="$home/cosmovisor/current"
 printf 'Creating directory: mkdir -p %s\n' "'$gen_bin'"
 mkdir -p "$gen_bin" || exit $?
+
 printf 'Copying executable: cp %s %s\n' "'$path'" "'$gen_bin_exe'"
 cp "$path" "$gen_bin_exe" || exit $?
 if [[ ! -x "$gen_bin_exe" ]]; then
     printf 'Making executable executable: chmod +x %s\n' "'$gen_bin_exe'"
     chmod +x "$gen_bin_exe" || exit $?
 fi
+
 gen_fp="$( cd "$gen"; pwd -P )"
 printf 'Creating current symlink: ln -s %s %s\n' "'$gen_fp'" "'$current_ln'"
 ln -s "$gen_fp" "$current_ln" || exit $?
