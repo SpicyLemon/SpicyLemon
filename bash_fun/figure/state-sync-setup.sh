@@ -224,7 +224,7 @@ latest_block="$( "${prov[@]}" query block )" || exit $?
 printf 'Getting block height: jq -r %s\n' "'.block.header.height'"
 latest_height="$( jq -r '.block.header.height' <<< "$latest_block" )" || exit $?
 printf 'Latest height: %d\n' "$latest_height"
-trust_height="$(( latest_height - 1000 ))"
+trust_height="$(( latest_height - 10 ))"
 printf 'Getting trust block: %s query block --height %d\n' "${prov[*]}" "$trust_height"
 trust_block="$( "${prov[@]}" query block "$trust_height" )" || exit $?
 printf 'Getting trust hash: jq -r %s\n' "'.block_id.hash'"
