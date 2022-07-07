@@ -190,11 +190,12 @@ if [[ -n "$need_client_config" ]]; then
     # There's nothing to download for this, so just set the needed defaults.
     if [[ -z "$is_testnet" ]]; then
         chain_id='pio-mainnet-1'
-        n0="$(( $RANDOM % 3 ))"
+        rpc_count=4
+        n0="$(( $RANDOM % rpc_count ))"
         node="tcp://rpc-$n0.provenance.io:26657"
         # Also define the rpc_servers value to use the other two nodes.
-        rpc1="$( get_ip "rpc-$(( ( n0 + 1 ) % 3 )).provenance.io" ):26657" || exit $?
-        rpc2="$( get_ip "rpc-$(( ( n0 + 2 ) % 3 )).provenance.io" ):26657" || exit $?
+        rpc1="$( get_ip "rpc-$(( ( n0 + 1 ) % rpc_count )).provenance.io" ):26657" || exit $?
+        rpc2="$( get_ip "rpc-$(( ( n0 + 2 ) % rpc_count )).provenance.io" ):26657" || exit $?
         printf -v rpc_servers '["%s","%s"]' "$rpc1" "$rpc2"
     else
         chain_id='pio-testnet-1'
