@@ -210,12 +210,15 @@ if [[ -z "$rpc_servers" ]]; then
     printf 'Identifying RPC address.\n'
     if [[ -z "$is_testnet" ]]; then
         rpc_addr="$( get_ip "$( "${prov[@]}" config get node | grep '^node=' | sed 's/^[^"]*"//; s/"[^"]*$//' )" )" || exit $?
+        printf -v rpc_servers '["%s:26657","%s:26657"]' "$rpc_addr" "$rpc_addr"
     else
         # (Temporary workaround due to how the tesntet hosts are currently configured)
-        rpc_addr='34.66.209.228'
+        if [[ "$(( $RANDOM % 2 ))" == '0' ]]; then
+            printf -v rpc_servers '["%s:26657","%s:26657"]' '34.66.209.228' '34.72.105.89'
+        else
+            printf -v rpc_servers '["%s:26657","%s:26657"]' '34.72.105.89' '34.66.209.228'
+        fi
     fi
-    rpc_addr="$rpc_addr:26657"
-    printf -v rpc_servers '["%s","%s"]' "$rpc_addr" "$rpc_addr"
 fi
 
 # Get the current block and a previous block in order to set up the statesync config.
