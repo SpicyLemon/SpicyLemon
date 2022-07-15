@@ -190,13 +190,7 @@ if [[ -n "$need_client_config" ]]; then
     # There's nothing to download for this, so just set the needed defaults.
     if [[ -z "$is_testnet" ]]; then
         chain_id='pio-mainnet-1'
-        rpc_count=4
-        n0="$(( $RANDOM % rpc_count ))"
-        node="tcp://rpc-$n0.provenance.io:26657"
-        # Also define the rpc_servers value to use the other two nodes.
-        rpc1="$( get_ip "rpc-$(( ( n0 + 1 ) % rpc_count )).provenance.io" ):26657" || exit $?
-        rpc2="$( get_ip "rpc-$(( ( n0 + 2 ) % rpc_count )).provenance.io" ):26657" || exit $?
-        printf -v rpc_servers '["%s","%s"]' "$rpc1" "$rpc2"
+        node="tcp://rpc-$(( $RANDOM % 4 )).provenance.io:26657"
     else
         chain_id='pio-testnet-1'
         node='https://rpc.test.provenance.io:443'
@@ -205,32 +199,35 @@ if [[ -n "$need_client_config" ]]; then
     "${prov[@]}" config set chain-id "$chain_id" node "$node" || exit $?
 fi
 
-# If we didn't define it above, set the rpc_servers.
-if [[ -z "$rpc_servers" ]]; then
-    printf 'Identifying RPC address.\n'
-    if [[ -z "$is_testnet" ]]; then
-        rpc_addr="$( get_ip "$( "${prov[@]}" config get node | grep '^node=' | sed 's/^[^"]*"//; s/"[^"]*$//' )" )" || exit $?
-        printf -v rpc_servers '["%s:26657","%s:26657"]' "$rpc_addr" "$rpc_addr"
-    else
-        # (Temporary workaround due to how the tesntet hosts are currently configured)
-        if [[ "$(( $RANDOM % 2 ))" == '0' ]]; then
-            printf -v rpc_servers '["%s:26657","%s:26657"]' '34.66.209.228' '34.72.105.89'
-        else
-            printf -v rpc_servers '["%s:26657","%s:26657"]' '34.72.105.89' '34.66.209.228'
-        fi
-    fi
-fi
+# Figure out which rpc servers to use.
+# Testnet rpc servers: 34.66.209.228  34.72.105.89
+printf 'Identifying RPC addresses.\n'
+# Get two random persistent peers. Each looks something like {hex id}@{url}.
+# First get them from the config.
+# Then put each on it's own line, sort them randomly and keep just the top two.
+# Then strip out the {hex id}@ and extract just the domain from the url.
+peers="$( "${prov[@]}" config get p2p.persistent_peers | grep '^p2p\.persistent_peers=' | sed 's/^[^"]*"//; s/"[^"]*$//' \
+    | tr ',' '\n' | sort --random-sort | head -n2 \
+    | sed -E 's/(^)[[:xdigit:]]+@//; s/^.*:\/\///; s/[:/?#].*$//' )" || exit $?
+rpc_d1="$( head -n1 <<< "$peers" )"
+rpc_d2="$( tail -n1 <<< "$peers" )"
+rpc_ip1="$( get_ip "$rpc_d1" )" || exit $?
+rpc_ip2="$( get_ip "$rpc_d2" )" || exit $?
+printf -v rpc_servers '["%s:26657","%s:26657"]' "$rpc_ip1" "$rpc_ip2"
+[[ "$rpc_d1" == "$rpc_ip1" ]] || printf -v rpc_d1 '%s (%s)' "$rpc_d1" "$rpc_ip1"
+[[ "$rpc_d2" == "$rpc_ip2" ]] || printf -v rpc_d2 '%s (%s)' "$rpc_d2" "$rpc_ip2"
+printf 'RPC Servers: %s and %s\n\n' "$rpc_d1" "$rpc_d2"
 
 # Get the current block and a previous block in order to set up the statesync config.
 printf 'Getting latest block: %s query block\n' "${prov[*]}"
 latest_block="$( "${prov[@]}" query block )" || exit $?
 printf 'Getting block height: jq -r %s\n' "'.block.header.height'"
 latest_height="$( jq -r '.block.header.height' <<< "$latest_block" )" || exit $?
-printf 'Latest height: %d\n' "$latest_height"
+printf 'Latest height: %d\n\n' "$latest_height"
 trust_height="$(( latest_height - 10 ))"
 printf 'Getting trust block: %s query block --height %d\n' "${prov[*]}" "$trust_height"
 trust_block="$( "${prov[@]}" query block "$trust_height" )" || exit $?
-printf 'Getting trust hash: jq -r %s\n' "'.block_id.hash'"
+printf 'Getting trust hash: jq -r %s\n\n' "'.block_id.hash'"
 trust_hash="$( jq -r '.block_id.hash' <<< "$trust_block" )" || exit $?
 
 printf 'Updating config to set these statesync values:\n'
