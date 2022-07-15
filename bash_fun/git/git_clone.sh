@@ -16,8 +16,7 @@
 git_clone () {
     local usage personal here force stay git_args last_arg provided_dir cwd showed_cd dirs_pre ec dirs_post new_dir ec2
     usage="$( cat << EOF
-Usage: git_clone [--personal] [--here [--force]] [--stay] <args for git clone>
-    --personal indicates that it is a personal repo.
+Usage: git_clone [--here [--force]] [--stay] <args for git clone>
     --here indicates you want the new directory where you are rather than in \$GIT_REPO_DIR.
     --force allows cloning into another git repo when using --here in a git repo.
     --stay prevents git_clone from changing into the newly cloned repo.
@@ -30,9 +29,6 @@ EOF
             -h|--help)
                 printf '%s\n' "$usage"
                 return 0
-                ;;
-            --personal)
-                personal='YES'
                 ;;
             --here)
                 here='YES'
@@ -123,13 +119,8 @@ EOF
     fi
     if [[ "$ec" -eq '0' ]]; then
         __git_echo_do git_set_default_branch
-        if [[ -n "$personal" ]]; then
-            __git_echo_do github_config_as_personal || ec2=$?
-        else
-            __git_echo_do git remote get-url origin || ec2=$?
-            __git_echo_do git config --local --list || ec2=$?
-            printf '\n'
-        fi
+        __git_echo_do git remote get-url origin || ec2=$?
+        __git_echo_do git config --local --list || ec2=$?
     fi
     if [[ -n "$stay" || "$ec" -ne '0' ]]; then
         [[ -n "$new_dir" ]] && printf 'New repo directory: %s\n\n' "$new_dir"
@@ -170,7 +161,6 @@ if [[ "$sourced" != 'YES' ]]; then
     }
     require_command '__git_echo_do' || exit $?
     require_command 'in_git_folder' || exit $?
-    require_command 'github_config_as_personal' || exit $?
     git_clone "$@"
     exit $?
 fi
