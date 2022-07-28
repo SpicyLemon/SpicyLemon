@@ -21,9 +21,12 @@ TODO:
             So I decied a bottom/top would be better, with the compact summary on bottom and the file diff on top.
         Lines that are selected will result in the diff being printed.
         Here's what I've got so far:
-            git --no-pager diff --color=always --compact-summary "$@" | tac | fzf --ansi --header-lines 1 --cycle -m --preview='git_diff_explorer_preview '"'$root_dir'"' "{}"' --preview-window='top,75%,border-bottom,~4'
+            git --no-pager diff --color=always --compact-summary "$@" | tac | fzf --ansi --header-lines 1 --cycle -m --preview='git_diff_explorer_preview '"$preview_args"' -- "{}"' --preview-window='top,75%,border-bottom,~4'
             I need to create the git_diff_explorer_preview program that will take in the compact summary line, extract the filename and output the diff.
-                root_dir is something that git_diff_explorer will need to figure out before invoking this whole thing (see below).
+                In the preview command, $@ won't get expanded correctly. It'll get expaned too early which will cause problems if file paths have spaces.
+                To get around that, I'll need to make a special string by escaping any ' in any of the $@, then wrap each in ' and join them with a space between.
+                    preview_args="$( for arg in "$@"; do printf '%s ' "'$( sed 's/'"'"'/\\'"'"'/g' <<< "$arg" )'"; done )"
+                There'll be an extra space at the end, but whatever.
             I tried a side-by side version, but fzf truncates long lines (no left/right scroll), so it didn't show enough, and wrapping on that skinny of a space was annoying.
             So I decided a top/bottom version was better. I put the summary on bottom since that's where you usually look in fzf.
             I only have a border between the sections because a full border around the diff area just took up extra space and didn't help anything.
@@ -54,5 +57,4 @@ TODO:
                     If --no-relative is provided, unset the root dir.
                 Then, if there's no root dir identified, set it to the output of `git rev-parse --show-toplevel`.
                 Then, use `realpath --relative-to='.' '<root_dir>/<filename>' to get the relative path to the file.
-                Pass that relative path into the git diff argument.
 
