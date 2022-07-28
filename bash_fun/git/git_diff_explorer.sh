@@ -41,7 +41,7 @@ For the preview window, the highlighted file is provided after the <git diff opt
 
 EOF
 )"
-    local args arg pargs selected line header_lines
+    local args arg pargs summary selected line header_lines
     args=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -86,9 +86,9 @@ EOF
         printf '\n'
         header_lines=8
     fi
+    summary="$( git --no-pager diff --color=always --compact-summary "${args[@]}" )" || return $?
     selected="$(
-            git --no-pager diff --color=always --compact-summary "${args[@]}" \
-            | tac \
+            tac <<< "$summary" \
             | fzf --ansi --header-lines 1 --cycle --multi \
                   --preview='git_diff_explorer_preview '"$pargs"' -- {}' \
                   --preview-window='top,75%,border-bottom,~'"$header_lines"
