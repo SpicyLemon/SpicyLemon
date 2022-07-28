@@ -2,4 +2,48 @@ TODO:
     Write a README.md
     Create an env var and function for finding the primary branch of a repo.
         Possibly use a custom git config entry for this.
-    Refactor git_commit_diff to allow git diff args to be passed in (e.g. --name-only).
+    Refactor git_commit_diff:
+        Create a --diff-args flag. Everything after that is added to the diff command.
+        Create a --log-args flag. Everything after that is added to the log command.
+        Create a --commits|--hashes flag. Everything after that is a commit hash.
+        Keep the --commit|--hash flag but make them the same as their plural counterparts.
+        Anything not after --diff-args or --log-args is a commit hash.
+        Remove the -- special handling.
+        New usage: git_commit_diff [<commit hash> ...] [--select] [--diff-args <git diff arg> ...]] [--log-args <git log arg> ...]] [(--commit|--commits|--hash|--hashes) <commit hash> ...]
+    Git diff explorer
+        Usage: git_diff_explorer <git diff args>
+        Basically, it should do a `git diff --compact-summary "$@"` and then `git diff "$@" <file>`.
+        Use fzf.
+        Smallish left panel (25%?) for `git diff --compact-summary "$@"`.
+        Right panel that then shows `git diff "$@" file`.
+        Lines that are selected will result in the diff being printed.
+        Use fzf's --ansi flag to keep the coloring. E.g. git diff --color=always --compact-summary | fzf --color
+        This is a good start:
+            git --no-pager diff --compact-summary --color=always "$@" | tac | fzf --ansi --header-lines 1
+        Have a --commit <hash> option that does the diff of a single commit, similar to this:
+            git --no-pager diff "<hash>~" "<hash>" <other args>
+            Basically, replace the "--commit <arg>" with "<arg>~" "<arg>" in the provided arguments.
+        To parse a --compact-summary line:
+            file_entry="$( sed -E 's/^[[:space:]]+//; s/([[:space:]]+\([^)]+\))?[[:space:]]+\|[[:space:]]+[[:digit:]]+([[:space:]]+[+-]+)?[[:space:]]*$//;' <<< "$line" )"
+            Then, to handle moved files:
+                file1="$( sed -E 's/{(.*) => (.*)}/\1/g; s/(.*) => (.*)/\1/g' <<< "$file_entry" )"
+                file2="$( sed -E 's/{(.*) => (.*)}/\2/g; s/(.*) => (.*)/\2/g' <<< "$file_entry" )"
+        To get the specific file diff:
+            git --no-pager diff --color=always "$@" -- <file1> <file2>
+            This works just fine if file1 and file2 are the same thing (e.g. the file wasn't moved).
+        Problem:
+            The compact summary outputs paths to files relative to the repo root, but git diff expects paths relative to current location.
+            So if you're somewhere other than the repo root, the paths can't be passed directly to git diff.
+            I can't seem to find a way to go from the full git path (from the repo root) to the relative path though.
+            The command `git ls-files --full-path <file>` will go from a relative path to full path, but I don't see an opposite.
+            Also, if the --relative flag is provided, the compact summary is limited to the current directory (or the dir provided) and all paths are relative.
+            Possible solution:
+                First, check the config for a `diff.relative` entry. If it's there, set it's value as the root dir
+                When parsing args, Look for --relative[=<path>] (and --no-relative).
+                    If --relative=<path> is provided, identify <path> as the root dir.
+                    If --relative is provided (without a path), idenitfy '.' as the root dir.
+                    If --no-relative is provided, unset the root dir.
+                Then, if there's no root dir identified, set it to the output of `git rev-parse --show-toplevel`.
+                Then, use `realpath --relative-to='.' '<root_dir>/<filename>' to get the relative path to the file.
+                Pass that relative path into the git diff argument.
+
