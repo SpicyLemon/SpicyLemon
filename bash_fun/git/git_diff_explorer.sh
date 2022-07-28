@@ -55,6 +55,7 @@ EOF
                     return 1
                 fi
                 args+=( "$2~" "$2" )
+                shift
                 ;;
             --)
                 printf 'The -- separator/argument cannot be provided as an argument to git_diff_explorer.\n' >&2
@@ -165,6 +166,7 @@ git_diff_explorer_preview () {
         printf '      args: [%s]\n' "${args[*]}"
     fi
     printf 'git --no-pager diff --color=always'
+    printf ' %q' "${args[@]}"
     if [[ "$file1" == "$file2" ]]; then
         printf ' -- \\\n  %q\n' "$file1"
         args+=( -- "$file1" )
