@@ -10,16 +10,25 @@ TODO:
         Anything not after --diff-args or --log-args is a commit hash.
         Remove the -- special handling.
         New usage: git_commit_diff [<commit hash> ...] [--select] [--diff-args <git diff arg> ...]] [--log-args <git log arg> ...]] [(--commit|--commits|--hash|--hashes) <commit hash> ...]
+        Add a preview window to the --select that shows a compact summary of that commit.
+        Probably want to have a top/bottom layout with preview/summary on top and commits on bottom.
+        Possibly have a hotkey that launches git_diff_explorer on the selected commit.
     Git diff explorer
         Usage: git_diff_explorer <git diff args>
         Basically, it should do a `git diff --compact-summary "$@"` and then `git diff "$@" <file>`.
-        Use fzf.
-        Smallish left panel (25%?) for `git diff --compact-summary "$@"`.
-        Right panel that then shows `git diff "$@" file`.
+        Use fzf with a preview window.
+            I tried a side-by side version, but it was too limiting. fzf truncates things left-to right, but allows scrolling.
+            So I decied a bottom/top would be better, with the compact summary on bottom and the file diff on top.
         Lines that are selected will result in the diff being printed.
-        Use fzf's --ansi flag to keep the coloring. E.g. git diff --color=always --compact-summary | fzf --color
-        This is a good start:
-            git --no-pager diff --compact-summary --color=always "$@" | tac | fzf --ansi --header-lines 1
+        Here's what I've got so far:
+            git --no-pager diff --color=always --compact-summary "$@" | tac | fzf --ansi --header-lines 1 --cycle -m --preview='git_diff_explorer_preview '"'$root_dir'"' "{}"' --preview-window='top,75%,border-bottom,~4'
+            I need to create the git_diff_explorer_preview program that will take in the compact summary line, extract the filename and output the diff.
+                root_dir is something that git_diff_explorer will need to figure out before invoking this whole thing (see below).
+            I tried a side-by side version, but fzf truncates long lines (no left/right scroll), so it didn't show enough, and wrapping on that skinny of a space was annoying.
+            So I decided a top/bottom version was better. I put the summary on bottom since that's where you usually look in fzf.
+            I only have a border between the sections because a full border around the diff area just took up extra space and didn't help anything.
+            I tried with cycle in there, but since you can only scroll it with mouse stuff (not up/down arrows), that was annoying (specially when trying to see the bottom).
+            The ~4 keeps the top 4 lines of the diff, which are the diff header lines with command, index and file info.
         Have a --commit <hash> option that does the diff of a single commit, similar to this:
             git --no-pager diff "<hash>~" "<hash>" <other args>
             Basically, replace the "--commit <arg>" with "<arg>~" "<arg>" in the provided arguments.
