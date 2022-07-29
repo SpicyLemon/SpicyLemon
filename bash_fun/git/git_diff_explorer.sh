@@ -111,7 +111,7 @@ EOF
 # git_diff_explorer_preview - outputs the diff of a specific file that it gets from a line from a --compact-summary.
 # Usage: git_diff_explorer_preview <git diff args> -- <compact summary line>
 git_diff_explorer_preview () {
-    local args root_dir line file_entry file1 file2 output ec
+    local args root_dir line file_entry file1 file2 diff_cmd output ec
     args=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -178,12 +178,23 @@ git_diff_explorer_preview () {
         printf ' -- \\\n  %q %q\n' "$file1" "$file2"
         args+=( -- "$file1" "$file2" )
     fi
-    output="$( git --no-pager diff --color=always "${args[@]}" )"
+    diff_cmd=( git --no-pager diff --color=always "${args[@]}" )
+    output="$( "${diff_cmd[@]}" )"
     ec=$?
     if [[ -n "$output" ]]; then
         printf '%s\n' "$output"
     else
         printf 'No differences to display.\n'
+    fi
+    if [[ "$NO_HISTORY" != 'YES' ]]; then
+        # In very light testing, I couldn't add to history when invoking this as a script.
+        # However, just to be on the safe side, the NO_HISTORY variable is used to make sure
+        # the fzf preview command isn't adding to the history each time it's invoked.
+        # We absolutely don't want that. What we do want is to add the specific diff commands to history
+        # that are run because their entries were selected by the explorer.
+        # In bash, history -s does this. In zsh, it is print -s. In zsh, executing history -s returns an error
+        # about not having a -s option. So we hide all that possible output and just try both.
+        history -s "${diff_cmd[@]}" > /dev/null 2>&1 || print -s "${diff_cmd[@]}" > /dev/null 2>&1
     fi
     return $ec
 }
@@ -197,6 +208,7 @@ export GIT_DIFF_EXPLORER_CMD="$( readlink -f "${BASH_SOURCE:-$0}" )"
 if [[ "$sourced" != 'YES' ]]; then
     if [[ "$1" == '--gde-preview' ]]; then
         shift
+        NO_HISTORY='YES'
         git_diff_explorer_preview "$@"
         exit $?
     fi
