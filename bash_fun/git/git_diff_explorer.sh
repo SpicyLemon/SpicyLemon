@@ -16,7 +16,7 @@
 
 git_diff_explorer () {
     local do_not_run
-    for req_cmd in 'git' 'fzf' 'tac' 'git_diff_explorer_preview'; do
+    for req_cmd in 'git' 'fzf' 'tac' "$GIT_DIFF_EXPLORER_PREVIEW_CMD"; do
         if ! command -v "$req_cmd" > /dev/null 2>&1; then
             do_not_run='yes'
             printf 'git_diff_explorer: Missing required command: %s\n' "$req_cmd" >&2
@@ -91,13 +91,13 @@ EOF
     selected="$(
             tac <<< "$summary" \
             | fzf --ansi --header-lines 1 --cycle --multi \
-                  --preview='git_diff_explorer_preview '"$pargs"' -- {}' \
+                  --preview="$GIT_DIFF_EXPLORER_PREVIEW_CMD $pargs -- {}" \
                   --preview-window='top,75%,border-bottom,~'"$header_lines"
     )" || return $?
     if [[ -n "$selected" ]]; then
         while IFS= read -r line; do
             if [[ -n "$line" ]]; then
-                git_diff_explorer_preview "${args[@]}" -- "$line"
+                "$GIT_DIFF_EXPLORER_PREVIEW_CMD" "${args[@]}" -- "$line"
             fi
         done <<< "$selected"
     fi
@@ -182,11 +182,15 @@ git_diff_explorer_preview () {
     fi
 }
 
+GIT_DIFF_EXPLORER_PREVIEW_CMD=git_diff_explorer_preview
 # The git_diff_explorer_preview function needs to be exported in order for the fzf preview stuff to find it.
-# If export -f is available, use that. Otherwise, gotta export it as a code block.
+# If export -f is available, use that. Otherwise, put it into a temp file and call it that way.
 cannot_export_f="$( export -f git_diff_explorer_preview )"
 if [[ -n "$cannot_export_f" ]]; then
-    export git_diff_explorer_preview="$( sed 's/^git_diff_explorer_preview ()/()/' <<< "$cannot_export_f" )"
+    GIT_DIFF_EXPLORER_PREVIEW_CMD="$( mktemp -d -t gde )/git_diff_explorer_preview.sh"
+    printf '%s\n' "$cannot_export_f" > "$GIT_DIFF_EXPLORER_PREVIEW_CMD"
+    printf 'git_diff_explorer_preview "$@"\n' >> "$GIT_DIFF_EXPLORER_PREVIEW_CMD"
+    chmod 755 "$GIT_DIFF_EXPLORER_PREVIEW_CMD"
 else
     export -f git_diff_explorer_preview
 fi
