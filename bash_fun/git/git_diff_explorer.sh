@@ -111,7 +111,7 @@ EOF
 # git_diff_explorer_preview - outputs the diff of a specific file that it gets from a line from a --compact-summary.
 # Usage: git_diff_explorer_preview <git diff args> -- <compact summary line>
 git_diff_explorer_preview () {
-    local args root_dir line file_entry file1 file2 diff_cmd output ec
+    local args root_dir line file_entry file1_full file2_full file1 file2 diff_cmd output ec
     args=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -159,26 +159,37 @@ git_diff_explorer_preview () {
     # However, git diff expects the paths to be relative or absolute (starting with /).
     # That's why, above, we do special handling of the --relative and --no-relative flags to identify the relative path,
     # Or if not provided, we ask git to get us the repo's root directory.
-    file1="$root_dir/$( sed -E 's/{(.*) => (.*)}/\1/g; s/(.*) => (.*)/\1/g' <<< "$file_entry" )"
-    file2="$root_dir/$( sed -E 's/{(.*) => (.*)}/\2/g; s/(.*) => (.*)/\2/g' <<< "$file_entry" )"
+    file1_full="$root_dir/$( sed -E 's/{(.*) => (.*)}/\1/g; s/(.*) => (.*)/\1/g' <<< "$file_entry" )"
+    file2_full="$root_dir/$( sed -E 's/{(.*) => (.*)}/\2/g; s/(.*) => (.*)/\2/g' <<< "$file_entry" )"
+    # Then, to make them easier for a human to look at, we'll try to make them relative to the current location.
+    if command -v realpath > /dev/null 2>&1; then
+        file1="$( realpath --relative-to=. "$file1_full" )"
+        file2="$( realpath --relative-to=. "$file2_full" )"
+    else
+        file1="$file1_full"
+        file2="$file2_full"
+    fi
+    # Put together the full diff command and output it, but output the file(s) on a second line.
+    diff_cmd=( git --no-pager diff --color=always "${args[@]}" -- )
+    printf '%q ' "${diff_cmd[@]}"
+    if [[ "$file1" == "$file2" ]]; then
+        printf '\\\n  %q\n' "$file1"
+        diff_cmd+=( "$file1" )
+    else
+        printf '\\\n  %q %q\n' "$file1" "$file2"
+        diff_cmd+=( "$file1" "$file2" )
+    fi
     if [[ -n "$DEBUG" ]]; then
         printf '      line: [%s]\n' "$line"
         printf '  root_dir: [%s]\n' "$root_dir"
         printf 'file_entry: [%s]\n' "$file_entry"
+        printf 'file1_full: [%s]\n' "$file1_full"
+        printf 'file2_full: [%s]\n' "$file2_full"
         printf '     file1: [%s]\n' "$file1"
         printf '     file2: [%s]\n' "$file2"
         printf '      args: [%s]\n' "${args[*]}"
+        printf '  diff_cmd: [%s]\n' "${diff_cmd[*]}"
     fi
-    printf 'git --no-pager diff --color=always'
-    printf ' %q' "${args[@]}"
-    if [[ "$file1" == "$file2" ]]; then
-        printf ' -- \\\n  %q\n' "$file1"
-        args+=( -- "$file1" )
-    else
-        printf ' -- \\\n  %q %q\n' "$file1" "$file2"
-        args+=( -- "$file1" "$file2" )
-    fi
-    diff_cmd=( git --no-pager diff --color=always "${args[@]}" )
     output="$( "${diff_cmd[@]}" )"
     ec=$?
     if [[ -n "$output" ]]; then
