@@ -1,7 +1,8 @@
 TODO:
     Write a README.md
-    Create an env var and function for finding the primary branch of a repo.
-        Possibly use a custom git config entry for this.
+    Simplify (or maybe deprecate) git_branch_name.
+        Git 2.22 and above: git branch --show-current
+        before that: git rev-parse --abbrev-ref HEAD
     Refactor git_commit_diff:
         Create a --diff-args flag. Everything after that is added to the diff command.
         Create a --log-args flag. Everything after that is added to the log command.
@@ -13,4 +14,29 @@ TODO:
         Add a preview window to the --select that shows a compact summary of that commit.
         Probably want to have a top/bottom layout with preview/summary on top and commits on bottom.
         Possibly have a hotkey that launches git_diff_explorer on the selected commit.
+    Create a function/script to get a file/folder link in github.
+        At least start with github. I'd have to look into other places to see how their url paths differ.
+        Example github links:
+            dir: https://github.com/cosmos/cosmos-sdk/tree/main/client
+            file: https://github.com/cosmos/cosmos-sdk/blob/main/client/account_retriever.go
+            line number: https://github.com/cosmos/cosmos-sdk/blob/main/client/account_retriever.go#L9
+            line numbers: https://github.com/cosmos/cosmos-sdk/blob/main/client/account_retriever.go#L9-L14
+            raw file: https://raw.githubusercontent.com/cosmos/cosmos-sdk/main/client/account_retriever.go
+        github url format: https://github.com/{repo}/{type}/{branch}/{path}
+            repo: Get this from `git remote get-url origin`. Will need to parse it out.
+                Examples: git@github.com:provenance-io/provenance.git => provenance-io/provenance
+                          https://github.com/cosmos/cosmos-sdk.git => cosmos/cosmos-sdk
+                If https, maybe just remove the .git. If SSH, swap out everything before and including the first : with https://github.com
+            type: "blob" for files, "tree" for directories. Will need to test locally to see which to use.
+            branch: Get this from `git branch --show-current`.
+            path: Get this as input to the function/script.
+        Have flags to override the repo, type, and branch.
+        Have flag for adding line numbers.
+        Will need to do a trick (or something) get take in relative filepaths and get their full path relative to the repo root.
+        Maybe also look into the `gh` command line tool to see if there's something already there for this.
+        Example gitlab links:
+            dir: https://gitlab.com/emaris/frontend/-/tree/master/requirement
+            file: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts
+            line number: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts#L4
+            line numbers: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts#L4-6
 
