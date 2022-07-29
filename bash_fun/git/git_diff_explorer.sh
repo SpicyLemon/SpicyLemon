@@ -225,7 +225,7 @@ git_diff_explorer_preview () {
 # Since not all systems allow for readlink -f, if that doesn't work, use dirname and basename.
 GIT_DIFF_EXPLORER_CMD="$( readlink -f "${BASH_SOURCE:-$0}" 2> /dev/null )"
 if [[ "$?" -eq '0' || -z "$GIT_DIFF_EXPLORER_CMD" ]]; then
-    GIT_DIFF_EXPLORER_CMD="$( cd $( dirname "${BASH_SOURCE:-$0}" ); pwd -P )/$( basename "${BASH_SOURCE:-$0}" )"
+    GIT_DIFF_EXPLORER_CMD="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )/$( basename "${BASH_SOURCE:-$0}" )"
 fi
 export GIT_DIFF_EXPLORER_CMD
 
