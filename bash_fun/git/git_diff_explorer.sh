@@ -45,7 +45,7 @@ For the preview window, the highlighted file is provided after the <git diff opt
 
 EOF
 )"
-    local args arg pargs summary selected line
+    local args arg pargs summary_cmd summary selected line
     args=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -72,24 +72,25 @@ EOF
         shift
     done
     # For providing the args to the preview, they'll need to be escaped and combined into a single string, with each wrapped in quotes.
-    # I'm not sure if this is better or worse than pargs="$( printf '%q ' "${args[@]}" )"
+    # This is better than pargs="$( printf '%q ' "${args[@]}" )" at least in the case where there aren't any args.
+    # If there aren't any args, that sets pargs to a single-quoted empty string, e.g. pargs="''".
+    # Then when provided to the fzf preview command, there'd an extry empty string argument being provided, which git diff then complains about.
     pargs="$( for arg in "${args[@]}"; do printf '%s ' "'$( sed 's/'"'"'/\\'"'"'/g' <<< "$arg" )'"; done )"
     # Get the compact summary and reverse the whole thing.
     # Reversing it does two things:
-    #   1) Puts the summary line at the top, makig it usable as a header line in fzf.
-    #   2) Undoes the reversing that fzf usually does. I.e. it'll show up in fzf the same as it would in terminal (without the tac).
+    #   1) Puts the summary line at the top, making it usable as a header line in fzf.
+    #   2) Undoes the reversing that fzf usually does. I.e. the summary shows up in fzf in the same order it would in your terminal.
     # Then send it on to fzf.
-    #   --ansi so that the color output from git is displayed right. --header-lines 1 is the summary line.
+    #   --ansi so that the color output from git is displayed right. --header-lines 1 is the summary line (of the summary).
     #   --cycle so you can hit down to go the top right away. --multi so you can select multiple files for final output.
-    #   For the preview, call git_diff_explorer_preview with all args that were provided here, and include the current line as a final arg.
+    #   For the preview, call this file with the --gde-preview flag and the rest of the args that were provided here; include
+    #   the current line as a final arg. FZF's preview stuff can't use unexported functions. And thanks to shellshock, exporting
+    #   functions is not really an option. That's why the git_diff_explorer_preview function isn't used directly for the preview.
     #   The preview window will take up the top 75% of the screen, there will be a border below it and the first 2 lines are the header.
-    #   The first 2 lines are the command being run to get the diff.
-    if [[ -n "$DEBUG" ]]; then
-        printf 'git --no-pager diff --color=always --compact-summary'
-        printf ' %q' "${args[@]}"
-        printf '\n'
-    fi
-    summary="$( git --no-pager diff --color=always --compact-summary "${args[@]}" )" || return $?
+    #   The first 2 lines should be the command being run to get the diff, with the 2nd line containing the file(s).
+    summary_cmd=( git --no-pager diff --color=always --compact-summary "${args[@]}" )
+    printf 'Summary command> ' && printf '%q ' "${summary_cmd[@]}" && printf '\n'
+    summary="$( "${summary_cmd[@]}" )" || return $?
     selected="$(
             tac <<< "$summary" \
             | fzf --ansi --header-lines 1 --cycle --multi \
@@ -169,12 +170,21 @@ git_diff_explorer_preview () {
     fi
     # Put together the full diff command and output it, but output the file(s) on a second line.
     diff_cmd=( git --no-pager diff --color=always "${args[@]}" -- )
+    [[ "$IN_PREVIEW" == 'YES' ]] || printf 'Diff command> '
     printf '%q ' "${diff_cmd[@]}"
     if [[ "$file1" == "$file2" ]]; then
-        printf '\\\n  %q\n' "$file1"
+        if [[ "$IN_PREVIEW" == 'YES' ]]; then
+            printf '\\\n  %q\n' "$file1"
+        else
+            printf '%q\n' "$file1"
+        fi
         diff_cmd+=( "$file1" )
     else
-        printf '\\\n  %q %q\n' "$file1" "$file2"
+        if [[ "$IN_PREVIEW" == 'YES' ]]; then
+            printf '\\\n  %q %q\n' "$file1" "$file2"
+        else
+            printf '%q %q\n' "$file1" "$file2"
+        fi
         diff_cmd+=( "$file1" "$file2" )
     fi
     if [[ -n "$DEBUG" ]]; then
@@ -186,7 +196,7 @@ git_diff_explorer_preview () {
         printf '     file1: [%s]\n' "$file1"
         printf '     file2: [%s]\n' "$file2"
         printf '      args: [%s]\n' "${args[*]}"
-        printf '  diff_cmd: [%s]\n' "${diff_cmd[*]}"
+        printf '  diff_cmd:%s\n' "$( printf ' %q' "${diff_cmd[@]}" )"
     fi
     output="$( "${diff_cmd[@]}" )"
     ec=$?
@@ -195,9 +205,9 @@ git_diff_explorer_preview () {
     else
         printf 'No differences to display.\n'
     fi
-    if [[ "$NO_HISTORY" != 'YES' ]]; then
+    if [[ "$IN_PREVIEW" != 'YES' ]]; then
         # In very light testing, I couldn't add to history when invoking this as a script.
-        # However, just to be on the safe side, the NO_HISTORY variable is used to make sure
+        # However, just to be on the safe side, the IN_PREVIEW variable is used to make sure
         # the fzf preview command isn't adding to the history each time it's invoked.
         # We absolutely don't want that. What we do want is to add the specific diff commands to history
         # that are run because their entries were selected by the explorer.
@@ -217,7 +227,7 @@ export GIT_DIFF_EXPLORER_CMD="$( readlink -f "${BASH_SOURCE:-$0}" )"
 if [[ "$sourced" != 'YES' ]]; then
     if [[ "$1" == '--gde-preview' ]]; then
         shift
-        NO_HISTORY='YES'
+        IN_PREVIEW='YES'
         git_diff_explorer_preview "$@"
         exit $?
     fi
