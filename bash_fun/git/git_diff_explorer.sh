@@ -95,7 +95,7 @@ EOF
             tac <<< "$summary" \
             | fzf --ansi --header-lines 1 --cycle --multi \
                   --preview="$GIT_DIFF_EXPLORER_CMD --gde-preview $pargs -- {}" \
-                  --preview-window='top,75%,border-bottom,~2'
+                  --preview-window='top,75%,border-bottom,wrap,~2'
     )" || return $?
     if [[ -n "$selected" ]]; then
         while IFS= read -r line; do
