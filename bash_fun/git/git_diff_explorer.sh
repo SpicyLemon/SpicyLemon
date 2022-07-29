@@ -222,7 +222,12 @@ git_diff_explorer_preview () {
 # But fzf can't find local (non-exported) environment functions, and exporting functions isn't always an option.
 # In order to get around that, in here, we'll just set a GIT_DIFF_EXPLORER_CMD env var that points to this file.
 # When invoking it for preview, we'll provide a --gde-preview flag that only gets looked at when this file is invoked as a script.
-export GIT_DIFF_EXPLORER_CMD="$( readlink -f "${BASH_SOURCE:-$0}" )"
+# Since not all systems allow for readlink -f, if that doesn't work, use dirname and basename.
+GIT_DIFF_EXPLORER_CMD="$( readlink -f "${BASH_SOURCE:-$0}" 2> /dev/null )"
+if [[ "$?" -eq '0' || -z "$GIT_DIFF_EXPLORER_CMD" ]]; then
+    GIT_DIFF_EXPLORER_CMD="$( cd $( dirname "${BASH_SOURCE:-$0}" ); pwd -P )/$( basename "${BASH_SOURCE:-$0}" )"
+fi
+export GIT_DIFF_EXPLORER_CMD
 
 if [[ "$sourced" != 'YES' ]]; then
     if [[ "$1" == '--gde-preview' ]]; then
