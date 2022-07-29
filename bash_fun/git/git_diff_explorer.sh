@@ -15,8 +15,12 @@
 ) && sourced='YES' || sourced='NO'
 
 git_diff_explorer () {
-    local do_not_run
-    for req_cmd in 'git' 'fzf' 'tac' "$GIT_DIFF_EXPLORER_PREVIEW_CMD"; do
+    if [[ -z "$GIT_DIFF_EXPLORER_CMD" ]]; then
+        printf 'Unable to locate git_diff_explorer file.\n' >&2
+        return 1
+    fi
+    local do_not_run req_cmd
+    for req_cmd in 'git' 'fzf' 'tac' "$GIT_DIFF_EXPLORER_CMD"; do
         if ! command -v "$req_cmd" > /dev/null 2>&1; then
             do_not_run='yes'
             printf 'git_diff_explorer: Missing required command: %s\n' "$req_cmd" >&2
@@ -91,13 +95,13 @@ EOF
     selected="$(
             tac <<< "$summary" \
             | fzf --ansi --header-lines 1 --cycle --multi \
-                  --preview="$GIT_DIFF_EXPLORER_PREVIEW_CMD $pargs -- {}" \
+                  --preview="$GIT_DIFF_EXPLORER_CMD --gde-preview $pargs -- {}" \
                   --preview-window='top,75%,border-bottom,~'"$header_lines"
     )" || return $?
     if [[ -n "$selected" ]]; then
         while IFS= read -r line; do
             if [[ -n "$line" ]]; then
-                "$GIT_DIFF_EXPLORER_PREVIEW_CMD" "${args[@]}" -- "$line"
+                git_diff_explorer_preview "${args[@]}" -- "$line"
             fi
         done <<< "$selected"
     fi
@@ -107,7 +111,7 @@ EOF
 # git_diff_explorer_preview - outputs the diff of a specific file that it gets from a line from a --compact-summary.
 # Usage: git_diff_explorer_preview <git diff args> -- <compact summary line>
 git_diff_explorer_preview () {
-    local args root_dir line file_entry file1 file2 output
+    local args root_dir line file_entry file1 file2 output ec
     args=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -175,28 +179,27 @@ git_diff_explorer_preview () {
         args+=( -- "$file1" "$file2" )
     fi
     output="$( git --no-pager diff --color=always "${args[@]}" )"
+    ec=$?
     if [[ -n "$output" ]]; then
         printf '%s\n' "$output"
     else
         printf 'No differences to display.\n'
     fi
+    return $ec
 }
 
-GIT_DIFF_EXPLORER_PREVIEW_CMD=git_diff_explorer_preview
-# The git_diff_explorer_preview function needs to be exported in order for the fzf preview stuff to find it.
-# If export -f is available, use that. Otherwise, put it into a temp file and call it that way.
-cannot_export_f="$( export -f git_diff_explorer_preview )"
-if [[ -n "$cannot_export_f" ]]; then
-    GIT_DIFF_EXPLORER_PREVIEW_CMD="$( mktemp -d -t gde )/git_diff_explorer_preview.sh"
-    printf '%s\n' "$cannot_export_f" > "$GIT_DIFF_EXPLORER_PREVIEW_CMD"
-    printf 'git_diff_explorer_preview "$@"\n' >> "$GIT_DIFF_EXPLORER_PREVIEW_CMD"
-    chmod 755 "$GIT_DIFF_EXPLORER_PREVIEW_CMD"
-else
-    export -f git_diff_explorer_preview
-fi
-unset cannot_export_f
+# The git_diff_explorer_preview command is used in the preview window of fzf for the json_explorer.
+# But fzf can't find local (non-exported) environment functions, and exporting functions isn't always an option.
+# In order to get around that, in here, we'll just set a GIT_DIFF_EXPLORER_CMD env var that points to this file.
+# When invoking it for preview, we'll provide a --gde-preview flag that only gets looked at when this file is invoked as a script.
+export GIT_DIFF_EXPLORER_CMD="$( readlink -f "${BASH_SOURCE:-$0}" )"
 
 if [[ "$sourced" != 'YES' ]]; then
+    if [[ "$1" == '--gde-preview' ]]; then
+        shift
+        git_diff_explorer_preview "$@"
+        exit $?
+    fi
     git_diff_explorer "$@"
     exit $?
 fi
