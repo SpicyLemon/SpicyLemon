@@ -45,7 +45,7 @@ For the preview window, the highlighted file is provided after the <git diff opt
 
 EOF
 )"
-    local args arg pargs summary selected line header_lines
+    local args arg pargs summary selected line
     args=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -84,19 +84,17 @@ EOF
     #   For the preview, call git_diff_explorer_preview with all args that were provided here, and include the current line as a final arg.
     #   The preview window will take up the top 75% of the screen, there will be a border below it and the first 2 lines are the header.
     #   The first 2 lines are the command being run to get the diff.
-    header_lines=2
     if [[ -n "$DEBUG" ]]; then
         printf 'git --no-pager diff --color=always --compact-summary'
         printf ' %q' "${args[@]}"
         printf '\n'
-        header_lines=8
     fi
     summary="$( git --no-pager diff --color=always --compact-summary "${args[@]}" )" || return $?
     selected="$(
             tac <<< "$summary" \
             | fzf --ansi --header-lines 1 --cycle --multi \
                   --preview="$GIT_DIFF_EXPLORER_CMD --gde-preview $pargs -- {}" \
-                  --preview-window='top,75%,border-bottom,~'"$header_lines"
+                  --preview-window='top,75%,border-bottom,~2'
     )" || return $?
     if [[ -n "$selected" ]]; then
         while IFS= read -r line; do
