@@ -1,11 +1,19 @@
 #!/bin/bash
 # This file contains the git_diff_explorer function that uses fzf to explore git diffs.
-# This file can be sourced to add the git_diff_explorer and git_diff_explorer_preview functions to your environment.
+# This file can be sourced to add the git_diff_explorer function to your environment (and __gde_* helpers).
 # This file can also be executed to run the git_diff_explorer function without adding it to your environment.
 #
+# If you source this file then move it, you'll need to source it again for it to continue to work.
+#
 # File contents:
-#   git_diff_explorer  ----------> Uses fzf to display and explore git diffs.
-#   git_diff_explorer_preview  --> Creates the diff output for the fzf preview window.
+#   functions:
+#       git_diff_explorer  ------> Uses fzf to display and explore git diffs.
+#   "private" functions:
+#       __gde_preview  ----------> Creates the diff output for the fzf preview window.
+#       __gde_get_root_dir  -----> Figures out the root directory of the compact summary entries.
+#       __gde_parse_filenames  --> Parses the file path(s) from the summary line.
+#   exported variables:
+#       GIT_DIFF_EXPLORER_CMD  --> The absolute path and name of this file.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -14,9 +22,16 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
+# The __gde_preview function is used in the preview window of fzf for the json_explorer.
+# But fzf can't find local (non-exported) environment functions, and exporting functions isn't always an option (see shellshock).
+# In order to get around that, in here, we'll just set and export the GIT_DIFF_EXPLORER_CMD env var that points to this file.
+# When invoking it for preview, we'll provide a --gde-preview flag that only gets looked at when this file is invoked as a script.
+# Not all systems allow for readlink -f, so I'm using dirname/pwd and basename instead.
+export GIT_DIFF_EXPLORER_CMD="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )/$( basename "${BASH_SOURCE:-$0}" )"
+
 git_diff_explorer () {
     if [[ -z "$GIT_DIFF_EXPLORER_CMD" ]]; then
-        printf 'Unable to locate git_diff_explorer file.\n' >&2
+        printf 'git_diff_explorer: Missing required environment variable GIT_DIFF_EXPLORER_CMD.\n' >&2
         return 1
     fi
     local do_not_run req_cmd
@@ -30,23 +45,47 @@ git_diff_explorer () {
     if [[ -n "$do_not_run" ]]; then
         return 1
     fi
-    local usage
+    local usage args commit delimiter output_type arg pargs summary_cmd summary selected root_dir line
     usage="$( cat << EOF
-git_diff_explorer - Displays a git diff summary and shows individual files in the preview window.
-Selected files are then printed.
+git_diff_explorer - Displays a git diff compact summary in fzf and shows individual file diffs in the preview window.
+Selected files are then printed with their paths relative to your current directory.
 
-Usage: git_diff_explorer <git diff options> [--commit <hash>]
-    For details on <git diff options>, see: git help diff
-    The --commit <hash> option lets you provide a commit hash to get the diff of that commit.
-    It is just a shortcut to git diff <hash>~ <hash>.
+Usage: git_diff_explorer [<git diff args>] [--commit <hash>] [--output-type <output type>] [--print0] [--printd <delimiter>]
 
-For the selection window, --compact-summary is added to the provided <git diff options>.
-For the preview window, the highlighted file is provided after the <git diff options>.
+    <git diff args> are the arguments to provide to git diff (see: git diff help).
+
+    --commit <hash> lets you provide a commit hash to get the diff of just that commit.
+        It is just a shortcut to providing <hash>~ <hash> as <git diff args>.
+
+    --output-type <output type> sets the output type you want for the entries that were selected.
+        This option only has meaning on lines describing a moved file.
+        <output type> can be one of:
+            old: output a single line with just the old file.
+            new: output a single line with just the new file (or the old file if it's not a moved entry).
+            combined: output the combined oldfile => newfile entry (or just the old file if it's not a moved entry).
+            both: output the old file, and if the new file is different, output that too on a second line.
+        Default is combined.
+        If provided multiple times, the last one provided is used.
+
+    --print0
+        Print an ASCII NUL character (character code 0) after each selection instead of a newline.
+        Overrides a previously provided --printd option. I.e. the --print0 or --printd option that is provided last, is used.
+
+    --printd <delimiter>
+        Print the provided delimiter after each selection.
+        Default is a newline.
+        If provided multiple times, the last one provided is used.
+        Overrides a previously provided --print0 option. I.e. the --print0 or --printd option that is provided last, is used.
+
+Selection window command: git diff --compact-summary --color=always <git diff args>
+Preview window command: git diff --color=always <git diff args> -- <file(s)>
+
+Note: The -- separator cannot be provided to git_diff_explorer (e.g. as part of <git diff args>).
 
 EOF
 )"
-    local args arg pargs summary_cmd summary selected line
     args=()
+    delimiter='\n'
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             -h|--help|help)
@@ -61,6 +100,39 @@ EOF
                 args+=( "$2~" "$2" )
                 shift
                 ;;
+            --commit=*)
+                commit="$( printf '%s' "$1" | sed 's/^--commit=//' )"
+                if [[ -z "$commit" ]]; then
+                    printf 'Missing value after [%s] flag.\n' "$1" >&2
+                    return 1
+                fi
+                args+=( "$commit~" "$commit" )
+                ;;
+            --output-type)
+                if [[ -z "$2" ]]; then
+                    printf 'Missing argument after [%s] flag.\n' "$1" >&2
+                    return 1
+                fi
+                output_type="$2"
+                shift
+                ;;
+            --output-type=*)
+                output_type="$( printf '%s' "$1" | sed 's/^--output-type=//' )"
+                ;;
+            --print0)
+                delimiter='\0'
+                ;;
+            --printd)
+                if [[ -z "$2" ]]; then
+                    printf 'Missing argument after [%s] flag.\n' "$1" >&2
+                    return 1
+                fi
+                delimiter="$2"
+                shift
+                ;;
+            --printd=*)
+                delimiter="$( printf '%s' "$1" | sed 's/^--printd=//' )"
+                ;;
             --)
                 printf 'The -- separator/argument cannot be provided as an argument to git_diff_explorer.\n' >&2
                 return 1
@@ -71,46 +143,76 @@ EOF
         esac
         shift
     done
+    if [[ -z "$output_type" ]]; then
+        output_type='combined'
+    fi
     # For providing the args to the preview, they'll need to be escaped and combined into a single string, with each wrapped in quotes.
     # This is better than pargs="$( printf '%q ' "${args[@]}" )" at least in the case where there aren't any args.
     # If there aren't any args, that sets pargs to a single-quoted empty string, e.g. pargs="''".
     # Then when provided to the fzf preview command, there'd an extry empty string argument being provided, which git diff then complains about.
     pargs="$( for arg in "${args[@]}"; do printf '%s ' "'$( sed 's/'"'"'/\\'"'"'/g' <<< "$arg" )'"; done )"
     # Get the compact summary and reverse the whole thing.
-    # Reversing it does two things:
-    #   1) Puts the summary line at the top, making it usable as a header line in fzf.
-    #   2) Undoes the reversing that fzf usually does. I.e. the summary shows up in fzf in the same order it would in your terminal.
-    # Then send it on to fzf.
-    #   --ansi so that the color output from git is displayed right. --header-lines 1 is the summary line (of the summary).
-    #   --cycle so you can hit down to go the top right away. --multi so you can select multiple files for final output.
-    #   For the preview, call this file with the --gde-preview flag and the rest of the args that were provided here; include
-    #   the current line as a final arg. FZF's preview stuff can't use unexported functions. And thanks to shellshock, exporting
-    #   functions is not really an option. That's why the git_diff_explorer_preview function isn't used directly for the preview.
-    #   The preview window will take up the top 75% of the screen, there will be a border below it and the first 2 lines are the header.
-    #   The first 2 lines should be the command being run to get the diff, with the 2nd line containing the file(s).
-    summary_cmd=( git --no-pager diff --color=always --compact-summary "${args[@]}" )
-    printf 'Summary command> ' && printf '%q ' "${summary_cmd[@]}" && printf '\n'
+    # By default, fzf reverses the provided lines. So if we just got the summary and piped it to fzf, fzf would show it upside-down.
+    # We reverse it right off the bat so that the summary line (e.g. "21 files changed, 757 insertions(+), 31 deletions(-)")
+    # is first and can then be used as the "header" line (which is really stickied to the bottom).
+    # Then send that on to fzf with the following:
+    #   --ansi so that the color output from git is displayed right.
+    #   --header-lines 1 stickies the first line to the bottom.
+    #       Since we reversed the compact summary before giving it to fzf, the first line should be the summary line,
+    #       e.g. "21 files changed, 757 insertions(+), 31 deletions(-)".
+    #   --cycle so you can get to the top or bottom easily.
+    #   --multi so you can select multiple files for final output.
+    #   --scroll-off 2 makes fzf scroll the list with the 2 rows above and below always visible (except at the top and bottom of the list).
+    #       Because of --cycle, it's easy to be looking at the preview, not paying attention to the list, and not realize you cycled.
+    #       This helps with that a bit by making it easier to identify when you're close to the top or bottom before cycling.
+    #       E.g. if the highlighted line is at the bottom of the selection window, you have the last line highlighted.
+    #   --tac reverses the selectable lines (back to upside-down ordering (stay with me)).
+    #   --layout reverse-list then effectively undoes the --tac (back to normal order) but starts fzf with the first line selected.
+    #       Without both of --tac and --layout reverse-list, the list is in the same order, but the initially highlighted line is the last one.
+    #   --preview-window defines the preview window layout:
+    #       top: Put it at the top (with the compact summary at the bottom).
+    #       75%: Have it take up 75% of the screen.
+    #       border-bottom: Put a dividing border at the bottom to separate it from the compact summary.
+    #                      I felt a full border around it just took up extra space and didn't really help anything.
+    #       wrap: Wrap long lines so that you can see their diffs fully.
+    #       ~2: Keep the first two preview lines visible a the top. These should be the diff command (including filename(s)).
+    #   --preview defines the command to run to create the contents of the preview window.
+    #       This command is run in a separate enviroment, so it doesn't have access to unexported functions.
+    #       And due to shellshock, exporting functions is rarely an option anymore. So we call this file directly with the --gde-preview flag.
+    #       We also provide all the args that were provided to this function, but have to escape them specially so that they
+    #       translate properly back into their respective arguments.
+    #       Lastly, we provide a -- to indicate we're done with args followed by the compact summary line currently highlighted.
+    summary_cmd=( git --no-pager diff --compact-summary --color=always "${args[@]}" )
+    if [[ -n "$DEBUG" ]]; then
+        {
+            printf '% 12s:%s\n' 'args' "$( [[ "${#args[@]}" -gt '0' ]] && printf ' %q' "${args[@]}" )"
+            printf '% 12s: [%s]\n' 'delimiter' "$delimiter"
+            printf '% 12s: [%s]\n' 'output_type' "$output_type"
+            printf '% 12s:%s\n' 'summary_cmd' "$( printf ' %q' "${summary_cmd[@]}" )"
+        } >&2
+    fi
     summary="$( "${summary_cmd[@]}" )" || return $?
     selected="$(
             tac <<< "$summary" \
-            | fzf --ansi --header-lines 1 --cycle --multi \
-                  --preview="$GIT_DIFF_EXPLORER_CMD --gde-preview $pargs -- {}" \
-                  --preview-window='top,75%,border-bottom,wrap,~2'
+            | fzf --ansi --header-lines 1 --cycle --multi --scroll-off 2 --tac --layout reverse-list \
+                  --preview-window='top,75%,border-bottom,wrap,~2' \
+                  --preview="$GIT_DIFF_EXPLORER_CMD --gde-preview $pargs -- {}"
     )" || return $?
     if [[ -n "$selected" ]]; then
+        root_dir="$( __gde_get_root_dir "${args[@]}" )"
         while IFS= read -r line; do
             if [[ -n "$line" ]]; then
-                git_diff_explorer_preview "${args[@]}" -- "$line"
+                printf '%s%b' "$( __gde_parse_filenames "$root_dir" "$output_type" "$line" )" "$delimiter"
             fi
         done <<< "$selected"
     fi
     return 0
 }
 
-# git_diff_explorer_preview - outputs the diff of a specific file that it gets from a line from a --compact-summary.
-# Usage: git_diff_explorer_preview <git diff args> -- <compact summary line>
-git_diff_explorer_preview () {
-    local args root_dir line file_entry file1_full file2_full file1 file2 diff_cmd output ec
+# __gde_preview - outputs the diff of a specific file that it gets from a line from a --compact-summary.
+# Usage: __gde_preview <git diff args> -- <compact summary line>
+__gde_preview () {
+    local args line files file diff_cmd output rc
     args=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -121,18 +223,6 @@ git_diff_explorer_preview () {
                 ;;
             *)
                 args+=( "$1" )
-                case "$1" in
-                    --relative=*)
-                        root_dir="$( printf '%s' "$1" | sed 's/^--relative=//' )"
-                        ;;
-                    --relative)
-                        root_dir=.
-                        ;;
-                    --no-relative)
-                        root_dir=''
-                        ;;
-                esac
-                ;;
         esac
         shift
     done
@@ -140,100 +230,172 @@ git_diff_explorer_preview () {
         printf 'No line provided.\n' >&2
         return 1
     fi
-    if [[ -z "$root_dir" ]]; then
-        root_dir="$( git rev-parse --show-toplevel )"
-    fi
-    # A compact summary line has this format:
-    #   <file> <info> | <number> <plusses and minuses>
-    # If the <file> was one that moved, it will either be '<old> => <new>' or it will have a part that is {<old> => <new>}.
-    # The <info> part is optional, and is some stuff in parenthases if provided, e.g. "(gone)". There will always be a space before and after it.
-    # So to get the <file> from the line:
-    #   1: Strip out leading whitespace optionaly followed by .../
-    #   2: Strip out the optional ' <info>', and any other whitespace before the | until the end of the line.
-    # Since color might still be involved too, just assume everything after | <space> <numbers>
-    file_entry="$( sed -E 's/^[[:space:]]+(\.\.\.\/)?//; s/([[:space:]]+\([^)]+\))?[[:space:]]+\|[[:space:]]+[[:digit:]]+.*$//;' <<< "$line" )"
-    # If the file entry is for a moved file, we need to get both to provide to the git diff command.
-    # Luckily, if we provide the same file twice, it only gets used once. So we can just always provide two.
-    # Now it gets tricky. The compact summary usually outputs the path to the files from the root of the repo.
-    # However, git diff expects the paths to be relative or absolute (starting with /).
-    # That's why, above, we do special handling of the --relative and --no-relative flags to identify the relative path,
-    # Or if not provided, we ask git to get us the repo's root directory.
-    file1_full="$root_dir/$( sed -E 's/{(.*) => (.*)}/\1/g; s/(.*) => (.*)/\1/g' <<< "$file_entry" )"
-    file2_full="$root_dir/$( sed -E 's/{(.*) => (.*)}/\2/g; s/(.*) => (.*)/\2/g' <<< "$file_entry" )"
-    # Then, to make them easier for a human to look at, we'll try to make them relative to the current location.
-    if command -v realpath > /dev/null 2>&1; then
-        file1="$( realpath --relative-to=. "$file1_full" )"
-        file2="$( realpath --relative-to=. "$file2_full" )"
-    else
-        file1="$file1_full"
-        file2="$file2_full"
-    fi
+    files=()
+    while IFS= read -r file; do files+=( "$file" ); done <<< "$( __gde_parse_filenames "$( __gde_get_root_dir "${args[@]}" )" both "$line" )"
     # Put together the full diff command and output it, but output the file(s) on a second line.
     diff_cmd=( git --no-pager diff --color=always "${args[@]}" -- )
-    [[ "$IN_PREVIEW" == 'YES' ]] || printf 'Diff command> '
-    printf '%q ' "${diff_cmd[@]}"
-    if [[ "$file1" == "$file2" ]]; then
-        if [[ "$IN_PREVIEW" == 'YES' ]]; then
-            printf '\\\n  %q\n' "$file1"
-        else
-            printf '%q\n' "$file1"
-        fi
-        diff_cmd+=( "$file1" )
-    else
-        if [[ "$IN_PREVIEW" == 'YES' ]]; then
-            printf '\\\n  %q %q\n' "$file1" "$file2"
-        else
-            printf '%q %q\n' "$file1" "$file2"
-        fi
-        diff_cmd+=( "$file1" "$file2" )
-    fi
+    printf '%s\\\n %s\n' "$( printf '%q ' "${diff_cmd[@]}" )" "$( printf ' %q' "${files[@]}" )"
+    diff_cmd+=( "${files[@]}" )
     if [[ -n "$DEBUG" ]]; then
-        printf '      line: [%s]\n' "$line"
-        printf '  root_dir: [%s]\n' "$root_dir"
-        printf 'file_entry: [%s]\n' "$file_entry"
-        printf 'file1_full: [%s]\n' "$file1_full"
-        printf 'file2_full: [%s]\n' "$file2_full"
-        printf '     file1: [%s]\n' "$file1"
-        printf '     file2: [%s]\n' "$file2"
-        printf '      args: [%s]\n' "${args[*]}"
-        printf '  diff_cmd:%s\n' "$( printf ' %q' "${diff_cmd[@]}" )"
+        {
+            printf '% 12s:%s\n' 'args' "$( [[ "${#args[@]}" -gt '0' ]] && printf ' %q' "${args[@]}" )"
+            printf '% 12s:%s\n' 'files' "$( printf ' %q' "${files[@]}" )"
+            printf '% 12s:%s\n' 'diff_cmd' "$( printf ' %q' "${diff_cmd[@]}" )"
+        } >&2
     fi
+    # Run the diff command and output the result.
     output="$( "${diff_cmd[@]}" )"
-    ec=$?
+    rc=$?
     if [[ -n "$output" ]]; then
         printf '%s\n' "$output"
     else
         printf 'No differences to display.\n'
     fi
-    if [[ "$IN_PREVIEW" != 'YES' ]]; then
-        # In very light testing, I couldn't add to history when invoking this as a script.
-        # However, just to be on the safe side, the IN_PREVIEW variable is used to make sure
-        # the fzf preview command isn't adding to the history each time it's invoked.
-        # We absolutely don't want that. What we do want is to add the specific diff commands to history
-        # that are run because their entries were selected by the explorer.
-        # In bash, history -s does this. In zsh, it is print -s. In zsh, executing history -s returns an error
-        # about not having a -s option. So we hide all that possible output and just try both.
-        history -s "${diff_cmd[@]}" > /dev/null 2>&1 || print -s "${diff_cmd[@]}" > /dev/null 2>&1
-    fi
-    return $ec
+    return $rc
 }
 
-# The git_diff_explorer_preview command is used in the preview window of fzf for the json_explorer.
-# But fzf can't find local (non-exported) environment functions, and exporting functions isn't always an option.
-# In order to get around that, in here, we'll just set a GIT_DIFF_EXPLORER_CMD env var that points to this file.
-# When invoking it for preview, we'll provide a --gde-preview flag that only gets looked at when this file is invoked as a script.
-# Since not all systems allow for readlink -f, if that doesn't work, use dirname and basename.
-GIT_DIFF_EXPLORER_CMD="$( readlink -f "${BASH_SOURCE:-$0}" 2> /dev/null )"
-if [[ "$?" -eq '0' || -z "$GIT_DIFF_EXPLORER_CMD" ]]; then
-    GIT_DIFF_EXPLORER_CMD="$( cd "$( dirname "${BASH_SOURCE:-$0}" )"; pwd -P )/$( basename "${BASH_SOURCE:-$0}" )"
-fi
-export GIT_DIFF_EXPLORER_CMD
+# __gde_get_root_dir figures out the path to the root directory of the compact summary entries.
+# Usage: __gde_get_root_dir <args>
+__gde_get_root_dir () {
+    local root_dir
+    # If --relative is provided, the compact summary is relative to either a provided value or .
+    # If --no-relative is provided (e.g. after --relative) then it goes back to normal.
+    # Normally, the compact summary lists files relative to the root of the repository.
+    while [[ "$#" -gt '0' ]]; do
+        case "$1" in
+            --)
+                set -- --
+                ;;
+            --relative=*)
+                root_dir="$( printf '%s' "$1" | sed 's/^--relative=//' )"
+                ;;
+            --relative)
+                if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                    root_dir="$2"
+                    shift
+                else
+                    root_dir=.
+                fi
+                ;;
+            --no-relative)
+                root_dir=''
+                ;;
+        esac
+        shift
+    done
+    if [[ -z "$root_dir" ]]; then
+        root_dir="$( git rev-parse --show-toplevel )"
+    fi
+    if [[ "$root_dir" != '.' && "$( cd "$root_dir"; pwd -P )" == "$( pwd -P )" ]]; then
+        root_dir=.
+    fi
+    printf '%s' "$root_dir"
+    return 0
+}
+
+# __gde_parse_filenames parses the file path(s) from the summary line.
+# Usage: __gde_parse_filenames <root dir> <out type> <summary line>
+# <root dir> is the path (absolute or realtive to the current directory) to the root dir of the summary entry.
+# <out type> is one of: old, new, combined, both
+#   old: output a single line with just the old file.
+#   new: output a single line with just the new file (or the old file if it's not a moved entry).
+#   combined: output the combined oldfile => newfile entry (or just the old file if it's not a moved entry).
+#   both: output the old file, and if the new file is different, output that too on a second line.
+__gde_parse_filenames () {
+    local root_dir out_type line file_entry combined oldfile newfile
+    root_dir="$1"
+    shift
+    out_type="$1"
+    shift
+    line="$*"
+    # A compact summary line has this format:
+    #   <file> <info> | <number> <plusses and minuses>
+    # If the <file> was one that moved, it will either be '<old> => <new>' or it will have a part that is {<old> => <new>}.
+    # The <info> part is optional, and is some stuff in parenthases if provided, e.g. "(gone)". There will always be a space before and after it.
+    # The <plusses and minuses> probably still has color escape codes in/around it too.
+    # So to get the <file> from the line:
+    #   1: Strip out leading whitespace optionaly followed by .../
+    #   2: Strip out the optional ' <info>', and any other whitespace before the | until the end of the line.
+    # Since color might still be involved too, just assume everything after | <space> <numbers> isn't important here.
+    file_entry="$( sed -E 's/^[[:space:]]+(\.\.\.\/)?//; s/([[:space:]]+\([^)]+\))?[[:space:]]+\|[[:space:]]+[[:digit:]]+.*$//;' <<< "$line" )"
+    # The compact summary usually outputs the path to the files from the root of the repo (but not always).
+    # But git diff needs paths either relative to the current directory or absoulte (starting with /).
+    # Moved entries are either 'oldfile => newfile' or have a part that is '{oldfile => newfile}'.
+    # If it's not a moved file, all of combined, oldfile, and newfile are the same.
+    # If it is a moved file, we need to do some fancy path manipulation and splitting in order to get the paths needed by git diff.
+    if [[ ! "$file_entry" =~ ' => ' ]]; then
+        # Not a moved file.
+        if command -v realpath > /dev/null 2>&1; then
+            combined="$( realpath --relative-to=. "$root_dir/$file_entry" )"
+        elif [[ "$root_dir" == '.' ]]; then
+            combined="$file_entry"
+        else
+            combined="$root_dir/$file_entry"
+        fi
+        oldfile="$combined"
+        newfile="$combined"
+    else
+        # It's a moved file.
+        # First, create the combined path. Either make it relative or as short as easily possible.
+        if command -v realpath > /dev/null 2>&1; then
+            # Since we have realpath, create a preliminary version of the combined line by appending
+            # the root dir and making sure the split parts are wrapped in {}.
+            if [[ ! "$file_entry" =~ { ]]; then
+                combined="$root_dir/{$file_entry}"
+            else
+                combined="$root_dir/$file_entry"
+            fi
+            # We can only use realpath on the part before the split. So do that then tack the rest back on.
+            combined="$( realpath --relative-to=. "$( sed 's/{.*$//' <<< "$combined" )" )/$( sed 's/^[^{]*{/{/' <<< "$combined" )"
+        elif [[ "$root_dir" == '.' ]]; then
+            # reaplath isn't available, but we're in the root dir, just use the raw file entry.
+            combined="$file_entry"
+        elif [[ ! "$file_entry" =~ { ]]; then
+            # realpath isn't available, and the entire entry is just 'oldfile => newfile'.
+            # Put the root dir on and wrap the file entry in {}.
+            combined="$root_dir/{$file_entry}"
+        else
+            # realpath isn't available, and the entry already has {} so we just need to tack the root dir onto it.
+            combined="$root_dir/$file_entry"
+        fi
+        # Then split the combined path into the new and old paths.
+        oldfile="$( sed -E 's/{(.*) => (.*)}/\1/g; s/(.*) => (.*)/\1/g' <<< "$combined" )"
+        newfile="$( sed -E 's/{(.*) => (.*)}/\2/g; s/(.*) => (.*)/\2/g' <<< "$combined" )"
+    fi
+    if [[ -n "$DEBUG" ]]; then
+        {
+            printf '% 12s: [%s]\n' 'root_dir' "$root_dir"
+            printf '% 12s: [%s]\n' 'out_type' "$out_type"
+            printf '% 12s: [%s]\n' 'line' "$line"
+            printf '% 12s: [%s]\n' 'file_entry' "$file_entry"
+            printf '% 12s: [%s]\n' 'combined' "$combined"
+            printf '% 12s: [%s]\n' 'oldfile' "$oldfile"
+            printf '% 12s: [%s]\n' 'newfile' "$newfile"
+        } >&2
+    fi
+    # Do the output
+    case "$out_type" in
+        old) printf '%s\n' "$oldfile" ;;
+        new) printf '%s\n' "$newfile" ;;
+        combined) printf '%s\n' "$combined" ;;
+        both)
+            printf '%s\n' "$oldfile"
+            if [[ "$oldfile" != "$newfile" ]]; then
+                printf '%s\n' "$newfile"
+            fi
+            ;;
+        *)
+            printf 'Unknown output type: [%s]\n' "$out_type" >&2
+            return 1
+            ;;
+    esac
+    return 0
+}
 
 if [[ "$sourced" != 'YES' ]]; then
     if [[ "$1" == '--gde-preview' ]]; then
         shift
-        IN_PREVIEW='YES'
-        git_diff_explorer_preview "$@"
+        __gde_preview "$@"
         exit $?
     fi
     git_diff_explorer "$@"
