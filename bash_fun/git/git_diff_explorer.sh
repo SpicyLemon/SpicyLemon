@@ -302,7 +302,7 @@ __gde_get_root_dir () {
 #   combined: output the combined oldfile => newfile entry (or just the old file if it's not a moved entry).
 #   both: output the old file, and if the new file is different, output that too on a second line.
 __gde_parse_filenames () {
-    local root_dir out_type line file_entry combined oldfile newfile
+    local root_dir out_type line file_entry rp rpec combined oldfile newfile
     root_dir="$1"
     shift
     out_type="$1"
@@ -325,8 +325,14 @@ __gde_parse_filenames () {
     # If it is a moved file, we need to do some fancy path manipulation and splitting in order to get the paths needed by git diff.
     if [[ ! "$file_entry" =~ ' => ' ]]; then
         # Not a moved file.
+        rp=''
+        rpec=0
         if command -v realpath > /dev/null 2>&1; then
-            combined="$( realpath --relative-to=. "$root_dir/$file_entry" )"
+            rp="$( realpath --relative-to=. "$root_dir/$file_entry" 2> /dev/null )"
+            rpec=$?
+        fi
+        if [[ "$rpec" -eq '0' && -n "$rp" ]]; then
+            combined="$rp"
         elif [[ "$root_dir" == '.' ]]; then
             combined="$file_entry"
         else
@@ -337,16 +343,26 @@ __gde_parse_filenames () {
     else
         # It's a moved file.
         # First, create the combined path. Either make it relative or as short as easily possible.
+        rp=''
+        rpec=0
         if command -v realpath > /dev/null 2>&1; then
             # Since we have realpath, create a preliminary version of the combined line by appending
             # the root dir and making sure the split parts are wrapped in {}.
+            # Temporarily repurpose combined, oldfile, and newfile to hold the preliminarily combined version
+            # and the parts begore (oldfile) and after (newfile) the beginning of the split.
             if [[ ! "$file_entry" =~ { ]]; then
                 combined="$root_dir/{$file_entry}"
             else
                 combined="$root_dir/$file_entry"
             fi
             # We can only use realpath on the part before the split. So do that then tack the rest back on.
-            combined="$( realpath --relative-to=. "$( sed 's/{.*$//' <<< "$combined" )" )/$( sed 's/^[^{]*{/{/' <<< "$combined" )"
+            oldfile="$( sed 's/{.*$//' <<< "$combined" )"
+            newfile="$( sed 's/^[^{]*{/{/' <<< "$combined" )"
+            rp="$( realpath --relative-to=. "$oldfile" 2> /dev/null )/$newfile"
+            rpec=$?
+        fi
+        if [[ "$rpec" -eq '0' && -n "$rp" ]]; then
+            combined="$rp"
         elif [[ "$root_dir" == '.' ]]; then
             # reaplath isn't available, but we're in the root dir, just use the raw file entry.
             combined="$file_entry"
