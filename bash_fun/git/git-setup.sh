@@ -62,7 +62,6 @@ __git_do_setup () {
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
     extra_funcs_to_check=(
-        'git_diff_explorer_preview'
     )
 
     # These are programs/functions defined externally to check on before sourcing these files.
