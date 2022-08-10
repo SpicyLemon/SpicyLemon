@@ -45,7 +45,7 @@ git_diff_explorer () {
     if [[ -n "$do_not_run" ]]; then
         return 1
     fi
-    local usage args commit delimiter output_type arg pargs summary_cmd summary selected root_dir line
+    local usage args commit delimiter output_type termwidth arg pargs summary_cmd summary selected root_dir line
     usage="$( cat << EOF
 git_diff_explorer - Displays a git diff compact summary in fzf and shows individual file diffs in the preview window.
 Selected files are then printed with their paths relative to your current directory.
@@ -146,11 +146,22 @@ EOF
     if [[ -z "$output_type" ]]; then
         output_type='combined'
     fi
-    # For providing the args to the preview, they'll need to be escaped and combined into a single string, with each wrapped in quotes.
-    # This is better than pargs="$( printf '%q ' "${args[@]}" )" at least in the case where there aren't any args.
-    # If there aren't any args, that sets pargs to a single-quoted empty string, e.g. pargs="''".
-    # Then when provided to the fzf preview command, there'd an extry empty string argument being provided, which git diff then complains about.
-    pargs="$( for arg in "${args[@]}"; do printf '%s ' "'$( sed 's/'"'"'/\\'"'"'/g' <<< "$arg" )'"; done )"
+    termwidth=80
+    if [[ -n "$TERMWIDTH" ]]; then
+        termwidth="$TERMWIDTH"
+    elif command -v "tput" > /dev/null 2>&1; then
+        termwidth="$( tput cols )"
+    fi
+    summary_cmd=( git --no-pager diff --compact-summary "--stat=$termwidth" --color=always "${args[@]}" )
+    if [[ -n "$DEBUG" ]]; then
+        {
+            printf '% 12s:%s\n' 'args' "$( [[ "${#args[@]}" -gt '0' ]] && printf ' %q' "${args[@]}" )"
+            printf '% 12s: [%s]\n' 'delimiter' "$delimiter"
+            printf '% 12s: [%s]\n' 'output_type' "$output_type"
+            printf '% 12s:%s\n' 'summary_cmd' "$( printf ' %q' "${summary_cmd[@]}" )"
+        } >&2
+    fi
+    summary="$( "${summary_cmd[@]}" )" || return $?
     # Get the compact summary and reverse the whole thing.
     # By default, fzf reverses the provided lines. So if we just got the summary and piped it to fzf, fzf would show it upside-down.
     # We reverse it right off the bat so that the summary line (e.g. "21 files changed, 757 insertions(+), 31 deletions(-)")
@@ -182,16 +193,11 @@ EOF
     #       We also provide all the args that were provided to this function, but have to escape them specially so that they
     #       translate properly back into their respective arguments.
     #       Lastly, we provide a -- to indicate we're done with args followed by the compact summary line currently highlighted.
-    summary_cmd=( git --no-pager diff --compact-summary --color=always "${args[@]}" )
-    if [[ -n "$DEBUG" ]]; then
-        {
-            printf '% 12s:%s\n' 'args' "$( [[ "${#args[@]}" -gt '0' ]] && printf ' %q' "${args[@]}" )"
-            printf '% 12s: [%s]\n' 'delimiter' "$delimiter"
-            printf '% 12s: [%s]\n' 'output_type' "$output_type"
-            printf '% 12s:%s\n' 'summary_cmd' "$( printf ' %q' "${summary_cmd[@]}" )"
-        } >&2
-    fi
-    summary="$( "${summary_cmd[@]}" )" || return $?
+    # For providing the args to the preview, they'll need to be escaped and combined into a single string, with each wrapped in quotes.
+    # This is better than pargs="$( printf '%q ' "${args[@]}" )" at least in the case where there aren't any args.
+    # If there aren't any args, that sets pargs to a single-quoted empty string, e.g. pargs="''".
+    # Then when provided to the fzf preview command, there'd an extry empty string argument being provided, which git diff then complains about.
+    pargs="$( for arg in "${args[@]}"; do printf '%s ' "'$( sed 's/'"'"'/\\'"'"'/g' <<< "$arg" )'"; done )"
     selected="$(
             tac <<< "$summary" \
             | fzf --ansi --header-lines 1 --cycle --multi --scroll-off 2 --tac --layout reverse-list \
