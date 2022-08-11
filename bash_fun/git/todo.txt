@@ -39,4 +39,12 @@ TODO:
             file: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts
             line number: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts#L4
             line numbers: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts#L4-6
-
+    Update git_diff_explorer to handle truncated compact-summary entries.
+        It'll be tricky, but I think I can do it like this:
+            1. If the compact summary entry has ... in it, and root_dir/entry doesn't exist, assume it's a truncated entry.
+            2. Escape the entry for use in a regex, change the '...' into '.+', and wrap it in ^ and $.
+            3. Do the diff again, but this time with --name-only instead of --compact-summary.
+            4. Grep those results looking for a match.
+            5. If only one is found, use that filename.
+            6. If none are found, there's an error in my program/logic.
+            7. If two or more are found, I guess just do all of them? I'm not sure how best to handle that.
