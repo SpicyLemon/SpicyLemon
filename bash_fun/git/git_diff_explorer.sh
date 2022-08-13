@@ -323,7 +323,7 @@ __gde_parse_filenames () {
     #   1: Strip out leading whitespace optionaly followed by .../
     #   2: Strip out the optional ' <info>', and any other whitespace before the | until the end of the line.
     # Since color might still be involved too, just assume everything after | <space> <numbers> isn't important here.
-    file_entry="$( sed -E 's/^[[:space:]]+(\.\.\.\/)?//; s/([[:space:]]+\([^)]+\))?[[:space:]]+\|[[:space:]]+[[:digit:]]+.*$//;' <<< "$line" )"
+    file_entry="$( sed -E 's/^[[:space:]]+(\.\.\.\/)?//; s/([[:space:]]+\([^)]+\))?[[:space:]]+\|[[:space:]]+([[:digit:]]+|Bin).*$//;' <<< "$line" )"
     # The compact summary usually outputs the path to the files from the root of the repo (but not always).
     # But git diff needs paths either relative to the current directory or absoulte (starting with /).
     # Moved entries are either 'oldfile => newfile' or have a part that is '{oldfile => newfile}'.
