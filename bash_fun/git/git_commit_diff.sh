@@ -16,41 +16,29 @@
 git_commit_diff () {
     local usage
     usage="$( cat << EOF
-git_commit_diff - Shows the diff for one or more commits.
+git_commit_diff - Shows the commit message and diff for a single commit.
 
-Usage: git_commit_diff [git diff args] [--select] [--commit <commit hash>] [--hash <commit hash>] [-- <commit hash> ...]
+Usage: git_commit_diff <commit hash> [git diff args]
 
-    If --select is supplied, you will be prompted to select the commit(s) to show.
-    Multiple commit hashes can be provided using multiple --commit or --hash options.
-    Anything provided after -- will also be used as a commit hash.
+    The first argument must either be the commit hash or --select.
+    If --select is supplied, you will be prompted to select the commit to show (using fzf).
     All other arguments are provided to the git diff command.
 
 EOF
 )"
-    local do_select diff_args commit_hashes zwnj commit_hash return_code exit_code
+    if [[ "$1" == '--help' || "$1" == '-h' || "$1" == 'help' ]]; then
+        printf '%s\n' "$usage"
+        return 0
+    fi
+    local commit_hash diff_args zwnj
+    commit_hash="$1"
+    shift
     diff_args=()
-    commit_hashes=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             -h|--help)
                 printf '%s\n' "$usage"
                 return 0
-                ;;
-            --select)
-                do_select=YES
-                ;;
-            --commit|--hash)
-                if [[ -z "$2" ]]; then
-                    printf 'No hash provided after %s\n' "$1" >&2
-                fi
-                commit_hashes+=( "$2" )
-                shift
-                ;;
-            --)
-                shift
-                commit_hashes+=( "$@" )
-                set --
-                break
                 ;;
             *)
                 diff_args+=( "$1" )
@@ -58,30 +46,29 @@ EOF
         esac
         shift
     done
-    if [[ -n "$do_select" ]]; then
+    if [[ -z "$commit_hash" || "$commit_hash" == '--select' ]]; then
+        if ! command -v fzf > /dev/null 2>&1; then
+            printf 'fzf not available for commit selection.\n' >&2
+            fzf >&2
+            return $?
+        fi
         zwnj="$( printf '\xe2\x80\x8b' )"
-        commit_hashes+=(
-            $( git log --date=format:'%F %T %A' --format=format:"%H${zwnj}%h  %<(30)%ad %an${zwnj}%<(60,trunc)%s" \
-                | fzf -m --cycle --tac --with-nth=2,3 --delimiter="$zwnj" --header=' hash     commit date                    author          subject' \
-                | sed -E 's/([[:xdigit:]]+).*$/\1/;' )
-        )
+        commit_hash="$( git log --date=format:'%F %T %A' --format=format:"%H${zwnj}%h  %<(30)%ad %an${zwnj}%<(60,trunc)%s" \
+                | tac \
+                | fzf +m --cycle --tac --with-nth=2,3 --delimiter="$zwnj" --layout=reverse-list \
+                    --header=' hash     commit date                    author          subject' \
+                | sed -E 's/([[:xdigit:]]+).*$/\1/;'
+        )"
     fi
-    if [[ "${#commit_hashes[@]}" -eq '0' ]]; then
+    if [[ -z "$commit_hash" ]]; then
         printf '%s\n' "$usage"
         return 0
     fi
-    return_code=0
-    for commit_hash in "${commit_hashes[@]}"; do
-        printf '> git --no-pager log "%s" -n 1\n' "$commit_hash" \
-            && git --no-pager log "$commit_hash" -n 1 \
-            && printf '\n> git --no-pager diff "%s~" "%s" %s\n' "$commit_hash" "$commit_hash" "${diff_args[*]}" \
-            && git --no-pager diff "$commit_hash~" "$commit_hash" "${diff_args[@]}"
-        exit_code=$?
-        if [[ $exit_code -ne 0 ]]; then
-            return_code=$exit_code
-        fi
-    done
-    return $return_code
+    printf '> git --no-pager log "%s" -n 1\n' "$commit_hash" \
+        && git --no-pager log "$commit_hash" -n 1 \
+        && printf '\n> git --no-pager diff "%s~" "%s" %s\n' "$commit_hash" "$commit_hash" "${diff_args[*]}" \
+        && git --no-pager diff "$commit_hash~" "$commit_hash" "${diff_args[@]}"
+    return $?
 }
 
 if [[ "$sourced" != 'YES' ]]; then
