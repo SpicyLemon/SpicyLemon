@@ -28,7 +28,7 @@ git_pull_merge () {
         return 0
     fi
     local cur_branch exit_code
-    cur_branch="$( git_branch_name )"
+    cur_branch="$( git rev-parse --abbrev-ref HEAD )"
     if [[ "$cur_branch" == "$main_branch" ]]; then
         __git_echo_do git pull
         exit_code=$?
@@ -66,7 +66,6 @@ if [[ "$sourced" != 'YES' ]]; then
     }
     require_command 'in_git_folder' || exit $?
     require_command '__git_echo_do' || exit $?
-    require_command 'git_branch_name' || exit $?
     require_command 'git_get_default_branch' || exit $?
     git_pull_merge "$@"
     exit $?

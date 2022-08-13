@@ -30,11 +30,7 @@ git_set_default_branch () {
     if [[ -n "$1" ]]; then
         default_branch="$1"
     else
-        if ! command -v "git_branch_name" > /dev/null 2>&1; then
-            printf 'git_set_default_branch: Missing required command: git_branch_name.\n' >&2
-            return 2
-        fi
-        default_branch="$( git_branch_name )"
+        default_branch="$( git rev-parse --abbrev-ref HEAD )"
     fi
     git config --local --replace-all spicylemon.defaultbranch "$default_branch"
     return $?
@@ -62,7 +58,6 @@ if [[ "$sourced" != 'YES' ]]; then
         fi
     }
     require_command 'in_git_folder' || exit $?
-    require_command 'git_branch_name' || exit $?
 
     git_set_default_branch "$@"
     exit $?

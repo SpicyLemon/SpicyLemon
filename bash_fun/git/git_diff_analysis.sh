@@ -46,9 +46,9 @@ EOF
         printf 'Only two branches can be supplied.\n' >&2
         return 1
     elif [[ "${#branches[@]}" -eq '1' ]]; then
-        branches+=( "$( git_branch_name )" )
+        branches+=( "$( git rev-parse --abbrev-ref HEAD )" )
     elif [[ "${#branches[@]}" -eq '0' ]]; then
-        branches=( 'main' "$( git_branch_name )" )
+        branches=( 'main' "$( git rev-parse --abbrev-ref HEAD )" )
     fi
     if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
         printf 'This command must be run from a git folder.\n' >&2

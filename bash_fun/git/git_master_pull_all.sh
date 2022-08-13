@@ -38,7 +38,7 @@ git_master_pull_all () {
         if [[ -z "$repo_failed" ]]; then
             default_branch="$( git_get_default_branch )"
             [[ -z "$default_branch" ]] && default_branch='master'
-            cur_branch="$( git_branch_name )"
+            cur_branch="$( git rev-parse --abbrev-ref HEAD )"
             if [[ "$cur_branch" != "$default_branch" ]]; then
                 __git_echo_do git checkout "$default_branch" || repo_failed='YES'
             fi
@@ -46,7 +46,7 @@ git_master_pull_all () {
         if [[ -z "$repo_failed" ]]; then
             __git_echo_do git pull || repo_failed='YES'
         fi
-        if [[ -z "$repo_failed" && "$cur_branch" != "$( git_branch_name )" ]]; then
+        if [[ -z "$repo_failed" && "$cur_branch" != "$( git rev-parse --abbrev-ref HEAD )" ]]; then
             __git_echo_do git checkout "$cur_branch" || repo_failed='YES'
         fi
         if [[ -n "$repo_failed" ]]; then
@@ -97,7 +97,6 @@ if [[ "$sourced" != 'YES' ]]; then
     require_command '__git_get_all_repos' || exit $?
     require_command '__git_echo_do' || exit $?
     require_command 'git_get_default_branch' || exit $?
-    require_command 'git_branch_name' || exit $?
     git_master_pull_all "$@"
     exit $?
 fi

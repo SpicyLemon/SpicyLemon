@@ -30,7 +30,7 @@ git_fresh_branch () {
         printf 'git_fresh_branch: No default branch found.\n' >&2
         return 3
     fi
-    if [[ "$( git_branch_name )" != "$default_branch" ]]; then
+    if [[ "$( git rev-parse --abbrev-ref HEAD )" != "$default_branch" ]]; then
         __git_echo_do git checkout "$default_branch" || return $?
     fi
     __git_echo_do git pull
@@ -60,7 +60,6 @@ if [[ "$sourced" != 'YES' ]]; then
     }
     require_command 'in_git_folder' || exit $?
     require_command '__git_echo_do' || exit $?
-    require_command 'git_branch_name' || exit $?
     require_command 'git_get_default_branch' || exit $?
     git_fresh_branch "$@"
     exit $?

@@ -20,7 +20,7 @@ git_set_upstream () {
         return 1
     fi
     local cur_branch
-    cur_branch="$( git_branch_name )"
+    cur_branch="$( git rev-parse --abbrev-ref HEAD )"
     __git_echo_do git branch "--set-upstream-to=origin/$cur_branch" "$cur_branch" \
         && __git_echo_do git pull
 }
@@ -48,7 +48,6 @@ if [[ "$sourced" != 'YES' ]]; then
     }
     require_command 'in_git_folder' || exit $?
     require_command '__git_echo_do' || exit $?
-    require_command 'git_branch_name' || exit $?
     git_set_upstream "$@"
     exit $?
 fi

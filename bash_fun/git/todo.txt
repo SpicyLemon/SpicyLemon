@@ -1,8 +1,5 @@
 TODO:
     Write a README.md
-    Simplify (or maybe deprecate) git_branch_name.
-        Git 2.22 and above: git branch --show-current
-        before that: git rev-parse --abbrev-ref HEAD
     Create a function/script to get a file/folder link in github.
         At least start with github. I'd have to look into other places to see how their url paths differ.
         Example github links:

@@ -7,6 +7,10 @@
 #   git_branch_name  --> Outputs your current branch name.
 #
 
+# This is deprecated because it can easily be done with:
+# Git 2.22 and above: git branch --show-current
+# before that: git rev-parse --abbrev-ref HEAD
+
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
   || [[ -n "$KSH_VERSION" && $(cd "$(dirname -- "$0")" && printf '%s' "${PWD%/}/")$(basename -- "$0") != "${.sh.file}" ]] \
