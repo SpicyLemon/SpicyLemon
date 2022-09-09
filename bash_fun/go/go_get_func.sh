@@ -12,7 +12,7 @@
 
 go_get_func () {
     local usage func files file results
-    usage='Usage: go_get_func <function name> <file> [<file 2> ...]'
+    usage='Usage: go_get_func <func name> <file> [<file 2> ...]'
     files=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
