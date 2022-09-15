@@ -19,8 +19,13 @@ git_change_branch () {
         printf 'git_change_branch: Not in a git repo.\n' >&2
         return 1
     fi
-    local selection
-    selection="$( git branch | fzf +m --cycle --header='Select the branch to change to and press enter (or esc to cancel).' | sed -E 's/^[* ]+//' )"
+    local selection query
+    if [[ -n "$1" ]]; then
+        query=( --query "$1" --select-1 )
+    else
+        query=()
+    fi
+    selection="$( git branch | fzf +m --cycle --header='Select the branch to change to and press enter (or esc to cancel).' "${query[@]}" | sed -E 's/^[* ]+//' )"
     [[ -n "$selection" ]] && git checkout "$selection"
     return 0
 }

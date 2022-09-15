@@ -20,7 +20,12 @@ git_change_branch_all () {
         return 1
     fi
     command -v 'setopt' > /dev/null 2>&1 && setopt local_options BASH_REMATCH KSH_ARRAYS
-    local options remote remote_branches known_branches new_options selected_entry remote_and_branch_rx just_branch_rx branch
+    local query options remote remote_branches known_branches new_options selected_entry remote_and_branch_rx just_branch_rx branch
+    if [[ -n "$1" ]]; then
+        query=( --query "$1" --select-1 )
+    else
+        query=()
+    fi
     options="$( git branch | sed -E 's#^([* ]) #\1 ~ ~#' )"
     for remote in $( git remote ); do
         git fetch -q "$remote"
@@ -33,7 +38,7 @@ git_change_branch_all () {
             fi
         fi
     done
-    selected_entry="$( sort -t '~' -k 3 -k 2 <<< "$options" | column -s '~' -t | fzf +m --cycle  --header='Select the branch to change to and press enter (or esc to cancel).' )"
+    selected_entry="$( sort -t '~' -k 3 -k 2 <<< "$options" | column -s '~' -t | fzf +m --cycle  --header='Select the branch to change to and press enter (or esc to cancel).' "${query[@]}" )"
     if [[ -z "$selected_entry" ]]; then
         return 0
     fi
