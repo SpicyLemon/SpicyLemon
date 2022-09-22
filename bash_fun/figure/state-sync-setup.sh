@@ -25,6 +25,9 @@ The <persistent provenanced args> are any arguments to always provide with the <
 
 Any exported PIO_ variables defined in your environment will also be used.
 
+If the tendermint config doesn't exist yet, and the PIO_MONIKER or MONIKER environment variable is set,
+that will be used for the moniker. Otherwise, a default will be used.
+
 EOF
             exit 0
             ;;
@@ -131,8 +134,15 @@ if [[ ! -e "$client_config_file" ]]; then
     need_client_config=true
 fi
 
-# Get the monikier. If the config doesn't exist yet, this will get the default that's based on this system.
-moniker="$( "${prov[@]}" config get moniker | grep '^moniker=' | sed 's/^[^"]*"//; s/"[^"]*$//' )" || exit $?
+if [[ -n "$need_tm_config" ]]; then
+    # If there's no tm config yet, and a MONIKER or PIO_MONIKER env var is set, use that.
+    moniker="${PIO_MONIKER:-$MONIKER}"
+fi
+if [[ -z "$moniker" ]]; then
+    # Otherwise, get the moniker. If the config doesn't exist yet, this will get the default that's based on this system.
+    moniker="$( "${prov[@]}" config get moniker | grep '^moniker=' | sed 's/^[^"]*"//; s/"[^"]*$//' )" || exit $?
+    moniker_looked_up=true
+fi
 
 if [[ -n "$need_node_key" || "$need_priv_val_key" ]]; then
     # The init command is used here to generate the node key and/or private validator key files.
@@ -173,7 +183,7 @@ if [[ -n "$need_tm_config" ]]; then
     fi
     printf 'Downloading config.toml file: curl %s > %s\n' "'$tm_config_url'" "'$tm_config_file'"
     curl "$tm_config_url" > "$tm_config_file" || exit $?
-    printf 'Setting moniker to the default: %s config set moniker %s\n' "${prov[*]}" "'$moniker'"
+    printf 'Setting moniker: %s config set moniker %s\n' "${prov[*]}" "'$moniker'"
     "${prov[@]}" config set moniker "$moniker" || exit $?
 fi
 
@@ -275,7 +285,7 @@ For example:
 
 EOF
 
-if [[ -n "$need_tm_config" ]]; then
+if [[ -n "$need_tm_config" && -n "$moniker_looked_up" ]]; then
     cat << EOF
 The moniker was set using the default value '$moniker'.
 You probably want to change that to something more meaningful.
