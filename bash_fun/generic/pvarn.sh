@@ -20,6 +20,10 @@ pvarn  () {
     fi
     while [[ "$#" -gt '0' ]]; do
         printf '%s: [%s]\n' "$1" "${!1}"
+        if [[ "$1" =~ PATH && "${!1}" =~ : ]]; then
+            ws="$( printf '%s: ' "$1" | tr -C ' ' ' ' )"
+            tr ':' '\n' <<< "${!1}" | sed "s/^/$ws/"
+        fi
         shift
     done
 }
