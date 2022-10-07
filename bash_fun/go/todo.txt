@@ -1,0 +1,46 @@
+Make a thing to make it easy to switch go versions.
+    First, look into getting it added to sdkman.
+    The directories in /opt/homebrew/Cellar/go/ give the available versions.
+    Then update the /opt/homebrew/bin/go symlink to the desired version.
+    Currently ls -al "$( which go )" returns lrwxr-xr-x  1 danielwedul  admin  26 Oct  3 12:34 /opt/homebrew/bin/go -> ../Cellar/go/1.18.3/bin/go
+    Probably want it to take in an argument.
+        If there's no matches, use that one.
+        If there's more than one match, use sort -V | tail -n 1. Alternatively use fzf started with the provided filter.
+        If there aren't any matches, given an error.
+        If no argument is given, use fzf. Should probably indicate the current version, maybe kind of how git branch does it.
+    Examples:
+        Assume ls /opt/homebrew/Cellar/go/ gives
+            1.18.2  1.18.3  1.19
+        go_version
+            Shows fzf to select the desired version.
+        go_version 1.19
+            Switches to go 1.19
+        go_version 1.18.2
+            Switches to go 1.18.2
+        go_version 1.18
+            Switches to go 1.18.3
+        go_version 1.12
+            Gives error.
+        go_version 1
+            Switches to go 1.19
+        go_version 19
+            Switches to go 1.19
+        go_version 18
+            Switches to go 1.18.3
+    So...
+        First look for an exact match of the provided string. If found, use that.
+        Then look for an entry that starts with the provided string.
+            If one found, use that. If more found, use `sort -V | tail -n 1`.
+        Then look for an entry containing the provided string.
+            If one found, use that. If more found, use `sort -V | tail -n 1`.
+        If still nothing found, return an error.
+    In an attempt to make it more portable:
+        use `which go` to get the link to update.
+            If it's not a link, give an error.
+            [[ -L <file> ]] checks if the <file> is a symlink.
+        Use `readlink -f` to get a path that hopefully contains a directory with a sub-dir for each version.
+        Use basename and  dirname on the readlink path to get the last piece, and the path to it.
+            If the last piece is a version, the leftover path is the dir with all the versions.
+            If it's not a version, redo the splitting on just the leftover path.
+            If all that's left is /, give up and show an error.
+        Should probably also make that directory configurable via env var.
