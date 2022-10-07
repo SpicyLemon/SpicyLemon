@@ -54,6 +54,7 @@ __go_do_setup () {
     #   ls *.sh | grep -v 'go-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     func_base_file_names=(
         'go_find_funcs_without_comments'    'go_get_func'    'go_mod_fix'
+        'go_use_1.18'   'go_use_1.19'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).

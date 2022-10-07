@@ -13,6 +13,8 @@ This directory contains functions/scripts for doing various golang related thing
   * [go_find_funcs_without_comments.sh](#user-content-go_find_funcs_without_commentssh)
   * [go_get_func.sh](#user-content-go_get_funcsh)
   * [go_mod_fix.sh](#user-content-go_mod_fixsh)
+  * [go_use_1.18.sh](#user-content-go_use_1_18sh)
+  * [go_use_1.19.sh](#user-content-go_use_1_19sh)
 
 ## Usage
 
@@ -85,5 +87,39 @@ Example:
 > go_mod_fix
 ./go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
 ./submodule/go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
+```
+
+
+
+### `go_use_1.18.sh`
+
+[go_use_1.18.sh](go_use_1.18.sh) - Function/script for switching the go binary to version 1.18.3.
+
+This is specific to my system (a mac) that used brew to install go. It may not be very protable.
+
+Usage: `go_use_1.18`
+
+Example:
+```console
+> go_use_1.18
+    Was: lrwxr-xr-x  1 danielwedul  admin  24 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.19/bin/go
+ Is Now: lrwxr-xr-x  1 danielwedul  admin  26 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.18.3/bin/go
+```
+
+
+
+### `go_use_1.19.sh`
+
+[go_use_1.19.sh](go_use_1.19.sh) - Function/script for switching the go binary to version 1.19.
+
+This is specific to my system (a mac) that used brew to install go. It may not be very protable.
+
+Usage: `go_use_1.19`
+
+Example:
+```console
+> go_use_1.19
+    Was: lrwxr-xr-x  1 danielwedul  admin  24 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.18.3/bin/go
+ Is Now: lrwxr-xr-x  1 danielwedul  admin  26 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.19/bin/go
 ```
 
