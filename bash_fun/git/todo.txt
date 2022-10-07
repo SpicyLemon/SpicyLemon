@@ -25,3 +25,9 @@ TODO:
             file: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts
             line number: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts#L4
             line numbers: https://gitlab.com/emaris/frontend/-/blob/master/requirement/api.ts#L4-6
+    Create a git log explorer.
+        Same layout as git_diff_explorer.
+        Use `git log --pretty='format:%C(auto,bold)%cs%Creset %C(auto)%h%d %s'` for the selectable area.
+        Use `git_diff_explorer <hash> --compact-summary` for the preview.
+        Have hotkeys that switches the preview to remove/add the `--compact-summary`.
+            Or maybe just include the full diff after the compact summary.
