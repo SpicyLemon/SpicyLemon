@@ -15,6 +15,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [add.sh](#user-content-addsh)
   * [b2h.sh](#user-content-b2hsh)
   * [b642h.sh](#user-content-b642hsh)
+  * [beepbeep.sh](#user-content-beepbeepsh)
   * [change_word.sh](#user-content-change_wordsh)
   * [cpm.sh](#user-content-cpmsh)
   * [echo_color.sh](#user-content-echo_colorsh)
@@ -189,6 +190,14 @@ $ b642h VxtfaZoHQ+CWlFa0Kgb4TQ== KGBYwiamQwqmVh5xD+IOOQ==
 571b5f699a0743e0969456b42a06f84d
 286058c226a6430aa6561e710fe20e39
 ```
+
+### `beepbeep.sh`
+
+[beepbeep.sh](beepbeep.sh) - Prints two bell characters .3 seconds apart.
+
+If invoked as a function, the previous exit code is preserved.
+
+Usage: `beepbeep`
 
 ### `change_word.sh`
 
