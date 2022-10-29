@@ -16,9 +16,15 @@
 beepbeep  () {
     # Presever last exit code
     local ec=$?
+    local count
+    count="${1:-2}"
     printf '\a'
-    sleep .3
-    printf '\a'
+    count=$(( count - 1 ))
+    while [[ "$count" -gt '0' ]]; do
+        sleep .3
+        printf '\a'
+        count="$(( count - 1 ))"
+    done
     return $ec
 }
 
