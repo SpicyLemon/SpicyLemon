@@ -57,7 +57,7 @@ __git_do_setup () {
         'git_checkout_tag'           'git_clean_repo'       'git_clone'               'git_commit_diff'          'git_delete_branches'
         'git_diff_analysis'          'git_fresh_branch'     'git_get_default_branch'  'git_list_extra_branches'  'git_master_pull_all'
         'git_merge_diff'             'git_pull_merge'       'git_recolor_diff'        'git_set_default_branch'   'git_set_upstream'
-        'in_git_folder'              'git_diff_explorer'
+        'in_git_folder'              'git_diff_explorer'    'git_remotes'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
