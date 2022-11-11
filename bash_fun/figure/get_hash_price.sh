@@ -10,7 +10,11 @@
 #   hashcache  -------------------------- A wrapper over bashcache that applies standard HASH args.
 #   hashcache_refresh  ------------------ Gets and caches the hash price json and hash price value.
 #   hashcache_check_required_commands  -- Checks that some required commands are available.
+#   hashcache_check_required_env_vars  -- Checks that the required enviroment variables are defined.
 #
+# Customizable Setup Environment Variables:
+#   These are only used when this file is being sourced.
+#   HASH_PRICE_SOURCE  ----- The source to use for getting the hash price.
 # Customizable Environment Variables:
 #   HASH_C_DIR  ------------ The directory bashcache uses for this stuff.
 #   HASH_C_MAX_AGE  -------- The maximum age of the cached data (before triggering a refresh).
@@ -36,9 +40,44 @@ fi
 unset sourced
 
 
+############################################
+# Customizable Setup Environment Variables
+#-----------------------------------------
+
+# These environment variables are only used when this file is sourced.
+# That is, changing them after sourcing this file won't affect the behavior of the get_hash_price function.
+
+# The source to use to look up the hash price.
+# Options: 'dlob'  'yahoo' 'custom'
+# The default is yahoo.
+# If HASH_PRICE_URL or HASH_JQ_FILTER are already set, they won't be changed.
+# If set to 'custom', HASH_PRICE_URL and HASH_JQ_FILTER aren't set and warnings about missing env vars is suppressed.
+# That means re-sourcing this file will not change them unless they're unset first,
+# e.g. HASH_PRICE_SOURCE=dlob && unset HASH_JQ_FILTER HASH_PRICE_URL && source get_hash_price.sh
+case "${HASH_PRICE_SOURCE:-yahoo}" in
+    dlob)
+        HASH_PRICE_URL="${HASH_PRICE_URL:-https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price}"
+        HASH_JQ_FILTER="${HASH_JQ_FILTER:-.latestDisplayPricePerDisplayUnit}"
+        ;;
+    yahoo)
+        HASH_PRICE_URL="${HASH_PRICE_URL:-https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,shortName,regularMarketPrice&symbols=HASH1-USD}"
+        HASH_JQ_FILTER="${HASH_JQ_FILTER:-.quoteResponse.result[0].regularMarketPrice}"
+        ;;
+    custom)
+        # This option exists as a way to suppress the complaints about a wrong HASH_PRICE_SOURCE or missing env vars.
+        # There's nothing to actually set for it though.
+        ;;
+    *)
+        printf 'Warning: Unknown HASH_PRICE_SOURCE: [%s]\nMust be "", "dlob", "yahoo", or "custom".\n' "$HASH_PRICE_SOURCE" >&2
+        ;;
+esac
+
 ######################################
 # Customizable Environment Variables
 #-----------------------------------
+
+# These environment variables are used whenever the functions in this file are executed.
+# That is, changing them after this file is sourced WILL affect the behavior of get_hash_price.
 
 # The directory that bashcache uses in here.
 # The path must be absolute.
@@ -52,16 +91,16 @@ HASH_C_DIR="${HASH_C_DIR:-/tmp/hash}"
 HASH_C_MAX_AGE="${HASH_C_MAX_AGE:-10m}"
 
 # The url to request.
-# Yahoo finance: https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,regularMarketPrice&symbols=HASH1-USD
+# Yahoo Finance: https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,regularMarketPrice&symbols=HASH1-USD
 # DLOB: https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price
-# Default is yahoo finance.
-HASH_PRICE_URL="${HASH_PRICE_URL:-https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,shortName,regularMarketPrice&symbols=HASH1-USD}"
+# Default is Yahoo Finance (see HASH_PRICE_SOURCE above).
+HASH_PRICE_URL="$HASH_PRICE_URL"
 
 # The filter given to jq in order to extract the desired value out of the result found at HASH_PRICE_URL.
-# yahoo finance: .quoteResponse.result[0].regularMarketPrice
+# Yahoo Finance: .quoteResponse.result[0].regularMarketPrice
 # DLOB: .latestDisplayPricePerDisplayUnit
-# Default is yahoo finance.
-HASH_JQ_FILTER="${HASH_JQ_FILTER:-.quoteResponse.result[0].regularMarketPrice}"
+# Default is Yahoo Finance (see HASH_PRICE_SOURCE above).
+HASH_JQ_FILTER="$HASH_JQ_FILTER"
 
 # A value to use when either there is an error or we don't have any data yet.
 # Default is -69.42 (with a bunch of zeros to make it the same length as an expected value).
@@ -111,12 +150,17 @@ HASH_CN_JQ_ERROR='jq_error'             # Any errors encountered using jq.
 #   1: The arguments provided to bashcache were incorrect (from bashcache).
 #   2: A required command is missing, and get_hash_price cannot work.
 #   3: Illegal arguments provided to get_hash_price.
+#   4: A required environment variable is missing, and get_hash_price cannot work.
 #   10: The cached data was available but stale (from bashcache).
 #   11: The cached data was not available (from bashcache).
 get_hash_price () {
     if ! hashcache_check_required_commands > /dev/null 2>&1; then
         printf '%s\n' "$HASH_DEFAULT_VALUE"
         return 2
+    fi
+    if ! hashcache_check_required_env_vars > /dev/null 2>&1; then
+        printf '%s\n' "$HASH_DEFAULT_VALUE"
+        return 4
     fi
     local no_wait force_refresh hash_price cache_read_code
     while [[ "$#" -gt '0' ]]; do
@@ -286,7 +330,30 @@ hashcache_check_required_commands () {
     return $r
 }
 
-# Run the check now to print out any problems.
+
+# Usage: hashcache_check_required_env_vars
+# This checks that the required environment variables have values.
+# If one or more missing, an error is printed to stderr and the exit code will be 1.
+# An exit code of zero means everything is available.
+hashcache_check_required_env_vars () {
+    local rv v
+    rv=0
+    for v in 'HASH_C_DIR' 'HASH_C_MAX_AGE' 'HASH_PRICE_URL' 'HASH_JQ_FILTER' 'HASH_DEFAULT_VALUE' 'HASH_PROMPT_FORMAT' 'HASH_CN_HASH_PRICE' 'HASH_CN_PRICE_JSON' 'HASH_CN_PRICE_HEADER' 'HASH_CN_JQ_ERROR'; do
+        if [[ -z "${!v}" ]]; then
+            [[ "$HASH_PRICE_SOURCE" == 'custom' ]] || printf 'Environment variable %s not defined.\n' "$v" >&2
+            rv=1
+        fi
+    done
+    return "$rv"
+}
+
+# Run the checks now to print out any problems.
+# Always run both, but only run each one time. If either fails, this script should return with a non-zero exit code.
 # Since this stuff is desiged for use in the command prompt, it'd be horribly annoying if it were printing out errors with every prompt.
 # By running this check now, you find out about problems as the file's being sourced and can still investigate if get_hash_price_for_prompt is in your prompt.
-hashcache_check_required_commands
+if hashcache_check_required_commands; then
+    hashcache_check_required_env_vars
+else
+    hashcache_check_required_env_vars
+    return 1
+fi
