@@ -47,6 +47,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [tee_strip_colors.sh](#user-content-tee_strip_colorssh)
   * [to_date.sh](#user-content-to_datesh)
   * [to_epoch.sh](#user-content-to_epochsh)
+  * [tryhard.sh](#user-content-tryhardsh)
 
 ## Usage
 
@@ -1170,4 +1171,19 @@ Also available:
 $ to_epoch now
 1591341279000
 ```
+
+### `tryhard.sh`
+
+[tryhard.sh](tryhard.sh) - Function/script for repeating a command until it succeeds.
+
+Usage is similar to the `sudo` command.
+
+```console
+$ tryhard git pull
+```
+
+The provided command will be executed until it exits with code 0.
+There will be a half-second of sleep between executions.
+The time, a counter, and the command are printed before each execution.
+Once it succeeds, it will beep twice.
 
