@@ -45,6 +45,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [show_palette.sh](#user-content-show_palettesh)
   * [string_repeat.sh](#user-content-string_repeatsh)
   * [tee_strip_colors.sh](#user-content-tee_strip_colorssh)
+  * [timealert.sh](#user-content-timealertsh)
   * [to_date.sh](#user-content-to_datesh)
   * [to_epoch.sh](#user-content-to_epochsh)
   * [tryhard.sh](#user-content-tryhardsh)
@@ -1122,6 +1123,23 @@ Example Usage:
 ```console
 $ grep --color=always foo bar.txt | tee_strip_colors 'foo-lines-in-bar.txt'
 ```
+
+### `timealert.sh`
+
+[timealert.sh](timealert.sh) - Function/script that uses time to time a commmand and beeps twice when done.
+
+Usage is the same as the `time` builtin.
+
+```console
+$ timealert git pull
+```
+
+The above is the same as the following command:
+
+```console
+$ time git pull; beepbeep
+```
+
 
 ### `to_date.sh`
 
