@@ -23,7 +23,6 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [find_dead_links.sh](#user-content-find_dead_linkssh)
   * [fp.sh](#user-content-fpsh)
   * [getlines.sh](#user-content-getlinessh)
-  * [go_mod_fix.sh](#user-content-go_mod_fixsh)
   * [h2b64.sh](#user-content-h2b64sh)
   * [hrr.sh](#user-content-hrrsh)
   * [java_sdk_switcher.sh](#user-content-java_sdk_switchersh)
@@ -37,8 +36,8 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [multiply.sh](#user-content-multiplysh)
   * [palette_generators.sh](#user-content-palette_generatorssh)
   * [print_args.sh](#user-content-print_argssh)
-  * [pvarn.sh](#user-content-print_pvarnsh)
   * [ps_grep.sh](#user-content-ps_grepsh)
+  * [pvarn.sh](#user-content-print_pvarnsh)
   * [re_line.sh](#user-content-re_linesh)
   * [sdkman_fzf.sh](#user-content-sdkman_fzfsh)
   * [set_title.sh](#user-content-set_titlesh)
@@ -407,20 +406,6 @@ if [[ "$sourced" != 'YES' ]]; then
     exit $?
 fi
 unset sourced
-```
-
-### `go_mod_fix.sh`
-
-[go_mod_fix.sh](go_mod_fix.sh) - Function/script for running go mod tidy; go mod vendor; go mod fix on all go.mod files under a directory.
-
-Usage: `go_mod_fix [<root_dir>]`
-If no `<root_dir>` is provided, `.` is used.
-
-Example:
-```console
-> go_mod_fix
-./go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
-./submodule/go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
 ```
 
 ### `h2b64.sh`
@@ -901,17 +886,6 @@ Arguments received:
  3: [for=what]
 ```
 
-### `pvarn.sh`
-
-[pvarn.sh](pvarn.sh) - Function for printing a variable from it's name.
-
-Example Usage:
-```console
-$ foo='bar'
-$ pvarn foo
-foo: [bar]
-```
-
 ### `ps_grep.sh`
 
 [ps_grep.sh](ps_grep.sh) - Function/script for grepping through `ps aux` output.
@@ -928,6 +902,17 @@ Example Usage:
 $ ps_grep README
 USER               PID  %CPU %MEM      VSZ    RSS   TT  STAT STARTED      TIME COMMAND
 spicylemon        4645   0.0  0.0  4334968   4004 s008  S+   10:52PM   0:04.43 vi README.md
+```
+
+### `pvarn.sh`
+
+[pvarn.sh](pvarn.sh) - Function for printing a variable from it's name.
+
+Example Usage:
+```console
+$ foo='bar'
+$ pvarn foo
+foo: [bar]
 ```
 
 ### `re_line.sh`
