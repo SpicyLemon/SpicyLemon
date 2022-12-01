@@ -1,0 +1,79 @@
+AoC 2021 go template:
+    Usage: go run template.go [<input file>] [<flags>]
+    Default <input file> is example.input
+    Flags:
+      --debug       Turns on debugging.
+      --verbose|-v  Turns on verbose output.
+
+    Single Options:
+      Providing these multiple times will overwrite the previously provided value.
+      --input|-i <input file>  An option to define the input file.
+      --count|-c|-n <number>   Defines a count.
+
+    Repeatable Options:
+      Providing these multiple times will add to previously provided values.
+      Values are read until the next one starts with a dash.
+      To provide entries that start with a dash, you can use --flag='<value>' syntax.
+      --lines|--line|--custom|--val|-l <value 1> [<value 2> ...]  Defines custom input lines.
+Constants:
+    DEFAULT_COUNT = 0
+    Min and Max: int, int8, int16, int32, int64
+    Max: uinit, uint8, uint16, uint32, uint64
+    DEFAULT_INPUT_FILE = "example.input"
+    done_fmt = "Done. Duration: [%s]."
+Globals:
+    debug bool: whether to output debug info
+    startTime time.Time: the time the program started
+    funcDepth int: keeps track of function call depth (for output indentation).
+Types:
+    Input struct: // TODO: Write this to represent the input
+        .String(): makes a string of it
+    Params struct: Anything that might be provided via command-line arguments: Verbose, HelpPrinted, Errors, Count, InputFile, Input, Custom
+        .String(): makes a string of it
+        .AppendError(err error): adds an error
+        .HasError() bool: returns true if there's an error in it.
+        .GetError() error: collapses all known errors into a single one, or returns nil if there's no errors.
+Functions:
+    Problem specific:
+        Solve(params *Params) (string, error): // TODO: Write this to solve the problem
+        ParseInput(lines []string) (*Input, error): // TODO: Write this to parse the input file lines to an Input object.
+    Generic Stuff:
+        SplitParseInts(s string, sep string) ([]int, error): Splits s at each sep (removing sep) and converts each into an int.
+        AddLineNumbers(lines []string, startAt int) []string: Adds line numbers to the start of each line.
+        DigitFormatForMax(max int): creates a digit format with enough digits to contain max, e.g. 10 -> "%2d", 382920 -> "%6d".
+        PrefixLines(pre string, strs ...string): Splits each provided string on \n and adds the prefix to each line.
+    CLI params and input parsing:
+        GetParams(args []string) *Params): parses the given args into params
+        IsOneOfStrFold(str string, opts ...string) bool: returns true if str is equal (ignoring case) to one of the opts.
+        HasOneOfPrefixesFold(str string, prefixes ...string) bool: returns true if str starts with (ignoring case) one of the provided prefixes.
+        ParseBool(str string) (val bool, isBool bool): converts the provided string into a bool.
+        ParseFlagString(args []string): parses a flag + string value from args
+        ParseRepeatedFlagString(args []string) ([]string, int, error): parses a flag + multiple strings from the args.
+        ParseFlagBool(args []string) (bool, int, error): parses a bool flag from the args.
+        ParseFlagInt(args []string) (int, int, error): parses an flag and int from the args.
+        ReadFile(filename string) ([]string, error): reads the file, splitting it into lines.
+    Environment Variable Handling:
+        HandleEnvVars() error: reads environment variables into global variables.
+        GetEnvVarBool(name string) (bool, error): reads an env var and parses it into a bool
+    Function start/stop timing stuff:
+        FuncStarting(a ...interface{}) (time.Time, string): if debug is true, outputs that a function is starting (with time info).
+        FuncStartingAlways(a ...interface{}) (time.Time, string): always outputs that a function is starting (with time info).
+        FuncEnding(start time.Time, name string): if debug is true, outputs that a function is ending (with time info).
+        FuncEndingAlways(start time.Time, name string): always outputs that a function is ending (with time info).
+        DurClock(d time.Duration) string: converts a duration into a nice string.
+        GetFuncName(depth int, a ...interface{}) string: Gets the name of the function invoked depth ago (e.g. depth 1 = the function calling GetFuncName). The string includes the a values as arguments.
+        GetMyExe() string: returns how to execute the program including any args provided.
+    Output wrappers:
+        GetOutputPrefix(funcName string) string: creates a prefix with timing info and the given func name.
+        Stdout(format string, a ...interface{}): prints to stdout, like fmt.Printf, but always includes an output prefix.
+        Stderr(format string, a ...interface{}): prints to stderr, like fmt.Printf, but always includes an output prefix.
+        StdoutAs(funcName, format string, a ...interface{}): like Stdout(...) but uses the provided function name instead of looking it up.
+        StderrAs(funcName, format string, a ...interface{}): like Stderr(...) but uses the provided function name instead of looking it up.
+        Debugf(format string, a ...interface{}): like Stderr(...) but only outputs if debug is on.
+        DebugfAs(funcName, format string, a ...interface{}): Like StderrAs(...) but only outputs if debug is on.
+        DebugfAlways(format string, a ...interface{}): if debug then StdErr(...), else Stdout(...)
+        DebugfAlwaysAs(funcName, format string, a ...interface{}): if debug then StdErrAs(...), else StdoutAs(...)
+    Primary Program Running Parts:
+        init(): sets funcDepth to -1
+        main(): sets the start time, handles env vars, calls Run and handles any error.
+        Run() error: outputs that its starting, parses args and handles them, reads the input file, calls Solve(...) and outputs the answer.
