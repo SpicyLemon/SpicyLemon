@@ -60,7 +60,7 @@ __generic_do_setup () {
         'multiply'       'palette_generators'  'print_args'         'ps_grep'              'pvarn'
         're_line'        'sdkman_fzf'          'set_title'          'show_last_exit_code'  'show_palette'
         'string_repeat'  'tee_strip_colors'    'timealert'          'to_date'              'to_epoch'
-        'tryhard'
+        'tryhard'        'find_dead_links'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).

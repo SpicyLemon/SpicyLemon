@@ -20,6 +20,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [cpm.sh](#user-content-cpmsh)
   * [echo_color.sh](#user-content-echo_colorsh)
   * [echo_do.sh](#user-content-echo_dosh)
+  * [find_dead_links.sh](#user-content-find_dead_linkssh)
   * [fp.sh](#user-content-fpsh)
   * [getlines.sh](#user-content-getlinessh)
   * [go_mod_fix.sh](#user-content-go_mod_fixsh)
@@ -315,6 +316,23 @@ This would go through each .sh file in the current directory, and diff that file
 The diff command would show in bold white followed by the results of the diff command.
 ```console
 $ for f in $( ls *.sh ); do echo_do diff "$f" "/some/other/dir/$f"; done
+```
+
+### `find_dead_links.sh`
+
+[find_dead_links.sh](find_dead_links.sh) - Function/script for finding dead symlinks.
+
+This function finds symlinks under a directory that point to non-existing files.
+A directory can be provided. If omitted, the current directory is used.
+Verbose output is available with -v or --verbose.
+
+The function exits with a code of 0 if no dead symlinks were found.
+Any non-zero exit code indicates either an error was encountered or one or more dead symlinks were found.
+
+```console
+$ find_dead_links
+./foo/bar/bad -> ../nope
+./foo/another_bad -> bar/still_no
 ```
 
 ### `fp.sh`
