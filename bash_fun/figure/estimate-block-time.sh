@@ -69,6 +69,9 @@ Usage: $fn [<options>] <desired date time>
         If not supplied, the block $blocks_back blocks back will be looked up using provenanced,
         and the average from there to the current block is used.
 
+    --blocks-back <number> sets the number of blocks back to go to estimate ms-per-block.
+        Default is $blocks_back.
+
 EOF
 )"
 
@@ -182,6 +185,22 @@ while [[ "$#" -gt '0' ]]; do
                 exit 1
             fi
             arg_ms_per_block="$2"
+            shift
+            ;;
+        --blocks_back|--blocks-back)
+            if [[ -z "$2" ]]; then
+                printf 'No <number> provided after %s flag.\n' "$1" >&2
+                exit 1
+            fi
+            if [[ ! "$2" =~ ^[[:digit:]]+$ ]]; then
+                printf 'Invalid <number> provided after %s flag: [%s].\n' "$1" "$2" >&2
+                exit 1
+            fi
+            if [[ "$2" -lt '1' ]]; then
+                printf 'The <number> provided after %s flag must be at least 1, have: [%s].\n' "$1" "$2" >&2
+                exit 1
+            fi
+            blocks_back="$2"
             shift
             ;;
         *)
