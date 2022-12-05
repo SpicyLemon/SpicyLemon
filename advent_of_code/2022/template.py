@@ -29,9 +29,9 @@ class Puzzle(object):
         # Using if _debug and stdout here since puzzle.String() might be heavy.
         if _debug:
             stdout('Parsing input to puzzle done in ' + elapsed_time(func_start))
-            stdout('Parsed input:\n' + self.string());
+            stdout('Parsed input:\n' + str(self))
 
-    def string(self) -> str:
+    def __str__(self) -> str:
         '''Converts this puzzle into a string.'''
         # TODO: Define this
         return 'TODO'
@@ -44,8 +44,6 @@ def solve(params) -> str:
     answer = -999_999_999
     stdout('Solving puzzle done in ' + elapsed_time(func_start))
     return str(answer)
-
-
 
 ################################################################################
 ##############################  Argument Parsing  ##############################
@@ -62,7 +60,7 @@ class Params(object):
         self.input = []
         self.custom = []
 
-    def string(self) -> str:
+    def __str__(self) -> str:
         '''Converts these params to a multi-line string.'''
         namefmt = '{0:14}: {1}'.format
         return '\n'.join((
@@ -288,7 +286,7 @@ def run():
     if params.has_error:
         print(params.get_error())
         return
-    stdout('Params:\n' + params.string())
+    stdout('Params:\n' + str(params))
     printd('Input:\n' + '\n'.join(params.input))
     answer = solve(params)
     print(f'Answer: {answer}')
