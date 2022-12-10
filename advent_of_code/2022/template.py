@@ -24,8 +24,9 @@ class Puzzle(object):
         func_start = datetime.now()
         printd('Parsing input to puzzle.')
         for line in lines:
-            # TODO: Parse the line.
-            _ = 'foo'
+            if line != '':
+                # TODO: Parse the line.
+                _ = 'foo'
         # Using if _debug and stdout here since puzzle.String() might be heavy.
         if _debug:
             stdout('Parsing input to puzzle done in ' + elapsed_time(func_start))
@@ -33,8 +34,10 @@ class Puzzle(object):
 
     def __str__(self) -> str:
         '''Converts this puzzle into a string.'''
+        lines = []
         # TODO: Define this
-        return 'TODO'
+        lines.append("TODO")
+        return '\n'.join(lines)
 
 def solve(params) -> str:
     func_start = datetime.now()
