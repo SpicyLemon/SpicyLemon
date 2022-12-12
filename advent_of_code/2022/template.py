@@ -49,6 +49,48 @@ def solve(params) -> str:
     return str(answer)
 
 ################################################################################
+############################  Commonly Used Things  ############################
+################################################################################
+
+class PQ(object):
+    '''PQ is a priority queue.
+
+    Things added to the queue must have a .distance property and should implement __str__.
+    The next() function retrieves the entry with the smallest .distance.
+    '''
+    def __init__(self, *entries):
+        '''Constructor that accepts zero or more initial entries.'''
+        self.delimiter = ', '
+        self.queue = []
+        self.smallest_first = True
+        if len(entries) > 0:
+            self.queue.extend(entries)
+    def add(self, val):
+        '''Add something to this priority queue.'''
+        self.queue.append(val)
+    def next(self):
+        '''Retrieve the entry with the smallest .distance and remove it from this queue.'''
+        if len(self.queue) == 0:
+            return None
+        self._resort()
+        return self.queue.pop()
+    def peek(self):
+        '''Returns the entry with the smallest .distance.'''
+        self._resort()
+        return self.queue[-1]
+    def _resort(self):
+        self.queue.sort(key=lambda e : e.distance, reverse=self.smallest_first)
+    def __len__(self) -> int:
+        '''Gets the number of elements currently in the queue.'''
+        return len(self.queue)
+    def __str__(self) -> str:
+        '''Calls str(entry) on each entry and joins them using this queue's .delimiter (', ' by default).'''
+        entries = []
+        for e in reversed(self.queue):
+            entries.append(str(e))
+        return ', '.join(entries)
+
+################################################################################
 ##############################  Argument Parsing  ##############################
 ################################################################################
 
