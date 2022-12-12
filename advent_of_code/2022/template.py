@@ -109,6 +109,7 @@ def get_params() -> Params:
     cur_arg = 0
     is_flag = lambda s: s[0] == '-'
     is_val = lambda s: s != None and not is_flag(s)
+    is_bool_val = lambda s : is_val(s) and is_bool(s)
     while cur_arg < len(args):
         raw_arg = args[cur_arg]
         arg = raw_arg
@@ -152,9 +153,12 @@ def get_params() -> Params:
                 new_debug = True
                 if val != None:
                     new_debug = parse_bool(val)
-                elif is_val(next_arg):
+                elif is_bool_val(next_arg):
+                    printd(f'Arg after [{raw_arg}], [{next_arg}] is a bool. Using it.')
                     new_debug = parse_bool(next_arg)
                     used_args += 1
+                else:
+                    printd(f'Arg after [{raw_arg}], [{next_arg}] is not a bool. Not using it for this flag.')
                 if not _debug and new_debug:
                     stdout('Debugging enabled by CLI arguments.')
                 elif _debug and not new_debug:
@@ -164,10 +168,12 @@ def get_params() -> Params:
                 printd(f'Verbose flag found: [{raw_arg}] followed by [{next_arg}].')
                 if val != None:
                     params.verbose = parse_bool(val)
-                elif is_val(next_arg):
+                elif is_bool_val(next_arg):
+                    printd(f'Arg after [{raw_arg}], [{next_arg}] is a bool. Using it.')
                     params.verbose = parse_bool(next_arg)
                     used_args += 1
                 else:
+                    printd(f'Arg after [{raw_arg}], [{next_arg}] is not a bool. Not using it for this flag.')
                     params.verbose = True
                 verbose_given = True
             elif argl in [ '--input', '--input-file', '-i']:
@@ -218,13 +224,22 @@ def get_params() -> Params:
         params.count = _DEFAULT_COUNT
     return params
 
+_TRUE_STRS = ['1', 'true', 't', 'yes', 'y', 'on']
+_FALSE_STRS = ['0', 'false', 'f', 'no', 'n', 'off']
+
+def is_bool(val: str) -> bool:
+    '''Returns true if the provided string looks like a boolean value.'''
+    if val == None:
+        return None
+    return val.lower() in _TRUE_STRS or val.lower() in _FALSE_STRS
+
 def parse_bool(val: str) -> bool:
     '''Returns true if the provided val is a string indicating true.'''
     if val == None:
         return None
-    if val.lower() in ['1', 'true', 't', 'yes', 'y', 'on']:
+    if val.lower() in _TRUE_STRS:
         return True
-    if val.lower() in ['0', 'false', 'f', 'no', 'n', 'off']:
+    if val.lower() in _FALSE_STRS:
         return False
     raise ValueError(f'Could not parse [{val}] to a bool.')
 
