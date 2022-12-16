@@ -52,6 +52,59 @@ def solve(params) -> str:
 ############################  Commonly Used Things  ############################
 ################################################################################
 
+class Point(object):
+    '''A Point is a thing with an x and y value.'''
+    def __init__(self, x=0, y=0):
+        '''Constructor for a Point that optionally accepts the x and y values.'''
+        self.x = x
+        self.y = y
+    def __str__(self) -> str:
+        '''Get a string representation of this Point.'''
+        return f'({self.x},{self.y})'
+    def distance_to(self, p2) -> int:
+        '''Calculates the Manhattan distance between this point and another.'''
+        return distance(self, p2)
+
+def distance(p1, p2) -> int:
+    '''Calculates the Manhattan distance between two points: |x1-x2|+|y1-y2|.'''
+    return abs(p1.x - p2.x) + abs(p1.y - p2.y)
+
+class Path(object):
+    '''An ordered grouping of points.'''
+    def __init__(self, *points):
+        self.points = []
+        if len(points) > 0:
+            self.points.extend(points)
+        self.next = None
+    def append(self, *points):
+        for point in points:
+            self.points.append(point)
+    def extend(self, points):
+        self.points.extend(points)
+    def __str__(self) -> str:
+        return points_str(self.points)
+    def __len__(self) -> int:
+        return len(self.points)
+    def __getitem__(self, i):
+        return self.points[i]
+    def __iter__(self):
+        self.next = 0
+        return self
+    def __next__(self):
+        if self.next >= len(self.points):
+            self.next = None
+            raise StopIteration
+        rv = self.points[self.next]
+        self.next += 1
+        return rv
+
+def points_str(points) -> str:
+    '''Converts a list of points to a string.'''
+    pz = []
+    for p in points:
+        pz.append(str(p))
+    return ', '.join(pz)
+
 class PQ(object):
     '''PQ is a priority queue.
 
