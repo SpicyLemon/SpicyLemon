@@ -61,9 +61,24 @@ class Node(object):
         self.valves_open = {}
         self.visited = False
         self.importance = 0
-    @property
-    def distance(self) -> int:
-        return self.pressure * 1000 - self.minute * 10 + self.importance
+        self.distance = 0
+    def set_distance(self):
+        self.distance = self.pressure * 1000 - self.minute * 10 + self.importance
+        # Works (but causes nodes to need to be revisited, and runs 13 min for actual.input):
+        #   self.distance = self.pressure * 1000 - self.minute * 10 + self.importance
+        # Nopes:
+        #   Wrong answer (not sure why).
+        #       self.distance = self.pressure * 10000 + self.importance * 100 - self.minute
+        #   Wrong answer because it values opening valves later.
+        #       self.distance = self.pressure * 1000 + self.minute * 10 + self.importance
+        #   Works, but takes significantly longer (for test.input, 5 seconds vs 0.5 seconds).
+        #       self.distance = 5000000 - self.minute * 100000 + self.pressure + self.importance
+        #   Wrong answer for actual (right for example) also takes longer
+        #       self.distance = self.pressure * 10000 + self.importance * 100 - self.minute
+        #   Wrong answer for actual (right for example) but way faster
+        #       self.distance = self.rate * 1000 - self.minute * 10 + self.importance
+        #   Wrong answer for actual (right for example) but way faster
+        #       self.distance = self.rate * 1_000_000 + self.pressure * 1000 - self.minute * 10 + self.importance
     @property
     def minute(self) -> int:
         return len(self.path_to)
@@ -80,7 +95,13 @@ class Node(object):
         if self.me < self.el:
             return f'{self.me}-{self.el}-{self.pressure}'
         return f'{self.el}-{self.me}-{self.pressure}'
-        #return f'{self.me_action}-{self.me}-{self.el_action}-{self.el}-{list(self.valves_open.keys())}'
+        # Current best:
+        #   {name1}-{name2}-{pressure}
+        # Nopes:
+        #   Takes WAAAAY too long.
+        #       return f'{self.me_action}-{self.me}-{self.el_action}-{self.el}-{list(self.valves_open.keys())}'
+        #   Wrong answers but much faster (and closer answers than the other wrong ones)
+        #       {name1}-{name2}-{rate}
     def spawn(self):
         rv = Node()
         rv.path_to.extend(self.path_to)
@@ -99,18 +120,19 @@ class Node(object):
         worse.valves_open = {}
         for key, value in self.valves_open.items():
             worse.valves_open[key] = value
+        worse.set_distance()
     def me_open(self, at, rate):
         self.me = at
         self.me_action = 'open'
         self.importance += 1
         self.valves_open[self.me] = self.minute
-        self.pressure += (rate) * (_TIME_LIMIT - self.minute)
+        self.pressure += rate * (_TIME_LIMIT - self.minute)
     def el_open(self, at, rate):
         self.el = at
         self.el_action = 'open'
         self.importance += 1
         self.valves_open[self.el] = self.minute
-        self.pressure += (rate) * (_TIME_LIMIT - self.minute)
+        self.pressure += rate * (_TIME_LIMIT - self.minute)
     def me_move(self, to):
         self.me = to
         self.me_action = 'move'
@@ -121,21 +143,25 @@ class Node(object):
         rv = self.spawn()
         rv.me_open(self.me, me_rate)
         rv.el_open(self.el, el_rate)
+        rv.set_distance()
         return rv
     def spawn_open_move(self, me_rate, el_to):
         rv = self.spawn()
         rv.me_open(self.me, me_rate)
         rv.el_move(el_to)
+        rv.set_distance()
         return rv
     def spawn_move_open(self, me_to, el_rate):
         rv = self.spawn()
         rv.me_move(me_to)
         rv.el_open(self.el, el_rate)
+        rv.set_distance()
         return rv
     def spawn_move_move(self, me_to, el_to):
         rv = self.spawn()
         rv.me_move(me_to)
         rv.el_move(el_to)
+        rv.set_distance()
         return rv
     def spawn_all(self, valves):
         rv = []
@@ -144,13 +170,25 @@ class Node(object):
         me_valve = valves[self.me]
         el_valve = valves[self.el]
         me_opts = []
-        el_opts = []
         if self.me not in self.valves_open and me_valve.rate > 0:
             me_opts.append('open')
+        if self.me_action != 'move':
+            me_opts.extend(me_valve.connects_to)
+        else:
+            me_from = self.path_to[-1].me
+            for me_opt in me_valve.connects_to:
+                if me_opt != me_from:
+                    me_opts.append(me_opt)
+        el_opts = []
         if self.el not in self.valves_open and el_valve.rate > 0 and self.me != self.el:
             el_opts.append('open')
-        me_opts.extend(me_valve.connects_to)
-        el_opts.extend(el_valve.connects_to)
+        if self.el_action != 'move':
+            el_opts.extend(el_valve.connects_to)
+        else:
+            el_from = self.path_to[-1].el
+            for el_opt in el_valve.connects_to:
+                if el_opt != el_from:
+                    el_opts.append(el_opt)
         for me_opt in me_opts:
             for el_opt in el_opts:
                 if me_opt == 'open' and el_opt == 'open':
