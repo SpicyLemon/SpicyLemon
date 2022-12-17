@@ -18,7 +18,6 @@ _DEFAULT_COUNT = 0
 
 class Puzzle(object):
     '''Defines the primary puzzle data.'''
-
     def __init__(self, lines):
         # TODO: Define the input stuff.
         func_start = datetime.now()
@@ -31,7 +30,6 @@ class Puzzle(object):
         if _debug:
             stdout('Parsing input to puzzle done in ' + elapsed_time(func_start))
             stdout('Parsed input:\n' + str(self))
-
     def __str__(self) -> str:
         '''Converts this puzzle into a string.'''
         lines = []
