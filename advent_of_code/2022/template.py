@@ -52,12 +52,15 @@ def solve(params) -> str:
 
 class Point(object):
     '''A Point is a thing with an x and y value.'''
-    def __init__(self, x=0, y=0):
+    def __init__(self, x=0, y=0, z=None):
         '''Constructor for a Point that optionally accepts the x and y values.'''
         self.x = x
         self.y = y
+        self.z = z
     def __str__(self) -> str:
         '''Get a string representation of this Point.'''
+        if self.z != None:
+            return f'({self.x},{self.y},{self.z})'
         return f'({self.x},{self.y})'
     def distance_to(self, p2) -> int:
         '''Calculates the Manhattan distance between this point and another.'''
@@ -65,7 +68,9 @@ class Point(object):
 
 def distance(p1, p2) -> int:
     '''Calculates the Manhattan distance between two points: |x1-x2|+|y1-y2|.'''
-    return abs(p1.x - p2.x) + abs(p1.y - p2.y)
+    if p1.z == None or p2.z == None:
+        return abs(p1.x - p2.x) + abs(p1.y - p2.y)
+    return abs(p1.x - p2.x) + abs(p1.y - p2.y) + abs(p1.z + p2.z)
 
 class Path(object):
     '''An ordered grouping of points.'''
@@ -73,7 +78,7 @@ class Path(object):
         self.points = []
         if len(points) > 0:
             self.points.extend(points)
-        self.next = None
+        self.next = -1
     def append(self, *points):
         for point in points:
             self.points.append(point)
@@ -86,22 +91,83 @@ class Path(object):
     def __getitem__(self, i):
         return self.points[i]
     def __iter__(self):
-        self.next = 0
-        return self
+        return iter(self.points)
     def __next__(self):
-        if self.next >= len(self.points):
-            self.next = None
-            raise StopIteration
-        rv = self.points[self.next]
+        '''Allow infinite iteration by using next(path).'''
         self.next += 1
-        return rv
+        if self.next >= len(self.points):
+            self.next = 0
+        return self.points[self.next]
 
-def points_str(points) -> str:
+def points_str(points, per_line=None) -> str:
     '''Converts a list of points to a string.'''
     pz = []
     for p in points:
         pz.append(str(p))
-    return ', '.join(pz)
+    if per_line in [None, 0]:
+        return ', '.join(pz)
+    cell_width = 0
+    for p in pz:
+        if len(p) > cell_width:
+            cell_width = len(p)
+    for i in range(0, len(pz)):
+        pz[i] = f'{pz[i]: <{cell_width}}'
+    lines = []
+    for i in range(0, len(pz)):
+        if i % per_line == 0:
+            lines.append([])
+        lines[-1].append(pz[i])
+    for i in range(0, len(lines)):
+        lines[i] = ' '.join(lines[i])
+    return '\n'.join(lines)
+
+class PQNode(object):
+    '''A thing that can be put into a PQ.
+
+    If its value has a distance property, that will be used for the distance.
+    Otherwise, the length of it's path_to is used.'''
+    def __init__(self, point=None, value=None, path_to = []):
+        self.point = point
+        self.value = value
+        self.path_to = path_to
+        self.visited = False
+    def __str__(self) -> str:
+        lead = '<V>' if self.visited else '<U>'
+        if self.point != None and self.value != None:
+            lead += f'{self.point} = {self.value}'
+        elif self.point != None:
+            lead += str(self.point)
+        elif self.value != None:
+            lead += str(self.value)
+        return lead + f': distance = {self.distance}, length to = {len(self.path_to)}'
+    @property
+    def distance(self) -> int:
+        if hasattr(self.value, 'distance'):
+            return self.value.distance
+        return len(self.path_to)
+    @property
+    def x(self):
+        return self.point.x
+    @property
+    def y(self):
+        return self.point.y
+    @property
+    def z(self):
+        return self.point.z
+    def __getitem__(self, n):
+        return self.value[n]
+    def __len__(self):
+        return len(self.value)
+    def __iter__(self):
+        return iter(self.value)
+    def __next__(self):
+        return next(self.value)
+    def set_path(self, prev, *new):
+        self.path = []
+        if len(prev) > 0:
+            self.path.extend(prev)
+        if len(new) > 0:
+            self.path.extend(new)
 
 class PQ(object):
     '''PQ is a priority queue.
