@@ -1,0 +1,13 @@
+{
+  "Ruins": ["Cultist", "Death Cart", "Marauder"],
+  "Spoils": ["Bandit Camp", "Marauder", "Pillage"],
+  "Horse": ["Sleigh", "Supplies", "Scrap", "Cavalry", "Groom", "Hostelry", "Livery", "Paddock", "Ride", "Bargain", "Demand", "Stampede"],
+  "Boons": ["Bard", "Blessed Village", "Druid", "Fool", "Idol", "Pixie", "Sacred Grove", "Tracker"],
+  "Hexes": ["Cursed Village", "Leprechaun", "Skulk", "Tormentor", "Vampire", "Werewolf"],
+  "Deluded/Envious": ["Cursed Village", "Leprechaun", "Skulk", "Tormentor", "Vampire", "Werewolf"],
+  "Miserable/Twice Miserable": ["Cursed Village", "Leprechaun", "Skulk", "Tormentor", "Vampire", "Werewolf"],
+  "Loots": ["Jewelled Egg", "Search", "Cutthroat", "Pickaxe", "Wealthy Village", "Sack of Loot", "Peril", "Foray", "Looting", "Invasion", "Propser", "Cursed"],
+  "Potion": ["Transmute", "Vineyard", "Apothecary", "Scrying Pool", "University", "Alchemist", "Familiar", "Philosopher's Stone", "Golem", "Possession"],
+  "Allies": ["Bauble", "Sycophant", "Importer", "Underling", "Wizards", "Broker", "Contract", "Emissary", "Guildmaster", "Wizards"],
+  "Curse": ["Charlatan", "Coven", "Familiar", "Old Witch", "Sea Witch", "Soothsayer", "Witch", "Young Witch", "Circle of Witches", "Barbarian", "Black Cat", "Blockade", "Catapult", "Cauldron", "Followers", "Giant", "Idol", "Jester", "Replace", "Sorcerer", "Sorceress", "Swamp Hag", "Swindler", "Torturer", "Witch's Hut", "Ill-Gotten Gains", "Mountebank", "Sea Hag"]
+}

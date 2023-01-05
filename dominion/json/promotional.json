@@ -1,0 +1,121 @@
+{
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Envoy",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Reveal the top 5 cards of your deck. The player to your left chooses one. Discard that one and put the rest into your hand."
+      },
+      {
+        "name": "Black Market",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+$2\nReveal the top 3 cards of the Black Market deck. Play any number of Treasures from your hand. You may buy one of the revealed cards. Put the rest on the bottom of the Black Market deck in any order.\n----------\nSetup: Make a Black Market deck out of different unused Kingdom cards."
+      },
+      {
+        "name": "Stash",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $2\n----------\nWhen shuffling this, you may look through your remaining deck, and may put this anywhere in the shuffled cards."
+      },
+      {
+        "name": "Walled Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card; +2 Actions\n----------\nAt the start of Clean-up, if you have this and no more than one other Action card in play, you may put this onto your deck."
+      },
+      {
+        "name": "Governor",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\nChoose one; you get the version in parentheses: Each player gets +1 (+3) Cards; or each player gains a Silver (Gold); or each player may trash a card from their hand and gain a card costing exactly $1 ($2) more."
+      },
+      {
+        "name": "Prince",
+        "types": [
+          "Action"
+        ],
+        "cost": "$8",
+        "description": "You may set this aside. If you do, set aside an Action card from your hand costing up to $4. At the start of each of your turns, play that Action, setting it aside again when you discard it from play. (Stop playing it if you fail to set it aside on a turn you play it.)"
+      },
+      {
+        "name": "Summon",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "Gain an Action card costing up to $4. Set it aside. If you did, then at the start of your next turn, play it."
+      },
+      {
+        "name": "Sauna/Avanto",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Include the Sauna/Avanto pile."
+      },
+      {
+        "name": "Dismantle",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand. If it costs $1 or more, gain a cheaper card and a Gold."
+      },
+      {
+        "name": "Church",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "Set aside up to 3 cards from your hand face down. At the start of your next turn, put them into your hand, then you may trash a card from your hand."
+      },
+      {
+        "name": "Captain",
+        "types": [
+          "Action",
+          "Duration",
+          "Command"
+        ],
+        "cost": "$6",
+        "description": "Now and at the start of your next turn: Play a non-Duration, non-Command action card from the supply costing up to $4, leaving it there."
+      }
+    ]
+  },
+  "other": {
+    "name": "Other",
+    "info": "",
+    "cards": [
+      {
+        "name": "Sauna",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\nYou may play an Avanto from your hand\n----------\nWhile this is in play, when you play a Silver, you may trash a card from your hand.\n(This is the top half of the Sauna/Avanto pile.)"
+      },
+      {
+        "name": "Avanto",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\nYou may play a Sauna from your hand\n(This is the bottom half of the Sauna/Avanto pile.)"
+      }
+    ]
+  }
+}

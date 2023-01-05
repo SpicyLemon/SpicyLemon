@@ -1,0 +1,725 @@
+{
+  "allies": {
+    "name": "Allies",
+    "info": "",
+    "cards": [
+      {
+        "name": "Architects' Guild",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When you gain a card, you may spend 2 Favors to gain a cheaper non-Victory card."
+      },
+      {
+        "name": "Band of Nomads",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When you gain a card costing $3 or more, you may spend a Favor, for +1 Card, or +1 Action, or +1 Buy."
+      },
+      {
+        "name": "Cave Dwellers",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, you may spend a Favor, to discard a card then draw a card. Repeat as desired."
+      },
+      {
+        "name": "Circle of Witches",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "After playing a Liaison, you may spend 3 Favors to have each other player gain a Curse."
+      },
+      {
+        "name": "City-State",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When you gain an Action card, during your turn, you may spend 2 Favors to play it."
+      },
+      {
+        "name": "Coastal Haven",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When discarding your hand in Clean-up, you may spend any number of Favors to keep that many cards in hand for next turn (you still draw 5)."
+      },
+      {
+        "name": "Crafters' Guild",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, you may spend 2 Favors to gain a card costing up to $4 onto your deck."
+      },
+      {
+        "name": "Desert Guides",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, you may spend a Favor to discard your hand and draw 5 Cards. Repeat as desired."
+      },
+      {
+        "name": "Family of Inventors",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, you may put a Favor token you have on a non-Victory Supply pile. Cards cost $1 less per Favor token on their piles."
+      },
+      {
+        "name": "Fellowship of Scribes",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "After playing an Action, if you have 4 or fewer cards in hand, you may spend a Favor for +1 Card."
+      },
+      {
+        "name": "Forest Dwellers",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, you may spend a Favor to look at the top 3 cards of your deck, discard any number, and put the rest back in any order"
+      },
+      {
+        "name": "Gang of Pickpockets",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, discard down to 4 cards in hand unless you spend a Favor."
+      },
+      {
+        "name": "Island Folk",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the end of your turn, if the previous turn wasn't yours, you may spend 5 Favors to take another turn."
+      },
+      {
+        "name": "League of Bankers",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, +$1 per 4 Favors you have (rounded down)."
+      },
+      {
+        "name": "League of Shopkeepers",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "After playing a Liaison, if you have 5 or more Favors, +$1, and if 10 or more, +1 Action and +1 Buy."
+      },
+      {
+        "name": "Market Towns",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, you may spend a Favor to play an Action card from your hand. Repeat as desired."
+      },
+      {
+        "name": "Mountain Folk",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, you may spend 5 Favors for +3 Cards."
+      },
+      {
+        "name": "Order of Astrologers",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When shuffling, you may pick one card per Favor you spend to go on top."
+      },
+      {
+        "name": "Order of Masons",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When shuffling, you may pick up to 2 cards per Favor you spend to put it into your discard pile."
+      },
+      {
+        "name": "Peaceful Cult",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, you may spend any number of Favors to trash that many cards from your hand."
+      },
+      {
+        "name": "Plateau Shepherds",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When scoring, pair up your Favors with cards you have costing $2, for 2VP per pair."
+      },
+      {
+        "name": "Trappers' Lodge",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "When you gain a card, you may spend a Favor to put it onto your deck."
+      },
+      {
+        "name": "Woodworkers' Guild",
+        "types": [
+          "Ally"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, you may spend a Favor to trash an Action card from your hand. If you did, gain an Action card."
+      }
+    ]
+  },
+  "augurs": {
+    "name": "Augurs",
+    "info": "",
+    "cards": [
+      {
+        "name": "Herb Gatherer",
+        "types": [
+          "Action",
+          "Augur"
+        ],
+        "cost": "$3",
+        "description": "+1 Buy\nPut your deck into your discard pile. Look through it and you may play a Treasure from it.\nYou may rotate the Augurs"
+      },
+      {
+        "name": "Acolyte",
+        "types": [
+          "Action",
+          "Augur"
+        ],
+        "cost": "$4",
+        "description": "You may trash an Action or Victory card from your hand to gain a Gold.\nYou may trash this to gain an Augur."
+      },
+      {
+        "name": "Sorceress",
+        "types": [
+          "Action",
+          "Attack",
+          "Augur"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\nName a card. Reveal the top card of your deck and put it into your hand.\nIf it's the named card, each other player gains a Curse."
+      },
+      {
+        "name": "Sibyl",
+        "types": [
+          "Action",
+          "Augur"
+        ],
+        "cost": "$6",
+        "description": "+4 Cards\n+1 Action\nPut a card from your hand on the top of your deck, and another on the bottom."
+      }
+    ]
+  },
+  "clashes": {
+    "name": "Clashes",
+    "info": "",
+    "cards": [
+      {
+        "name": "Battle Plan",
+        "types": [
+          "Action",
+          "Clash"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nYou may reveal an Attack card from your hand for +1 Card.\nYou may rotate any Supply pile."
+      },
+      {
+        "name": "Archer",
+        "types": [
+          "Action",
+          "Attack",
+          "Clash"
+        ],
+        "cost": "$4",
+        "description": "+$2\nEach other player with 5 or more cards in hand reveals all but one, and discards one of them that you choose."
+      },
+      {
+        "name": "Warlord",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack",
+          "Clash"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\nAt the start of your next turn, +2 Cards. Until then, other players can't play an Action from their hand that they have 2 or more copies of in play."
+      },
+      {
+        "name": "Territory",
+        "types": [
+          "Victory",
+          "Clash"
+        ],
+        "cost": "$6",
+        "description": "Worth 1VP per differently named Victory card you have.\n----------\nWhen you gain this, gain a Gold per empty Supply pile."
+      }
+    ]
+  },
+  "forts": {
+    "name": "Forts",
+    "info": "",
+    "cards": [
+      {
+        "name": "Tent",
+        "types": [
+          "Action",
+          "Fort"
+        ],
+        "cost": "$3",
+        "description": "+$2\nYou may rotate the Forts.\n----------\nWhen you discard this from play, you may put it onto your deck."
+      },
+      {
+        "name": "Garrison",
+        "types": [
+          "Action",
+          "Duration",
+          "Fort"
+        ],
+        "cost": "$4",
+        "description": "+$2\nThis turn, when you gain a card, add a token here. At the start of your next turn, remove them for +1 Card each."
+      },
+      {
+        "name": "Hill Fort",
+        "types": [
+          "Action",
+          "Fort"
+        ],
+        "cost": "$5",
+        "description": "Gain a card costing up to $4. Choose one: Put it into your hand; or +1 Card and +1 Action."
+      },
+      {
+        "name": "Stronghold",
+        "types": [
+          "Action",
+          "Victory",
+          "Duration",
+          "Fort"
+        ],
+        "cost": "$6",
+        "description": "Choose one; +$3; or at the start of your next turn, +3 Cards.\n----------\nWorth 2VP"
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Bauble",
+        "types": [
+          "Treasure",
+          "Liaison"
+        ],
+        "cost": "$2",
+        "description": "Choose two different options:\n+1 Buy; +$1; +1 Favor;\nThis turn when you gain a card you may put it onto your deck."
+      },
+      {
+        "name": "Sycophant",
+        "types": [
+          "Action",
+          "Liaison"
+        ],
+        "cost": "$2",
+        "description": "+1 Action\nDiscard 3 cards. If you discarded at least one, +$3\n----------\nWhen you gain or trash this card, +2 Favors"
+      },
+      {
+        "name": "Townsfolk",
+        "types": [
+          "Townsfolk"
+        ],
+        "cost": "$2",
+        "description": "This pile starts the game with 4 copies each of Town Crier, Blacksmith, Miller, and Elder, in that order. Only the top card can be gained or bought."
+      },
+      {
+        "name": "Augurs",
+        "types": [
+          "Augur"
+        ],
+        "cost": "$3",
+        "description": "This pile starts the game with 4 copies each of Herb Gatherer, Acolyte, Sorceress, and Sibyl, in that order. Only the top card can ge gained or bought."
+      },
+      {
+        "name": "Clashes",
+        "types": [
+          "Clash"
+        ],
+        "cost": "$3",
+        "description": "This pile starts the game with 4 copies each of Battle Plan, Archer, Warlord, and Territory, in that order. Only the top card can ge gained or bought."
+      },
+      {
+        "name": "Forts",
+        "types": [
+          "Fort"
+        ],
+        "cost": "$3",
+        "description": "This pile starts the game with 4 copies each of Tent, Garrison, Hill Fort, and Stronghold, in that order. Only the top card can ge gained or bought."
+      },
+      {
+        "name": "Importer",
+        "types": [
+          "Action",
+          "Duration",
+          "Liaison"
+        ],
+        "cost": "$3",
+        "description": "At the start of your next turn, gain a card costing up to $5.\n----------\nSetup: Each player gets +4 Favors"
+      },
+      {
+        "name": "Merchant Camp",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+2 Actions\n+$1\n----------\nWhen you discard this from play, you may put it onto your deck."
+      },
+      {
+        "name": "Odysseys",
+        "types": [
+          "Odyssey"
+        ],
+        "cost": "$3",
+        "description": "This pile starts the game with 4 copies each of Old Map, Voyage, Sunken Treasure, and Distant Shore, in that order. Only the top card can ge gained or bought."
+      },
+      {
+        "name": "Sentinel",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Look at the top 5 cards of your deck. You may trash up to 2 of them. Put the rest back in any order."
+      },
+      {
+        "name": "Underling",
+        "types": [
+          "Action",
+          "Liaison"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\n+1 Favor"
+      },
+      {
+        "name": "Wizards",
+        "types": [
+          "Wizard"
+        ],
+        "cost": "$3",
+        "description": "This pile starts the game with 4 copies each of Student, Conjurer, Sorcerer, and Lich, in that order. Only the top card can ge gained or bought."
+      },
+      {
+        "name": "Broker",
+        "types": [
+          "Action",
+          "Liaison"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand and choose one:\n+1 Card per $1 it costs;\nor +1 Action per $1 it costs;\nor +$1 per $1 it costs;\nor +1 Favor per $1 it costs."
+      },
+      {
+        "name": "Carpenter",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "If no Supply piles are empty, +1 Action and gain a card costing up to $4.\nOtherwise, trash a card from your hand and gain a card costing up to $2 more than it."
+      },
+      {
+        "name": "Courier",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+$1\nDiscard the top card of your deck. Look through your discard pile; you may plan an Action or Treasure from it."
+      },
+      {
+        "name": "Innkeeper",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nChoose one; +1 Card; or +3 Cards, then discard 3 cards; or +5 Cards then discard 6 cards."
+      },
+      {
+        "name": "Royal Galley",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\nYou may play a non-Duration Action card from your hand.\nSet it aside; if you did, then at the start of your next turn, play it."
+      },
+      {
+        "name": "Town",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Choose one:\n+1 Card and +2 Actions;\nor +1 Buy and +$2"
+      },
+      {
+        "name": "Barbarian",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+$2\nEach other player trashes the top card of their deck. If it costs $3 or more they gain a cheaper card sharing a type with it; otherwise they gain a Curse."
+      },
+      {
+        "name": "Capital City",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+2 Actions\nYou may discard 2 cards for $2.\nYou may pay $2 for +2 cards."
+      },
+      {
+        "name": "Contract",
+        "types": [
+          "Treasure",
+          "Duration",
+          "Liaison"
+        ],
+        "cost": "$5",
+        "description": "Worth $2\n+1 Favor\nYou may set aside an Action from your hand to play it at the start of your next turn."
+      },
+      {
+        "name": "Emissary",
+        "types": [
+          "Action",
+          "Liaison"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\nIf this made you shuffle (at least one card), +1 Action and +2 Favors."
+      },
+      {
+        "name": "Galleria",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+$3\nThis turn, when you gain a card costing $3 or $4, +1 Buy."
+      },
+      {
+        "name": "Guildmaster",
+        "types": [
+          "Action",
+          "Liaison"
+        ],
+        "cost": "$5",
+        "description": "+$3\nThis turn, when you gain a card, +1 Favor."
+      },
+      {
+        "name": "Highwayman",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "At the start of your next turn, discard this from play and +3 Cards.\nUntil then, the first treasure each other plays each turn does nothing."
+      },
+      {
+        "name": "Hunter",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\nReveal the top 3 cards of your deck. From those cards, put an Action, a Treasure, and a Victory card into your hand. Discard the rest."
+      },
+      {
+        "name": "Modify",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Trash a card from your hand. Choose one: +1 Card and +1 Action; or gain a card costing up to $2 more than the trashed card."
+      },
+      {
+        "name": "Skirmisher",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+$1\nThis turn, when you gain an Attack card, each other player discards down to 3 cards in hand."
+      },
+      {
+        "name": "Specialist",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "You may play an Action or Treasure from your hand. Choose one: Play it again; or gain a copy of it."
+      },
+      {
+        "name": "Swap",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nYou may return an Action from your hand to its pile, to gain to your hand a different action costing up to $5."
+      },
+      {
+        "name": "Marquis",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "+1 Buy\n+1 Card per card in your hand. Discard down to 10 cards in hand."
+      }
+    ]
+  },
+  "odysseys": {
+    "name": "Odysseys",
+    "info": "",
+    "cards": [
+      {
+        "name": "Old Map",
+        "types": [
+          "Action",
+          "Odyssey"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nDiscard a card. +1 Card.\nYou may rotate the Odysseys."
+      },
+      {
+        "name": "Voyage",
+        "types": [
+          "Action",
+          "Duration",
+          "Odyssey"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nIf the previous turn wasn't yours, take an extra turn after this one, during which you can only play 3 cards from your hand."
+      },
+      {
+        "name": "Sunken Treasure",
+        "types": [
+          "Treasure",
+          "Odyssey"
+        ],
+        "cost": "$5",
+        "description": "Worth $0\nGain an Action card you don't have a copy of in play."
+      },
+      {
+        "name": "Distant Shore",
+        "types": [
+          "Action",
+          "Victory",
+          "Odyssey"
+        ],
+        "cost": "$6",
+        "description": "+2 Cards\n+1 Action\nGain an Estate\n----------\nWorth 2VP"
+      }
+    ]
+  },
+  "townsfolk": {
+    "name": "Townsfolk",
+    "info": "",
+    "cards": [
+      {
+        "name": "Town Crier",
+        "types": [
+          "Action",
+          "Townsfolk"
+        ],
+        "cost": "$2",
+        "description": "Choose one: +$2; or gain a Silver; or +1 Card and +1 Action.\nYou may rotate the Townsfolk."
+      },
+      {
+        "name": "Blacksmith",
+        "types": [
+          "Action",
+          "Townsfolk"
+        ],
+        "cost": "$3",
+        "description": "Choose one:\nDraw until you have 6 cards in hand; or +2 Cards; or +1 Card and +1 Action."
+      },
+      {
+        "name": "Miller",
+        "types": [
+          "Action",
+          "Townsfolk"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nLook at the top 4 cards of your deck. Put one into your hand and discard the rest."
+      },
+      {
+        "name": "Elder",
+        "types": [
+          "Action",
+          "Townsfolk"
+        ],
+        "cost": "$5",
+        "description": "+$2\nYou may play an Action card from your hand. When it gives you a choice of abilities (e.g. \"choose one\") this turn, you may choose an extra (different) option."
+      }
+    ]
+  },
+  "wizards": {
+    "name": "Wizards",
+    "info": "",
+    "cards": [
+      {
+        "name": "Student",
+        "types": [
+          "Action",
+          "Wizard",
+          "Liaison"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\nYou may rotate the Wizards.\nTrash a card from your hand. If it's a Treasure, +1 Favor and put this onto your deck."
+      },
+      {
+        "name": "Conjurer",
+        "types": [
+          "Action",
+          "Duration",
+          "Wizard"
+        ],
+        "cost": "$4",
+        "description": "Gain a card costing up to $4.\nAt the start of your next turn, put this into your hand."
+      },
+      {
+        "name": "Sorcerer",
+        "types": [
+          "Action",
+          "Attack",
+          "Wizard"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nEach other player names a card, then reveals the top card of their deck. If wrong, they gain a Curse."
+      },
+      {
+        "name": "Lich",
+        "types": [
+          "Action",
+          "Wizard"
+        ],
+        "cost": "$6",
+        "description": "+6 Cards\n+2 Actions\nSkip a turn\n----------\nWhen you trash this card, discard it and gain a cheaper card from the trash."
+      }
+    ]
+  }
+}

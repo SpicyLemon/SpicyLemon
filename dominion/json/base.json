@@ -1,0 +1,283 @@
+{
+  "in-1st-not-2nd": {
+    "name": "In 1st Not 2nd",
+    "info": "",
+    "cards": [
+      {
+        "name": "Chancellor",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+$2\nYou may immediately put your deck into your discard pile."
+      },
+      {
+        "name": "Woodcutter",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Buy\n+$2"
+      },
+      {
+        "name": "Feast",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Trash this card. Gain a card costing up to $5."
+      },
+      {
+        "name": "Spy",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "+1 Card; +1 Action\nEach player (including you) reveals the top card of his deck and either discards it or puts it back, your choice."
+      },
+      {
+        "name": "Thief",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "Each other player reveals the top 2 cards of his deck. If they revealed any Treasure cards, they trash one of them that you choose. You may gain any or all of these trashed cards. They discard the other revealed cards."
+      },
+      {
+        "name": "Adventurer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "+1 Card; +1 Action\nReveal the top 4 cards of your deck. Put the revealed Coppers and Potions into your hand. Put the other cards back on top in any order."
+      }
+    ]
+  },
+  "in-2nd-not-1st": {
+    "name": "In 2nd Not 1st",
+    "info": "",
+    "cards": [
+      {
+        "name": "Harbinger",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nLook through your discard pile. You may put a card from it onto your deck."
+      },
+      {
+        "name": "Merchant",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nThe first time you play a Silver this turn, +$1."
+      },
+      {
+        "name": "Vassal",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Discard the top card of your deck. If it's an Action card, you may play it."
+      },
+      {
+        "name": "Poacher",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\n+$1\nDiscard a card per empty Supply pile."
+      },
+      {
+        "name": "Bandit",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Gain a Gold. Each other player reveals the top two cards of their deck, trashes a revealed Treasure other than Copper, and discards the rest."
+      },
+      {
+        "name": "Sentry",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nLook at the top 2 cards of your deck. Trash and/or discard any number of them. Put the rest back on top in any order."
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Cellar",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Action\nDiscard any number of cards, then draw that many."
+      },
+      {
+        "name": "Chapel",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "Trash up to 4 cards from your hand."
+      },
+      {
+        "name": "Moat",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$2",
+        "description": "+2 Cards\n----------\nWhen another player plays an Attack card, you may first reveal this from your hand, to be unaffected by it."
+      },
+      {
+        "name": "Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+2 Actions"
+      },
+      {
+        "name": "Workshop",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Gain a card costing up to $4."
+      },
+      {
+        "name": "Bureaucrat",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "Gain a silver card; put it on top of your deck. Each other player reveals a Victory card from his hand and puts it on his deck (or reveals a hand with no Victory cards)."
+      },
+      {
+        "name": "Gardens",
+        "types": [
+          "Victory"
+        ],
+        "cost": "$4",
+        "description": "Worth 1VP for every 10 cards in your deck (rounded down)."
+      },
+      {
+        "name": "Militia",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "+$2\nEach other player discards down to 3 cards in their hand."
+      },
+      {
+        "name": "Moneylender",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "You may trash a Copper from your hand. If you do, +$3."
+      },
+      {
+        "name": "Remodel",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand. Gain a card costing up to $2 more than the trashed card."
+      },
+      {
+        "name": "Smithy",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+3 Cards"
+      },
+      {
+        "name": "Throne Room",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "You may play an Action card from your hand twice."
+      },
+      {
+        "name": "Council Room",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+4 Cards\n+1 Buy\nEach other player draws a card."
+      },
+      {
+        "name": "Festival",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+2 Actions\n+1 Buy\n+$2"
+      },
+      {
+        "name": "Laboratory",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\n+1 Action"
+      },
+      {
+        "name": "Library",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Draw until you have 7 cards in hand, skipping any Action cards you choose to; set those aside, discarding them afterwards."
+      },
+      {
+        "name": "Market",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+1 Buy\n+$1"
+      },
+      {
+        "name": "Mine",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "You may trash a Treasure from your hand. Gain a Treasure to your hand costing up to $3 more than it."
+      },
+      {
+        "name": "Witch",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\nEach other player gains a Curse card."
+      },
+      {
+        "name": "Artisan",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "Gain a card to your hand costing up to $5. Put a card from your hand onto your deck."
+      }
+    ]
+  }
+}

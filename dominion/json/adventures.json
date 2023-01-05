@@ -1,0 +1,520 @@
+{
+  "events": {
+    "name": "Events",
+    "info": "",
+    "cards": [
+      {
+        "name": "Alms",
+        "types": [
+          "Event"
+        ],
+        "cost": "$0",
+        "description": "Once per turn: If you have no Treasures in play, gain a card costing up to $4."
+      },
+      {
+        "name": "Borrow",
+        "types": [
+          "Event"
+        ],
+        "cost": "$0",
+        "description": "Once per turn: +1 Buy. If your -1 Card token isn't on your deck, put it there and +$1."
+      },
+      {
+        "name": "Quest",
+        "types": [
+          "Event"
+        ],
+        "cost": "$0",
+        "description": "You may discard an Attack, two Curses, or six cards. If you do, gain a Gold."
+      },
+      {
+        "name": "Save",
+        "types": [
+          "Event"
+        ],
+        "cost": "$1",
+        "description": "Once per turn: +1 Buy. Set aside a card from your hand, and put it into your hand at end of turn (after drawing)."
+      },
+      {
+        "name": "Scouting Party",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nLook at the top 5 cards of your deck. Discard 3 and put the rest back in any order."
+      },
+      {
+        "name": "Travelling Fair",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+2 Buys\nWhen you gain a card this turn, you may put it onto your deck."
+      },
+      {
+        "name": "Bonfire",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Trash up to 2 cards you have in play."
+      },
+      {
+        "name": "Expedition",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Draw 2 extra cards for your next hand."
+      },
+      {
+        "name": "Ferry",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Move your -$2 cost token to an Action Supply pile. (Cards from that pile cost $2 less on your turns, but not less than $0.)"
+      },
+      {
+        "name": "Plan",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Move your Trashing token to an Action Supply pile (when you buy a card from that pile, you may trash a card from your hand.)"
+      },
+      {
+        "name": "Mission",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Once per turn: If the previous turn wasn't yours, take another turn after this one, during which you can't buy cards."
+      },
+      {
+        "name": "Pilgrimage",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Once per turn: Turn your Journey token over (it starts face up); then if it's face up, choose up to 3 differently named cards you have in play and gain a copy of each."
+      },
+      {
+        "name": "Ball",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "Take your -$1 token. Gain 2 cards each costing up to $4."
+      },
+      {
+        "name": "Raid",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "Gain a Silver per Silver you have in play. Each other player puts their -1 Card token on their deck."
+      },
+      {
+        "name": "Seaway",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "Gain an Action card costing up to $4. Move your +1 Buy token to its pile. (When you play a card from that pile, you first get +1 Buy.)"
+      },
+      {
+        "name": "Trade",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "Trash up to 2 cards from your hand. Gain a Silver per card you trashed."
+      },
+      {
+        "name": "Lost Arts",
+        "types": [
+          "Event"
+        ],
+        "cost": "$6",
+        "description": "Move your +1 Action token to an Action Supply pile. (When you play a card from that pile, you first get +1 Action.)"
+      },
+      {
+        "name": "Training",
+        "types": [
+          "Event"
+        ],
+        "cost": "$6",
+        "description": "Move your +$1 token to an Action Supply pile. (When you play a card from that pile, you first get +$1.)"
+      },
+      {
+        "name": "Inheritance",
+        "types": [
+          "Event"
+        ],
+        "cost": "$7",
+        "description": "Once per game: Set aside a non-Victory Action card from the Supply costing up to $4. Move your Estate token to it. (Your Estates gain the abilities and types of that card.)"
+      },
+      {
+        "name": "Pathfinding",
+        "types": [
+          "Event"
+        ],
+        "cost": "$8",
+        "description": "Move your +1 Card token to an Action Supply pile. (When you play a card from that pile, you first get +1 Card.)"
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Coin of the Realm",
+        "types": [
+          "Treasure",
+          "Reserve"
+        ],
+        "cost": "$2",
+        "description": "Worth $1\nWhen you play this, put it on your Tavern mat.\n----------\nDirectly after you finish playing an Action card, you may call this, for +2 Actions."
+      },
+      {
+        "name": "Page",
+        "types": [
+          "Action",
+          "Traveller"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\n----------\nWhen you discard this from play, you may exchange it for a Treasure Hunter."
+      },
+      {
+        "name": "Peasant",
+        "types": [
+          "Action",
+          "Traveller"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\n+$1\n----------\nWhen you discard this from play, you may exchange it for a Soldier."
+      },
+      {
+        "name": "Ratcatcher",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nPut this on your Tavern mat.\n----------\nAt the start of your turn, you may call this, to trash a card from your hand."
+      },
+      {
+        "name": "Raze",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Action\nTrash this or a card from your hand. Look at one card from your deck per $1 the trashed card costs. Put one of them into your hand and discard the rest."
+      },
+      {
+        "name": "Amulet",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "Now and at the start of your next turn, choose one: +$1; or trash a card from your hand; or gain a Silver."
+      },
+      {
+        "name": "Caravan Guard",
+        "types": [
+          "Action",
+          "Duration",
+          "Reaction"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nAt the start of your next turn, +$1.\n----------\nWhen another player plays an Attack card, you may first play this from your hand.\n(+1 Action has no effect if it's not your turn.)"
+      },
+      {
+        "name": "Dungeon",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\nNow and at the start of your next turn: +2 Cards, then discard 2 cards"
+      },
+      {
+        "name": "Gear",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "+2 Cards\nSet aside up to 2 cards from your hand face down (under this). At the start of your next turn, put them into your hand."
+      },
+      {
+        "name": "Guide",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nPut this on your Tavern mat.\n----------\nAt the start of your turn, you may call this, to discard your hand and draw 5 cards."
+      },
+      {
+        "name": "Duplicate",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$4",
+        "description": "Put this on your Tavern mat.\n----------\nWhen you gain a card costing up to $6, you may call this, to gain a copy of that card."
+      },
+      {
+        "name": "Magpie",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\nReveal the top card of your deck. If it's a Treasure, put it into your hand. If it's an Action or Victory card, gain a Magpie."
+      },
+      {
+        "name": "Messenger",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Buy\n+$2\nYou may put your deck into your discard pile.\n----------\nWhen this is your first buy in a turn, gain a card costing up to $4, and each other player gains a copy of it."
+      },
+      {
+        "name": "Miser",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Choose one: Put a Copper from your hand onto your Tavern mat; or +$1 per Copper on your Tavern mat."
+      },
+      {
+        "name": "Port",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+2 Actions\n----------\nWhen you buy this, gain another Port."
+      },
+      {
+        "name": "Ranger",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Buy\nTurn your Journey token over (it starts face up). Then if it's face up, +5 Cards."
+      },
+      {
+        "name": "Transmogrify",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nPut this on your Tavern mat.\n----------\nAt the start of your turn, you may call this, to trash a card from your hand, and gain a card costing up to $1 more than it into your hand."
+      },
+      {
+        "name": "Artificer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+$1\nDiscard any number of cards. You may gain a card costing exactly $1 per card discarded, onto your deck."
+      },
+      {
+        "name": "Bridge Troll",
+        "types": [
+          "Action",
+          "Attack",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Each other player takes their -$1 token.\nNow and at the start of your next turn: +1 Buy.\n----------\nWhile this is in play, cards cost $1 less on your turns, but not less than $0."
+      },
+      {
+        "name": "Distant Lands",
+        "types": [
+          "Action",
+          "Reserve",
+          "Victory"
+        ],
+        "cost": "$5",
+        "description": "Put this on your Tavern mat.\n----------\nWorth 4VP if on your Tavern mat at the end of the game (otherwise worth 0VP)."
+      },
+      {
+        "name": "Giant",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Turn your Journey token over (it starts face up). Then if it's face down, +$1. If it's face up, +$5, and each other player reveals the top card of their deck, trashes it if it costs from $3 to $6, and otherwise discards it and gains a Curse."
+      },
+      {
+        "name": "Haunted Woods",
+        "types": [
+          "Action",
+          "Attack",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Until your next turn, when any other player buys a card, they put their hand onto their deck in any order.\nAt the start of your next turn, +3 Cards."
+      },
+      {
+        "name": "Lost City",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\n+2 Actions\n----------\nWhen you gain this, each other player draws a card."
+      },
+      {
+        "name": "Relic",
+        "types": [
+          "Treasure",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Worth $2\nWhen you play this, each other player puts their -1 Card token on their deck."
+      },
+      {
+        "name": "Royal Carriage",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\nPut this on your Tavern mat.\n----------\nDirectly after you finish playing an Action card, if it's still in play, you may call this, to replay that Action."
+      },
+      {
+        "name": "Storyteller",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\n+$1\nPlay up to 3 Treasures from your hand. Then pay all of your $ (including the $1 from this) and draw a card per $1 you paid."
+      },
+      {
+        "name": "Swamp Hag",
+        "types": [
+          "Action",
+          "Attack",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Until your next turn, when any other player buys a card, they gain a Curse.\nAt the start of your next turn, +$3."
+      },
+      {
+        "name": "Treasure Trove",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $2\nWhen you play this, gain a Gold and a Copper."
+      },
+      {
+        "name": "Wine Merchant",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$5",
+        "description": "+$4\n+1 Buy\nPut this on your Tavern mat.\n----------\nAt the end of your Buy phase, if you have at least $2 unspent, you may discard this from your Tavern mat."
+      },
+      {
+        "name": "Hireling",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$6",
+        "description": "At the start of each of your turns for the rest of the game: +1 Card.\n(This stays in play.)"
+      }
+    ]
+  },
+  "travellers": {
+    "name": "Travellers",
+    "info": "",
+    "cards": [
+      {
+        "name": "Treasure Hunter",
+        "types": [
+          "Action",
+          "Traveller"
+        ],
+        "cost": "$3*",
+        "description": "+1 Action\n+$1\nGain a Silver per card the player to your right gained on their last turn.\n----------\nWhen you discard this from play, you may exchange it for a Warrior.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Warrior",
+        "types": [
+          "Action",
+          "Attack",
+          "Traveller"
+        ],
+        "cost": "$4*",
+        "description": "+2 Cards\nFor each Traveller you have in play (including this), each other player discards the top card of their deck and trashes it if it costs $3 or $4.\n----------\nWhen you discard this from play, you may exchange it for a Hero.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Hero",
+        "types": [
+          "Action",
+          "Traveller"
+        ],
+        "cost": "$5*",
+        "description": "+$2\nGain a Treasure.\n----------\nWhen you discard this from play, you may exchange it for a Champion.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Champion",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$6*",
+        "description": "+1 Action\nFor the rest of the game, when another player plays an Attack, it doesn't affect you, and when you play an Action, +1 Action.\n(This stays in play. This is not in the Supply.)"
+      },
+      {
+        "name": "Soldier",
+        "types": [
+          "Action",
+          "Attack",
+          "Traveller"
+        ],
+        "cost": "$3*",
+        "description": "+$2\n+$1 per other Attack you have in play. Each other player with 4 or more cards in hand discards a card.\n----------\nWhen you discard this from play, you may exchange it for a Fugitive.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Fugitive",
+        "types": [
+          "Action",
+          "Traveller"
+        ],
+        "cost": "$4*",
+        "description": "+2 Cards\n+1 Action\nDiscard a card.\n----------\nWhen you discard this from play, you may exchange it for a Disciple.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Disciple",
+        "types": [
+          "Action",
+          "Traveller"
+        ],
+        "cost": "$5*",
+        "description": "You may play an Action card from your hand twice. Gain a copy of it.\n----------\nWhen you discard this from play, you may exchange it for a Teacher.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Teacher",
+        "types": [
+          "Action",
+          "Reserve"
+        ],
+        "cost": "$6*",
+        "description": "Put this on your Tavern mat.\n----------\nAt the start of your turn, you may call this, to move your +1 Card, +1 Action, +1 Buy, or +$1 token to an Action Supply pile you have no tokens on. (When you play a card from that pile, you first get that bonus.)\n(This is not in the Supply.)"
+      }
+    ]
+  }
+}

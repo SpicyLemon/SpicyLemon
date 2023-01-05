@@ -1,0 +1,21 @@
+{
+  "Page": ["Treasure Hunter", "Warrior", "Hero", "Champion"],
+  "Peasant": ["Soldier", "Fugitive", "Disciple", "Teacher"],
+  "Tournament": ["Prizes"],
+  "Hermit": ["Madman"],
+  "Urchin": ["Mercenary"],
+  "Pixie": ["Goat"],
+  "Tracker": ["Pouch"],
+  "Fool": ["Lucky Coin", "Lost in the Woods"],
+  "Leprechaun": ["Wish"],
+  "Tormentor": ["Imp"],
+  "Vampire": ["Bat"],
+  "Secret Cave": ["Magic Lamp", "Wish"],
+  "Cemetery": ["Haunted Mirror", "Ghost"],
+  "The Swamp's Gift": ["Will-O'-Wisp"],
+  "Devil's Workshop": ["Imp"],
+  "Flag Bearer": ["Flag"],
+  "Border Guard": ["Horn", "Lantern"],
+  "Key": ["Treasurer"],
+  "Swashbuckler": ["Treasure Chest"]
+}

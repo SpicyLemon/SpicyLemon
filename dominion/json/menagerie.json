@@ -1,0 +1,607 @@
+{
+  "events": {
+    "name": "Events",
+    "info": "",
+    "cards": [
+      {
+        "name": "Delay",
+        "types": [
+          "Event"
+        ],
+        "cost": "$0",
+        "description": "You may set aside an Action card from your hand. At the start of your next turn, play it."
+      },
+      {
+        "name": "Desperation",
+        "types": [
+          "Event"
+        ],
+        "cost": "$0",
+        "description": "Once per turn: You may gain a Curse. If you do, +1 Buy and +$2."
+      },
+      {
+        "name": "Gamble",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nReveal the top card of your deck. If it's a Treasure or Action, you may play it. Otherwise, discard it."
+      },
+      {
+        "name": "Pursue",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nName a card. Reveal the top 4 cards from your deck. Put the matches back and discard the rest."
+      },
+      {
+        "name": "Ride",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "Gain a Horse."
+      },
+      {
+        "name": "Toil",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nYou may play an action card from your hand."
+      },
+      {
+        "name": "Enhance",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "You may trash a non-Victory card from your hand, to gain a card costing up to $2 more than it."
+      },
+      {
+        "name": "March",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Look through your discard pile.\nYou may play an Action card from it."
+      },
+      {
+        "name": "Transport",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Choose one; Exile an Action card from the Supply; or put an Action card you have in Exile onto your deck."
+      },
+      {
+        "name": "Banish",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Exile any number of cards with the same name from your hand."
+      },
+      {
+        "name": "Bargain",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Gain a non-Victory card costing up to $5.\nEach other player gains a Horse."
+      },
+      {
+        "name": "Invest",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Exile an Action card from the Supply.\nWhile it's in Exile, when another player gains or Invests in a copy of it, +2 Cards."
+      },
+      {
+        "name": "Seize the Day",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Once per game:\nTake an extra turn after this one."
+      },
+      {
+        "name": "Commerce",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "Gain a gold per differently named card you've gained this turn."
+      },
+      {
+        "name": "Demand",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "Gain a Horse and a card costing up to $4, both onto your deck."
+      },
+      {
+        "name": "Stampede",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "If you have 5 or fewer cards in play, gain 5 Horses onto your deck."
+      },
+      {
+        "name": "Reap",
+        "types": [
+          "Event"
+        ],
+        "cost": "$7",
+        "description": "Gain a Gold. Set it aside. If you do, at the start of your next turn, play it."
+      },
+      {
+        "name": "Enclave",
+        "types": [
+          "Event"
+        ],
+        "cost": "$8",
+        "description": "Gain a Gold. Exile a Duchy from the Supply."
+      },
+      {
+        "name": "Alliance",
+        "types": [
+          "Event"
+        ],
+        "cost": "$10",
+        "description": "Gain a Province, a Duchy, an Estate, a Gold, a Silver, and a Copper."
+      },
+      {
+        "name": "Populate",
+        "types": [
+          "Event"
+        ],
+        "cost": "$10",
+        "description": "Gain one card from each Action Supply pile."
+      }
+    ]
+  },
+  "horse": {
+    "name": "Horse",
+    "info": "",
+    "cards": [
+      {
+        "name": "Horse",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3*",
+        "description": "+2 Cards\n+1 Action\nReturn this to its pile.\n(This is not in the Supply.)"
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Black Cat",
+        "types": [
+          "Action",
+          "Attack",
+          "Reaction"
+        ],
+        "cost": "$2",
+        "description": "+2 Cards\nIf it isn't your turn, each other player gains a Curse.\n----------\nWhen another player gains a victory card, you may play this from your hand."
+      },
+      {
+        "name": "Sleigh",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$2",
+        "description": "Gain 2 Horses.\n----------\nWhen you gain a card, you may discard this, to put that card into your hand or onto your deck."
+      },
+      {
+        "name": "Supplies",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$2",
+        "description": "Worth $1\nWhen you play this, gain a Horse onto your deck."
+      },
+      {
+        "name": "Camel Train",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Exile a non-Victory card from the Supply.\n----------\nWhen you gain this, Exile a Gold from the Supply."
+      },
+      {
+        "name": "Goatherd",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\nYou may trash a card from your hand.\n+1 Card per card the player to your right trashed on their last turn."
+      },
+      {
+        "name": "Scrap",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Trash a card from your hand. Choose a different thing per $1 it costs: +1 Card; +1 Action; +1 Buy; +$1; gain a Silver; gain a Horse."
+      },
+      {
+        "name": "Sheepdog",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$3",
+        "description": "+2 Cards\n----------\nWhen you gain a card, you may play this from your hand."
+      },
+      {
+        "name": "Snowy Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+4 Actions\n+1 Buy\nIgnore any further +Actions you get this turn."
+      },
+      {
+        "name": "Stockpile",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$3",
+        "description": "$3\n+1 Buy\nWhen you play this, Exile it."
+      },
+      {
+        "name": "Bounty Hunter",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nExile a card from your hand. If you don't have a copy of it in Exile, +$3."
+      },
+      {
+        "name": "Cardinal",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "+$2\nEach other player reveals the top 2 cards of their deck, Exiles one costing from $3 to $6, and discards the rest."
+      },
+      {
+        "name": "Cavalry",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Gain 2 Horses.\n----------\nWhen you gain this, +2 Cards, +1 Buy, and if it's your Buy Phase return to your Action phase."
+      },
+      {
+        "name": "Groom",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Gain a card costing up to $4. If it's an...\nAction card, gain a Horse; Treasure card, gain a Silver; Victory card, +1 Card and +1 Action."
+      },
+      {
+        "name": "Hostelry",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+2 Actions\n----------\nWhen you gain this, you may discard any number of Treasures, revealed, to gain that many Horses."
+      },
+      {
+        "name": "Village Green",
+        "types": [
+          "Action",
+          "Duration",
+          "Reaction"
+        ],
+        "cost": "$4",
+        "description": "Either now or at the start of your next turn, +1 Card and +2 Actions.\n----------\nWhen you discard this other than during Clean-up, you may play it."
+      },
+      {
+        "name": "Barge",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Either now or at the start of your next turn, +3 Cards and +1 Buy."
+      },
+      {
+        "name": "Coven",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\n+$2\nEach other player Exiles a Curse from the Supply. If they can't, they discard their Exiled Curses."
+      },
+      {
+        "name": "Displace",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Exile a card from your hand. Gain a differently named card costing up to $2 more than it."
+      },
+      {
+        "name": "Falconer",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$5",
+        "description": "Gain a card to your hand costing less than this.\n----------\nWhen any player gains a card with 2 or more types (Action, Attack, etc.), you may play this from your hand."
+      },
+      {
+        "name": "Gatekeeper",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "At the start of your next turn, +$3. Until then, when another player gains an Action or Treasure card if they don't have an Exiled copy of it, they Exile it."
+      },
+      {
+        "name": "Hunting Lodge",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+2 Actions\nYou may discard your hand for +5 Cards."
+      },
+      {
+        "name": "Kiln",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+$2\nThe next time you play a card this turn, you may first gain a copy of it."
+      },
+      {
+        "name": "Livery",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+$3\nThis turn, when you gain a card costing $4 or more, gain a Horse."
+      },
+      {
+        "name": "Mastermind",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "At the start of your next turn, you may play an Action card from your hand three times."
+      },
+      {
+        "name": "Paddock",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+$2\nGain 2 Horses.\n+1 Action per empty Supply pile."
+      },
+      {
+        "name": "Sanctuary",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+1 Buy\nYou may Exile a card from your hand."
+      },
+      {
+        "name": "Fisherman",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+$1\n----------\nDuring your turns, if your discard pile is empty, this costs $3 less."
+      },
+      {
+        "name": "Destrier",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "+2 Cards\n+1 Action\n----------\nDuring your turns, this costs $1 less per card you've gained this turn."
+      },
+      {
+        "name": "Wayfarer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "+3 Cards\nYou may gain a Silver.\n----------\nThis has the same cost as the last other card gained this turn, if any."
+      },
+      {
+        "name": "Animal Fair",
+        "types": [
+          "Action"
+        ],
+        "cost": "$7",
+        "description": "+$4\n+1 Buy per empty supply pile.\n----------\nInstead of paying this card's cost, you may trash an Action card from your hand."
+      }
+    ]
+  },
+  "ways": {
+    "name": "Ways",
+    "info": "20 cards, 1 of each",
+    "cards": [
+      {
+        "name": "Way of the Butterfly",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "You may return this to its pile to gain a card costing exactly $1 more than it."
+      },
+      {
+        "name": "Way of the Camel",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "Exile a Gold from the Supply."
+      },
+      {
+        "name": "Way of the Chameleon",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "Follow this card's instructions;\neach time that would give you +Cards this turn, you get +$ instead, and vice-versa."
+      },
+      {
+        "name": "Way of the Frog",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+1 Action\nWhen you discard this from play this turn, put it onto your deck."
+      },
+      {
+        "name": "Way of the Goat",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "Trash a card from your hand."
+      },
+      {
+        "name": "Way of the Horse",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+2 Cards\n+1 Action\nReturn this to its pile."
+      },
+      {
+        "name": "Way of the Mole",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+1 Action\nDiscard your hand. +3 Cards."
+      },
+      {
+        "name": "Way of the Monkey",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+1 Buy\n+$1"
+      },
+      {
+        "name": "Way of the Mouse",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "Play the set-aside card, leaving it here.\n----------\nSetup: Set aside an unused Action costing $2 or $3."
+      },
+      {
+        "name": "Way of the Mule",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+1 Action\n+$1"
+      },
+      {
+        "name": "Way of the Otter",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+2 Cards"
+      },
+      {
+        "name": "Way of the Owl",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "Draw until you have 6 cards in hand."
+      },
+      {
+        "name": "Way of the Ox",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+2 Actions"
+      },
+      {
+        "name": "Way of the Pig",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+1 Card\n+1 Action"
+      },
+      {
+        "name": "Way of the Rat",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "You may discard a Treasure to gain a copy of this."
+      },
+      {
+        "name": "Way of the Seal",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+$1\nThis turn, when you gain a card, you may put it onto your deck."
+      },
+      {
+        "name": "Way of the Sheep",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+$2"
+      },
+      {
+        "name": "Way of the Squirrel",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "+2 Cards at the end of this turn."
+      },
+      {
+        "name": "Way of the Turtle",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "Set this aside. If you did, play it at the start of your next turn."
+      },
+      {
+        "name": "Way of the Worm",
+        "types": [
+          "Way"
+        ],
+        "cost": "",
+        "description": "Exile an Estate from the Supply."
+      }
+    ]
+  }
+}

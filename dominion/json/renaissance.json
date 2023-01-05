@@ -1,0 +1,425 @@
+{
+  "artifacts": {
+    "name": "Artifacts",
+    "info": "",
+    "cards": [
+      {
+        "name": "Flag",
+        "types": [
+          "Artifact"
+        ],
+        "cost": "",
+        "description": "When drawing your hand, +1 Card."
+      },
+      {
+        "name": "Horn",
+        "types": [
+          "Artifact"
+        ],
+        "cost": "",
+        "description": "Once per turn, when you discard a Border Guard from play, you may put it onto your deck."
+      },
+      {
+        "name": "Key",
+        "types": [
+          "Artifact"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, +$1."
+      },
+      {
+        "name": "Lantern",
+        "types": [
+          "Artifact"
+        ],
+        "cost": "",
+        "description": "Your Border Guards reveal 3 cards and discard 2. (It takes all 3 being Actions to take the Horn.)"
+      },
+      {
+        "name": "Treasure Chest",
+        "types": [
+          "Artifact"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, gain a Gold."
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Border Guard",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "Reveal the top 2 cards of your deck. Put one into your hand and discard the other. If both were Actions, take the Lantern or Horn."
+      },
+      {
+        "name": "Ducat",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$2",
+        "description": "+1 Coffers\n+1 Buy\n----------\nWhen you gain this, you may trash a Copper from your hand."
+      },
+      {
+        "name": "Lackeys",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+2 Cards\n----------\nWhen you gain this, +2 Villagers."
+      },
+      {
+        "name": "Acting Troupe",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+4 Villagers\nTrash this."
+      },
+      {
+        "name": "Cargo Ship",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "+$2\nOnce this turn, when you gain a card, you may set it aside face up (on this). At the start of your next turn, put it into your hand."
+      },
+      {
+        "name": "Experiment",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+2 Cards\n+1 Action\nReturn this to the supply.\n----------\nWhen you gain this, gain another Experiment (that doesn't come with another)."
+      },
+      {
+        "name": "Improve",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+$2\n----------\nAt the start of Clean-up, you may trash an Action card you would discard from play this turn, to gain a card costing exactly $1 more than it."
+      },
+      {
+        "name": "Flag Bearer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+$2\n----------\nWhen you gain or trash this, take the Flag."
+      },
+      {
+        "name": "Hideout",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+2 Actions\nTrash a card from your hand. If it's a Victory card, gain a Curse."
+      },
+      {
+        "name": "Inventor",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Gain a card costing up to $4, then cards cost $1 less this turn (but not less than $0)."
+      },
+      {
+        "name": "Mountain Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+2 Actions\nLook through your discard pile and put a card from it into your hand; if you can't, +1 Card."
+      },
+      {
+        "name": "Patron",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$4",
+        "description": "+1 Villager\n+$2\n----------\nWhen something causes you to reveal this (using the word \"reveal\"), +1 Coffers."
+      },
+      {
+        "name": "Priest",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+$2\nTrash a card from your hand. For the rest of this turn, when you trash a card, +$2."
+      },
+      {
+        "name": "Research",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nTrash a card from your hand. Per $1 it costs, set aside a card from your deck face down (on this). At the start of your next turn, put those cards into your hand."
+      },
+      {
+        "name": "Silk Merchant",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+2 Cards\n+1 Buy\n----------\nWhen you gain or trash this, +1 Coffers and +1 Villager."
+      },
+      {
+        "name": "Old Witch",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\nEach other player gains a Curse and may trash a Curse from their hand."
+      },
+      {
+        "name": "Recruiter",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\nTrash a card from your hand. +1 Villager per $1 it costs."
+      },
+      {
+        "name": "Scepter",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "When you play this, chose one: +$2; or replay an Action card you played this turn that's still in play."
+      },
+      {
+        "name": "Scholar",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Discard your hand.\n+7 Cards"
+      },
+      {
+        "name": "Sculptor",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Gain a card to your hand costing up to $4. If it's a Treasure, +1 Villager."
+      },
+      {
+        "name": "Seer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nReveal the top 3 cards of your deck. Put the ones costing from $2 to $4 into your hand. Put the rest back in any order."
+      },
+      {
+        "name": "Spices",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "$2\n+1 Buy\n----------\nWhen you gain this, +2 Coffers."
+      },
+      {
+        "name": "Swashbuckler",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\nIf your discard pile has any cards in it: +1 Coffers, then if you have at least 4 Coffers tokens, take the Treasure Chest."
+      },
+      {
+        "name": "Treasurer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+$3\nChoose one: Trash a Treasure from your hand; or gain a Treasure from the trash to your hand; or take the Key."
+      },
+      {
+        "name": "Villain",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+2 Coffers\nEach other player with 5 or more cards in hand discards one costing $2 or more (or reveals they can't)."
+      }
+    ]
+  },
+  "projects": {
+    "name": "Projects",
+    "info": "",
+    "cards": [
+      {
+        "name": "Cathedral",
+        "types": [
+          "Project"
+        ],
+        "cost": "$3",
+        "description": "At the start of your turn, trash a card from your hand."
+      },
+      {
+        "name": "City Gate",
+        "types": [
+          "Project"
+        ],
+        "cost": "$3",
+        "description": "At the start of your turn, +1 Card, then put a card from your hand onto your deck."
+      },
+      {
+        "name": "Pageant",
+        "types": [
+          "Project"
+        ],
+        "cost": "$3",
+        "description": "At the end of your Buy phase, you may pay $1 for +1 Coffers."
+      },
+      {
+        "name": "Sewers",
+        "types": [
+          "Project"
+        ],
+        "cost": "$3",
+        "description": "When you trash a card other than with this, you may trash a card from your hand."
+      },
+      {
+        "name": "Start Chart",
+        "types": [
+          "Project"
+        ],
+        "cost": "$3",
+        "description": "When you shuffle, you may pick one of the cards to go on top."
+      },
+      {
+        "name": "Exploration",
+        "types": [
+          "Project"
+        ],
+        "cost": "$4",
+        "description": "At the end of your Buy phase, if you didn't buy any cards, +1 Coffers and +1 Villager."
+      },
+      {
+        "name": "Fair",
+        "types": [
+          "Project"
+        ],
+        "cost": "$4",
+        "description": "At the start of your turn, +1 Buy."
+      },
+      {
+        "name": "Silos",
+        "types": [
+          "Project"
+        ],
+        "cost": "$4",
+        "description": "At the start of your turn, discard any number of Coppers, revealed, and draw that many cards."
+      },
+      {
+        "name": "Sinister Plot",
+        "types": [
+          "Project"
+        ],
+        "cost": "$4",
+        "description": "At the start of your turn, add a token here, or remove your tokens here for +1 Card each."
+      },
+      {
+        "name": "Academy",
+        "types": [
+          "Project"
+        ],
+        "cost": "$5",
+        "description": "When you gain an Action card, +1 Villager."
+      },
+      {
+        "name": "Capitalism",
+        "types": [
+          "Project"
+        ],
+        "cost": "$5",
+        "description": "During your turns, Actions with +$ amounts in their text are also Treasures."
+      },
+      {
+        "name": "Fleet",
+        "types": [
+          "Project"
+        ],
+        "cost": "$5",
+        "description": "After the game ends, there's an extra round of turns just for players with this."
+      },
+      {
+        "name": "Guildhall",
+        "types": [
+          "Project"
+        ],
+        "cost": "$5",
+        "description": "When you gain a Treasure, +1 Coffers."
+      },
+      {
+        "name": "Piazza",
+        "types": [
+          "Project"
+        ],
+        "cost": "$5",
+        "description": "At the start of your turn, reveal the top card of your deck. If it's an Action, play it."
+      },
+      {
+        "name": "Road Network",
+        "types": [
+          "Project"
+        ],
+        "cost": "$5",
+        "description": "When another player gains a Victory card, +1 Card."
+      },
+      {
+        "name": "Barracks",
+        "types": [
+          "Project"
+        ],
+        "cost": "$6",
+        "description": "At the start of your turn, +1 Action."
+      },
+      {
+        "name": "Crop Rotation",
+        "types": [
+          "Project"
+        ],
+        "cost": "$6",
+        "description": "At the start of your turn, you may discard a Victory card for +2 Cards."
+      },
+      {
+        "name": "Innovation",
+        "types": [
+          "Project"
+        ],
+        "cost": "$6",
+        "description": "The first time you gain an Action card in each of your turns, you may set it aside. If you do, play it."
+      },
+      {
+        "name": "Canal",
+        "types": [
+          "Project"
+        ],
+        "cost": "$7",
+        "description": "During your turns, cards cost $1 less, but not less than $0."
+      },
+      {
+        "name": "Citadel",
+        "types": [
+          "Project"
+        ],
+        "cost": "$8",
+        "description": "The first time you play an Action card during each of your turns, play it again afterwards."
+      }
+    ]
+  }
+}

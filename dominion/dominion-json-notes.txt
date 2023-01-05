@@ -1,0 +1,275 @@
+all.json:
+    object where the keys are the expansion names and values are the <expansion card sets> in that expansion.
+<expansion card sets>
+    object where keys are the card type and values are <card set>s.
+    Each of these is also in their own file.
+<card set>
+    object with keys "name", "info", "cards".
+    "name", and "info", are strings.
+    "cards" is an array of <card>s.
+<card>
+    object with keys "name", "types", "cost", "description", all strings.
+
+<expansion card sets> notes:
+    All have a "kingdom" entry.
+    Base, Intrigue, Seaside, Prosperity, Hinterlands all have: "in-1st-not-2nd", "in-2nd-not-1st"
+    Multiple have "events".
+    Multiple have "others", but that doesn't really matter.
+
+Special handling:
+    "Young Witch" -> pick an 11th card to be the "Bane".
+    prosperity -> "Platinum" and "Colony" -> always included/excluded together.
+        Have a checkmark for it to randomly make this decision.
+
+extra_cards.json:
+{
+  "Page": ["Treasure Hunter", "Warrior", "Hero", "Champion"],
+  "Peasant": ["Soldier", "Fugitive", "Disciple", "Teacher"],
+  "Tournament": ["Prizes"],
+  "Hermit": ["Madman"],
+  "Urchin": ["Mercenary"],
+  "Pixie": ["Goat"],
+  "Tracker": ["Pouch"],
+  "Fool": ["Lucky Coin", "Lost in the Woods"],
+  "Leprechaun": ["Wish"],
+  "Tormentor": ["Imp"],
+  "Vampire": ["Bat"],
+  "Secret Cave": ["Magic Lamp", "Wish"],
+  "Cemetery": ["Haunted Mirror", "Ghost"],
+  "The Swamp's Gift": ["Will-O'-Wisp"],
+  "Devil's Workshop": ["Imp"],
+  "Flag Bearer": ["Flag"],
+  "Border Guard": ["Horn", "Lantern"],
+  "Key": ["Treasurer"],
+  "Swashbuckler": ["Treasure Chest"]
+}
+
+include_if.json:
+{
+  "Ruins": ["Cultist", "Death Cart", "Marauder"],
+  "Spoils": ["Bandit Camp", "Marauder", "Pillage"],
+  "Horse": ["Sleigh", "Supplies", "Scrap", "Cavalry", "Groom", "Hostelry", "Livery", "Paddock", "Ride", "Bargain", "Demand", "Stampede"],
+  "Boons": ["Bard", "Blessed Village", "Druid", "Fool", "Idol", "Pixie", "Sacred Grove", "Tracker"],
+  "Hexes": ["Cursed Village", "Leprechaun", "Skulk", "Tormentor", "Vampire", "Werewolf"],
+  "Deluded/Envious": ["Cursed Village", "Leprechaun", "Skulk", "Tormentor", "Vampire", "Werewolf"],
+  "Miserable/Twice Miserable": ["Cursed Village", "Leprechaun", "Skulk", "Tormentor", "Vampire", "Werewolf"],
+  "Loots": ["Jewelled Egg", "Search", "Cutthroat", "Pickaxe", "Wealthy Village", "Sack of Loot", "Peril", "Foray", "Looting", "Invasion", "Propser", "Cursed"],
+  "Potion": ["Transmute", "Vineyard", "Apothecary", "Scrying Pool", "University", "Alchemist", "Familiar", "Philosopher's Stone", "Golem", "Possession"],
+  "Allies": ["Bauble", "Sycophant", "Importer", "Underling", "Wizards", "Broker", "Contract", "Emissary", "Guildmaster", "Wizards"],
+  "Curse": ["Charlatan", "Coven", "Familiar", "Old Witch", "Sea Witch", "Soothsayer", "Witch", "Young Witch", "Circle of Witches", "Barbarian", "Black Cat", "Blockade", "Catapult", "Cauldron", "Followers", "Giant", "Idol", "Jester", "Replace", "Sorcerer", "Sorceress", "Swamp Hag", "Swindler", "Torturer", "Witch's Hut", "Ill-Gotten Gains", "Mountebank", "Sea Hag"]
+}
+
+// don't note these:
+    Augurs
+    Clashes
+    Forts
+    Odysseys
+    Townsfolk
+    Wizards
+    Knights
+    Castles
+    Include "Encampment" and "Plunder" if "Encampment/Plunder" in supply.
+    Include "Patrician" and "Emporium" if "Patrician/Emporium" in supply.
+    Include "Settlers" and "Bustling Village" if "Settlers/Bustling Village" in supply.
+    Include "Catapult" and "Rocks" if "Catapult/Rocks" in supply.
+    Include "Gladiator" and "Fortune" if "Gladiator/Fortune" in supply.
+    Include "Sauna" and "Avanto" if "Sauna/Avanto" in supply
+
+How to use cards:
+    adventures
+        events:
+            Not part of supply.
+            In same category as events, landmarks, projects, traits, and ways.
+        travelers:
+            If "Page" in supply, include "Treasure Hunter", "Warrior", "Hero", "Champion".
+            If "Peasant" in supply, include "Soldier", "Fugitive", "Disciple", "Teacher"
+    alchemy
+        Include "Potion" cards if one of the supply cards costs a potion: ◉.
+    allies
+        allies
+            In games with a Liaison, give each player an Ally.
+            There's only one of each ally, so when they're needed, they can just be shuffled and delt.
+            Liaisons: Bauble, Sycophant, Importer, Underling, Wizards, Broker, Contract, Emissary, Guildmaster, Student.
+                Student is a Wizard.
+        augurs
+            Include if "Augurs" in supply.
+        clashes
+            Include if "Clashes" in supply.
+        forts
+            Include if "Forts" in supply.
+        odysseys
+            Include if "Odysseys" in supply.
+        townsfolk
+            Include if "Townsfolk" in supply.
+        wizards
+            Include if "Wizards" in supply.
+    base
+        Have options to switch between:
+            2nd edition (default) (this is kingdom and in-2nd-not-1st)
+            1st edition (this is kingdom and in-1st-not-2nd)
+            both (this is all three sets)
+    cornucopia
+        prizes
+            Only include if Tournament is in play.
+        If "Young Witch" is the supply, pick an extra card for the supply to be a "Bane".
+    dark-ages
+        knights
+            All of these make up one extra possible supply pile.
+            Include if "Knights" in supply.
+        ruins
+            These all get shuffled together.
+            Include if supply has "Death Cart", "Marauder", or "Cultist"
+        shelters
+            These are optional cards to replace starting estate cards.
+            Don't worry about randomizing them.
+        other
+            Include "Madman" if "Hermit" in supply.
+            Include "Mercenary" if "Urchin" in supply.
+            Include "Spoils" if "Marauder", "Bandit Camp", or "Pillage" in supply.
+    empires
+        castles
+            Include if "Castles" in supply.
+        events
+            Same as adventures events.
+        landmarks
+            Not part of supply.
+            In same category as events, landmarks, projects, traits, and ways.
+        other
+            Include "Encampment" and "Plunder" if "Encampment/Plunder" in supply.
+            Include "Patrician" and "Emporium" if "Patrician/Emporium" in supply.
+            Include "Settlers" and "Bustling Village" if "Settlers/Bustling Village" in supply.
+            Include "Catapult" and "Rocks" if "Catapult/Rocks" in supply.
+            Include "Gladiator" and "Fortune" if "Gladiator/Fortune" in supply.
+    guilds
+        Nothing special here.
+    hinterlands
+        Have options to switch between:
+            2nd edition (default) (this is kingdom and in-2nd-not-1st)
+            1st edition (this is kingdom and in-1st-not-2nd)
+            both (this is all three sets)
+    intrigue
+        Have options to switch between:
+            2nd edition (default) (this is kingdom and in-2nd-not-1st)
+            1st edition (this is kingdom and in-1st-not-2nd)
+            both (this is all three sets)
+    menagerie
+        events
+            Same as adventures events.
+        horse
+            Include if "Sleigh", "Supplies", "Scrap", "Cavalry", "Groom", "Hostelry", "Livery", or  "Paddock" in supply.
+            Include if "Ride", "Bargain", "Demand", or "Stampede" event is in play.
+        ways
+            Not part of supply.
+            In same category as events, landmarks, projects, traits, and ways.
+    nocturne
+        boons
+            Include if "Druid", "Pixie", "Tracker", "Fool", "Bard", "Blessed Village", "Idol", or "Sacred Grove" in supply.
+        hexes
+            Include if "Leprechaun", "Skulk", "Cursed Village", "Tormentor", "Vampire", or "Werewolf" in supply.
+        heirlooms
+            These replace a starting copper.
+            Include "Goat" if "Pixie" in supply.
+            Include "Pouch" if "Tracxker" in supply.
+            Include "Lucky Coin" if "Fool" in supply.
+            Include "Magic Lamp" if "Secret Cave" in supply.
+            Include "Haunted Mirror" if "Cemetery" in supply.
+        states
+            Similar to Events, Landmarks, Projects, and Ways, but aren't part of random selection.
+            Include these if Hexes are needed.
+        other
+            Include "Wish" if "Leprechaun", or "Magic Lamp" in supply.
+            Include "Will-O'-Wisp" if "The Swamp's Gift" in supply.
+            Include "Bat" if "Vampire" in supply.
+            Include "Imp" if "Devil's Workshop", or "Tormentor" in supply.
+            Include "Ghost" if "Haunted Mirror" in supply.
+    plunder
+        events
+            Same as adventures events.
+        loots
+            All shuffled together.
+            Include if "Jewelled Egg", "Search", "Cutthroat", "Pickaxe", "Wealthy Village", or "Sack of Loot" in supply.
+            Include if "Peril", "Foray", "Looting", "Invasion", or "Propser" event is in play.
+            Include if "Cursed" trait is in play.
+        traits
+            Not part of supply.
+            In same category as events, landmarks, projects, traits, and ways.
+    promotional
+        Each of these should be selectable options on their own.
+        other
+            Include "Sauna" and "Avanto" if "Sauna/Avanto" in supply
+    prosperity
+        other
+            Randomly include neither or both "Platinum" and "Colony".
+            Not part of the 10.
+        Have options to switch between:
+            2nd edition (default) (this is kingdom and in-2nd-not-1st)
+            1st edition (this is kingdom and in-1st-not-2nd)
+            both (this is all three sets)
+    renaissance
+        projects
+            Not part of supply.
+            In same category as events, landmarks, projects, traits, and ways.
+        artifacts
+            Similar to Events, Landmarks, Projects, and Ways, but aren't part of random selection.
+            Include "Flag" if "Flag Bearer" in supply.
+            Include "Horn" if "Border Guard" in supply.
+            Include "Key" if "Treasurer" in supply.
+            Include "Lantern" if "Border Guard" in supply.
+            Include "Treasure Chest" if "Swashbuckler" in supply.
+    seaside
+        Have options to switch between:
+            2nd edition (default) (this is kingdom and in-2nd-not-1st)
+            1st edition (this is kingdom and in-1st-not-2nd)
+            both (this is all three sets)
+
+Events, Landmarks, Projects, Traits, and Ways can be shuffled into the randomizer deck (despite having a different back).
+    It's recommended to use at most two of these total.
+    Have a cost: Events, Projects
+    Don't have a cost: Landmarks, Traits, Ways
+expansion order:
+    Dominion (base)
+    Intrigue
+    Seaside
+    Alchemy
+    Prosperity
+    Cornucopia
+    Hinterlands
+    Dark Ages
+    Guilds
+    Adventures
+    Empires
+    Nocturne
+    Renaissance
+    Menagerie
+    Allies
+    Plunder
+    Promos
+
+Get all names:
+jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | .name' json/all.json | sort
+
+Get all expansion card types:
+jq -r '. | to_entries | .[] | .value | to_entries | .[] | .key' json/all.json | sort -u
+
+Get all card types:
+jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | .types[]' json/all.json | sort -u
+jq -r '. | to_entries | .[] | .value.kingdom.cards[] | .types[]' json/all.json | sort -u
+
+Get all card costs (that we care about):
+jq -r '. | to_entries | .[] | .value.kingdom.cards[] | .cost' json/all.json | sort -u
+    Speacial notes:
+        ◉ is a Potion in the alchemy expansion. Treat $0◉ as $2, the rest as if ◉ weren't there.
+        $2+ $3+ $4+ indicates possible overpayments, treat as $2, $3, or $4.
+        $8*: This is the Peddler, it costs $2 less for each action played. Treat it as $6 then.
+        Treat Debt the same as $, i.e. 4Debt = $4, 8Debt = $8.
+Get all card costs:
+jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | .cost' json/all.json | sort -u
+Get all kingdom card cost formats:
+jq -r '. | to_entries | .[] | .value.kingdom.cards[] | .cost' json/all.json | sort -u | tr '[:digit:]' x | sort -u
+
+Get all the description lines:
+jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | .description' json/all.json | sort -u
+
+Get all card names involved in extra_cards.json or include_if.json:
+jq -r 'to_entries|.[]| .key, .value[]' source/include_if.json source/extra_cards.json
+

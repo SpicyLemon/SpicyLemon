@@ -1,0 +1,168 @@
+{
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Hamlet",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nYou may discard a card for +1 Action.\nYou may discard a card for +1 Buy."
+      },
+      {
+        "name": "Fortune Teller",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$3",
+        "description": "+$2\nEach other player reveals cards from the top of their deck until they reveal a Victory card or Curse. They put it on top and discard the rest."
+      },
+      {
+        "name": "Menagerie",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\nReveal your hand. If the revealed cards all have different names, +3 Cards. Otherwise, +1 Card."
+      },
+      {
+        "name": "Farming Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+2 Actions\nReveal cards from the top of your deck until you reveal an Action or Treasure card. Put that card into your hand and discard the rest."
+      },
+      {
+        "name": "Horse Traders",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$4",
+        "description": "+1 Buy\n+$3\nDiscard 2 cards.\n----------\nWhen another player plays an Attack card, you may first set this aside from your hand. If you do, then at the start of your next turn, +1 Card and return this to your hand."
+      },
+      {
+        "name": "Remake",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Do this twice: Trash a card from your hand, then gain a card costing exactly $1 more than it."
+      },
+      {
+        "name": "Tournament",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nEach player may reveal a Province from their hand. If you do, discard it and gain any Prize (from the Prize pile) or a Duchy, onto your deck. If no-one else does, +1 Card and +$1."
+      },
+      {
+        "name": "Young Witch",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "+2 Cards\nDiscard 2 cards. Each other player may reveal a Bane card from their hand; if they don't, they gain a Curse.\n----------\nSetup: Add an extra Kingdom card pile costing $2 or $3 to the Supply. Cards from that pile are Bane cards."
+      },
+      {
+        "name": "Harvest",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Reveal the top 4 cards of your deck, then discard them. +$1 per differently named card revealed."
+      },
+      {
+        "name": "Horn of Plenty",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "When you play this, gain a card costing up to $1 per differently named card you have in play (counting this). If it's a Victory card, trash this."
+      },
+      {
+        "name": "Hunting Party",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nReveal your hand. Reveal cards from your deck until you reveal one that isn't a copy of one in your hand. Put it into your hand and discard the rest."
+      },
+      {
+        "name": "Jester",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+$2\nEach other player discards the top card of their deck. If it's a Victory card they gain a Curse; otherwise they gain a copy of the discarded card or you do, your choice."
+      },
+      {
+        "name": "Fairgrounds",
+        "types": [
+          "Victory"
+        ],
+        "cost": "$6",
+        "description": "Worth 2VP for every 5 differently named cards in your deck (round down)."
+      }
+    ]
+  },
+  "prizes": {
+    "name": "Prizes",
+    "info": "",
+    "cards": [
+      {
+        "name": "Bag of Gold",
+        "types": [
+          "Action",
+          "Prize"
+        ],
+        "cost": "$0*",
+        "description": "+1 Action\nGain a Gold onto your deck.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Diadem",
+        "types": [
+          "Treasure",
+          "Prize"
+        ],
+        "cost": "$0*",
+        "description": "Worth $2\nWhen you play this, +$1 per unused Action you have (Action, not Action card).\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Followers",
+        "types": [
+          "Action",
+          "Attack",
+          "Prize"
+        ],
+        "cost": "$0*",
+        "description": "+2 Cards\nGain an Estate. Each other player gains a Curse and discards down to 3 cards in hand.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Princess",
+        "types": [
+          "Action",
+          "Prize"
+        ],
+        "cost": "$0*",
+        "description": "+1 Buy\nWhile this is in play, cards cost $2 less, but not less than $0.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Trusty Steed",
+        "types": [
+          "Action",
+          "Prize"
+        ],
+        "cost": "$0*",
+        "description": "Choose two: +2 Cards; +2 Actions; +$2; gain 4 Silvers and put your deck into your discard pile.\n(This is not in the Supply.)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,666 @@
+{
+  "castles": {
+    "name": "Castles",
+    "info": "",
+    "cards": [
+      {
+        "name": "Humble Castle",
+        "types": [
+          "Treasure",
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$3",
+        "description": "Worth $1\n----------\nWorth 1VP per Castle you have."
+      },
+      {
+        "name": "Crumbling Castle",
+        "types": [
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$4",
+        "description": "1VP\n----------\nWhen you gain or trash this, +1VP and gain a Silver."
+      },
+      {
+        "name": "Small Castle",
+        "types": [
+          "Action",
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$5",
+        "description": "Trash this or a Castle from your hand. If you do, gain a Castle.\n----------\n2VP"
+      },
+      {
+        "name": "Haunted Castle",
+        "types": [
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$6",
+        "description": "2VP\n----------\nWhen you gain this during your turn, gain a Gold, and each other player with 5 or more cards in hand puts 2 cards from their hand onto their deck."
+      },
+      {
+        "name": "Opulent Castle",
+        "types": [
+          "Action",
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$7",
+        "description": "Discard any number of Victory cards. +$2 per card discarded.\n----------\n3VP"
+      },
+      {
+        "name": "Sprawling Castle",
+        "types": [
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$8",
+        "description": "4VP\n----------\nWhen you gain this, gain a Duchy or 3 Estates."
+      },
+      {
+        "name": "Grand Castle",
+        "types": [
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$9",
+        "description": "5VP\n----------\nWhen you gain this, reveal your hand. +1VP per Victory card in your hand and/or in play."
+      },
+      {
+        "name": "King's Castle",
+        "types": [
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$10",
+        "description": "Worth 2VP per Castle you have."
+      }
+    ]
+  },
+  "events": {
+    "name": "Events",
+    "info": "",
+    "cards": [
+      {
+        "name": "Advance",
+        "types": [
+          "Event"
+        ],
+        "cost": "$0",
+        "description": "You may trash an Action card from your hand. If you do, gain an Action card costing up to $6."
+      },
+      {
+        "name": "Triumph",
+        "types": [
+          "Event"
+        ],
+        "cost": "5Debt",
+        "description": "Gain an Estate. If you did, +1VP per card you've gained this turn."
+      },
+      {
+        "name": "Annex",
+        "types": [
+          "Event"
+        ],
+        "cost": "8Debt",
+        "description": "Look through your discard pile. Choose up to 5 cards from it and shuffle the rest into your deck. Gain a Duchy."
+      },
+      {
+        "name": "Donate",
+        "types": [
+          "Event"
+        ],
+        "cost": "8Debt",
+        "description": "After this turn, put all cards from your deck and discard pile into your hand, trash any number, shuffle your hand into your deck, then draw 5 cards."
+      },
+      {
+        "name": "Delve",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nGain a Silver."
+      },
+      {
+        "name": "Tax",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "Add 2Debt to a Supply pile.\nSetup: Add 1Debt to each Supply pile. When a player buys a card, they take the Debt from its pile."
+      },
+      {
+        "name": "Banquet",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Gain two Coppers and a non-Victory card costing up to $5."
+      },
+      {
+        "name": "Ritual",
+        "types": [
+          "Event"
+        ],
+        "cost": "$9",
+        "description": "Gain a Curse. If you do, trash a card from your hand. +1VP per $1 it cost."
+      },
+      {
+        "name": "Salt the Earth",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "+1VP\nTrash a Victory card from the Supply."
+      },
+      {
+        "name": "Wedding",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4+3Debt",
+        "description": "+1VP\nGain a Gold."
+      },
+      {
+        "name": "Windfall",
+        "types": [
+          "Event"
+        ],
+        "cost": "$5",
+        "description": "If your deck and discard pile are empty, gain 3 Golds."
+      },
+      {
+        "name": "Conquest",
+        "types": [
+          "Event"
+        ],
+        "cost": "$6",
+        "description": "Gain 2 Silvers. +1VP per Silver you've gained this turn."
+      },
+      {
+        "name": "Dominate",
+        "types": [
+          "Event"
+        ],
+        "cost": "$14",
+        "description": "Gain a Province. If you do, +9VP."
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Engineer",
+        "types": [
+          "Action"
+        ],
+        "cost": "4Debt",
+        "description": "Gain a card costing up to $4. You may trash this. If you do, gain a card costing up to $4."
+      },
+      {
+        "name": "City Quarter",
+        "types": [
+          "Action"
+        ],
+        "cost": "8Debt",
+        "description": "+2 Actions\nReveal your hand. +1 Card per Action card revealed."
+      },
+      {
+        "name": "Overlord",
+        "types": [
+          "Action",
+          "Command"
+        ],
+        "cost": "8Debt",
+        "description": "Play a non-Command Action card from the Supply costing up to $5, leaving it there."
+      },
+      {
+        "name": "Royal Blacksmith",
+        "types": [
+          "Action"
+        ],
+        "cost": "8Debt",
+        "description": "+5 Cards\nReveal your hand; discard the Coppers."
+      },
+      {
+        "name": "Encampment/Plunder",
+        "types": [
+          "Action",
+          "Treasure"
+        ],
+        "cost": "$2",
+        "description": "Include the Encampment/Plunder pile."
+      },
+      {
+        "name": "Patrician/Emporium",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "Include the Patrician/Emporium pile."
+      },
+      {
+        "name": "Settlers/Bustling Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "Include the Settlers/Bustling Village pile."
+      },
+      {
+        "name": "Castles",
+        "types": [
+          "Victory",
+          "Castle"
+        ],
+        "cost": "$3",
+        "description": "Sort the castle pile by cost, putting the more expensive Castles on the bottom. For a 2-player game, us only one of each Castle. Only the top card of the pile can be gained or bought."
+      },
+      {
+        "name": "Catapult/Rocks",
+        "types": [
+          "Action",
+          "Attack",
+          "Treasure"
+        ],
+        "cost": "$3",
+        "description": "Include the Catapult/Rocks pile."
+      },
+      {
+        "name": "Chariot Race",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\nReveal the top card of your deck and put it into your hand. The player to your left reveals the top card of their deck. If your card costs more, +$1 and +1VP."
+      },
+      {
+        "name": "Enchantress",
+        "types": [
+          "Action",
+          "Attack",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "Until your next turn, the first time each other player plays an Action card on their turn, they get +1 Card and +1 Action instead of following its instructions.\nAt the start of your next turn, +2 Cards."
+      },
+      {
+        "name": "Farmers' Market",
+        "types": [
+          "Action",
+          "Gathering"
+        ],
+        "cost": "$3",
+        "description": "+1 Buy\nIf there are 4VP or more on the Farmers' Market Supply pile, take them and trash this. Otherwise, add 1VP to the pile and then +$1 per 1VP on the pile."
+      },
+      {
+        "name": "Gladiator/Fortune",
+        "types": [
+          "Action",
+          "Treasure"
+        ],
+        "cost": "$3",
+        "description": "Include the Gladiator/Fortune pile."
+      },
+      {
+        "name": "Sacrifice",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand. If it's an...\nAction card, +2 Cards, +2 Actions\nTreasure card, +$2\nVictory card, +2VP"
+      },
+      {
+        "name": "Temple",
+        "types": [
+          "Action",
+          "Gathering"
+        ],
+        "cost": "$4",
+        "description": "+1VP\nTrash from 1 to 3 differently named cards from your hand. Add 1VP to the Temple Supply pile.\n----------\nWhen you gain this, take the VP from the Temple Supply pile."
+      },
+      {
+        "name": "Villa",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+2 Actions\n+1 Buy\n+$1\n----------\nWhen you gain this, put it into your hand, +1 Action, and if it's your Buy phase return to your Action phase."
+      },
+      {
+        "name": "Archive",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\nSet aside the top 3 cards of your deck face down (you may look at them). Now and at the start of your next two turns, put one into your hand."
+      },
+      {
+        "name": "Capital",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $6\n+1 Buy\n----------\nWhen you discard this from play, take 6Debt, and then you may pay off Debt."
+      },
+      {
+        "name": "Charm",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Choose one: +1 Buy and +$2; or the next time you gain a card this turn, you may also gain a differently named card with the same cost."
+      },
+      {
+        "name": "Crown",
+        "types": [
+          "Action",
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "If it's your Action phase, you may play an Action from your hand twice.\nIf it's your Buy phase, you may play a Treasure from your hand twice."
+      },
+      {
+        "name": "Forum",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\n+1 Action\nDiscard 2 cards.\n----------\nWhen you buy this, +1 Buy."
+      },
+      {
+        "name": "Groundskeeper",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nThis turn, when you gain a Victory card, +1VP."
+      },
+      {
+        "name": "Legionary",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+$3\nYou may reveal a Gold from your hand. If you do, each other player discards down to 2 cards in hand, then draws a card."
+      },
+      {
+        "name": "Wild Hunt",
+        "types": [
+          "Action",
+          "Gathering"
+        ],
+        "cost": "$5",
+        "description": "Choose one: +3 Cards and add 1VP to the Wild Hunt Supply pile; or gain an Estate, and if you do, take the VP from the pile."
+      }
+    ]
+  },
+  "landmarks": {
+    "name": "Landmarks",
+    "info": "",
+    "cards": [
+      {
+        "name": "Aqueduct",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you gain a Treasure, move 1VP from its pile to this.\nWhen you gain a Victory card, take the VP from this.\nSetup: Put 8VP on the Silver and Gold piles."
+      },
+      {
+        "name": "Arena",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, you may discard an Action card. If you do, take 2VP from here.\nSetup: Put 6VP here per player."
+      },
+      {
+        "name": "Bandit Fort",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, -2VP for each Silver and each Gold you have."
+      },
+      {
+        "name": "Basilica",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you buy a card, if you have $2 or more left, take 2VP from here.\nSetup: Put 6VP here per player."
+      },
+      {
+        "name": "Baths",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you end your turn without having gained a card, take 2VP from here.\nSetup: Put 6VP here per player."
+      },
+      {
+        "name": "Battlefield",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you gain a Victory card, take 2VP from here.\nSetup: Put 6VP here per player."
+      },
+      {
+        "name": "Colonnade",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you buy an Action card, if you have a copy of it in play, take 2VP from here.\nSetup: Put 6VP here per player."
+      },
+      {
+        "name": "Defiled Shrine",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you gain an Action, move 1VP from its pile to this.\nWhen you buy a Curse, take the VP from this.\nSetup: Put 2VP on each non-Gathering Action Supply pile."
+      },
+      {
+        "name": "Fountain",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 15VP if you have at least 10 Coppers."
+      },
+      {
+        "name": "Keep",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 5VP per differently named Treasure you have, that you have more copies of than each other player, or tied for most."
+      },
+      {
+        "name": "Labyrinth",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you gain a 2nd card in one of your turns, take 2VP from here.\nSetup: Put 6VP here per player."
+      },
+      {
+        "name": "Mountain Pass",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you are the first player to gain a Province, after that turn, each player bids once, up to 40Debt, ending with you. High bidder gets +8VP and takes the Debt they bid."
+      },
+      {
+        "name": "Museum",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 2VP per differently named card you have."
+      },
+      {
+        "name": "Obelisk",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 2VP per card you have from the chosen pile.\nSetup: Choose a random Action Supply pile."
+      },
+      {
+        "name": "Orchard",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 4VP per differently named Action card you have 3 or more copies of."
+      },
+      {
+        "name": "Palace",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 3VP per set you have of Copper-Silver-Gold."
+      },
+      {
+        "name": "Tomb",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When you trash a card, +1VP."
+      },
+      {
+        "name": "Tower",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 1VP per non-Victory card you have from an empty Supply pile."
+      },
+      {
+        "name": "Triumphal Arch",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, 3VP per copy you have of the 2nd most common Action card among your cards (if it's a tie, count either)."
+      },
+      {
+        "name": "Wall",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, -1VP per card you have after the first 15."
+      },
+      {
+        "name": "Wolf Den",
+        "types": [
+          "Landmark"
+        ],
+        "cost": "",
+        "description": "When scoring, -3VP per card you have exactly one copy of."
+      }
+    ]
+  },
+  "other": {
+    "name": "Other",
+    "info": "",
+    "cards": [
+      {
+        "name": "Encampment",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+2 Cards\n+2 Actions\nYou may reveal a Gold or Plunder from your hand. If you do not, set this aside, and return it to the Supply at the start of Clean-up.\n(This is the top half of the Encampment/Plunder pile.)"
+      },
+      {
+        "name": "Plunder",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $2\n+1VP\n(This is the bottom half of the Encampment/Plunder pile.)"
+      },
+      {
+        "name": "Patrician",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nReveal the top card of your deck. If it costs $5 or more, put it into your hand.\n(This is the top half of the Patrician/Emporium pile.)"
+      },
+      {
+        "name": "Emporium",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+$1\n----------\nWhen you gain this, if you have at least 5 Action cards in play, +2VP.\n(This is the bottom half of the Patrician/Emporium pile.)"
+      },
+      {
+        "name": "Settlers",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nLook through your discard pile. You may reveal a Copper from it and put it into your hand.\n(This is the top half of the Settlers/Bustling Village pile.)"
+      },
+      {
+        "name": "Bustling Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+3 Actions\nLook through your discard pile. You may reveal a Settlers from it and put it into your hand.\n(This is the bottom half of the Settlers/Bustling Village pile.)"
+      },
+      {
+        "name": "Catapult",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$3",
+        "description": "+$1\nTrash a card from your hand. If it costs $3 or more, each other player gains a Curse. If it's a Treasure, each other player discards down to 3 cards in hand.\n(This is the top half of the Catapult/Rocks pile.)"
+      },
+      {
+        "name": "Rocks",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$4",
+        "description": "Worth $1\n----------\nWhen you gain or trash this: If it's your Buy phase, gain a Silver on your deck, otherwise gain a Silver to your hand.\n(This is the bottom half of the Catapult/Rocks pile.)"
+      },
+      {
+        "name": "Gladiator",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+$2\nReveal a card from your hand. The player to your left may reveal a copy from their hand. If they do not, +$1 and trash a Gladiator from the Supply.\n(This is the top half of the Gladiator/Fortune pile.)"
+      },
+      {
+        "name": "Fortune",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$8+8Debt",
+        "description": "+1 Buy\nWhen you play this, double your $ if you haven't yet this turn.\n----------\nWhen you gain this, gain a Gold per Gladiator you have in play.\n(This is the bottom half of the Gladiator/Fortune pile.)"
+      }
+    ]
+  }
+}

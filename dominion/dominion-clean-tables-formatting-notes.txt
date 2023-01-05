@@ -1,0 +1,161 @@
+Formats:
+    Standard card:
+        <tr>
+        <td>{name}</td>
+        <td>{type list delimited by ' -- '}</td>
+        <td>{cost}</td>
+        <td>{description, multi-line}</td>
+        </tr>
+    All card types:
+        Standard
+        Events -> Standard format, has type "Event".
+        Travelers -> Standard format, has type "Traveler" + others.
+        Prizes -> Standard format, has type "Prize" + others.
+        Spoils -> Standard format.
+        Ruins -> Standard format, has type "Ruins" + others.
+        Knights -> Standard format, has type "Knights" + others.
+        Shelters -> Standard format, has type "Shelter" + others.
+        Castles -> Standard format, has type "Castle" + others.
+        Landmarks -> Standard format, has type "Landmark" and an empty cost cell.
+        Spirits and Wishes -> Standard format. "Wish" is just an "Action", the others have type "Spirit" + others.
+        Boons -> Standard format, has type "Boon" and an empty cost cell.
+        Hexes -> Standard format, has type "Hex" and an empty cost cell.
+        Artifacts -> Standard format, has type "Artifact" and an empty cost cell.
+        Projects -> Standard format, has type "Project"
+        Horse -> Standard format, has type "Horse"
+        Ways -> Standard format, has type "Way" and an empty cost cell.
+        Augurs: -> Standard format, has type "Augur" + other.
+        Clashes: -> Standard format, has type "Clash" + other.
+        Forts: -> Standard format, has type "Fort" + other.
+        Odysseys: -> Standard format, has type "Odyssey" + other.
+        Townsfolk: -> Standard format, has type "Townsfolk" + other.
+        Wizards: -> Standard format, has type "Wizard" + other.
+        Allies: -> Standard format, has type "Ally" and an empty cost cell.
+        Loots: -> Standard format, has type "Loot" + other.
+        Traits: -> Standard format, has type "Trait" and an empty cost cell.
+adventures.html
+    3 tables: 59 cards.
+        Standard: 30 cards.
+        Events: 21 cards.
+            I believe you pick one or two of these separate from the 10.
+        Travelers: 8 cards.
+            Don't include these in the random options.
+            If standard card "Page", also need travelers: Treasure Hunter, Warrior, Hero, Champion
+            If standard card "Peasant", also need travelers: Soldier, Fugitive, Disciple, Teacher
+alchemy.html
+    1 table: 13 cards.
+        Standard: 13 cards.
+            Costs can have symbol: ◉
+                The "Potion" card is a treasure that is worth 1 ◉.
+            It looks like, the "Potion" card is required for this expansion set since most of the other cards require 1 ◉ to buy.
+allies.html
+    8 tables: 78 cards
+        Standard: 31 cards
+        Augurs: 4 cards
+            Include all if Standard card Augurs.
+        Clashes: 4 cards
+            Include all if Standard card Clashes.
+        Forts: 4 cards
+            Include all if Standard card Forts.
+        Odysseys: 4 cards
+            Include all if Standard card Odysseys.
+        Townsfolk: 4 cards
+            Include all if Standard card Townsfolk.
+        Wizards: 4 cards
+            Include all if Standard card Wizards.
+        Allies: 23 cards
+base.html
+    2 tables: 32 cards.
+        Standard: 20 cards.
+        In 1st Not 2nd: 6 cards.
+        In 2nd Not 1st: 6 cards.
+cornucopia.html
+    2 tables: 18 cards.
+        Standard: 13 cards.
+        Prizes: 5 cards.
+            Only needed if "Tournament" is selected.
+            Not sure if you need all or just some.
+dark-ages.html
+    5 tables: 55 cards.
+        Standard: 36 cards.
+        Spoils: 1 card.
+            Not part of random options.
+            Include if one of: "Marauder", "Bandit Camp", "Pillage"
+        Ruins: 5 cards.
+            Not part of random options.
+            Include if one of: "Death Cart", "Marauder", "Cultist"
+        Knights: 10 cards.
+            Shuffle the Knight pile before each game with it. Keep it face down except for the top card, which is the only one that can be bought or gained.
+            Looks like all of these combined are just 1 entry to be randomly chosen.
+        Shelters: 3 cards.
+            Replaces starting Estates
+empires.html
+    4 tables: 71 cards
+        Standard: 29 cards
+        Castles: 8 cards
+            There's 8 different levels, not sure if they all get included or what.
+            Doesn't look like you upgrade.
+            There's a "Castles" standard card that just says, "See Castles section below."
+        Events: 13 cards
+        Landmarks: 21 cards
+guilds.html
+    1 table: 13 cards
+        Standard: 13 cards
+hinterlands.html
+    1 table: 26 cards
+        Standard: 26 cards
+intrigue.html
+    2 tables: 32 cards
+        2nd Edition cards: 19 cards
+        In 1st Not 2nd: 6 cards
+        In 2nd Not 1st: 7 cards
+menagerie.html
+    4 tables: 71 cards
+        Standard: 30 cards
+        Horse: 1 card
+            Include if Standard cards: "Sleigh" "Supplies" "Scrap" "Cavalry" "Groom" "Hostelry" "Livery" "Paddock"
+            Include if Event cards: "Ride" "Bargain" "Demand" "Stampede"
+        Events: 20 cards
+        Ways: 20 cards
+nocturne.html
+    The type list of these needs reformatting (not ' -- ' delimited).
+    4 tables: 77 cards
+        Standard: 45 cards
+        Spirits and Wishes: 4 cards
+            Not part of random options.
+            If standard card "Leprechaun" or "Magic Lamp", include "Wish"
+            If boon card "The Swamp's Gift", include "Will-O'-Wisp"
+            If standard card "Devil's Workshop" or "Tormentor", include "Imp"
+            If standard card "Haunted Mirror", include "Ghost"
+        Boons: 12 cards
+            Include these if one of these standard cards are included: "Druid" "Pixie" "Tracker" "Fool" "Lost in the Woods" "Bard" "Blessed Village" "Idol" "Sacred Grove"
+        Hexes: 16 cards
+            Include these if one of these standard cards are included: "Leprechaun" "Skulk" "Cursed Village" "Tormentor" "Vampire" "Werewolf"
+            A few of these have type "State" and look like advanced stages of a few other "Hex" cards.
+plunder.html
+    4 tables: 85 cards
+        Standard: 40 cards
+        Loots: 15 cards
+            non-supply cards
+        Events: 15 cards
+        Traits: 15 cards
+promotional.html
+    Each of these should be specifically selected to be included in possibilities.
+    1 table: 10 cards
+        Standard: 10 cards
+            One of these is an event card.
+            "Sauna" and "Avanto" make a single pile.
+prosperity.html
+    1 table: 27 cards
+        Standard: 27 cards
+renaissance.html
+    3 tables: 50 cards
+        Standard: 25 cards
+        Artifacts: 5 cards
+        Projects: 20 cards
+seaside.html
+    1 table: 26 cards
+        Standard: 26 cards
+
+
+

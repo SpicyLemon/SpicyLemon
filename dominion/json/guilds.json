@@ -1,0 +1,114 @@
+{
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Candlestick Maker",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Action\n+1 Buy\nTake a Coin token."
+      },
+      {
+        "name": "Stonemason",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2+",
+        "description": "Trash a card from your hand. Gain 2 cards each costing less than it.\n----------\nWhen you buy this, you may overpay for it. If you do, gain 2 Action cards each costing the amount you overpaid."
+      },
+      {
+        "name": "Doctor",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3+",
+        "description": "Name a card. Reveal the top 3 cards of your deck. Trash the matches. Put the rest back in any order.\n----------\nWhen you buy this, you may overpay for it. For each $1 you overpaid, look at the top card of your deck; trash it, discard it, or put it back."
+      },
+      {
+        "name": "Masterpiece",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$3+",
+        "description": "Worth $1\n----------\nWhen you buy this, you may overpay for it. For each $1 you overpaid, gain a Silver."
+      },
+      {
+        "name": "Advisor",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nReveal the top 3 cards of your deck. The player to your left chooses one of them. Discard that card and put the rest into your hand."
+      },
+      {
+        "name": "Herald",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4+",
+        "description": "+1 Card\n+1 Action\nReveal the top card of your deck. If it is an Action, play it.\n----------\nWhen you buy this, you may overpay for it. For each $1 you overpaid, look through your discard pile and put a card from it onto your deck."
+      },
+      {
+        "name": "Plaza",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+2 Actions\nYou may discard a Treasure to take a Coin token."
+      },
+      {
+        "name": "Taxman",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "You may trash a Treasure from your hand. Each other player with 5 or more cards in hand discards a copy of it (or reveals they can't). Gain a Treasure onto your deck costing up to $3 more than it."
+      },
+      {
+        "name": "Baker",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nTake a Coin token.\n----------\nSetup: Each player takes a Coin token."
+      },
+      {
+        "name": "Butcher",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Take 2 Coin tokens. You may trash a card from your hand. If you do, pay any number of Coin tokens, and gain a card with a cost of up to the cost of the trashed card plus the number of Coin tokens you paid."
+      },
+      {
+        "name": "Journeyman",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Name a card. Reveal cards from your deck until you reveal 3 cards without that name. Put those cards into your hand and discard the rest."
+      },
+      {
+        "name": "Merchant Guild",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Buy\n+$1\n----------\nWhile this is in play, when you buy a card, take a Coin token."
+      },
+      {
+        "name": "Soothsayer",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Gain a Gold. Each other player gains a Curse, and if they did, draws a card."
+      }
+    ]
+  }
+}

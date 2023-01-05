@@ -1,0 +1,312 @@
+{
+  "in-1st-not-2nd": {
+    "name": "In 1st Not 2nd",
+    "info": "",
+    "cards": [
+      {
+        "name": "Duchess",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+$2\nEach player (including you) looks at the top card of their deck and may discard it.\n----------\nIf Duchess is in the Supply, you may gain one when you gain a Duchy."
+      },
+      {
+        "name": "Oracle",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$3",
+        "description": "Each player (including you) reveals the top 2 cards of their deck, and discards them or puts them back, your choice. They choose the order to return them. Afterwards, you draw 2 cards."
+      },
+      {
+        "name": "Noble Brigand",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "+$1\nWhen you buy or play this, each other player reveals the top 2 cards of their deck, trashes a revealed Silver or Gold you choose, discards the rest, and gains a Copper if they didn't reveal a Treasure. You gain the trashed cards."
+      },
+      {
+        "name": "Nomad Camp",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Buy\n+$2\n----------\nThis is gained onto your deck (instead of to your discard pile)."
+      },
+      {
+        "name": "Silk Road",
+        "types": [
+          "Victory"
+        ],
+        "cost": "$4",
+        "description": "Worth 1VP per 4 Victory cards you have (round down)."
+      },
+      {
+        "name": "Cache",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $3\n----------\nWhen you gain this, gain 2 Coppers."
+      },
+      {
+        "name": "Embassy",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+5 Cards\nDiscard 3 cards.\n----------\nWhen you gain this, each other player gains a Silver."
+      },
+      {
+        "name": "Ill-Gotten Gains",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $1\nWhen you play this, you may gain a Copper to your hand.\n----------\nWhen you gain this, each other player gains a Curse."
+      },
+      {
+        "name": "Mandarin",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+$3\nPut a card from your hand on top of your deck.\n----------\nWhen you gain this, put all Treasures you have in play onto your deck in any order."
+      }
+    ]
+  },
+  "in-2nd-not-1st": {
+    "name": "In 2nd Not 1st",
+    "info": "",
+    "cards": [
+      {
+        "name": "Guard Dog",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$3",
+        "description": "+2 Cards\nIf you have 5 or fewer cards in hand, +2 Cards.\n----------\nWhen another player plays an Attack, you may first play this from your hand."
+      },
+      {
+        "name": "Nomads",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Buy\n+$2\n----------\nWhen you gain or trash this, +$2."
+      },
+      {
+        "name": "Trail",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\n----------\nWhen you gain, trash, or discard this, other than in Clean-up, you may play it."
+      },
+      {
+        "name": "Weaver",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$4",
+        "description": "Gain two Silvers or a card costing up to $4.\n----------\nWhen you discard this other than in Clean-up, you may play it."
+      },
+      {
+        "name": "Berserker",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Gain a card costing less than this. Each other player discards down to 3 cards in hand.\n----------\nWhen you gain this, if you have an Action in play, play this."
+      },
+      {
+        "name": "Cauldron",
+        "types": [
+          "Treasure",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Worth $2\n+1 Buy\nThe third time you gain an Action this turn, each other player gains a curse."
+      },
+      {
+        "name": "Souk",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Buy\n+$7\n-$1 per card in your hand (you can't go below $0).\n----------\nWhen you gain this, trash up to 2 cards from your hand."
+      },
+      {
+        "name": "Wheelwright",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nYou may discard a card to gain an Action card costing as much as it or less."
+      },
+      {
+        "name": "Witch's Hut",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+4 Cards\nDiscard 2 cards, revealed. If they're both Actions, each other player gains a Curse."
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Crossroads",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "Reveal your hand. +1 Card per Victory card revealed. If this is the first time you played a Crossroads this turn, +3 Actions."
+      },
+      {
+        "name": "Fool's Gold",
+        "types": [
+          "Treasure",
+          "Reaction"
+        ],
+        "cost": "$2",
+        "description": "Worth $1 if it's the first time you played a Fool's Gold this turn, otherwise worth $4.\n----------\nWhen another player gains a Province, you may trash this from your hand, to gain a Gold onto your deck."
+      },
+      {
+        "name": "Develop",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Trash a card from your hand. Gain two cards onto your deck, with one costing exactly $1 more than it, and one costing exactly $1 less than it, in either order."
+      },
+      {
+        "name": "Oasis",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\n+$1\nDiscard a card."
+      },
+      {
+        "name": "Scheme",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nThis turn, you may put one of your Action cards onto your deck when you discard it from play."
+      },
+      {
+        "name": "Tunnel",
+        "types": [
+          "Victory",
+          "Reaction"
+        ],
+        "cost": "$3",
+        "description": "2VP\n----------\nWhen you discard this other than during Clean-up, you may reveal it to gain a Gold."
+      },
+      {
+        "name": "Jack of All Trades",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Gain a Silver.\nLook at the top card of your deck; you may discard it.\nDraw until you have 5 cards in hand.\nYou may trash a non-Treasure card from your hand."
+      },
+      {
+        "name": "Spice Merchant",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "You may trash a Treasure from your hand. If you do, choose one:\n+2 Cards and +1 Action; or +1 Buy and $2."
+      },
+      {
+        "name": "Trader",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand. Gain a Silver per $1 it costs.\n----------\nWhen you would gain a card, you may reveal this from your hand, to instead gain a Silver."
+      },
+      {
+        "name": "Cartographer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nLook at the top 4 cards of your deck. Discard any number of them, then put the rest back in any order."
+      },
+      {
+        "name": "Haggler",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+$2\n----------\nWhile this is in play, when you buy a card, gain a cheaper non-Victory card."
+      },
+      {
+        "name": "Highway",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n----------\nWhile this is in play, cards cost $1 less, but not less than $0."
+      },
+      {
+        "name": "Inn",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\n+2 Actions\nDiscard 2 cards.\n----------\nWhen you gain this, look through your discard pile, reveal any number of Action cards from it (which can include this), and shuffle them into your deck."
+      },
+      {
+        "name": "Margrave",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\n+1 Buy\nEach other player draws a card, then discards down to 3 cards in hand."
+      },
+      {
+        "name": "Stables",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "You may discard a Treasure, for +3 Cards and +1 Action."
+      },
+      {
+        "name": "Border Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "+1 Card\n+2 Actions\n----------\nWhen you gain this, gain a cheaper card."
+      },
+      {
+        "name": "Farmland",
+        "types": [
+          "Victory"
+        ],
+        "cost": "$6",
+        "description": "2VP\n----------\nWhen you buy this, trash a card from your hand and gain a card costing exactly $2 more than it."
+      }
+    ]
+  }
+}

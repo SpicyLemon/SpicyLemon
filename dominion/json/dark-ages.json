@@ -1,0 +1,522 @@
+{
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Poor House",
+        "types": [
+          "Action"
+        ],
+        "cost": "$1",
+        "description": "+$4\nReveal your hand. -$1 per Treasure card in your hand. (You can't go below $0.)"
+      },
+      {
+        "name": "Beggar",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$2",
+        "description": "Gain 3 Coppers to your hand.\n----------\nWhen another player plays an Attack card, you may first discard this to gain 2 Silvers, putting one onto your deck."
+      },
+      {
+        "name": "Squire",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+$1\nChoose one: +2 Actions; or +2 Buys; or gain a Silver.\n----------\nWhen you trash this, gain an Attack card."
+      },
+      {
+        "name": "Vagrant",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nReveal the top card of your deck. If it's a Curse, Ruins, Shelter, or Victory card, put it into your hand."
+      },
+      {
+        "name": "Forager",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\n+1 Buy\nTrash a card from your hand, then +$1 per differently named Treasure in the trash."
+      },
+      {
+        "name": "Hermit",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Look through your discard pile. You may trash a non-Treasure card from your discard pile or hand. Gain a card costing up to $3.\n----------\nWhen you discard this from play, if you didn't buy any cards this turn, trash this and gain a Madman from the Madman pile."
+      },
+      {
+        "name": "Market Square",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\n+1 Buy\n----------\nWhen one of your cards is trashed, you may discard this from your hand to gain a Gold."
+      },
+      {
+        "name": "Sage",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\nReveal cards from your deck until you reveal one costing $3 or more. Put that card into your hand and discard the rest."
+      },
+      {
+        "name": "Storeroom",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Buy\nDiscard any number of cards, then draw that many. Then discard any number of cards for +$1 each."
+      },
+      {
+        "name": "Urchin",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nEach other player discards down to 4 cards in hand.\n----------\nWhen you play another Attack card with this in play, you may first trash this, to gain a Mercenary from the Mercenary pile."
+      },
+      {
+        "name": "Armory",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Gain a card onto your deck costing up to $4."
+      },
+      {
+        "name": "Death Cart",
+        "types": [
+          "Action",
+          "Looter"
+        ],
+        "cost": "$4",
+        "description": "+$5\nYou may trash an Action card from your hand. If you don't, trash this.\n----------\nWhen you gain this, gain two Ruins."
+      },
+      {
+        "name": "Feodum",
+        "types": [
+          "Victory"
+        ],
+        "cost": "$4",
+        "description": "Worth 1VP per 3 Silvers you have (round down).\n----------\nWhen you trash this, gain 3 Silvers."
+      },
+      {
+        "name": "Fortress",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+2 Actions\n----------\nWhen you trash this, put it into your hand."
+      },
+      {
+        "name": "Ironmonger",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\nReveal the top card of your deck; you may discard it. Either way, if it's an...\nAction card, +1 Action\nTreasure card, +$1\nVictory card, +1 Card"
+      },
+      {
+        "name": "Marauder",
+        "types": [
+          "Action",
+          "Attack",
+          "Looter"
+        ],
+        "cost": "$4",
+        "description": "Gain a Spoils from the Spoils pile. Each other player gains a Ruins."
+      },
+      {
+        "name": "Procession",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "You may play an Action card from your hand twice. Trash it. Gain an Action card costing exactly $1 more than it."
+      },
+      {
+        "name": "Rats",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\nGain a Rats. Trash a card from your hand other than a Rats (or reveal a hand of all Rats).\n----------\nWhen you trash this, +1 Card."
+      },
+      {
+        "name": "Scavenger",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+$2\nYou may put your deck into your discard pile. Look through your discard pile and put one card from it onto your deck."
+      },
+      {
+        "name": "Wandering Minstrel",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+2 Actions\nReveal the top 3 cards of your deck. Put the Actions back on top in any order and discard the rest."
+      },
+      {
+        "name": "Band of Misfits",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Play this as if it were a cheaper Action card in the Supply. This is that card until it leaves play."
+      },
+      {
+        "name": "Bandit Camp",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+2 Actions\nGain a Spoils from the Spoils pile."
+      },
+      {
+        "name": "Catacombs",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Look at the top 3 cards of your deck. Choose one: Put them into your hand; or discard them and +3 Cards.\n----------\nWhen you trash this, gain a cheaper card."
+      },
+      {
+        "name": "Count",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Choose one: Discard 2 cards; or put a card from your hand onto your deck; or gain a Copper.\nChoose one: +$3; trash your hand; or gain a Duchy."
+      },
+      {
+        "name": "Counterfeit",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $1\n+1 Buy\nWhen you play this, you may play a treasure from your hand twice. If you do, trash that treasure."
+      },
+      {
+        "name": "Cultist",
+        "types": [
+          "Action",
+          "Attack",
+          "Looter"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\nEach other player gains a Ruins. You may play a Cultist from your hand.\n----------\nWhen you trash this, +3 Cards."
+      },
+      {
+        "name": "Graverobber",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Choose one: Gain a card from the trash costing from $3 to $6, onto your deck; or trash an Action card from your hand and gain a card costing up to $3 more than it."
+      },
+      {
+        "name": "Junk Dealer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+$1\nTrash a card from your hand."
+      },
+      {
+        "name": "Knights",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "Shuffle the Knights pile before each game with it. Keep it face down except for the top card, which is the only one that can be bought or gained."
+      },
+      {
+        "name": "Mystic",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\n+$2\nName a card, then reveal the top card of your deck. If you named it, put it into your hand."
+      },
+      {
+        "name": "Pillage",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Trash this. Each other player with 5 or more cards in hand reveals their hand and discards a card that you choose. Gain 2 Spoils from the Spoils pile."
+      },
+      {
+        "name": "Rebuild",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\nName a card. Reveal cards from your deck until you reveal a Victory card you did not name. Discard the rest, trash the Victory card, and gain a Victory card costing up to $3 more than it."
+      },
+      {
+        "name": "Rogue",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+$2\nIf there are any cards in the trash costing from $3 to $6, gain one of them. Otherwise, each other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest."
+      },
+      {
+        "name": "Altar",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "Trash a card from your hand. Gain a card costing up to $5."
+      },
+      {
+        "name": "Hunting Grounds",
+        "types": [
+          "Action"
+        ],
+        "cost": "$6",
+        "description": "+4 Cards\n----------\nWhen you trash this, gain a Duchy or 3 Estates."
+      }
+    ]
+  },
+  "knights": {
+    "name": "Knights",
+    "info": "Shuffle the Knight pile before each game with it. Keep it face down except for the top card, which is the only one that can be bought or gained.",
+    "cards": [
+      {
+        "name": "Dame Anna",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "You may trash up to 2 cards from your hand.\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Dame Josephine",
+        "types": [
+          "Action",
+          "Attack",
+          "Victory",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "Each other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this.\n----------\nWorth 2VP"
+      },
+      {
+        "name": "Dame Molly",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "+2 Actions\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Dame Natalie",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "You may gain a card costing up to $3.\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Dame Sylvia",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "+$2\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Sir Bailey",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Sir Destry",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Sir Martin",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$4",
+        "description": "+2 Buys\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Sir Michael",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "Each other player discards down to 3 cards in hand.\nEach other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this."
+      },
+      {
+        "name": "Sir Vander",
+        "types": [
+          "Action",
+          "Attack",
+          "Knight"
+        ],
+        "cost": "$5",
+        "description": "Each other player reveals the top two cards of their deck, trashes one of them costing from $3 to $6, and discards the rest. If a Knight is trashed by this, trash this.\n----------\nWhen you trash this, gain a Gold."
+      }
+    ]
+  },
+  "other": {
+    "name": "other",
+    "info": "",
+    "cards": [
+      {
+        "name": "Madman",
+        "types": [
+          "Action"
+        ],
+        "cost": "$0*",
+        "description": "+2 Actions\nReturn this to the Madman pile. If you do, +1 Card per card in your hand.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Mercenary",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$0*",
+        "description": "You may trash 2 cards from your hand. If you do, +2 Cards, +$2, and each other player discards down to 3 cards in hand.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Spoils",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$0*",
+        "description": "$3\nWhen you play this, return it to the pile.\n(This is not in the Supply.)"
+      }
+    ]
+  },
+  "ruins": {
+    "name": "Ruins",
+    "info": "",
+    "cards": [
+      {
+        "name": "Abandoned Mine",
+        "types": [
+          "Action",
+          "Ruins"
+        ],
+        "cost": "$0",
+        "description": "+$1"
+      },
+      {
+        "name": "Ruined Library",
+        "types": [
+          "Action",
+          "Ruins"
+        ],
+        "cost": "$0",
+        "description": "+1 Card"
+      },
+      {
+        "name": "Ruined Market",
+        "types": [
+          "Action",
+          "Ruins"
+        ],
+        "cost": "$0",
+        "description": "+1 Buy"
+      },
+      {
+        "name": "Ruined Village",
+        "types": [
+          "Action",
+          "Ruins"
+        ],
+        "cost": "$0",
+        "description": "+1 Action"
+      },
+      {
+        "name": "Survivors",
+        "types": [
+          "Action",
+          "Ruins"
+        ],
+        "cost": "$0",
+        "description": "Look at the top 2 cards of your deck. Discard them or put them back in any order."
+      }
+    ]
+  },
+  "shelters": {
+    "name": "Shelters",
+    "info": "Replaces starting Estates",
+    "cards": [
+      {
+        "name": "Hovel",
+        "types": [
+          "Reaction",
+          "Shelter"
+        ],
+        "cost": "$1",
+        "description": "When you buy a Victory card, you may trash this from your hand."
+      },
+      {
+        "name": "Necropolis",
+        "types": [
+          "Action",
+          "Shelter"
+        ],
+        "cost": "$1",
+        "description": "+2 Actions"
+      },
+      {
+        "name": "Overgrown Estate",
+        "types": [
+          "Victory",
+          "Shelter"
+        ],
+        "cost": "$1",
+        "description": "0VP\n----------\nWhen you trash this, +1 Card."
+      }
+    ]
+  }
+}

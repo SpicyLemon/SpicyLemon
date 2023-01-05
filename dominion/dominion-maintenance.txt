@@ -1,0 +1,124 @@
+How to update the dominion page/data.
+1. add/update the .html files in tables/clean.
+2. Regenerate the json from it:
+   `go run tables/parse_tables.go tables/ source/`
+3. Manually update json/extra_cards.json and/or json/include_if.json as needed.
+4. Minify all.json, extra_cards.json and/or include_if.json and paste them into the variables in the page.
+   To minify them:
+   `jq -c '.' all.json | pbcopy`
+
+Notes on tables
+
+Do not use any leading whitespace, ever.
+
+Card template:
+```plaintext
+<tr>
+<td>NAME</td>
+<td>TYPE</td>
+<td>$COST</td>
+<td>DESCRIPTION</td>
+</tr>
+```
+
+An html file can have multiple tables.
+If the first line after `<table>` is an html comment, e.g. `<!-- Other -->`, it is treated as that table's identifier. Otherwise, the table is considered "kingdom" cards.
+An optional second comment can follow that (on its own line) with some extra info about the cards in that section.
+
+* The `NAME` uses title capitalization rules: First letter of all words capitalized except workds like "the", "and", "in", and "of".
+* If there are multiple `TYPE`s, delimit them with ` -- `. E.g. `<td>Action -- Reaction</td>`.
+* The first letter of each type should be capitalized.
+  This applies to when they're being referred to in descriptions too.
+* If it's a Kingdom card, the `$COST` should not have an asterisk, e.g. `$3`, not `$3*`.
+  * Currently handled cost formats:
+    * `$4` -> Normal four dollar card.
+    * `$4+` -> A four dollar card that allows for overpayment. For purposes of randomization, the `+` is ignored.
+    * `$8-` -> A card that costs $8 but can be cheaper. For purposes of randomization, the `-` is ignored.
+    * `$4◉` -> A card that costs four dollars and a potion. For purposes of randomization, the `◉` is ignored.
+    * `4Debt` -> A card that can be purchased for taking on four Debt. For purposes of randomization, it's treated as equivalent dollars, e.g. `$4` in this case.
+    * `$4+3Debt` -> A card that can be purchased for four dollars plus taking on 3 Debt. The only cards with this are events, which don't consider costs in randomization.
+    * `$4*` -> A card that has a value of four dollars, but cannot be purchased. These are not part of random selection.
+  * If the `$COST` is variable (e.g. split piles), use the cheapest one for the kingdom card entry.
+    The exception to this is the knights, where all but one are $5 and the other is $4. I went with $5 for that kindom card entry.
+* The `DESCRIPTION` is the only entry that can have multiple lines.
+  * The `</td>` goes on the same line as the last of the description text. It should NOT be on its own line.
+  * Use `----------` on its own line as the line separator (commonly seen on Reaction cards).
+  * Non-sentence aspects should not end in periods. E.g. `+1 Card` not `+1 Card.`.
+  * If the card clearly puts things on new a line, do so in the description too. E.g. `+1 Card\n+2 Actions`, not `+1 Card +2 Actions`. But when it's a full sentence wrapped on the card, don't put a `\n` in the middle of the sentence.
+  * If you can't tell if the card specifically has a `\n` between sentences, prefer leaving it all on one line.
+* There should not be a space between a `+` and its following number or cost. E.g. `+$2` not `+ $2` and definitely not `+$ 2`.
+* There should not be a space between the number and `VP`. E.g. `2VP` not `2 VP`.
+* There should not be a space between the number and `Debt`. E.g. `4Debt` not `4 Debt`.
+* There should be a space between a number and other words. E.g. `+1 Action` not `+1Action`.
+
+Commands handy for identifying possible problems:
+* Get all words to spellcheck and identify ones not in the dict file.
+  ```shell
+  > jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | [.name, .description, .types[]] | .[]' json/all.json | tr '[/[:space:]]' '\n' | grep -vx -e '2nd' | sed -E 's/^[-("+$0-9]+//; s/'"'"'$//; s/[).",;+]+$//; s/:$//; s/◉$//; s/'"'"'s$//;' | grep -vx -e '' -e 'VP' -e 'e.g' -e 'Copper-Silver-Gold' -e 'Destry' -e 'Josephine' -e 'Michael' -e 'Natalie' -e 'Sylvia' -e 'Vander' -e 'Feodum' -e  'Graverobber' -e 'Guildmaster' -e 'Jewelled' -e 'Avanto' -e 'Travelling' | tr '[A-Z]' '[a-z]' | sort -u | ggrep -Fxv -f /usr/share/dict/web2
+  ```
+  There's a lot of false positives, like plurals. So copy that output and paste it into a spellchecker like https://www.grammarly.com/spell-checker and look for squiglies.
+  Details of that big-nasty command:
+  1. Use jq to get the contents of all the "name", "description" and "types" entries.
+  2. Change all space chars or / chars to newlines.
+     Note: The / is for things like and/or and Catapult/Rocks
+  3. Ignore the word 2nd now. If we get rid of it after stipping numbers we risk hiding a misspelling of "and".
+  4. Get rid of some leading and trailing characters.
+     Trim leading: Any number of - ( " + and/or digits.
+     Trim trailing: single quote char. Done on its own because of the ugly syntax needed.
+     Trim trailing: Any number of ) . " , ; +
+     Trim trailing: colon char :
+     Trim trailing: potion symbol.
+     Trim trailing: possessive indicator: 's
+  5. Ignore some words we know not to care about:
+     This is done before lowercasing everything so that these entries better match what's in the files.
+     "": don't care about empty lines now.
+     "VP": Victory points. All good.
+     "e.g": The trailing . is trimmed, but we know it's all good.
+     "Copper-Silver-Gold": Possibly spaced on the card, can't tell, but we know it's okay like this, so leave it.
+     "Destry": This is "Sir Desty"'s surname.
+     "Josephine": This is "Dame Josephine"'s surname.
+     "Michael": This is "Sir Michael"'s surname.
+     "Natalie": This is "Dame Natalie"'s surname.
+     "Sylvia": This is "Dame Sylvia"'s surname.
+     "Vander": This is "Sir Vander"'s surname.
+     "Feodum": This is a dark-ages card name.
+     "Graverobber": A dark-ages card name.
+     "Guildmaster": An allies card name.
+     "Jewelled": Part of a plunder card name: Jewelled Egg
+     "Avanto": A promotional card name.
+     "Travelling": Part of card name "Travelling Fair" (mispelled on card even).
+  6. Lowercase everything.
+  7. Sort it all and get rid of duplicate entries.
+  8. Find entries that aren't in the dict file.
+* Get all non-capitalized words in card names:
+  ```shell
+  > jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | .name' json/all.json | sort | grep -Eo '(^| )[a-z][^[:space:]]*' | sort -u
+  in
+  of
+  the
+  ```
+* Get all kingdom card cost formats:
+  ```shell
+  > jq -r '. | to_entries | .[] | .value.kingdom.cards[] | .cost' json/all.json | sort -u | tr '[:digit:]' x | sort -u
+  $x
+  $x+
+  $x-
+  $x◉
+  xDebt
+  ```
+* Get all card costs:
+  ```shell
+  > jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | .cost' json/all.json | sort -u
+  ```
+* Get all lines from all descriptions:
+  ```shell
+  > jq -r '. | to_entries | .[] | .value | to_entries | .[] | .value.cards[] | .description' json/all.json | sort -u
+  ```
+  This is handy for identifying:
+  * line dividers that aren't exactly `----------`.
+  * Things that end with periods that shouldn't.
+  * Things that start with whitespace (nothing should start with whitespace).
+  * The existence of empty lines (probably means `</td>` is on its own line).
+  * Lines that don't start with a capital letter, but should.
+
+

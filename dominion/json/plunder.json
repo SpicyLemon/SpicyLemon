@@ -1,0 +1,755 @@
+{
+  "events": {
+    "name": "Events",
+    "info": "",
+    "cards": [
+      {
+        "name": "Bury",
+        "types": [
+          "Event"
+        ],
+        "cost": "$1",
+        "description": "+1 Buy\nPut any card from your discard pile on the bottom of your deck."
+      },
+      {
+        "name": "Avoid",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nThe next time you shuffle this turn, pick up to 3 of those cards to put into your discard pile."
+      },
+      {
+        "name": "Deliver",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nThis turn, each time you gain a card, set it aside, and put it into your hand at end of turn."
+      },
+      {
+        "name": "Peril",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "You may trash an Action card from your hand to gain a Loot."
+      },
+      {
+        "name": "Rush",
+        "types": [
+          "Event"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nThe next time you gain an Action card this turn, play it."
+      },
+      {
+        "name": "Foray",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Discard 3 cards, revealing them. If they have 3 different names, gain a Loot."
+      },
+      {
+        "name": "Launch",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Once per turn: Return to your Action phase. +1 Card, +1 Action, and +1 Buy."
+      },
+      {
+        "name": "Mirror",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "+1 Buy\nThe next time you gain an Action card this turn, gain a copy of it."
+      },
+      {
+        "name": "Prepare",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Set aside your hand face up.\nAt the start of your next turn, play those Actions and Treasures in any order, then discard the rest."
+      },
+      {
+        "name": "Scrounge",
+        "types": [
+          "Event"
+        ],
+        "cost": "$3",
+        "description": "Choose one: Trash a card from your hand; or gain an Estate from the trash, and if you did, gain a card costing up to $5."
+      },
+      {
+        "name": "Journey",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Once per turn: If the previous turn wasn't yours, you don't discard cards from play in Clean-up this turn, and take an extra turn after this one."
+      },
+      {
+        "name": "Maelstrom",
+        "types": [
+          "Event"
+        ],
+        "cost": "$4",
+        "description": "Trash 3 cards from your hand. Each other player with 5 or more cards in hand trashes one of them."
+      },
+      {
+        "name": "Looting",
+        "types": [
+          "Event"
+        ],
+        "cost": "$6",
+        "description": "Gain a Loot."
+      },
+      {
+        "name": "Invasion",
+        "types": [
+          "Event"
+        ],
+        "cost": "$10",
+        "description": "You may play an Attack from your hand. Gain a Duchy. Gain an Action onto your deck. Gain a Loot; play it."
+      },
+      {
+        "name": "Prosper",
+        "types": [
+          "Event"
+        ],
+        "cost": "$10",
+        "description": "Gain a Loot, plus any number of differently named Treasures."
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Cage",
+        "types": [
+          "Treasure",
+          "Duration"
+        ],
+        "cost": "$2",
+        "description": "Set aside up to 4 cards from your hand face down (on this).\nThe next time you gain a Victory card, trash this, and put the set aside cards into your hand at end of turn."
+      },
+      {
+        "name": "Grotto",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$2",
+        "description": "+1 Action\nSet aside up to 4 cards from your hand face down (on this). At the start of your next turn, discard them, then draw as many."
+      },
+      {
+        "name": "Jewelled Egg",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$2",
+        "description": "Worth $1\n+1 Buy\n----------\nWhen you trash this, gain a Loot."
+      },
+      {
+        "name": "Search",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$2",
+        "description": "+$2\nThe next time a Supply pile empties, trash this and gain a Loot."
+      },
+      {
+        "name": "Shaman",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Action\n+$1\nYou may trash a card from your hand.\n----------\nIn games using this, at the start of your turn, gain a card from the trash costing up to $6."
+      },
+      {
+        "name": "Secluded Shrine",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "+$1\nThe next time you gain a Treasure, trash up to 2 cards from your hand."
+      },
+      {
+        "name": "Siren",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$3",
+        "description": "Each other player gains a Curse. At the start of your next turn, draw until you have 8 cards in hand.\n----------\nWhen you gain this, trash it unless you trash an Action from your hand."
+      },
+      {
+        "name": "Stowaway",
+        "types": [
+          "Action",
+          "Duration",
+          "Reaction"
+        ],
+        "cost": "$3",
+        "description": "At the start of your next turn, +2 Cards\n----------\nWhen anyone gains a Duration card, you may play this from your hand."
+      },
+      {
+        "name": "Taskmaster",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "+1 Action, +$1, and if you gain a card costing exactly $5 this turn, then at the start of your next turn repeat this ability."
+      },
+      {
+        "name": "Abundance",
+        "types": [
+          "Treasure",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "The next time you gain an Action card: +1 Buy and +$3"
+      },
+      {
+        "name": "Cabin Boy",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\nAt the start of your next turn, choose one: +$2; or trash this to gain a Duration card."
+      },
+      {
+        "name": "Crucible",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand. +$1 per $1 it costs."
+      },
+      {
+        "name": "Flagship",
+        "types": [
+          "Action",
+          "Duration",
+          "Command"
+        ],
+        "cost": "$4",
+        "description": "+$2\nThe next time you play a non-Command Action card, replay it."
+      },
+      {
+        "name": "Fortune Hunter",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+$2\nLook at the top 3 cards of your deck. You may play a Treasure from them. Put the rest back in any order."
+      },
+      {
+        "name": "Gondola",
+        "types": [
+          "Treasure",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "Either now or at the start of your next turn: +$2.\n----------\nWhen you gain this, you may play an Action card from your hand."
+      },
+      {
+        "name": "Harbor Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+2 Actions\nAfter the next Action you play this turn, if it gave you +$, +$1."
+      },
+      {
+        "name": "Landing Party",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "+2 Cards\n+2 Actions\nThe next time the first card you play on a turn is a Treasure, put this onto your deck afterwards."
+      },
+      {
+        "name": "Mapmaker",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$4",
+        "description": "Look at the top 4 cards of your deck. Put 2 into your hand and discard the rest.\n----------\nWhen any player gains a Victory card, you may play this from your hand."
+      },
+      {
+        "name": "Maroon",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand, +2 Cards per type it has (Action, Attack, etc.)."
+      },
+      {
+        "name": "Rope",
+        "types": [
+          "Treasure",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "Worth $1\n+1 Buy\nAt the start of your next turn, +1 Card and you may trash a card from your hand."
+      },
+      {
+        "name": "Swamp Shacks",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+2 Actions\n+1 Card per 3 cards you have in play (rounded down)."
+      },
+      {
+        "name": "Tools",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$4",
+        "description": "Gain a copy of a card anyone has in play."
+      },
+      {
+        "name": "Buried Treasure",
+        "types": [
+          "Treasure",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "At the start of your next turn, +1 Buy and +$3.\n----------\nWhen you gain this, play it."
+      },
+      {
+        "name": "Crew",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\nAt the start of your next turn, put this onto your deck."
+      },
+      {
+        "name": "Cutthroat",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Each other player discards down to 3 cards in hand.\nThe next time anyone gains a Treasure costing $5 or more, gain a Loot."
+      },
+      {
+        "name": "Enlarge",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Now and at the start of your next turn: Trash a card from your hand, and gain one costing up to $2 more."
+      },
+      {
+        "name": "Figurine",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\nYou may discard an Action card for +1 Buy and +$1."
+      },
+      {
+        "name": "First Mate",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "Play any number of Action cards with the same name from your hand, then draw until you have 6 cards in hand."
+      },
+      {
+        "name": "Frigate",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+$3\nUntil the start of your next turn, each time another player plays an Action card, they discard down to 4 cards in hand afterwards."
+      },
+      {
+        "name": "Longship",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "+2 Actions\nAt the start of your next turn, +2 Cards."
+      },
+      {
+        "name": "Mining Road",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Action\n+1 Buy\n+$2\nOnce this turn, when you gain a Treasure, you may play it."
+      },
+      {
+        "name": "Pendant",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "+$1 per differently named Treasure you have in play."
+      },
+      {
+        "name": "Pickaxe",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Worth $1\nTrash a card from your hand. If it costs $3 or more, gain a Loot to your hand."
+      },
+      {
+        "name": "Pilgrim",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+4 Cards\nPut a card from your hand onto your deck."
+      },
+      {
+        "name": "Quartermaster",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "At the start of each of your turns for the rest of the game, choose one: Gain a card costing up to $4, setting it aside on this; or put a card from this into your hand."
+      },
+      {
+        "name": "Silver Mine",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$5",
+        "description": "Gain a treasure costing less than this to your hand."
+      },
+      {
+        "name": "Trickster",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "Each other player gains a Curse.\nOnce this turn, when you discard a Treasure from play, you may set it aside. Put it in your hand at end of turn."
+      },
+      {
+        "name": "Wealthy Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+2 Actions\n----------\nWhen you gain this, if you have at least 3 differently named Treasures in play, gain a Loot."
+      },
+      {
+        "name": "Sack of Loot",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$6",
+        "description": "Worth $1\n+1 Buy\nGain a Loot."
+      },
+      {
+        "name": "King's Cache",
+        "types": [
+          "Treasure"
+        ],
+        "cost": "$7",
+        "description": "You may play a Treasure from your hand 3 times."
+      }
+    ]
+  },
+  "loots": {
+    "name": "Loots",
+    "info": "",
+    "cards": [
+      {
+        "name": "Amphora",
+        "types": [
+          "Treasure",
+          "Duration",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Either now or at the start of your next turn: +1 Buy and +$3."
+      },
+      {
+        "name": "Doubloons",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n----------\nWhen you gain this, gain a Gold."
+      },
+      {
+        "name": "Endless Chalice",
+        "types": [
+          "Treasure",
+          "Duration",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Now and at the start of each of your turns for the rest of the game:\nWorth $1\n+1 Buy"
+      },
+      {
+        "name": "Figurehead",
+        "types": [
+          "Treasure",
+          "Duration",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\nAt the start of your next turn, +2 Cards."
+      },
+      {
+        "name": "Hammer",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\nGain a card costing up to $4."
+      },
+      {
+        "name": "Insignia",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\nThis turn, when you gain a card, you may put it onto your deck."
+      },
+      {
+        "name": "Jewels",
+        "types": [
+          "Treasure",
+          "Duration",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n+1 Buy\nAt the start of your next turn, put this on the bottom of your deck."
+      },
+      {
+        "name": "Orb",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Look through your discard pile, Choose one: Play an Action or Treasure from it; or +1 Buy and +$3."
+      },
+      {
+        "name": "Prize Goat",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n+1 Buy\nYou may trash a card from your hand."
+      },
+      {
+        "name": "Puzzle Box",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n+1 Buy\nYou may set aside a card from your hand face down. Put it into your hand at end of turn."
+      },
+      {
+        "name": "Sextant",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n+1 Buy\nLook at the top 5 cards of your deck. Discard any number. Put the rest back in any order."
+      },
+      {
+        "name": "Shield",
+        "types": [
+          "Treasure",
+          "Reaction",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n+1 Buy\n----------\nWhen another player plays an Attack, you may first reveal this from your hand to be unaffected."
+      },
+      {
+        "name": "Spell Scroll",
+        "types": [
+          "Action",
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Trash this to gain a cheaper card. If it's an action or Treasure, you may play it."
+      },
+      {
+        "name": "Staff",
+        "types": [
+          "Treasure",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n+1 Buy\nYou may play an Action from your hand."
+      },
+      {
+        "name": "Sword",
+        "types": [
+          "Treasure",
+          "Attack",
+          "Loot"
+        ],
+        "cost": "$7",
+        "description": "Worth $3\n+1 Buy\nEach other player discards down to 4 cards in hand."
+      }
+    ]
+  },
+  "traits": {
+    "name": "Traits",
+    "info": "",
+    "cards": [
+      {
+        "name": "Cheap",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "Cheap cards cost $1 less."
+      },
+      {
+        "name": "Cursed",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When you gain a Cursed card, gain a Loot and a Curse."
+      },
+      {
+        "name": "Fated",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When shuffling, you may look through the cards and reveal Fated cards to put them on top or bottom."
+      },
+      {
+        "name": "Fawning",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When you gain a Province, gain a Fawning card."
+      },
+      {
+        "name": "Friendly",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "At the start of your Clean-up phase, you may discard a Friendly card to gain a Friendly card."
+      },
+      {
+        "name": "Hasty",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When you gain a Hasty card, set it aside, and play it at the start of your next turn."
+      },
+      {
+        "name": "Inherited",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "Setup: You start the game with an Inherited card in place of a starting card you choose."
+      },
+      {
+        "name": "Inspiring",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "After playing an Inspiring card on your turn, you may play an Action from your hand that you don't have a card of in play."
+      },
+      {
+        "name": "Nearby",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When you gain a Nearby card, +1 Buy."
+      },
+      {
+        "name": "Patient",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "At the start of your Clean-up phase, you may set aside Patient cards from your hand to play them at the start of your next turn."
+      },
+      {
+        "name": "Pious",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When you gain a Pious card, you may trash a card from your hand."
+      },
+      {
+        "name": "Reckless",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "Follow the instructions of played Reckless cards twice. When discarding one from play, return it to its pile."
+      },
+      {
+        "name": "Rich",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When you gain a Rich card, gain a Silver."
+      },
+      {
+        "name": "Shy",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, you may discard one Shy card for +2 Cards."
+      },
+      {
+        "name": "Tireless",
+        "types": [
+          "Trait"
+        ],
+        "cost": "",
+        "description": "When you discard a Tireless card from play, set it aside, and put it onto your deck at end of turn."
+      }
+    ]
+  }
+}

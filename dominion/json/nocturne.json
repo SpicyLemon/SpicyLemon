@@ -1,0 +1,698 @@
+{
+  "boons": {
+    "name": "Boons",
+    "info": "",
+    "cards": [
+      {
+        "name": "The Earth's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "You may discard a Treasure card to gain a card costing up to $4."
+      },
+      {
+        "name": "The Field's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "+1 Action\n+$1\n(Keep this until Clean-up.)"
+      },
+      {
+        "name": "The Flame's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "You may trash a card from your hand."
+      },
+      {
+        "name": "The Forest's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "+1 Buy\n+$1\n(Keep this until Clean-up.)"
+      },
+      {
+        "name": "The Moon's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "Look through your discard pile, you may put a card from it onto your deck."
+      },
+      {
+        "name": "The Mountain's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "Gain a Silver."
+      },
+      {
+        "name": "The River's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "+1 Card at the end of this turn.\n(Keep this until Clean-up.)"
+      },
+      {
+        "name": "The Sea's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "+1 Card"
+      },
+      {
+        "name": "The Sky's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "You may discard 3 cards to gain a Gold."
+      },
+      {
+        "name": "The Sun's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "Look at the top 4 cards of your deck. Discard any number of them and put the rest back in any order."
+      },
+      {
+        "name": "The Swamp's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "Gain a Will-O'-Wisp from its pile."
+      },
+      {
+        "name": "The Wind's Gift",
+        "types": [
+          "Boon"
+        ],
+        "cost": "",
+        "description": "+2 Cards\nDiscard 2 cards."
+      }
+    ]
+  },
+  "heirlooms": {
+    "name": "Heirlooms",
+    "info": "",
+    "cards": [
+      {
+        "name": "Goat",
+        "types": [
+          "Treasure",
+          "Heirloom"
+        ],
+        "cost": "$2",
+        "description": "Worth $1\nWhen you play this, you may trash a card from your hand."
+      },
+      {
+        "name": "Pouch",
+        "types": [
+          "Treasure",
+          "Heirloom"
+        ],
+        "cost": "$2",
+        "description": "Worth $1\n+1 Buy"
+      },
+      {
+        "name": "Lucky Coin",
+        "types": [
+          "Treasure",
+          "Heirloom"
+        ],
+        "cost": "$3",
+        "description": "Worth $1\nWhen you play this, gain a Silver."
+      },
+      {
+        "name": "Magic Lamp",
+        "types": [
+          "Treasure",
+          "Heirloom"
+        ],
+        "cost": "$0",
+        "description": "Worth $1\n----------\nWhen you play this, if there are at least 6 cards that you have exactly 1 copy of in play, trash this. If you do, gain 3 Wishes from their pile."
+      },
+      {
+        "name": "Haunted Mirror",
+        "types": [
+          "Treasure",
+          "Heirloom"
+        ],
+        "cost": "$0",
+        "description": "Worth $1\n----------\nWhen you trash this, you may discard an Action card, to gain a Ghost from its pile."
+      },
+      {
+        "name": "Pasture",
+        "types": [
+          "Treasure",
+          "Victory",
+          "Heirloom"
+        ],
+        "cost": "$2",
+        "description": "Worth $1\n----------\nWorth 1VP per Estate you have."
+      },
+      {
+        "name": "Cursed Gold",
+        "types": [
+          "Treasure",
+          "Heirloom"
+        ],
+        "cost": "$4",
+        "description": "Worth $3\nWhen you play this, gain a Curse."
+      }
+    ]
+  },
+  "hexes": {
+    "name": "Hexes",
+    "info": "",
+    "cards": [
+      {
+        "name": "Bad Omens",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "Put your deck into your discard pile. Look through it and put 2 Coppers from it onto your deck (or reveal you can't.)"
+      },
+      {
+        "name": "Delusion",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "If you don't have Deluded or Envious, take Deluded."
+      },
+      {
+        "name": "Envy",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "If you don't have Envious or Deluded, take Envious."
+      },
+      {
+        "name": "Famine",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "Reveal the top 3 cards of your deck. Discard the Actions. Shuffle the rest into your deck."
+      },
+      {
+        "name": "Fear",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "If you have at least 5 cards in hand, discard an Action or Treasure (or reveal you can't.)"
+      },
+      {
+        "name": "Greed",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "Gain a Copper onto your deck."
+      },
+      {
+        "name": "Haunting",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "If you have at least 4 cards in hand, put one of them onto your deck."
+      },
+      {
+        "name": "Locusts",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "Trash the top card of your deck. If it's Copper or Estate, gain a Curse. Otherwise, gain a cheaper card that shares a type with it."
+      },
+      {
+        "name": "Misery",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "If this is your first Misery this game, take Miserable. Otherwise, flip it over to Twice Miserable."
+      },
+      {
+        "name": "Plague",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "Gain a Curse to your hand."
+      },
+      {
+        "name": "Poverty",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "Discard down to 3 cards in hand."
+      },
+      {
+        "name": "War",
+        "types": [
+          "Hex"
+        ],
+        "cost": "",
+        "description": "Reveal cards from your deck until revealing one costing $3 or $4. Trash it and discard the rest."
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Druid",
+        "types": [
+          "Action",
+          "Fate"
+        ],
+        "cost": "$2",
+        "description": "+1 Buy\nReceive one of the set aside, Boons, leaving it there.\n----------\nSetup: Set aside the top 3 Boons, face-up."
+      },
+      {
+        "name": "Faithful Hound",
+        "types": [
+          "Action",
+          "Reaction"
+        ],
+        "cost": "$2",
+        "description": "+2 Cards\n----------\nWhen you discard this other than during Clean-up, you may set it aside, and put it into your hand at end of turn."
+      },
+      {
+        "name": "Guardian",
+        "types": [
+          "Night",
+          "Duration"
+        ],
+        "cost": "$2",
+        "description": "Until your next turn, when another player plays an Attack card, it doesn't affect you. At the start of your next turn, +$1.\n----------\nThis is gained to your hand (instead of your discard pile)."
+      },
+      {
+        "name": "Monastery",
+        "types": [
+          "Night"
+        ],
+        "cost": "$2",
+        "description": "For each card you've gained this turn, you may trash a card from your hand or a Copper you have in play."
+      },
+      {
+        "name": "Pixie",
+        "types": [
+          "Action",
+          "Fate"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nDiscard the top Boon. You may trash this to receive that Boon twice.\n(When this is in the supply each player replaces one starting copper with Heirloom: Goat)"
+      },
+      {
+        "name": "Tracker",
+        "types": [
+          "Action",
+          "Fate"
+        ],
+        "cost": "$2",
+        "description": "+$1\nReceive a Boon.\nWhile this is in play, when you gain a card, you may put that card onto your deck.\n(When this is in the supply each player replaces one starting copper with Heirloom: Pouch)"
+      },
+      {
+        "name": "Changeling",
+        "types": [
+          "Night"
+        ],
+        "cost": "$3",
+        "description": "$3\nNight\nTrash this. Gain a copy of a card you have in play.\n----------\nIn games using this, when you gain a card costing $3 or more, you may exchange it for a Changeling."
+      },
+      {
+        "name": "Fool",
+        "types": [
+          "Action",
+          "Fate"
+        ],
+        "cost": "$3",
+        "description": "If you aren't the player with Lost in the Woods, take it, take 3 Boons, and receive the Boons in any order.\n(When this is in the supply each player replaces one starting copper with Heirloom: Lucky Coin)"
+      },
+      {
+        "name": "Ghost Town",
+        "types": [
+          "Night",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "At the start of your next turn, +1 Card and +1 Action.\n----------\nThis is gained to your hand (instead of your discard pile)."
+      },
+      {
+        "name": "Leprechaun",
+        "types": [
+          "Action",
+          "Doom"
+        ],
+        "cost": "$3",
+        "description": "Gain a Gold. If you have exactly 7 cards, gain a Wish from its pile. Otherwise, receive a Hex."
+      },
+      {
+        "name": "Night Watchman",
+        "types": [
+          "Night"
+        ],
+        "cost": "$3",
+        "description": "Look at the top 5 cards of your deck, discard any number, and put the rest back in any order.\n----------\nThis is gained to your hand (instead of your discard pile)."
+      },
+      {
+        "name": "Secret Cave",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nYou may discard 3 cards. If you did, then at the start of your next turn: +$3.\n(When this is in the supply each player replaces one starting copper with Heirloom: Magic Lamp)"
+      },
+      {
+        "name": "Bard",
+        "types": [
+          "Action",
+          "Fate"
+        ],
+        "cost": "$4",
+        "description": "+$2\nReceive a Boon."
+      },
+      {
+        "name": "Blessed Village",
+        "types": [
+          "Action",
+          "Fate"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\nWhen you gain this, take a Boon. Receive it now or at the start of your next turn."
+      },
+      {
+        "name": "Cemetery",
+        "types": [
+          "Victory"
+        ],
+        "cost": "$4",
+        "description": "Worth 2VP\n----------\nWhen you gain this, trash up to 4 cards from your hand.\n(When this is in the supply each player replaces one starting copper with Heirloom: Haunted Mirror)"
+      },
+      {
+        "name": "Conclave",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+$2\nYou may play an Action card from your hand that you don't have a copy of in play. If you do, +1 Action."
+      },
+      {
+        "name": "Devil's Workshop",
+        "types": [
+          "Night"
+        ],
+        "cost": "$4",
+        "description": "If the number of cards you gained this turn is:\n2+, gain an Imp from its pile;\n1, gain a card costing up to $4;\n0, gain a Gold."
+      },
+      {
+        "name": "Exorcist",
+        "types": [
+          "Night"
+        ],
+        "cost": "$4",
+        "description": "Trash a card from your hand. Gain a cheaper Spirit from one of the Spirit Piles."
+      },
+      {
+        "name": "Necromancer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Play a face-up non-Duration Action card from the trash leaving it there and turning it face down for the turn.\n----------\nSetup: Put the 3 Zombies into the trash."
+      },
+      {
+        "name": "Zombie Apprentice",
+        "types": [
+          "Action",
+          "Zombie"
+        ],
+        "cost": "$3",
+        "description": "You may trash an Action card from your hand for +3 Cards and +1 Action."
+      },
+      {
+        "name": "Zombie Mason",
+        "types": [
+          "Action",
+          "Zombie"
+        ],
+        "cost": "$3",
+        "description": "Trash the top card of your deck. You may gain a card costing up to $1 more than it."
+      },
+      {
+        "name": "Zombie Spy",
+        "types": [
+          "Action",
+          "Zombie"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nLook at the top card of your deck. Discard it or put it back."
+      },
+      {
+        "name": "Shepherd",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nDiscard any number of Victory cards, revealing them. +2 Cards per card discarded.\n(When this is in the supply each player replaces one starting copper with Heirloom: Pasture)"
+      },
+      {
+        "name": "Skulk",
+        "types": [
+          "Action",
+          "Attack",
+          "Doom"
+        ],
+        "cost": "$4",
+        "description": "+1 Buy\nEach other player receives the next Hex.\n----------\nWhen you gain this, gain a Gold."
+      },
+      {
+        "name": "Cobbler",
+        "types": [
+          "Night",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "At the start of your next turn, gain a card to hand costing up to $4."
+      },
+      {
+        "name": "Crypt",
+        "types": [
+          "Night",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Set aside any number of Treasures you have in play (under this). While any remain, at the start of each of your turns, put one of them into your hand."
+      },
+      {
+        "name": "Cursed Village",
+        "types": [
+          "Action",
+          "Doom"
+        ],
+        "cost": "$5",
+        "description": "+2 Actions\nDraw until you have 6 cards in hand.\n----------\nWhen you gain this, receive a Hex."
+      },
+      {
+        "name": "Den of Sin",
+        "types": [
+          "Night",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "At the start of your next turn: +2 Cards.\n----------\nThis is gained to your hand (instead of your discard pile)."
+      },
+      {
+        "name": "Idol",
+        "types": [
+          "Treasure",
+          "Attack",
+          "Fate"
+        ],
+        "cost": "$5",
+        "description": "When you play this, if you then have an odd number of Idols in play, receive a Boon; if an even number, each other player gains a Curse."
+      },
+      {
+        "name": "Pooka",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "You may trash a Treasure other than Cursed Gold from your hand for +4 Cards.\n(When this is in the supply each player replaces one starting copper with Heirloom: Cursed Gold)"
+      },
+      {
+        "name": "Sacred Grove",
+        "types": [
+          "Action",
+          "Fate"
+        ],
+        "cost": "$5",
+        "description": "+1 Buy\n+$3\nReceive a Boon. If it doesn't give +$1, each other player may receive it."
+      },
+      {
+        "name": "Tormentor",
+        "types": [
+          "Action",
+          "Attack",
+          "Doom"
+        ],
+        "cost": "$5",
+        "description": "+$2\nIf you have no other cards in play, gain an Imp from its pile. Otherwise, each other player receives the next Hex."
+      },
+      {
+        "name": "Tragic Hero",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+3 Cards\n+1 Buy\nIf you have 8 or more cards in hand (after drawing), trash this and gain a Treasure."
+      },
+      {
+        "name": "Vampire",
+        "types": [
+          "Night",
+          "Attack",
+          "Doom"
+        ],
+        "cost": "$5",
+        "description": "Each other player receives the next Hex. Gain a card costing up to $5 other than a Vampire. Exchange this for a Bat."
+      },
+      {
+        "name": "Werewolf",
+        "types": [
+          "Action",
+          "Attack",
+          "Night",
+          "Doom"
+        ],
+        "cost": "$5",
+        "description": "If it's your Night phase, each other player receives the next Hex. Otherwise, +3 Cards."
+      },
+      {
+        "name": "Raider",
+        "types": [
+          "Night",
+          "Attack",
+          "Duration"
+        ],
+        "cost": "$6",
+        "description": "Each other player with 5 or more cards in hand discards a copy of a card you have in play (or reveals they can't).\nAt the start of your next turn, +$3"
+      }
+    ]
+  },
+  "other": {
+    "name": "Other",
+    "info": "",
+    "cards": [
+      {
+        "name": "Wish",
+        "types": [
+          "Action"
+        ],
+        "cost": "$0*",
+        "description": "+1 Action\nReturn this to its pile. If you did, gain a card to your hand costing up to $6.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Will-O'-Wisp",
+        "types": [
+          "Action",
+          "Spirit"
+        ],
+        "cost": "$0*",
+        "description": "+1 Card\n+1 Action\nReveal the top card of your deck. If it costs $2 or less, put it into your hand.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Bat",
+        "types": [
+          "Night"
+        ],
+        "cost": "$2*",
+        "description": "Trash up to 2 cards from your hand. If you trashed at least one, exchange this for a Vampire.\n(This is not in the Supply.)"
+      },
+      {
+        "name": "Imp",
+        "types": [
+          "Action",
+          "Spirit"
+        ],
+        "cost": "$2*",
+        "description": "+2 Cards\nYou may play an Action card from your hand that you don't have a copy of in play.\n(This is not in the supply)."
+      },
+      {
+        "name": "Ghost",
+        "types": [
+          "Night",
+          "Duration",
+          "Spirit"
+        ],
+        "cost": "$4*",
+        "description": "Reveal cards from your deck until you reveal an Action. Discard the other cards and set aside the Action. At the start of your next turn, play it twice.\n(This is not in the Supply.)"
+      }
+    ]
+  },
+  "states": {
+    "name": "States",
+    "info": "",
+    "cards": [
+      {
+        "name": "Lost in the Woods",
+        "types": [
+          "State"
+        ],
+        "cost": "",
+        "description": "At the start of your turn, you may discard a card to receive a Boon."
+      },
+      {
+        "name": "Deluded",
+        "types": [
+          "State"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, return this, and you can't buy Actions this turn."
+      },
+      {
+        "name": "Envious",
+        "types": [
+          "State"
+        ],
+        "cost": "",
+        "description": "At the start of your Buy phase, return this, and Silver and Gold make $1 this turn."
+      },
+      {
+        "name": "Miserable",
+        "types": [
+          "State"
+        ],
+        "cost": "",
+        "description": "Worth -2VP"
+      },
+      {
+        "name": "Twice Miserable",
+        "types": [
+          "State"
+        ],
+        "cost": "",
+        "description": "Worth -4VP"
+      }
+    ]
+  }
+}

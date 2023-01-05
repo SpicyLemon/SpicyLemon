@@ -1,0 +1,326 @@
+{
+  "in-1st-not-2nd": {
+    "name": "In 1st Not 2nd",
+    "info": "",
+    "cards": [
+      {
+        "name": "Embargo",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+$2\nTrash this. Add an Embargo token to a Supply pile. (For the rest of the game, when a player buys a card from that pile, they gain a Curse.)"
+      },
+      {
+        "name": "Pearl Diver",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nLook at the bottom card of your deck. You may put it on top."
+      },
+      {
+        "name": "Ambassador",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$3",
+        "description": "Reveal a card from your hand. Return up to 2 copies of it from your hand to the Supply. Then each other player gains a copy of it."
+      },
+      {
+        "name": "Navigator",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+$2\nLook at the top 5 cards of your deck. Either discard them all, or put them back in any order."
+      },
+      {
+        "name": "Pirate Ship",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "Choose one: +$1 per Coin token on your Pirate Ship mat; or each other player reveals the top 2 cards of their deck, trashes one of those Treasures that you choose, and discards the rest, and then if anyone trashed a Treasure you add a Coin token to your Pirate Ship mat."
+      },
+      {
+        "name": "Sea Hag",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "Each other player discards the top card of their deck, then gains a Curse onto their deck."
+      },
+      {
+        "name": "Explorer",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "You may reveal a Province from your hand. If you do, gain a Gold to your hand. If you don't, gain a Silver to your hand."
+      },
+      {
+        "name": "Ghost Ship",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\nEach other player with 4 or more cards in hand puts cards from their hand onto their deck until they have 3 cards in hand."
+      }
+    ]
+  },
+  "in-2nd-not-1st": {
+    "name": "In 2nd Not 1st",
+    "info": "",
+    "cards": [
+      {
+        "name": "Astrolabe",
+        "types": [
+          "Treasure",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "Now and at the start of your next turn:\nWorth $1\n+1 Buy"
+      },
+      {
+        "name": "Monkey",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "Until your next turn, when the player to your right gains a card, +1 Card.\nAt the start of your next turn, +1 Card."
+      },
+      {
+        "name": "Sea Chart",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Card\n+1 Action\nReveal the top card of your deck. If you have a copy of it in play, put it into your hand."
+      },
+      {
+        "name": "Blockade",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "Gain a card costing up to $4, setting it aside. At the start of your next turn, put it into your hand. While it's set aside, when another player gains a copy of it on their turn, they gain a Curse."
+      },
+      {
+        "name": "Sailor",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "+1 Action\nOnce this turn, when you gain a Duration card, you may play it.\nAt the start of your next turn, +$2 and you may trash a card from your hand."
+      },
+      {
+        "name": "Tide Pools",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "+3 Cards\n+1 Action\nAt the start of your next turn, discard 2 cards."
+      },
+      {
+        "name": "Corsair",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+$2\nAt the start of your next turn, +1 Card. Until then, each other player trashes the first Silver or Gold they play each turn."
+      },
+      {
+        "name": "Pirate",
+        "types": [
+          "Action",
+          "Duration",
+          "Reaction"
+        ],
+        "cost": "$5",
+        "description": "At the start of your next turn, gain a Treasure costing up to $6 to your hand.\n----------\nWhen any player gains a Treasure, you may play this from your hand."
+      },
+      {
+        "name": "Sea Witch",
+        "types": [
+          "Action",
+          "Duration",
+          "Attack"
+        ],
+        "cost": "$5",
+        "description": "+2 Cards\nEach other player gains a Curse.\nAt the start of your next turn, +2 Cards, then discard 2 cards."
+      }
+    ]
+  },
+  "kingdom": {
+    "name": "Kingdom",
+    "info": "",
+    "cards": [
+      {
+        "name": "Haven",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$2",
+        "description": "+1 Card\n+1 Action\nSet aside a card from your hand face down (under this). At the start of your next turn, put it into your hand."
+      },
+      {
+        "name": "Lighthouse",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$2",
+        "description": "+1 Action\nNow and at the start of your next turn: +$1.\n----------\nWhile this is in play, when another player plays an Attack card, it doesn't affect you."
+      },
+      {
+        "name": "Native Village",
+        "types": [
+          "Action"
+        ],
+        "cost": "$2",
+        "description": "+2 Actions\nChoose one: Put the top card of your deck face down on your Native Village mat (you may look at those cards at any time); or put all the cards from your mat into your hand."
+      },
+      {
+        "name": "Fishing Village",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$3",
+        "description": "+2 Actions\n+$1\nAt the start of your next turn: +1 Action and +$1."
+      },
+      {
+        "name": "Lookout",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+1 Action\nLook at the top 3 cards of your deck. Trash one of them. Discard one of them. Put the other one back on to your deck."
+      },
+      {
+        "name": "Smugglers",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "Gain a copy of a card costing up to $6 that the player to your right gained on their last turn."
+      },
+      {
+        "name": "Warehouse",
+        "types": [
+          "Action"
+        ],
+        "cost": "$3",
+        "description": "+3 Cards\n+1 Action\nDiscard 3 cards."
+      },
+      {
+        "name": "Caravan",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$4",
+        "description": "+1 Card\n+1 Action\nAt the start of your next turn, +1 Card."
+      },
+      {
+        "name": "Cutpurse",
+        "types": [
+          "Action",
+          "Attack"
+        ],
+        "cost": "$4",
+        "description": "+$2\nEach other player discards a Copper (or reveals a hand with no Copper)."
+      },
+      {
+        "name": "Island",
+        "types": [
+          "Action",
+          "Victory"
+        ],
+        "cost": "$4",
+        "description": "Put this and a card from your hand onto your Island mat.\n----------\n2VP"
+      },
+      {
+        "name": "Salvager",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "+1 Buy\nTrash a card from your hand. +$1 per $1 it costs."
+      },
+      {
+        "name": "Treasure Map",
+        "types": [
+          "Action"
+        ],
+        "cost": "$4",
+        "description": "Trash this and a Treasure Map from your hand. If you trashed two Treasure Maps, gain 4 Golds onto your deck."
+      },
+      {
+        "name": "Bazaar",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+2 Actions\n+$1"
+      },
+      {
+        "name": "Merchant Ship",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Now and at the start of your next turn: +$2."
+      },
+      {
+        "name": "Outpost",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "If this is the first time you played an Outpost this turn, and the previous turn wasn't yours, then take an extra turn after this one, and you only draw 3 cards for your next hand."
+      },
+      {
+        "name": "Tactician",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "If you have at least one card in hand, discard your hand, and at the start of your next turn, +5 Cards, +1 Action, and +1 Buy."
+      },
+      {
+        "name": "Treasury",
+        "types": [
+          "Action"
+        ],
+        "cost": "$5",
+        "description": "+1 Card\n+1 Action\n+$1\nWhen you discard this from play, if you didn't buy a Victory card this turn, you may put this onto your deck."
+      },
+      {
+        "name": "Wharf",
+        "types": [
+          "Action",
+          "Duration"
+        ],
+        "cost": "$5",
+        "description": "Now and at the start of your next turn: +2 Cards and +1 Buy."
+      }
+    ]
+  }
+}
