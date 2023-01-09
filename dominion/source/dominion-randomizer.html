@@ -475,7 +475,7 @@
                 while (minMaxCounts[costStr].min > 0) {
                     minMaxCounts[costStr].min--;
                     minMaxCounts[costStr].max--;
-                    cardIndex = Math.floor(Math.random() * cardsAtCost.length);
+                    let cardIndex = Math.floor(Math.random() * cardsAtCost.length);
                     pickedCards.push(cardsAtCost[cardIndex]);
                     cardsAtCost.splice(cardIndex, 1);
                 }
@@ -485,8 +485,8 @@
 
         // Pick random cards until we've got enough.
         while (pickedCards.length < pickCount) {
-            cardIndex = Math.floor(Math.random() * availableCards.length);
-            card = availableCards[cardIndex];
+            let cardIndex = Math.floor(Math.random() * availableCards.length);
+            let card = availableCards[cardIndex];
             pickedCards.push(card);
             availableCards.splice(cardIndex, 1);
             minMaxCounts[card.randomizerCost].max--;
@@ -502,6 +502,36 @@
                     return outputError("Not enough cards left to pick from ("+availableCards.length+") after hitting maximum of one or more cost");
                 }
             }
+        }
+
+        // If "Young Witch" was selected, pick a bane card.
+        let haveYoungWitch = false;
+        let baneCard = undefined;
+        for (let card of pickedCards) {
+            if (card.name === "Young Witch") {
+                haveYoungWitch = true;
+                break;
+            }
+        }
+        if (haveYoungWitch) {
+            availableCards = [];
+            for (let card of selectedCards) {
+                let isPicked = false;
+                for (let pickedCard of pickedCards) {
+                    if (pickedCard.name == card.name) {
+                        isPicked = true;
+                        break;
+                    }
+                }
+                if (!isPicked) {
+                    availableCards.push(card);
+                }
+            }
+            if (availableCards.length === 0) {
+                return outputError("No cards left to pick a Bane card.");
+            }
+            let cardIndex = Math.floor(Math.random() * availableCards.length);
+            baneCard = availableCards[cardIndex]
         }
 
         // Pick random event cards if any were selected.
@@ -573,6 +603,13 @@
                 continue;
             }
             $("#output").append(makeOutputCardSet(pickedCardSets[cardSet]));
+        }
+        if (baneCard !== undefined) {
+            let baneSet = {
+                name: "Bane card (from " + baneCard.expansion + ")",
+                cards: [baneCard]
+            };
+            $("#output").append(makeOutputCardSet(baneSet));
         }
         if (pickedEvents.length > 0) {
             let eventCardSet = {
@@ -702,6 +739,9 @@ input[type=number] {
 }
 .extra-cards-title {
     font-weight: bold;
+}
+body {
+    padding-bottom: 40px;
 }
 </style>
 </head>
