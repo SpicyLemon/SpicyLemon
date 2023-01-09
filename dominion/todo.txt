@@ -82,6 +82,9 @@
   * My guess is that the thing comparing the page values to defaults is using the wrong keys to find things.
 * Consider: When horizontal space is limiting, for expansions with a 2nd edition, keep the select/deselect together (on the same line)?
   - When they're on their own line, keep them left-justified with the buttons above them.
+* Change the "Events, Landmarks, Projects, Traits and/or Ways" heading to only have the types actually selected.
+  - Maybe put each type in their own section? It'll almost always just be one section (or none), seldomly two, rarely three or more.
+* Provide more details in the "You will also need" section, e.g. which expansion the card comes from and possibly expandable card details.
 * Consider: Create some hotkeys to help navigate/interact with the page.
   * I'm not sure how much time to spend on this since none of it really applies to mobile interaction.
   * Make up/down keys navigate showing expansions, cardsets, and cards?
