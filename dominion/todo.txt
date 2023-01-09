@@ -1,12 +1,6 @@
 * Add a footer with site info.
   - Have an expandable "how to use this site" section, similar to flying-ferret.
-  - Make note of no cookies and maybe even note that everything except jquery is in the page source.
-* Consider: Add the jquery content to the page instead of loading it as a resource.
-  * It's smaller than the card info.
-  * It makes the page more portable (no external resources).
-  * My primary concern against doing it is whether it's bad practice from a security/validation standpoint.
-    * Do people need to verify that what I'm saying is jquery is actually original jquery and not some maliciously modified thing?
-  * I wonder if it's possible to get jquery without the ajax stuff in it (just the dom selectors/manipulation stuff).
+  - Make note of no cookies and maybe even note that everything is in the page source.
 * Add > v show/hide indicators to the expansion and cardset elements to make it more obvious that there's expandable content.
   * Probably want a generic callback function that can be executed as a complete function on the toggle calls.
   * That callback should be callable by other things too so that it's easier to keep the indicators in sync with the content.
@@ -97,3 +91,4 @@
   * Key to switch to/from pre-select mode.
 * Consider: Add a link to the page from flying-ferret.
 * Consider: Change the text on the "Pick Cards" button to something like "Generate Game".
+* Consider: See if there's a way to get the jquery DOM stuff without ajax.
