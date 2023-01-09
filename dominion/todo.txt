@@ -1,28 +1,41 @@
 * Add a footer with site info.
   - Have an expandable "how to use this site" section, similar to flying-ferret.
   - Make note of no cookies and maybe even note that everything except jquery is in the page source.
-* Consider: Add a link to the page from flying-ferret.
 * Consider: Add the jquery content to the page instead of loading it as a resource.
   * It's smaller than the card info.
   * It makes the page more portable (no external resources).
   * My primary concern against doing it is whether it's bad practice from a security/validation standpoint.
     * Do people need to verify that what I'm saying is jquery is actually original jquery and not some maliciously modified thing?
   * I wonder if it's possible to get jquery without the ajax stuff in it (just the dom selectors/manipulation stuff).
-* Add show/hide everything buttons.
-  * Always show both the "show everything" and "hide everything" buttons.
-  * When the "show everything" button is clicked:
-    1. Make the button disappear.
-    2. Immediately show all cardset-cards, and card-description elements inside not-showing expansion-cardsets and card elements.
-    3. show(100) on all the not-showing expansion-cardsets, cardset-cards, and card-description elements.
-    4. Make the "hide everything" button show.
-  * When the "hide everything" button is clicked:
-    1. Make the button disappear.
-    2. hide(100) on all showing card-description, cardset-cards, and expansion-cardsets elements.
 * Add > v show/hide indicators to the expansion and cardset elements to make it more obvious that there's expandable content.
   * Probably want a generic callback function that can be executed as a complete function on the toggle calls.
   * That callback should be callable by other things too so that it's easier to keep the indicators in sync with the content.
 * Consider: Convert the "Show/Hide Description" button to the > v indicators too?
   - Maybe have both?
+  - Getting rid of the show/hide description buttons will let me get rid of the hard-coded width on the types area, which, in turn makes the page look better on screens without much width.
+* Consider: Add a sticky header or menu to the page to make some things easy to always access:
+  - show/hide everything
+  - pre-select mode
+  - jump to top/bottom
+* Add show/hide everything functionality.
+  * Always show both the "show everything" and "hide everything" options.
+  * When the "show everything" button is clicked:
+    1. Make the button disappear.
+    2. show(0) all cardset-cards, and card-description elements inside not-showing expansion-cardsets and card elements.
+    3. show(100) on all the not-showing expansion-cardsets, cardset-cards, and card-description elements.
+  * When the "hide everything" button is clicked:
+    1. Make the button disappear.
+    2. hide(0) on all not-showing card-description, cardset-cards, and expansion-cardsets elements.
+    3. hide(100) on all showing card-description, cardset-cards, and expansion-cardsets elements.
+  * For the hide, I might be able to just hide(100) everything that should be hidden. Just make sure it doesn't re-animate when already hidden.
+* Consider: Add a way to show/hide all card descriptions.
+  - Cards not showing would stay not showing, but all description areas would be expanded (and button names changed).
+  - Have this available on an expansion and/or cardset level?
+  - Maybe the show/hide everything options only affect expansions and cardsets?
+* Consider: Add a way to deselect everything?
+  - Maybe also have it deselect pre-selected cards?
+  - Maybe have it clear out the output?
+  - Maybe have it reset generator options?
 * Consider: Don't display:none on the kingdom cardsets so that when an expansion-cardsets area is shown, those are visible at first?
   - Maybe do that for all the cardsets?
   - Maybe only do that for expansions with only the one cardset?
@@ -43,7 +56,11 @@
     * When done selecting them:
       1. Add them to a new area above the generator.
       2. Select and disable the primary (normally visible) checkbox.
-* Consider: Add a sticky header or menu to the page to make some things easy to always access, e.g show/hide everything and switch to specifically-select cards mode and back.
+  * Need some sort of page-wide visual indicator when in this mode.
+    * Change the font?
+    * Change the main background color to something other than white?
+    * Reverse-italics the card label text?
+    * Hide the expansion/cardset buttons, e.g. "Select all".
 * Consider: In the output area, allow cards to be selected to keep when regenerating a set?
   - This is similar to the consideration above.
   - It would allow a user to tweak/refine their selections.
@@ -60,9 +77,17 @@
   - Once done animating the hide, change it to "show".
   - Need to make sure they update properly with the show/hide everything actions.
   - I'll probably want a generic callback function for updating button text so that other show/hide actions can keep the button text in sync.
-* Consider: Add a way to show/hide all card descriptions.
-  - Cards not showing would stay not showing, but all description areas would be expanded (and button names changed).
-  - Have this available on an expansion and/or cardset level?
+* Bugfix: Min/Max values stop updating with the card count once one is changed, even if changed back.
+  1. Click "Show/Hide advanced controlls".
+  2. Increase max "$0-2" to 3 (from 2).
+  3. Decrease the cards to choose to 5 (from 10).
+  4. Decrease the max "$0-2" to 2 (from 3).
+  5. Increase the cards to choose to 15.
+  * Expected result: As it gets back up close to 10, it matches the defaults and should again start updating as the cards to choose goes up.
+  * Actual result: The entries don't change.
+  * My guess is that the thing comparing the page values to defaults is using the wrong keys to find things.
+* Consider: When horizontal space is limiting, for expansions with a 2nd edition, keep the select/deselect together (on the same line)?
+  - When they're on their own line, keep them left-justified with the buttons above them.
 * Consider: Create some hotkeys to help navigate/interact with the page.
   * I'm not sure how much time to spend on this since none of it really applies to mobile interaction.
   * Make up/down keys navigate showing expansions, cardsets, and cards?
@@ -70,4 +95,5 @@
   * Make space select things (might already be that way, but check on the select all type buttons).
   * Enter key triggers the generate button.
   * Key to switch to/from pre-select mode.
+* Consider: Add a link to the page from flying-ferret.
 * Consider: Change the text on the "Pick Cards" button to something like "Generate Game".
