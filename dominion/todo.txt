@@ -70,3 +70,4 @@
   * Make space select things (might already be that way, but check on the select all type buttons).
   * Enter key triggers the generate button.
   * Key to switch to/from pre-select mode.
+* Consider: Change the text on the "Pick Cards" button to something like "Generate Game".
