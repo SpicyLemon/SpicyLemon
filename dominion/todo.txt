@@ -21,9 +21,6 @@
   - Maybe also have it deselect pre-selected cards?
   - Maybe have it clear out the output?
   - Maybe have it reset generator options?
-* Consider: Don't display:none on the kingdom cardsets so that when an expansion-cardsets area is shown, those are visible at first?
-  - Maybe do that for all the cardsets?
-  - Maybe only do that for expansions with only the one cardset?
 * Consider: Tweak the min/max card counts?
   - Always have at least 1 $0-2 card?
   - Somehow define that there should be at least 2 cards $0-3 (along with current definitions).
