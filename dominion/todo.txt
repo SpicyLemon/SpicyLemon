@@ -1,12 +1,6 @@
 * Add a footer with site info.
   - Have an expandable "how to use this site" section, similar to flying-ferret.
   - Make note of no cookies and maybe even note that everything is in the page source.
-* Add > v show/hide indicators to the expansion and cardset elements to make it more obvious that there's expandable content.
-  * Probably want a generic callback function that can be executed as a complete function on the toggle calls.
-  * That callback should be callable by other things too so that it's easier to keep the indicators in sync with the content.
-* Consider: Convert the "Show/Hide Description" button to the > v indicators too?
-  - Maybe have both?
-  - Getting rid of the show/hide description buttons will let me get rid of the hard-coded width on the types area, which, in turn makes the page look better on screens without much width.
 * Consider: Add a sticky header or menu to the page to make some things easy to always access:
   - show/hide everything
   - pre-select mode

@@ -161,6 +161,18 @@
         return $("#templates").children(".card").first().clone();
     };
 
+    function visIndCallback(ele){
+        return function() {
+            ele.parent().find(".vis-ind").first().text(ele.is(":visible") ? "v" : ">");
+        };
+    };
+
+    function toggleCallback(ele){
+        return function(){
+            ele.toggle(100, visIndCallback(ele));
+        }
+    }
+
     cardSetOrder = ["kingdom", "in-2nd-not-1st", "in-1st-not-2nd", "events", "landmarks", "projects", "traits", "ways"];
     // makeExpansion creates a new expansion section for the page.
     // Expects the key (in allCards) for the expansion.
@@ -168,9 +180,7 @@
         let rv = freshExpansionElement();
         rv.attr('id', expansion);
         rv.find(".expansion-name").text(expansionName(expansion));
-        rv.find(".expansion-name").click(function(){
-            rv.find(".expansion-cardsets").toggle(100);
-        });
+        rv.find(".expansion-heading").click(toggleCallback(rv.find(".expansion-cardsets")));
         let has2nd = false;
         let cardSets = rv.children(".expansion-cardsets").first();
         cardSets.empty();
@@ -238,9 +248,7 @@
     function makeCardSet(baseId, cardSet){
         let rv = freshCardSetElement();
         rv.attr('id', baseId)
-        rv.find(".cardset-title").click(function(){
-            rv.find(".cardset-cards").toggle(100);
-        });
+        rv.find(".cardset-heading").click(toggleCallback(rv.find(".cardset-cards")));
         rv.find(".cardset-select-all").click(function(){
             let cbs = rv.find("input[type=checkbox]");
             cbs.prop('checked', true);
@@ -272,7 +280,9 @@
         rv.find("input[type=checkbox]").remove();
         rv.find(".cardset-select-all").remove();
         rv.find(".cardset-deselect-all").remove();
-        rv.find(".cardset-title").addClass("output-cardset-title").removeClass("cardset-title").off("click");
+        rv.find(".vis-ind").first().remove();
+        rv.find(".cardset-heading").off("click");
+        rv.find(".cardset-title").addClass("output-cardset-title").removeClass("cardset-title");
         rv.find(".cardset-cards").removeAttr("style");
         return rv;
     }
@@ -283,9 +293,7 @@
         let rv = freshCardElement();
         rv.attr('id', baseId);
         rv.find("input[type=checkbox]").prop('value', card.name);
-        rv.find(".card-toggle-description").click(function(){
-            rv.find(".card-description").toggle(100);
-        });
+        rv.find(".vis-ind").first().click(toggleCallback(rv.find(".card-description")));
         rv.find(".card-name").text(card.name);
         rv.find(".card-cost").text(card.cost);
         let cardTypes = rv.find(".card-types");
@@ -659,6 +667,12 @@
     margin-top:20px;
     padding: 1px;
 }
+.vis-ind {
+    display: inline-block;
+    width: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #999999;
+}
 .expansion {
     border-bottom: 1px dashed gray;
     padding-left: 2px;
@@ -694,10 +708,6 @@
 }
 .output-cardset-title {
     font-weight: bold;
-}
-.card-summary {
-    display: inline-block;
-    width: 375px;
 }
 .card-type {
     padding-left: 5px;
@@ -756,7 +766,10 @@ body {
 <body>
 <div id="templates" style="display:none;">
     <div class="expansion">
-        <span class="expansion-name">Expansion Name</span>
+        <span class="expansion-heading">
+            <span class="vis-ind">&gt;</span>
+            <span class="expansion-name">Expansion Name</span>
+        </span>
         <button type="button" class="expansion-select-2nd">Select 2nd Edition</button>
         <button type="button" class="expansion-select-1st">Select 1st Edition</button>
         <button type="button" class="expansion-select-all">Select All</button>
@@ -764,7 +777,10 @@ body {
         <div class="expansion-cardsets" style="display:none;">Card Sets</div>
     </div>
     <div class="cardset">
-        <span class="cardset-title">Card Set Title</span>
+        <span class="cardset-heading">
+            <span class="vis-ind">&gt;</span>
+            <span class="cardset-title">Card Set Title</span>
+        </span>
         <span class="cardset-controls">
             <button type="button" class="cardset-select-all">Select All</button>
             <button type="button" class="cardset-deselect-all">Deselect All</button>
@@ -772,13 +788,13 @@ body {
         <div class="cardset-cards" style="display:none;">Cards</div>
     </div>
     <div class="card">
+        <span class="vis-ind">&gt;</span>
         <label class="card-summary">
             <input type="checkbox" name="card-selection">
             <span class="card-cost">$X</span>
             <span class="card-name">Card Name</span>
             : <span class="card-types">Types</span>
         </label>
-        <button type="button" class="card-toggle-description">Show/Hide Description</button>
         <div class="card-description" style="display:none;">Description</div>
     </div>
     <span class="error"></span>
