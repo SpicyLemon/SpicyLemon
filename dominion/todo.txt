@@ -1,4 +1,3 @@
-* Add a message for when there isn't any javascript.
 * Consider: Add a sticky header or menu to the page to make some things easy to always access:
   - show/hide everything
   - pre-select mode

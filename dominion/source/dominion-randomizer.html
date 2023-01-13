@@ -818,6 +818,11 @@ input[type=number] {
     padding: 5px;
     text-align: center;
 }
+noscript {
+    display: block;
+    width: 90%;
+    margin: auto;
+}
 body {
     padding-bottom: 40px;
 }
@@ -865,7 +870,18 @@ body {
     </div>
 </div>
 <h1>Dominion Randomizer</h1>
-<div id="selectors"></div>
+<div id="selectors">
+    <noscript>
+        <p>
+            This page uses javascript to randomly generate Dominion games.
+            All needed data and functionality is included in this html file.
+            It does not use any external resources.
+            It does not submit any forms or make any requests.
+            It is completely self-contained.
+            But it only works using javascript.
+        </p>
+    </noscript>
+</div>
 <div id="generator">
     <span class="vis-ind">&gt;</span>
     <span id="generator-advanced-controls" style="display: none;">
