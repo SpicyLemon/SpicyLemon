@@ -136,6 +136,18 @@
         console.log("Done adding " + added + " cards to extraCardsNeeded (from includeIf).");
     };
 
+    // setupInstructions sets up the instructions area by hiding them then adding a click action to re-show them.
+    function setupInstructions(){
+        var $inst = $('#instructions');
+        var $inst_h = $('#instructions-heading');
+        $inst.hide();
+        $inst_h.click(function(e){
+            e.preventDefault();
+            $inst_h.slideUp('slow');
+            $inst.slideDown('slow');
+        });
+    };
+
     // hasSelectedCheckbox looks at all checkboxes inside the provided element and returns true if
     // any of them are checked.
     function hasSelectedCheckbox(element){
@@ -161,12 +173,14 @@
         return $("#templates").children(".card").first().clone();
     };
 
+    // visIndCallback returns a function that updates a visual indicator associated with a togglable element.
     function visIndCallback(ele){
         return function() {
             ele.parent().find(".vis-ind").first().text(ele.is(":visible") ? "v" : ">");
         };
     };
 
+    // toggleCallback returns a function for toggling (show/hide) an element.
     function toggleCallback(ele){
         return function(){
             ele.toggle(100, visIndCallback(ele));
@@ -425,7 +439,7 @@
                 setMinMaxValuesToDefaults();
             }
         });
-        $("#generate-picks").click(function(){
+        $("#generate-game").click(function(){
             generateRandomPicks();
         });
     };
@@ -652,6 +666,7 @@
     };
 
     $(document).ready(function(){
+        setupInstructions();
         prepAllCards();
         prepExtraCardsNeeded();
         addAllCardsToPage();
@@ -774,8 +789,34 @@ input[type=number] {
     margin-bottom: 5px;
     margin-left: 10px;
 }
+.error {
+    background-color: yellow;
+}
 .extra-cards-title {
     font-weight: bold;
+}
+#instructions-heading {
+    position: relative;
+    text-align: center;
+    margin-top: 30px;
+    padding: 3px;
+    font-size: 1.5em;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+#instructions {
+    display: block;
+    width: 90%;
+    margin: auto;
+}
+.fine-print {
+    font-size: 10px;
+}
+#cookies, #source, #disclaimer {
+    position: relative;
+    padding: 5px;
+    text-align: center;
 }
 body {
     padding-bottom: 40px;
@@ -827,8 +868,8 @@ body {
 <div id="selectors"></div>
 <div id="generator">
     <span class="vis-ind">&gt;</span>
-    <label id="generator-card-count">Number of Kingdom Cards to Choose: <input type="number" name="cardCount" value="10" min="0" max="15"></label>
-    <div id="generator-advanced-controls" style="display: none;">
+    <span id="generator-advanced-controls" style="display: none;">
+        <label id="generator-card-count">Number of Kingdom Cards to Choose: <input type="number" name="cardCount" value="10" min="0" max="15"></label>
         <table id="generator-cost-min-max">
             <caption>Cards by cost</caption>
             <thead>
@@ -879,9 +920,57 @@ body {
             </select>
         </label><br>
         <label id="generator-platinum">Chances of including Platinum and Colony: <input type="number" name="platinumChances" value="0" min="0" max="100">%</label><br>
-    </div>
-    <button type="button" id="generate-picks">Pick Cards</button>
+    </span>
+    <button type="button" id="generate-game">Generate Game</button>
 </div>
 <div id="output" style="display: none;">Output</div>
+<a href="#" id="instructions-heading">How to use this site</a>
+<div id="instructions">
+    <p>
+        This page allows you to select any number of Dominion cards; from those selected cards a random game of Dominion will be chosen.
+    </p>
+    <p>
+        Clicking an expansion title will expand/collapse it to show its different card sets.
+        Entire expansions or editions can be selected/deselected using the buttons next to the expansion title.
+        An expansion is colored dark-gray if any cards in it are selected.
+    </p>
+    <p>
+        Clicking a card set title will show expand/collapse its list of cards.
+        All cards in a card set can be selected/deselected using the buttons next to the card set title.
+        A card set is colored light-gray if any cards in it are selected.
+    </p>
+    <p>
+        Each card has a checkbox that allows it to be selected or deselected individually.
+        Clicking the "%gt;" next to a card's checkbox will show/hide the card's description.
+    </p>
+    <p>
+        Once you've selected the cards to choose from, press the "Generate Game" button.
+        A new section will appear below it containing the cards randomly chosen for your game.
+    </p>
+    <p>
+        Extra generation controls are available by clicking the "&gt;" to the left of "Generate Game" button.
+        This allows you to define various game generation parameters such as possible card cost distribution.
+    </p>
+</div>
+<div class="fine-print">
+    <div id="cookies">
+        This site does not use cookies.
+        <br>
+        This site does not track or save anything.
+        <br>
+        This page does not even use any resources outside the source of this html file.
+    </div>
+    <div id="source">
+        The source code for this page can be found on <a href="https://github.com/SpicyLemon/SpicyLemon/tree/master/dominion" target="_blank">Github</a>
+        <br>
+        You can also just right-click -> view source; it's all there.
+    </div>
+    <div id="disclaimer">
+        This service is in no way affiliated with <a href="https://www.riograndegames.com/games/dominion/" target="_blank">Dominion</a> or <a href="https://www.riograndegames.com/" target="_blank">Rio Grande Games</a>.
+        <br>
+        It is independely maintained and operated.
+        <br>
+    </div>
+</div>
 </body>
 </html>
