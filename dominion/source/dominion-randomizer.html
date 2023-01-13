@@ -416,9 +416,7 @@
     // setupGenerator sets up the validation and actions of the generator.
     function setupGenerator(){
         defineDefaultCardCostDistribution();
-        $("#generator-toggle-advanced").click(function(){
-            $("#generator-advanced-controls").toggle(100);
-        });
+        $("#generator").children(".vis-ind").first().click(toggleCallback($("#generator-advanced-controls")));
         $("#generator-cost-min-max").find("input[type=number]").change(function(){
             useDefaultMinMaxValues = areMinMaxValuesDefault();
         });
@@ -664,7 +662,7 @@
 <style>
 #selectors, #generator, #output {
     border: 1px solid black;
-    margin-top:20px;
+    margin-bottom: 10px;
     padding: 1px;
 }
 .vis-ind {
@@ -752,8 +750,29 @@
 input[type=number] {
     width: 40px;
 }
+#generator {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+#generator-cost-min-max {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 10px;
+}
 #generator-cost-min-max > tbody > tr > th {
     text-align: right;
+}
+#generator-events {
+    display: inline-block;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 10px;
+}
+#generator-platinum {
+    display: inline-block;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 10px;
 }
 .extra-cards-title {
     font-weight: bold;
@@ -807,8 +826,8 @@ body {
 <h1>Dominion Randomizer</h1>
 <div id="selectors"></div>
 <div id="generator">
+    <span class="vis-ind">&gt;</span>
     <label id="generator-card-count">Number of Kingdom Cards to Choose: <input type="number" name="cardCount" value="10" min="0" max="15"></label>
-    <button type="button" id="generator-toggle-advanced">Show/Hide Advanced Controls</button><br>
     <div id="generator-advanced-controls" style="display: none;">
         <table id="generator-cost-min-max">
             <caption>Cards by cost</caption>
@@ -858,9 +877,9 @@ body {
                 <option value="4">4</option>
                 <option value="5">5</option>
             </select>
-        </label>
+        </label><br>
+        <label id="generator-platinum">Chances of including Platinum and Colony: <input type="number" name="platinumChances" value="0" min="0" max="100">%</label><br>
     </div>
-    <label id="generator-platinum">Chances of including Platinum and Colony: <input type="number" name="platinumChances" value="0" min="0" max="100">%</label><br>
     <button type="button" id="generate-picks">Pick Cards</button>
 </div>
 <div id="output" style="display: none;">Output</div>
