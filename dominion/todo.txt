@@ -53,8 +53,6 @@
     * Do I want each sub-card to have their own independent show/hide for their descriptions?
     * Do I want one show/hide for all sub-card descriptions?
     * Do I want to just show all the sub-card descriptions without any extra hide ability?
-* Consider: When horizontal space is limiting, for expansions with a 2nd edition, keep the select/deselect together (on the same line)?
-  - When they're on their own line, keep them left-justified with the buttons above them.
 * Change the "Events, Landmarks, Projects, Traits and/or Ways" output heading to only have the types actually chosen.
   - Maybe put each type in their own section? It'll almost always just be one section (or none), seldomly two, rarely three or more.
 * Provide more details in the "You will also need" section, e.g. which expansion the card comes from and possibly expandable card details.

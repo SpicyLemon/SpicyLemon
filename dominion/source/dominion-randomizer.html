@@ -244,8 +244,7 @@
                 cbs2.first().change();
             });
         } else {
-            rv.find(".expansion-select-2nd").remove();
-            rv.find(".expansion-select-1st").remove();
+            rv.find(".selectors-edition").remove();
         }
         rv.find("input[type=checkbox]").change(function(){
             if (hasSelectedCheckbox(rv)) {
@@ -696,6 +695,9 @@
     padding-left: 2px;
     padding-top: 2px;
 }
+.selectors-all, .selectors-edition {
+    display: inline-block;
+}
 .expansion-selected {
     background-color: #BBBBBB;
 }
@@ -840,10 +842,14 @@ body {
             <span class="vis-ind">&gt;</span>
             <span class="expansion-name">Expansion Name</span>
         </span>
-        <button type="button" class="expansion-select-2nd">Select 2nd Edition</button>
-        <button type="button" class="expansion-select-1st">Select 1st Edition</button>
-        <button type="button" class="expansion-select-all">Select All</button>
-        <button type="button" class="expansion-deselect-all">Deselect All</button>
+        <span class="selectors-edition">
+            <button type="button" class="expansion-select-2nd">Select 2nd Edition</button>
+            <button type="button" class="expansion-select-1st">Select 1st Edition</button>
+        </span>
+        <span class="selectors-all">
+            <button type="button" class="expansion-select-all">Select All</button>
+            <button type="button" class="expansion-deselect-all">Deselect All</button>
+        </span>
         <div class="expansion-cardsets" style="display:none;">Card Sets</div>
     </div>
     <div class="cardset">
