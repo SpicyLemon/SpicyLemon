@@ -1,5 +1,3 @@
-* Change the "Events, Landmarks, Projects, Traits and/or Ways" output heading to only have the types actually chosen.
-  - Maybe put each type in their own section? It'll almost always just be one section (or none), seldomly two, rarely three or more.
 * For the cards that are just placeholders for multiple other cards (e.g. "Knights" or "Augurs"), include all those entries in an expandable area of the card.
   - Maybe have it be an extra area inside the description?
   - So a user would click "Show/Hide description":
@@ -8,6 +6,7 @@
     * Do I want one show/hide for all sub-card descriptions?
     * Do I want to just show all the sub-card descriptions without any extra hide ability?
 * Provide more details in the "You will also need" section, e.g. which expansion the card comes from and possibly expandable card details.
+* Consider: Include the events, landmarks, projects, traits and/or ways in each expansion's output instead of a separate section.
 * Consider: Add a sticky header or menu to the page to make some things easy to always access:
   - show/hide everything
   - pre-select mode
