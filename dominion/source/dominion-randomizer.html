@@ -225,26 +225,24 @@
         });
         if (has2nd) {
             rv.find(".expansion-select-2nd").click(function(){
-                let cbsk = rv.find("#" + expansion + "-kingdom").find("input[type=checkbox]");
-                let cbs2 = rv.find("#" + expansion + "-in-2nd-not-1st").find("input[type=checkbox]");
-                let cbs1 = rv.find("#" + expansion + "-in-1st-not-2nd").find("input[type=checkbox]");
-                cbsk.prop('checked', true);
-                cbs2.prop('checked', true);
-                cbs1.prop('checked', false);
-                cbsk.first().change();
-                cbs1.first().change();
-                cbs2.first().change();
+                for (let cardSetName of cardSetOrder) {
+                    let checked = cardSetName !== 'in-1st-not-2nd';
+                    if (allCards[expansion][cardSetName] !== undefined) {
+                        let cbs = rv.find("#" + expansion + "-" + cardSetName).find("input[type=checkbox]");
+                        cbs.prop('checked', checked);
+                        cbs.first().change();
+                    }
+                }
             });
             rv.find(".expansion-select-1st").click(function(){
-                let cbsk = rv.find("#" + expansion + "-kingdom").find("input[type=checkbox]");
-                let cbs2 = rv.find("#" + expansion + "-in-2nd-not-1st").find("input[type=checkbox]");
-                let cbs1 = rv.find("#" + expansion + "-in-1st-not-2nd").find("input[type=checkbox]");
-                cbsk.prop('checked', true);
-                cbs2.prop('checked', false);
-                cbs1.prop('checked', true);
-                cbsk.first().change();
-                cbs1.first().change();
-                cbs2.first().change();
+                for (let cardSetName of cardSetOrder) {
+                    let checked = cardSetName !== 'in-2nd-not-1st';
+                    if (allCards[expansion][cardSetName] !== undefined) {
+                        let cbs = rv.find("#" + expansion + "-" + cardSetName).find("input[type=checkbox]");
+                        cbs.prop('checked', checked);
+                        cbs.first().change();
+                    }
+                }
             });
         } else {
             rv.find(".selectors-edition").remove();
