@@ -53,15 +53,6 @@
     * Do I want each sub-card to have their own independent show/hide for their descriptions?
     * Do I want one show/hide for all sub-card descriptions?
     * Do I want to just show all the sub-card descriptions without any extra hide ability?
-* Bugfix: Min/Max values stop updating with the card count once one is changed, even if changed back.
-  1. Click "Show/Hide advanced controlls".
-  2. Increase max "$0-2" to 3 (from 2).
-  3. Decrease the cards to choose to 5 (from 10).
-  4. Decrease the max "$0-2" to 2 (from 3).
-  5. Increase the cards to choose to 15.
-  * Expected result: As it gets back up close to 10, it matches the defaults and should again start updating as the cards to choose goes up.
-  * Actual result: The entries don't change.
-  * My guess is that the thing comparing the page values to defaults is using the wrong keys to find things.
 * Consider: When horizontal space is limiting, for expansions with a 2nd edition, keep the select/deselect together (on the same line)?
   - When they're on their own line, keep them left-justified with the buttons above them.
 * Change the "Events, Landmarks, Projects, Traits and/or Ways" output heading to only have the types actually chosen.

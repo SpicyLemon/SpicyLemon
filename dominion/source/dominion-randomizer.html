@@ -383,6 +383,13 @@
                 "6+": {"min": 1, "max": 3},
             });
         }
+        // Duplicate all the "3-5" entries into "3", "4", and "5" and delete "3-5".
+        for (let i = 0; i < defaultCardCostDistribution.length; i++) {
+            for (let j = 3; j <= 5; j++) {
+                defaultCardCostDistribution[i][""+j] = defaultCardCostDistribution[i]["3-5"];
+            }
+            delete defaultCardCostDistribution[i]["3-5"];
+        }
     };
 
     // getCardCostMinMaxValues gets the min and max card count values from the page.
@@ -414,14 +421,11 @@
     function setMinMaxValuesToDefaults(){
         let picks = $("input[name='cardCount']").val();
         let defaults = defaultCardCostDistribution[picks];
-        $("input[name='cardCount2Min']").val(defaults["0-2"].min);
-        $("input[name='cardCount2Max']").val(defaults["0-2"].max);
-        for (let i = 3; i <= 5; i++) {
-            $("input[name='cardCount"+i+"Min']").val(defaults["3-5"].min);
-            $("input[name='cardCount"+i+"Max']").val(defaults["3-5"].max);
+        for (let i = 2; i <= 6; i++) {
+            costStr = intToRandomizerCost(i);
+            $("input[name='cardCount"+i+"Min']").val(defaults[costStr].min);
+            $("input[name='cardCount"+i+"Max']").val(defaults[costStr].max);
         }
-        $("input[name='cardCount6Min']").val(defaults["6+"].min);
-        $("input[name='cardCount6Max']").val(defaults["6+"].max);
     };
 
     // useDefaultMinMaxValues is an indicator of whether we should update the min/max values when the pick count changes.
@@ -438,6 +442,7 @@
             if (useDefaultMinMaxValues) {
                 setMinMaxValuesToDefaults();
             }
+            useDefaultMinMaxValues = areMinMaxValuesDefault();
         });
         $("#generate-game").click(function(){
             generateRandomPicks();
