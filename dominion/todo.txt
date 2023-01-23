@@ -6,6 +6,7 @@
     * Do I want one show/hide for all sub-card descriptions?
     * Do I want to just show all the sub-card descriptions without any extra hide ability?
 * Provide more details in the "You will also need" section, e.g. which expansion the card comes from and possibly expandable card details.
+* Consider: Add a count of selected cards to each expansion.
 * Consider: Include the events, landmarks, projects, traits and/or ways in each expansion's output instead of a separate section.
 * Consider: Add a sticky header or menu to the page to make some things easy to always access:
   - show/hide everything
