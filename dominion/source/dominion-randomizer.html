@@ -118,9 +118,9 @@
     };
 
     // intToRandomizerCost converts an int to the randomizer cost string.
-    function intToRandomizerCost(intVal) {
+    function intToRandomizerCost(intVal){
         return intVal <= 2 ? "0-2" : intVal >= 6 ? "6+" : ""+intVal;
-    }
+    };
 
     // prepExtraCardsNeeded adds the includedIf data to extraCardsNeeded.
     function prepExtraCardsNeeded(){
@@ -186,7 +186,7 @@
         return function(){
             ele.toggle(100, visIndCallback(ele));
         }
-    }
+    };
 
     // cardSetOrder is the order to use for cardsets inside an expansion.
     let cardSetOrder = ["kingdom", "in-2nd-not-1st", "in-1st-not-2nd", "events", "landmarks", "projects", "traits", "ways"];
@@ -214,14 +214,14 @@
                 let cbs = $(this).find("input[type=checkbox]");
                 cbs.prop('checked', true);
                 cbs.first().change();
-            })
+            });
         });
         rv.find(".expansion-deselect-all").click(function(){
             rv.find(".cardset-cards").each(function(){
                 let cbs = $(this).find("input[type=checkbox]");
                 cbs.prop('checked', false);
                 cbs.first().change();
-            })
+            });
         });
         if (has2nd) {
             rv.find(".expansion-select-2nd").click(function(){
@@ -292,7 +292,7 @@
     };
 
     // makeOutputCardSet creates a new cardset section for randomly selected card output.
-    function makeOutputCardSet(cardSet) {
+    function makeOutputCardSet(cardSet){
         let rv = makeCardSet("output-"+nameToId(cardSet.name), cardSet);
         rv.find("input[type=checkbox]").remove();
         rv.find(".selectors-cardset").remove();
@@ -301,7 +301,7 @@
         rv.find(".cardset-title").addClass("output-cardset-title").removeClass("cardset-title");
         rv.find(".cardset-cards").removeAttr("style");
         return rv;
-    }
+    };
 
     // makeCard creates a new card section for a card set.
     // Expects baseId to be a string, and card to be an object (from a cardSet.cards).
@@ -460,7 +460,7 @@
         // When platinumChances is changed, select the "other" option.
         $("input[name='platinumChances']").change(function(){
             $("input[name='platinumChancesOpt']").val(["other"]);
-        })
+        });
 
         // When the generate game button is pressed, pick random cards!
         $("#generate-game").click(function(){
@@ -486,9 +486,9 @@
     };
 
     // randIntN generats a random int from 0 (inclusive) to n (exclusive).
-    function randIntN(n) {
+    function randIntN(n){
         return Math.floor(Math.random() * n);
-    }
+    };
 
     // generateRandomPicks gathes all page input, randomly picks cards, and puts the results on the page.
     function generateRandomPicks(){
@@ -707,7 +707,7 @@
     };
 
     // outputError sets the output to the provided error message.
-    function outputError(message) {
+    function outputError(message){
         let err = $("#templates").children(".error").first().clone();
         err.text(message);
         $("#output").empty();
