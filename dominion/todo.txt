@@ -56,7 +56,6 @@
 * Change the "Events, Landmarks, Projects, Traits and/or Ways" output heading to only have the types actually chosen.
   - Maybe put each type in their own section? It'll almost always just be one section (or none), seldomly two, rarely three or more.
 * Provide more details in the "You will also need" section, e.g. which expansion the card comes from and possibly expandable card details.
-* Consider: Change the platinum/colony input to a radio with 0, 50, 100, other options. Other is the field currently showing.
 * Consider: Create some hotkeys to help navigate/interact with the page.
   * I'm not sure how much time to spend on this since none of it really applies to mobile interaction.
   * Make up/down keys navigate showing expansions, cardsets, and cards?

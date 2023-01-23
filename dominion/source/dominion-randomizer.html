@@ -437,15 +437,32 @@
     function setupGenerator(){
         defineDefaultCardCostDistribution();
         $("#generator").children(".vis-ind").first().click(toggleCallback($("#generator-advanced-controls")));
+
+        // When card cost min/maxes are changed, keep track of whether they're equal to the defaults.
         $("#generator-cost-min-max").find("input[type=number]").change(function(){
             useDefaultMinMaxValues = areMinMaxValuesDefault();
         });
+        // When the card count changes, update the defaults if they were previously the defaults.
         $("input[name='cardCount']").change(function(){
             if (useDefaultMinMaxValues) {
                 setMinMaxValuesToDefaults();
             }
             useDefaultMinMaxValues = areMinMaxValuesDefault();
         });
+
+        // When a platinumChancesOpt option is selected, set the selected value in platinumChances.
+        $("input[name='platinumChancesOpt']").change(function(){
+            let val = $(this).val();
+            if (val !== "other") {
+                $("input[name='platinumChances']").val(1 * val);
+            }
+        });
+        // When platinumChances is changed, select the "other" option.
+        $("input[name='platinumChances']").change(function(){
+            $("input[name='platinumChancesOpt']").val(["other"]);
+        })
+
+        // When the generate game button is pressed, pick random cards!
         $("#generate-game").click(function(){
             generateRandomPicks();
         });
@@ -789,6 +806,9 @@
 input[type=number] {
     width: 40px;
 }
+input[name='platinumChances'] {
+    width: 45px;
+}
 #generator {
     padding-top: 5px;
     padding-bottom: 5px;
@@ -891,7 +911,12 @@ body {
         <div class="card-description" style="display:none;">Description</div>
     </div>
     <span class="error"></span>
-    <div class="platinum">Include Platinum and Colony in your setup.</div>
+    <div class="platinum cardset">
+        <span class="cardset-heading">
+            <span class="output-cardset-title">Prosperity</span>
+        </span>
+        <div class="cardset-cards">Include Platinum and Colony in your game (if you have them).</div>
+    </div>
     <div class="extra-cards">
         <span class="extra-cards-title">You will also need</span>:
         <span class="extra-cards-list"></span>
@@ -964,7 +989,16 @@ body {
             </select>
             <span class="fine-print">(Random = 5% -&gt; 0; 50% -&gt; 1; 44% -&gt; 2; 1% -&gt; 3)</span>
         </label><br>
-        <label id="generator-platinum">Chances of including Platinum and Colony: <input type="number" name="platinumChances" value="0" min="0" max="100">%</label><br>
+        <div id="generator-platinum">
+            Chances of including Platinum and Colony:
+            <label><input type="radio" name="platinumChancesOpt" value="0">0%</label>
+            <label><input type="radio" name="platinumChancesOpt" value="25">25%</label>
+            <label><input type="radio" name="platinumChancesOpt" value="50" checked="checked">50%</label>
+            <label><input type="radio" name="platinumChancesOpt" value="75">75%</label>
+            <label><input type="radio" name="platinumChancesOpt" value="100">100%</label>
+            <label><input type="radio" name="platinumChancesOpt" value="other">Other</label>
+            <label>Amount: <input type="number" name="platinumChances" value="50" min="0" max="100">%</label>
+        </div><br>
     </span>
     <button type="button" id="generate-game">Generate Game</button>
 </div>
