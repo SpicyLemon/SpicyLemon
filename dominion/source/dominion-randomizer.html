@@ -89,6 +89,7 @@
         return name.toLowerCase().replace(/[^a-zA-Z0-9]+/g, '-');
     };
 
+    // getCardCostInt converts a card's cost field to an int value to use for the card for the purposes of randomization.
     function getCardCostInt(card){
         if (card.cost === "") {
             return 0;
@@ -187,7 +188,9 @@
         }
     }
 
-    cardSetOrder = ["kingdom", "in-2nd-not-1st", "in-1st-not-2nd", "events", "landmarks", "projects", "traits", "ways"];
+    // cardSetOrder is the order to use for cardsets inside an expansion.
+    let cardSetOrder = ["kingdom", "in-2nd-not-1st", "in-1st-not-2nd", "events", "landmarks", "projects", "traits", "ways"];
+
     // makeExpansion creates a new expansion section for the page.
     // Expects the key (in allCards) for the expansion.
     function makeExpansion(expansion){
@@ -288,11 +291,11 @@
         return rv;
     };
 
+    // makeOutputCardSet creates a new cardset section for randomly selected card output.
     function makeOutputCardSet(cardSet) {
         let rv = makeCardSet("output-"+nameToId(cardSet.name), cardSet);
         rv.find("input[type=checkbox]").remove();
-        rv.find(".cardset-select-all").remove();
-        rv.find(".cardset-deselect-all").remove();
+        rv.find(".selectors-cardset").remove();
         rv.find(".vis-ind").first().remove();
         rv.find(".cardset-heading").off("click");
         rv.find(".cardset-title").addClass("output-cardset-title").removeClass("cardset-title");
@@ -448,6 +451,8 @@
         });
     };
 
+    // filterCardsOnCost gets all cards with the provided cost string
+    // (e.g. "0-2", "3", "4", "5", "6+") from the provided array of cards.
     function filterCardsOnCost(cards, costStr){
         let rv = [];
         for (let card of cards) {
@@ -458,6 +463,17 @@
         return rv;
     };
 
+    // getPlatinumChances gets the selected chances of including Platinum and Colony.
+    function getPlatinumChances(){
+        return 1 * $("input[name='platinumChances'").val();
+    };
+
+    // randIntN generats a random int from 0 (inclusive) to n (exclusive).
+    function randIntN(n) {
+        return Math.floor(Math.random() * n);
+    }
+
+    // generateRandomPicks gathes all page input, randomly picks cards, and puts the results on the page.
     function generateRandomPicks(){
         let selectedCards = [];
         let eventCards = [];
@@ -506,7 +522,7 @@
                 while (minMaxCounts[costStr].min > 0) {
                     minMaxCounts[costStr].min--;
                     minMaxCounts[costStr].max--;
-                    let cardIndex = Math.floor(Math.random() * cardsAtCost.length);
+                    let cardIndex = randIntN(cardsAtCost.length);
                     pickedCards.push(cardsAtCost[cardIndex]);
                     cardsAtCost.splice(cardIndex, 1);
                 }
@@ -516,7 +532,7 @@
 
         // Pick random cards until we've got enough.
         while (pickedCards.length < pickCount) {
-            let cardIndex = Math.floor(Math.random() * availableCards.length);
+            let cardIndex = randIntN(availableCards.length);
             let card = availableCards[cardIndex];
             pickedCards.push(card);
             availableCards.splice(cardIndex, 1);
@@ -561,7 +577,7 @@
             if (availableCards.length === 0) {
                 return outputError("No cards left to pick a Bane card.");
             }
-            let cardIndex = Math.floor(Math.random() * availableCards.length);
+            let cardIndex = randIntN(availableCards.length);
             baneCard = availableCards[cardIndex]
         }
 
@@ -572,7 +588,7 @@
             console.log("EventCount selection: " + eventCount);
             let eventsToPick;
             if (eventCount === "random") {
-                let r = Math.floor(Math.random() * 100);
+                let r = randIntN(100);
                 // 0 <- 5%; 1 <- 50%; 2 <- 44%; 3 <- 1%
                 if (r < 5) {
                     eventsToPick = 0;
@@ -594,15 +610,15 @@
             }
             console.log("Picking " + eventsToPick + " other cards");
             while (pickedEvents.length < eventsToPick) {
-                let eventIndex = Math.floor(Math.random() * eventCards.length);
+                let eventIndex = randIntN(eventCards.length);
                 pickedEvents.push(eventCards[eventIndex]);
                 eventCards.splice(eventIndex, 1);
             }
         }
 
         // Decide on whether to include Platinum and Colony.
-        let platinumChances = 1 * $("input[name='platinumChances'").val();
-        let includePlatinum = platinumChances !== 0 && (platinumChances === 100 || Math.floor(Math.random() * 100) < platinumChances);
+        let platinumChances = getPlatinumChances();
+        let includePlatinum = platinumChances !== 0 && (platinumChances === 100 || randIntN(100) < platinumChances);
 
         // Identify extra cards that are needed.
         let extraCardsToInclude = {};
@@ -660,6 +676,7 @@
         $("#output").show(100);
     };
 
+    // outputError sets the output to the provided error message.
     function outputError(message) {
         let err = $("#templates").children(".error").first().clone();
         err.text(message);
@@ -695,7 +712,7 @@
     padding-left: 2px;
     padding-top: 2px;
 }
-.selectors-all, .selectors-edition {
+.selectors-all, .selectors-edition, .selectors-cardset {
     display: inline-block;
 }
 .expansion-selected {
@@ -857,7 +874,7 @@ body {
             <span class="vis-ind">&gt;</span>
             <span class="cardset-title">Card Set Title</span>
         </span>
-        <span class="cardset-controls">
+        <span class="selectors-cardset">
             <button type="button" class="cardset-select-all">Select All</button>
             <button type="button" class="cardset-deselect-all">Deselect All</button>
         </span>
@@ -945,6 +962,7 @@ body {
                 <option value="4">4</option>
                 <option value="5">5</option>
             </select>
+            <span class="fine-print">(Random = 5% -&gt; 0; 50% -&gt; 1; 44% -&gt; 2; 1% -&gt; 3)</span>
         </label><br>
         <label id="generator-platinum">Chances of including Platinum and Colony: <input type="number" name="platinumChances" value="0" min="0" max="100">%</label><br>
     </span>
