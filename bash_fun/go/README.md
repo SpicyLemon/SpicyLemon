@@ -12,6 +12,7 @@ This directory contains functions/scripts for doing various golang related thing
   * [go-setup.sh](#user-content-go-setupsh)
   * [go_find_funcs_without_comments.sh](#user-content-go_find_funcs_without_commentssh)
   * [go_get_func.sh](#user-content-go_get_funcsh)
+  * [go_list_funcs.sh](#user-content-go_list_funcssh)
   * [go_mod_fix.sh](#user-content-go_mod_fixsh)
   * [go_use_1.18.sh](#user-content-go_use_1_18sh)
   * [go_use_1.19.sh](#user-content-go_use_1_19sh)
@@ -72,6 +73,33 @@ All provided files will be searched for a function with the given name.
 When one is found, the filename, leading function comment, and entire function will be printed.
 
 The filenames can also be piped in. For example `find ... | go_get_func <func name>`.
+
+
+
+### `go_list_funcs.sh`
+
+[go_list_funcs.sh](go_list_funcs.sh) - Function/script for listing the functions in go files.
+
+Usage: `go_list_funcs <files>`
+
+```console
+$ go_list_funcs --help
+Usage: go_list_funcs <files>
+
+Any number of files can be provided.
+
+Coloring can be controlled with the following env vars:
+    GLF_NO_COLOR   - Set to anything (other than an empty string) to disable output coloring.
+    GLF_FILE_COLOR - The color to use for the filename. The default is 36 (cyan).
+    GLF_FUNC_COLOR - The color to use for the text "func". The default is 90 (dark gray).
+    GLF_RCVR_COLOR - The color to use for the function receiver. The default is 95 (light-magenta).
+    GLF_NAME_COLOR - The color to use for the function name. The default is 1 (bold).
+    GLF_COLORS     - Four comma separated color values for (in order):
+                        the filename, "func", the receiver, the function name.
+                     Specific color env vars (e.g. GLF_NAME_COLOR) take
+                     precidence over an entry in GLF_COLORS.
+                     The default is '36,90,95,1'
+```
 
 
 
