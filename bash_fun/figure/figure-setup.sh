@@ -53,7 +53,7 @@ __figure_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'figure-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
-        'b642id'  'decode_events' 'get_hash_price'  'id2b64' 'query_prov_using_next_key'
+        'b642id'  'decode_events' 'get_hash_price'  'id2b64' 'query_prov_using_next_key' 'test_all'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).

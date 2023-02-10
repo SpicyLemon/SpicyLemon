@@ -13,6 +13,7 @@ These scripts/functions are specific to activities associated with Figure Techno
 * `decode_events.sh` - Decodes the event strings returned from a tx query.
 * `state-sync-setup.sh` - Sets up a directory to house a node that uses statesync.
 * `cosmovisor-setup.sh` - Sets up a cosmovisor directory.
+* `test_all.sh` - Runs a standard set of test make targets.
 
 ## Details
 
@@ -253,4 +254,47 @@ This script will create the initial cosmovisor directory structure.
     If not provided, the location will be found using  command -v <daemon_name> .
     If the executable file cannot be found, an error is returned.
 
+```
+
+### `test_all`
+
+[test_all.sh](test_all.sh) - Function/script to run some test-related make targets available in the provenance and cosmos-sdk repos.
+
+```console
+> test_all --help
+Usage: test_all [[--skip|-s] <targets>] [[--also|-a] <targets>] [[--targets|-t] <targets>]
+                [--continue|-c|--break-b] [--sound [on|off|beep|say]|--noisy|--quiet|--beep|--say]
+
+By default, the following make targets are run:
+  test test-sim-nondeterminism test-sim-import-export test-sim-after-import test-sim-multi-seed-short
+
+Testing stops at the first failure.
+To continue on failures, provide the --continue or -c flag.
+To break on failure (default), provide the --break or -b flag.
+If multiple --continue, -c, --break, or -b flags are provided, the last one is used.
+
+This list can be overwritten using the --targets or -t option.
+To overwrite the list with multiple other targets, provide them as args after a single --targets or -t flag.
+If multiple --target or -t flags are provided, the last set is used.
+
+To skip targets, use the --skip or -s option.
+Skipped targets are noted in the output as being skipped.
+If multiple --skip or -s options are provided, they are combined.
+
+To add targets, use the --also or -a option.
+Added targets are run in the order provided after the main set of targets.
+If multiple --also or -a options are provided, they are combined.
+
+By default, when a test fails, noise is made. Noise is also made once everything completes.
+This can be controlled using the --sound option.
+    --sound on    - (default) Use normal sound behavior.
+    --sound off   - Do not make any sound.
+    --sound beep  - Use bell characters for sound even if the say command is available.
+    --sound say   - Use the say command to make noise.
+    --noisy       - Alias for --sound on
+    --quiet       - Alias for --sound off
+    --beep        - Alias for --sound beep
+    --say         - Alias for --sound say
+If multiple --sound, --quiet, --beep, or --say options are given, the last one is used.
+Proving --sound without specififying an option is the same as providing --sound on.
 ```
