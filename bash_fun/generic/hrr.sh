@@ -59,7 +59,11 @@ hr () {
 # Similar to hr except if a message is provided, it's padded with some space.
 # Usage: hr1 <message>
 hr1 () {
-    [[ -n "$*" ]] && hr " $* " || hr
+    if [[ -n "$*" ]]; then
+        hr " $* "
+    else
+        hr
+    fi
     return 0
 }
 
@@ -205,7 +209,7 @@ pick_a_palette () {
     if [[ -n "$1" || -z "${PALETTE+x}" ]]; then
         local choice
         if command -v palette_vector_no_wrap > /dev/null 2>&1; then
-            [[ -n "$1" ]] && choice="$1" || choice=$(( RANDOM%256 ))
+            [[ -n "$1" ]] && choice="$1" || choice=$(( RANDOM%296 ))
             PALETTE=( $( palette_vector_no_wrap $choice ) )
         else
             [[ -n "$1" ]] && choice="$1" || choice=$(( RANDOM%18 ))
