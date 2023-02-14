@@ -15,6 +15,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [add.sh](#user-content-addsh)
   * [b2h.sh](#user-content-b2hsh)
   * [b642h.sh](#user-content-b642hsh)
+  * [bash_prompt_newline.sh](#user-content-bash_prompt_newlinesh)
   * [beepbeep.sh](#user-content-beepbeepsh)
   * [change_word.sh](#user-content-change_wordsh)
   * [cpm.sh](#user-content-cpmsh)
@@ -192,6 +193,16 @@ $ b642h VxtfaZoHQ+CWlFa0Kgb4TQ== KGBYwiamQwqmVh5xD+IOOQ==
 571b5f699a0743e0969456b42a06f84d
 286058c226a6430aa6561e710fe20e39
 ```
+
+### `bash_prompt_newline.sh`
+
+[bash_prompt_newline.sh](bash_prompt_newline.sh) - Adds a newline to the beginning of a bash prompt if the previous output didn't.
+
+I use this in my bash PROMPT_COMMAND to make sure the prompt always starts on a newline.
+If the previous output didn't end in a newline, an indicator is printed, followed by a newline, then my prompt is printed.
+It can also be used in a PS1.
+
+See comments in the file for full usage details.
 
 ### `beepbeep.sh`
 
