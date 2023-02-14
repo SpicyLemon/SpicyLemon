@@ -18,11 +18,23 @@ pvarn  () {
         printf 'Usage: pvarn <var name 1> [<var name 2> ...]\n'
         return 1
     fi
+    local use_p val
+    # With ${(P)1}, Bash will output -bash: ${(P)1}: bad substitution
+    # But it's not part of command output, so you can't redirect it directly.
+    # So I make a subshell to try it, so I can supress that error message.
+    # If it fails, it will exit with code 1, resulting in use_p not being set.
+    # In zsh, it'll work and exit with code 0, and use_p will be set.
+    ( val="${(P)1}"; ) > /dev/null 2>&1 && use_p='YES'
     while [[ "$#" -gt '0' ]]; do
-        printf '%s: [%s]\n' "$1" "${!1}"
-        if [[ "$1" =~ PATH && "${!1}" =~ : ]]; then
+        if [[ -n "$use_p" ]]; then
+            val="${(P)1}"
+        else
+            val="${!1}"
+        fi
+        printf '%s: [%s]\n' "$1" "$val"
+        if [[ "$1" =~ PATH && "$val" =~ : ]]; then
             ws="$( printf '%s: ' "$1" | tr -C ' ' ' ' )"
-            tr ':' '\n' <<< "${!1}" | sed "s/^/$ws/"
+            tr ':' '\n' <<< "$val" | sed "s/^/$ws/"
         fi
         shift
     done

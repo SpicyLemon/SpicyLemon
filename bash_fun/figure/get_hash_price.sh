@@ -336,11 +336,22 @@ hashcache_check_required_commands () {
 # If one or more missing, an error is printed to stderr and the exit code will be 1.
 # An exit code of zero means everything is available.
 hashcache_check_required_env_vars () {
-    local rv v
+    local rv use_p var val
     rv=0
-    for v in 'HASH_C_DIR' 'HASH_C_MAX_AGE' 'HASH_PRICE_URL' 'HASH_JQ_FILTER' 'HASH_DEFAULT_VALUE' 'HASH_PROMPT_FORMAT' 'HASH_CN_HASH_PRICE' 'HASH_CN_PRICE_JSON' 'HASH_CN_PRICE_HEADER' 'HASH_CN_JQ_ERROR'; do
-        if [[ -z "${!v}" ]]; then
-            [[ "$HASH_PRICE_SOURCE" == 'custom' ]] || printf 'Environment variable %s not defined.\n' "$v" >&2
+    # With ${(P)rv}, Bash will output -bash: ${(P)rv}: bad substitution
+    # But it's not part of command output, so you can't redirect it directly.
+    # So I make a subshell to try it, so I can supress that error message.
+    # If it fails, it will exit with code 1, resulting in use_p not being set.
+    # In zsh, it'll work and exit with code 0, and use_p will be set.
+    ( val="${(P)rv}"; ) > /dev/null 2>&1 && use_p='YES'
+    for var in 'HASH_C_DIR' 'HASH_C_MAX_AGE' 'HASH_PRICE_URL' 'HASH_JQ_FILTER' 'HASH_DEFAULT_VALUE' 'HASH_PROMPT_FORMAT' 'HASH_CN_HASH_PRICE' 'HASH_CN_PRICE_JSON' 'HASH_CN_PRICE_HEADER' 'HASH_CN_JQ_ERROR'; do
+        if [[ -n "$use_p" ]]; then
+            val="${(P)var}"
+        else
+            val="${!var}"
+        fi
+        if [[ -z "$val" ]]; then
+            [[ "$HASH_PRICE_SOURCE" == 'custom' ]] || printf 'Environment variable %s not defined.\n' "$var" >&2
             rv=1
         fi
     done
