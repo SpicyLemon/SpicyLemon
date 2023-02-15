@@ -339,11 +339,14 @@ hashcache_check_required_env_vars () {
     local rv use_p var val
     rv=0
     # With ${(P)rv}, Bash will output -bash: ${(P)rv}: bad substitution
-    # But it's not part of command output, so you can't redirect it directly.
-    # So I make a subshell to try it, so I can supress that error message.
-    # If it fails, it will exit with code 1, resulting in use_p not being set.
-    # In zsh, it'll work and exit with code 0, and use_p will be set.
-    ( val="${(P)rv}"; ) > /dev/null 2>&1 && use_p='YES'
+    # But it's not part of command output, so you can't redirect it.
+    # This is trickier than pvarn because this gets called as the shell is loading.
+    # Doing it in a ( ... ) subshell causes a freeze that you have to ctrl+c and type "exit" to get out of.
+    # Doing it in a { ... } subshell makes it just halt this function's execution at that point.
+    # After trying all sorts of combos of exist and returns and subshells and spacing, this is what I found that actually works
+    # It runs just fine as the shell is first loading, it suppresses the "bad substitution" message,
+    # and properly identifies which variable expansion syntax to use.
+    { use_p="$( foo="${(P)bar}" && printf 'YES' )"; } > /dev/null 2>&1
     for var in 'HASH_C_DIR' 'HASH_C_MAX_AGE' 'HASH_PRICE_URL' 'HASH_JQ_FILTER' 'HASH_DEFAULT_VALUE' 'HASH_PROMPT_FORMAT' 'HASH_CN_HASH_PRICE' 'HASH_CN_PRICE_JSON' 'HASH_CN_PRICE_HEADER' 'HASH_CN_JQ_ERROR'; do
         if [[ -n "$use_p" ]]; then
             val="${(P)var}"
