@@ -23,7 +23,7 @@ go_use_1.19 () {
         ls -al "$which_go" >&2
         return 1
     fi
-    desired_link='../Cellar/go/1.19/bin/go'
+    desired_link='../Cellar/go/1.19.6/bin/go'
     [[ "$verbose" ]] && printf 'readlink %q: ' "$which_go"
     cur_link="$( readlink "$which_go" )"
     [[ "$verbose" ]] && printf '%q\n' "$cur_link"

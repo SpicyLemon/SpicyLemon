@@ -1,7 +1,7 @@
 #!/bin/bash
-# This file contains the go_use_1.18.sh function that switches the go bin symlink to version 1.18.3.
-# This file can be sourced to add the go_use_1.18 function to your environment.
-# This file can also be executed to run the go_use_1.18 function without adding it to your environment.
+# This file contains the go_use_1.20.sh function that switches the go bin symlink to version 1.20.
+# This file can be sourced to add the go_use_1.20 function to your environment.
+# This file can also be executed to run the go_use_1.20 function without adding it to your environment.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -10,7 +10,7 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-go_use_1.18 () {
+go_use_1.20 () {
     local verbose which_go desired_link cur_link rv
     if [[ "$1" == '-v' || "$1" == '--verbose' ]]; then
         verbose=1
@@ -23,7 +23,7 @@ go_use_1.18 () {
         ls -al "$which_go" >&2
         return 1
     fi
-    desired_link='../Cellar/go@1.18/1.18.10/bin/go'
+    desired_link='/usr/local/go/bin/go'
     [[ "$verbose" ]] && printf 'readlink %q: ' "$which_go"
     cur_link="$( readlink "$which_go" )"
     [[ "$verbose" ]] && printf '%q\n' "$cur_link"
@@ -45,7 +45,7 @@ go_use_1.18 () {
 }
 
 if [[ "$sourced" != 'YES' ]]; then
-    go_use_1.18 "$@"
+    go_use_1.19 "$@"
     exit $?
 fi
 unset sourced
