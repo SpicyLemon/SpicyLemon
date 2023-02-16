@@ -142,9 +142,12 @@ EOF
         targets+=( "${added_targets[@]}" )
     fi
 
-    local ec t st not_first tec count
+    local ec i t prog st not_first tec count
     ec=0
+    i=0
     for t in "${targets[@]}"; do
+        i=$(( i + 1 ))
+        prog="$( printf '[%d/%d]' "$i" "${#targets[@]}" )"
         # Output a header
         if [[ -n "$not_first" ]]; then
             printf '\n\n\n\n'
@@ -152,9 +155,9 @@ EOF
             not_first='YES'
         fi
         if [[ -n "$can_hr11" ]]; then
-            hr11 "$t"
+            hr11 "$prog" "$t"
         else
-            printf '\033[1m#\n# %s\n########################################\033[0m\n' "$t"
+            printf '\033[1m#\n# %s %s\n########################################\033[0m\n' "$prog" "$t"
         fi
 
         # Skip the target if we're supposed to.
@@ -173,8 +176,8 @@ EOF
         tec="$?"
 
         # Output the target's exit code.
-        printf '\nFinished: make %s\n' "$t"
-        printf 'Exit Code:' "$t"
+        printf '\n%s Finished: make %s\n' "$prog" "$t"
+        printf '%s Exit Code:' "$prog"
         if [[ -n "$can_show_last_exit_code" ]]; then
             ( exit "$tec"; )
             show_last_exit_code
