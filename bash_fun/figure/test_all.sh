@@ -168,7 +168,8 @@ EOF
         fi
 
         # Make the target
-        make "$t"
+        date +"%Y-%m-%d %H:%M:%S%z"
+        time make "$t"
         tec="$?"
 
         # Output the target's exit code.
