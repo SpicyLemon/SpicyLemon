@@ -16,6 +16,7 @@ This directory contains functions/scripts for doing various golang related thing
   * [go_mod_fix.sh](#user-content-go_mod_fixsh)
   * [go_use_1.18.sh](#user-content-go_use_1_18sh)
   * [go_use_1.19.sh](#user-content-go_use_1_19sh)
+  * [go_use_1.20.sh](#user-content-go_use_1_20sh)
 
 ## Usage
 
@@ -130,8 +131,8 @@ Usage: `go_use_1.18`
 Example:
 ```console
 > go_use_1.18
-    Was: lrwxr-xr-x  1 danielwedul  admin  24 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.19/bin/go
- Is Now: lrwxr-xr-x  1 danielwedul  admin  26 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.18.3/bin/go
+    Was: lrwxr-xr-x  1 danielwedul  admin  20 Feb 16 15:57 /opt/homebrew/bin/go -> /usr/local/go/bin/go
+ Is Now: lrwxr-xr-x  1 danielwedul  admin  32 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go@1.18/1.18.10/bin/go
 ```
 
 
@@ -147,7 +148,24 @@ Usage: `go_use_1.19`
 Example:
 ```console
 > go_use_1.19
-    Was: lrwxr-xr-x  1 danielwedul  admin  24 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.18.3/bin/go
- Is Now: lrwxr-xr-x  1 danielwedul  admin  26 Oct  7 12:02 /opt/homebrew/bin/go -> ../Cellar/go/1.19/bin/go
+    Was: lrwxr-xr-x  1 danielwedul  admin  32 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go@1.18/1.18.10/bin/go
+ Is Now: lrwxr-xr-x  1 danielwedul  admin  26 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go/1.19.6/bin/go
+```
+
+
+
+### `go_use_1.20.sh`
+
+[go_use_1.20.sh](go_use_1.20.sh) - Function/script for switching the go binary to version 1.20.
+
+This is specific to my system (a mac) that used the go installer to install go. It may not be very protable.
+
+Usage: `go_use_1.20`
+
+Example:
+```console
+> go_use_1.20
+    Was: lrwxr-xr-x  1 danielwedul  admin  26 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go/1.19.6/bin/go
+ Is Now: lrwxr-xr-x  1 danielwedul  admin  20 Feb 16 15:58 /opt/homebrew/bin/go -> /usr/local/go/bin/go
 ```
 
