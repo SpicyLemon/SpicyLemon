@@ -547,10 +547,22 @@ The first argument provided is treated as the delimiter.
 All other arguments are then joined together into one line, with the delimiter between each entry.
 A trailing newline character is *not* added.
 
+The provided delimiter is not interpreted.
+E.g. providing `\n` will NOT add newlines between values; it will add a backslash followed by `n` between each value.
+
 Example Usage:
 ```console
 $ join_str ', ' $( seq 1 10 )
 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+```
+
+You can also pipe values in, one value per line.
+When piping values in, either only provided the delimiter, or only provide '-' after the delimiter.
+```console
+$ printf '1 2\n3 4\n5 6\n7 8\n9 10\n' | join_str ' ~ '
+1 2 ~ 3 4 ~ 5 6 ~ 7 8 ~ 9 10
+$ printf '1 2\n3 4\n5 6\n7 8\n9 10\n' | join_str ' then ' -
+1 2 then 3 4 then 5 6 then 7 8 then 9 10
 ```
 
 ### `list.sh`
