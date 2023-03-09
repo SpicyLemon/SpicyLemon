@@ -53,14 +53,14 @@ __generic_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'generic-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | sed 's/^/        /' | tee_pbcopy
     func_base_file_names=(
-        'add'            'b2h'                 'b642h'              'beepbeep'             'change_word'
-        'cpm'            'echo_color'          'echo_do'            'fp'                   'getlines'
-        'h2b64'          'hrr'                 'java_sdk_switcher'  'join_str'             'list'
-        'max'            'min'                 'modulo'             'multi_line_replace'   'multidiff'
-        'multiply'       'palette_generators'  'print_args'         'ps_grep'              'pvarn'
-        're_line'        'sdkman_fzf'          'set_title'          'show_last_exit_code'  'show_palette'
-        'string_repeat'  'tee_strip_colors'    'timealert'          'to_date'              'to_epoch'
-        'tryhard'        'find_dead_links'     'bash_prompt_newline' 'pbsort'
+        'add'                 'b2h'                  'b642h'         'bash_prompt_newline'  'beepbeep'
+        'change_word'         'cpm'                  'echo_color'    'echo_do'              'find_dead_links'
+        'fp'                  'getlines'             'h2b64'         'hrr'                  'java_sdk_switcher'
+        'join_str'            'list'                 'max'           'min'                  'modulo'
+        'multi_line_replace'  'multidiff'            'multiply'      'palette_generators'   'pbsort'
+        'print_args'          'ps_grep'              'pvarn'         're_line'              'sdkman_fzf'
+        'set_title'           'show_last_exit_code'  'show_palette'  'string_repeat'        'tee_strip_colors'
+        'timealert'           'to_date'              'to_epoch'      'tryhard'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
