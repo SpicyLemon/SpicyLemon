@@ -36,6 +36,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [multidiff.sh](#user-content-multidiffsh)
   * [multiply.sh](#user-content-multiplysh)
   * [palette_generators.sh](#user-content-palette_generatorssh)
+  * [pbsort.sh](#user-content-pbsortsh)
   * [print_args.sh](#user-content-print_argssh)
   * [ps_grep.sh](#user-content-ps_grepsh)
   * [pvarn.sh](#user-content-print_pvarnsh)
@@ -881,6 +882,18 @@ $ show_palette $( palette_vector_no_wrap )
 ```
 
 If you care to go crazy digging through my notes, they can be found here: [notes-on-palette-generation.txt](notes-on-palette-generation.txt)
+
+### `pbsort.sh`
+
+[pbsort.sh](pbsort.sh) - Function/script for sorting clipboard contents.
+
+This does `pbpaste | sort | pbcopy`.
+Any arguments provided to `pbsort` are provided to the `sort` command with the following exceptions:
+* `-h` or `--help` outputs usage.
+* `-v` or `--verbose` outputs the clipboard after sorting it.
+* `-vv` outputs more information about the execution.
+
+This exits with the same code that sort exits with.
 
 ### `print_args.sh`
 
