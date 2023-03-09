@@ -46,7 +46,6 @@ pbsort () {
     fi
     [[ -n "$verbose" ]] && pbpaste
     return "$ec"
-
 }
 
 if [[ "$sourced" != 'YES' ]]; then
