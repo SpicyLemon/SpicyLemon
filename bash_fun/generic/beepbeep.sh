@@ -17,7 +17,19 @@ beepbeep  () {
     # Presever last exit code
     local ec=$?
     local count
-    count="${1:-2}"
+    if [[ "$#" -gt 1 || "$1" =~ [^[:digit:]] ]]; then
+        if command -v say > /dev/null 2>&1; then
+            say "$@"
+            return 0
+        fi
+        printf 'Unknown beepbeep argument(s):'
+        printf ' %s' "$@"
+        printf '\n'
+        count=2
+    else
+        count="${1:-2}"
+    fi
+
     printf '\a'
     count=$(( count - 1 ))
     while [[ "$count" -gt '0' ]]; do
