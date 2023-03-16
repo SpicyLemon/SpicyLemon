@@ -22,9 +22,7 @@ beepbeep  () {
             say "$@"
             return 0
         fi
-        printf 'Unknown beepbeep argument(s):'
-        printf ' %s' "$@"
-        printf '\n'
+        printf 'beepbeep: Unknown argument(s): %s\n' "$*" >&2
         count=2
     else
         count="${1:-2}"

@@ -209,9 +209,17 @@ See comments in the file for full usage details.
 
 [beepbeep.sh](beepbeep.sh) - Prints two bell characters .3 seconds apart.
 
-If invoked as a function, the previous exit code is preserved.
+The previous exit code is preserved.
 
 Usage: `beepbeep`
+
+By default, it beeps twice.
+You can specify the number of beeps by providing the count as an arg.
+E.g. `beepbeep 3` will beep 3 times.
+
+If the `say` command is available, you can provide words for it to say instead of beeping.
+E.g. `beepbeep I am done` will cause "I am done" to be said.
+If the `say` command is not available, and words are provided, a message is printed to stderr, and it will beep twice.
 
 ### `change_word.sh`
 
