@@ -13,6 +13,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
 * [Directory Contents](#user-content-directory-contents)
   * [generic-setup.sh](#user-content-generic-setupsh)
   * [add.sh](#user-content-addsh)
+  * [asciidec2text.sh](#user-content-asciidec2textsh)
   * [b2h.sh](#user-content-b2hsh)
   * [b642h.sh](#user-content-b642hsh)
   * [bash_prompt_newline.sh](#user-content-bash_prompt_newlinesh)
@@ -125,6 +126,20 @@ $ seq 6 20 | add
 195
 $ seq 6 20 | add - 1 2 3 4 5
 210
+```
+
+### `asciidec2text.sh`
+
+[asciidec2text.sh](asciidec2text.sh) - A function/script for converting decimal ascii values into text.
+
+Examples:
+```console
+$ printf '66 97 110 97 110 97 115' | asciidec2text
+Bananas
+$ asciidec2text '111 114  97 110 103 101 115'
+oranges
+$ asciidec2text 80 105 110 101 - 32 83 109 111 111 116 104 105 101 <<< "97 112 112 108 101"
+pineapple
 ```
 
 ### `b2h.sh`
