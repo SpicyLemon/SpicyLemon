@@ -46,26 +46,40 @@ EOF
         return 0
     fi
 
+    # Zero Width Non-Joiner = \xe2\x80\x8c
+    # It's printed before printing any non-printable, converted value.
     ec=0
     for arg in "${vals[@]}"; do
-        if [[ -z "$arg" || ! "$arg" =~ ^[[:digit:]]*$ || "$arg" -gt '127' ]]; then
-            printf 'Invalid decimal ascii value: [%s]\n' "$arg" >&2
+        if [[ -z "$arg" || "$arg" =~ [^[:digit:]] || "$arg" -gt 255 ]]; then
+            # Invalid value.
+            printf '\xe2\x80\x8c[!%s]' "$arg"
+            ec=1
         else
-            case "$arg" in
-                9) printf '[\\t]';;
-                10) printf '[\\n]';;
-                13) printf '[\\r]';;
-                27) printf '[\\e]';;
-                *)
-                    if [[ "$arg" -ge '32' && "$arg" -le '126' ]]; then
-                        printf '%b' "$( printf '\\x%x' "$arg" )"
-                    else
-                        printf '[%b]' "$( printf '\\x%x' "$arg" )" | od -a -An | sed 's/[[:space:]]//g' | tr -d '\n' | tr '[:lower:]' '[:upper:]'
-                    fi
-                    ;;
-            esac
+            # Strip leading zeros since that makes them behave like octal.
+            # E.g. [[ '033' -eq '27' ]] is true.
+            # But since this is specific to decimal, assume everything coming in is meant to be decimal.
+            arg="$( sed -E 's/^0+//' <<< "$arg" )"
+            if [[ "$arg" -ge '32' && "$arg" -le '126' ]]; then
+                # Printable ascii value
+                printf '%b' "$( printf '\\x%x' "$arg" )"
+            elif [[ "$arg" -eq '9' ]]; then
+                printf '\xe2\x80\x8c\\t' # Tab: [HT] was confusing me and \t is more familiar.
+            elif [[ "$arg" -eq '10' ]]; then
+                printf '\xe2\x80\x8c\\n' # Newline: Most commonly seen as \n, even though [NL] is easy to guess at.
+            elif [[ "$arg" -eq '13' ]]; then
+                printf '\xe2\x80\x8c\\r' # Carriage Return: Most commonly seen as \r, even though [CR] is easy to guess at.
+            elif [[ "$arg" -le '127' ]]; then
+                # Non-printable ascii value (not specifically covered earlier).
+                # Use od to convert it to it's named character version.
+                # E.g. 0 will become NUL and 7 will become BELL
+                printf '\xe2\x80\x8c[%s]' "$( printf '%b' "$( printf '\\x%x' "$arg" )" | od -a -An | sed 's/[[:space:]]//g' | tr -d '\n' | tr '[:lower:]' '[:upper:]' )"
+            else
+                printf '\xe2\x80\x8c[%s]' "$arg"
+            fi
         fi
     done
+
+    return "$ec"
 }
 
 if [[ "$sourced" != 'YES' ]]; then
