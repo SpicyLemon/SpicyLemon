@@ -20,7 +20,7 @@ beepbeep  () {
     if [[ "$#" -gt 1 || "$1" =~ [^[:digit:]] ]]; then
         if command -v say > /dev/null 2>&1; then
             say "$@"
-            return 0
+            return $ec
         fi
         printf 'beepbeep: Unknown argument(s): %s\n' "$*" >&2
         count=2
