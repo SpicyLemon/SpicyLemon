@@ -23,9 +23,16 @@ beepbeep  () {
             return $ec
         fi
         printf 'beepbeep: Unknown argument(s): %s\n' "$*" >&2
-        count=2
     else
-        count="${1:-2}"
+        count="$1"
+    fi
+
+    if [[ -z "$count" ]]; then
+        if [[ "$ec" -eq '0' ]]; then
+            count=2
+        else
+            count=3
+        fi
     fi
 
     printf '\a'
