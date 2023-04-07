@@ -20,7 +20,8 @@ git_next_file () {
         return 1
     fi
     local result
-    result="$( git status --porcelain | grep '^.[MU]' | head -n 1 | sed 's/...//' )"
+    # The s/.../ gets rid of the status<space>. The s/.* -> // gets rid of the old filename if it's been renamed.
+    result="$( git status --porcelain | grep '^.[MU]' | head -n 1 | sed 's/...//; s/.* -> //;' )"
     if [[ -z "$result" ]]; then
         return 1
     fi
