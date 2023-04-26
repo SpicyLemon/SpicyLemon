@@ -18,8 +18,8 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
-NODE_TESTNET='tcp://rpc-0.test.provenance.io:26657'
-NODE_MAINNET='tcp://rpc-0.provenance.io:26657'
+NODE_TESTNET='https://rpc.test.provenance.io:443'
+NODE_MAINNET='https://rpc.provenance.io:443'
 
 if [[ "$sourced" == 'YES' ]]; then
     export NODE_TESTNET
