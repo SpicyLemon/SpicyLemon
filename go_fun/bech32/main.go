@@ -138,6 +138,7 @@ func ToFromVal(str string) (FromVal, error) {
 	return FromValDetect, fmt.Errorf("invalid --from value %q, must be one of %s", str, FromValOptionsStr)
 }
 
+// NewRootCmd creates the root bech32 command.
 func NewRootCmd() *cobra.Command {
 	cmdConfig := &CmdConfig{}
 	cmd := &cobra.Command{
@@ -153,14 +154,10 @@ When multiple output types are requested, they will be in this order:
   1. Bech32(s) in the order the HRPs were provided
   2. Base64
   3. Hex
-  4. Raw
-
-Example Usage:
-$ bech32 xyz1q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9fzxqpn --hrp abc
+  4. Raw`,
+		Example: `$ bech32 xyz1q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9fzxqpn --hrp abc
 $ bech32 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --hrp abc,def --from hex
-$ bech32 5c5c5c5c5c5c --hrp abc --hrp def --hex --from base64
-
-`,
+$ bech32 5c5c5c5c5c5c --hrp abc --hrp def --hex --from base64`,
 		PreRunE: cmdConfig.Prep,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return ConvertAndPrintAll(cmdConfig)
