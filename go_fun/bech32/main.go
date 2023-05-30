@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -36,17 +37,56 @@ type CmdConfig struct {
 	Writer io.Writer
 	// Count is a count of the args provided.
 	Count int
+	// Inputs is all the input strings to convert
+	Inputs []string
 }
 
 // Prep sets up the final stuff needed in the CmdConfig before trying to do stuff.
 func (c *CmdConfig) Prep(cmd *cobra.Command, args []string) error {
 	c.Writer = cmd.OutOrStdout()
-	c.Count = len(args)
+
+	c.Inputs = args
+	c.Count = len(c.Inputs)
+
 	var err error
 	c.FromVal, err = ToFromVal(c.From)
 	if err != nil {
 		return err
 	}
+
+	if len(c.Inputs) == 0 {
+		// Read from stdin if either:
+		// a) it's being piped too (e.g. <cmd1> | bech32)
+		// b) it's not a *File (unit tests).
+		canReadStdin := true
+		stdin := cmd.InOrStdin()
+		if stdinFile, isFile := stdin.(*os.File); isFile {
+			stdinStat, _ := stdinFile.Stat()
+			// If the mode is character device, it's the terminal (not a pipe).
+			canReadStdin = (stdinStat.Mode() & os.ModeCharDevice) == 0
+		}
+
+		if canReadStdin {
+			var bzIn []byte
+			bzIn, err = io.ReadAll(stdin)
+			if err != nil {
+				return fmt.Errorf("error reading from stdin: %w", err)
+			}
+			if len(bzIn) > 0 {
+				if c.FromVal == FromValRaw {
+					c.Inputs = []string{string(bzIn)}
+				} else {
+					c.Inputs = strings.Fields(string(bzIn))
+				}
+				c.Count = len(c.Inputs)
+			}
+		}
+	}
+
+	if c.Count == 0 {
+		return errors.New("no input addresses provided")
+	}
+
 	return nil
 }
 
@@ -121,10 +161,9 @@ $ bech32 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --hrp abc,def --from hex
 $ bech32 5c5c5c5c5c5c --hrp abc --hrp def --hex --from base64
 
 `,
-		Args:    cobra.MinimumNArgs(1),
 		PreRunE: cmdConfig.Prep,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return ConvertAndPrintAll(cmdConfig, args)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return ConvertAndPrintAll(cmdConfig)
 		},
 		SilenceUsage: true,
 	}
@@ -142,8 +181,8 @@ $ bech32 5c5c5c5c5c5c --hrp abc --hrp def --hex --from base64
 }
 
 // ConvertAndPrintAll converts and prints all the provided args.
-func ConvertAndPrintAll(cfg *CmdConfig, args []string) error {
-	for i, arg := range args {
+func ConvertAndPrintAll(cfg *CmdConfig) error {
+	for i, arg := range cfg.Inputs {
 		err := ConvertAndPrint(cfg, arg, i+1)
 		if err != nil {
 			return err
@@ -259,12 +298,8 @@ func EncodeAddr(cfg *CmdConfig, addr []byte) ([]string, error) {
 }
 
 func main() {
-	rootCmd := NewRootCmd()
-	if err := rootCmd.Execute(); err != nil {
-		_, err2 := fmt.Fprintf(rootCmd.ErrOrStderr(), "Error: %v.\n", err)
-		if err2 != nil {
-			fmt.Printf("Error: %v.\n", err)
-		}
+	err := NewRootCmd().Execute()
+	if err != nil {
 		os.Exit(1)
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
@@ -45,43 +46,87 @@ func TestCmdConfig_Prep(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		c          *CmdConfig
+		cfg        *CmdConfig
 		args       []string
+		stdin      string
 		expErr     string
 		expFromVal FromVal
 		expCount   int
+		expInputs  []string
 	}{
 		{
 			name:       "invalid from",
-			c:          &CmdConfig{From: "what"},
+			cfg:        &CmdConfig{From: "what"},
 			args:       []string{"0a"},
 			expErr:     `invalid --from value "what", must be one of ` + FromValOptionsStr,
 			expFromVal: FromValDetect,
 			expCount:   1,
+			expInputs:  []string{"0a"},
 		},
 		{
 			name:       "valid from",
-			c:          &CmdConfig{From: "bech32"},
+			cfg:        &CmdConfig{From: "bech32"},
 			args:       []string{"0a", "0b", "0c"},
 			expFromVal: FromValBech32,
 			expCount:   3,
+			expInputs:  []string{"0a", "0b", "0c"},
+		},
+		{
+			name:       "no args no stdin",
+			cfg:        &CmdConfig{},
+			expErr:     "no input addresses provided",
+			expFromVal: FromValDetect,
+			expCount:   0,
+		},
+		{
+			name:       "no args two stdin",
+			cfg:        &CmdConfig{},
+			stdin:      "0a 0b",
+			expFromVal: FromValDetect,
+			expCount:   2,
+			expInputs:  []string{"0a", "0b"},
+		},
+		{
+			name:       "no args raw stdin",
+			cfg:        &CmdConfig{From: "raw"},
+			stdin:      "0a 0b",
+			expFromVal: FromValRaw,
+			expCount:   1,
+			expInputs:  []string{"0a 0b"},
+		},
+		{
+			name:       "one arg two stdin",
+			cfg:        &CmdConfig{},
+			args:       []string{"0a"},
+			stdin:      "0b 0c",
+			expFromVal: FromValDetect,
+			expCount:   1,
+			expInputs:  []string{"0a"},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			testString := fmt.Sprintf("This is a %q tesst string", tc.name)
-			var buffer bytes.Buffer
-			dummyCmd.SetOut(&buffer)
-			err := tc.c.Prep(dummyCmd, tc.args)
-			AssertErrorContents(t, err, tc.expErr, "Prep error")
-			assert.Equal(t, tc.expCount, tc.c.Count, "Count")
-			assert.Equal(t, tc.expFromVal, tc.c.FromVal, "FromVal")
+			var outBuffer bytes.Buffer
+			dummyCmd.SetOut(&outBuffer)
+			var inBuffer bytes.Buffer
+			if len(tc.stdin) > 0 {
+				_, err := inBuffer.WriteString(tc.stdin)
+				require.NoError(t, err, "inBuffer.WriteString")
+			}
+			dummyCmd.SetIn(&inBuffer)
 
-			// Make sure the writer got set to the buffer we gave to the command.
-			_, err = fmt.Fprintf(tc.c.Writer, "%s", testString)
+			err := tc.cfg.Prep(dummyCmd, tc.args)
+			AssertErrorContents(t, err, tc.expErr, "Prep error")
+			assert.Equal(t, tc.expCount, tc.cfg.Count, "Count")
+			assert.Equal(t, tc.expFromVal, tc.cfg.FromVal, "FromVal")
+			assert.Equal(t, tc.expInputs, tc.cfg.Inputs, "Inputs")
+
+			// Make sure the writer got set to the outBuffer we gave to the command.
+			_, err = fmt.Fprintf(tc.cfg.Writer, "%s", testString)
 			if assert.NoError(t, err, "Fprintf to the Writer") {
-				outStr := buffer.String()
+				outStr := outBuffer.String()
 				assert.Equal(t, testString, outStr, "string from the writer")
 			}
 		})
@@ -182,7 +227,6 @@ func TestConvertAndPrintAll(t *testing.T) {
 	tests := []struct {
 		name   string
 		cfg    *CmdConfig
-		args   []string
 		expErr string
 		expOut []string
 	}{
@@ -195,8 +239,8 @@ func TestConvertAndPrintAll(t *testing.T) {
 				Quiet:    false,
 				FromVal:  FromValHex,
 				Count:    0,
+				Inputs:   nil,
 			},
-			args: nil,
 		},
 		{
 			name: "empty args",
@@ -207,8 +251,8 @@ func TestConvertAndPrintAll(t *testing.T) {
 				Quiet:    false,
 				FromVal:  FromValHex,
 				Count:    0,
+				Inputs:   []string{},
 			},
-			args: []string{},
 		},
 		{
 			name: "1 arg",
@@ -219,8 +263,8 @@ func TestConvertAndPrintAll(t *testing.T) {
 				Quiet:    false,
 				FromVal:  FromValHex,
 				Count:    1,
+				Inputs:   []string{"0a0b0c"},
 			},
-			args: []string{"0a0b0c"},
 			expOut: []string{
 				"newhrp1pg9sczch4yg",
 				"CgsM",
@@ -236,14 +280,18 @@ func TestConvertAndPrintAll(t *testing.T) {
 				Quiet:    false,
 				FromVal:  FromValHex,
 				Count:    1,
+				Inputs:   []string{"x"},
 			},
-			args:   []string{"x"},
 			expErr: `could not decode "x" as hex: encoding/hex: invalid byte: U+0078 'x'`,
 		},
 		{
 			name: "2 good args",
-			cfg:  &CmdConfig{ToHRPs: []string{"myhrp", "yourhrp"}, FromVal: FromValHex, Count: 2},
-			args: []string{"0a", "0b"},
+			cfg: &CmdConfig{
+				ToHRPs:  []string{"myhrp", "yourhrp"},
+				FromVal: FromValHex,
+				Count:   2,
+				Inputs:  []string{"0a", "0b"},
+			},
 			expOut: []string{
 				fmt.Sprintf(multiFmt, 1, 2, "0a", mustBech32("myhrp", []byte{0x0a})),
 				fmt.Sprintf(multiFmt, 1, 2, "0a", mustBech32("yourhrp", []byte{0x0a})),
@@ -253,14 +301,12 @@ func TestConvertAndPrintAll(t *testing.T) {
 		},
 		{
 			name:   "2 args first bad",
-			cfg:    &CmdConfig{ToHRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2},
-			args:   []string{"x", "0a"},
+			cfg:    &CmdConfig{ToHRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2, Inputs: []string{"x", "0a"}},
 			expErr: `could not decode "x" as hex: encoding/hex: invalid byte: U+0078 'x'`,
 		},
 		{
 			name:   "2 args second bad",
-			cfg:    &CmdConfig{ToHRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2},
-			args:   []string{"0a", "x"},
+			cfg:    &CmdConfig{ToHRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2, Inputs: []string{"0a", "x"}},
 			expErr: `could not decode "x" as hex: encoding/hex: invalid byte: U+0078 'x'`,
 			expOut: []string{fmt.Sprintf(multiFmt, 1, 2, "0a", mustBech32("hhrrpp", []byte{0x0a}))},
 		},
@@ -274,7 +320,7 @@ func TestConvertAndPrintAll(t *testing.T) {
 			var buffer bytes.Buffer
 			tc.cfg.Writer = &buffer
 
-			err := ConvertAndPrintAll(tc.cfg, tc.args)
+			err := ConvertAndPrintAll(tc.cfg)
 			AssertErrorContents(t, err, tc.expErr, "ConvertAndPrintAll error")
 			outStr := buffer.String()
 			outLines := strings.Split(outStr, "\n")
