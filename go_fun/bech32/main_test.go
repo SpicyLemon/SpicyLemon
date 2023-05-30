@@ -12,6 +12,21 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
 
+// multiFmt is a format string used to create expected output when there are multiple inputs.
+const multiFmt = "[%d/%d] %s => %s"
+
+// mustBech32 calls bech32.ConvertAndEncode and panics on error.
+func mustBech32(hrp string, bz []byte) string {
+	rv, err := bech32.ConvertAndEncode(hrp, bz)
+	if err != nil {
+		panic(err)
+	}
+	return rv
+}
+
+// AssertErrorContents asserts that:
+//   - If an errString is provided, theErr is equal to it.
+//   - If no errString is provided, theErr is nil.
 func AssertErrorContents(t *testing.T, theErr error, errString string, msgAndArgs ...interface{}) bool {
 	t.Helper()
 	if len(errString) > 0 {
@@ -73,13 +88,46 @@ func TestCmdConfig_Prep(t *testing.T) {
 	}
 }
 
+func TestCmdConfig_OutputTypeDefined(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *CmdConfig
+		exp  bool
+	}{
+		{name: "empty config", cfg: &CmdConfig{}, exp: false},
+		{name: "one hrp", cfg: &CmdConfig{ToHRPs: []string{"one"}}, exp: true},
+		{name: "two hrps", cfg: &CmdConfig{ToHRPs: []string{"one", "two"}}, exp: true},
+		{name: "to hex", cfg: &CmdConfig{ToHex: true}, exp: true},
+		{name: "to base64", cfg: &CmdConfig{ToBase64: true}, exp: true},
+		{name: "to raw", cfg: &CmdConfig{ToRaw: true}, exp: true},
+		{name: "one hrp and to hex", cfg: &CmdConfig{ToHRPs: []string{"one"}, ToHex: true}, exp: true},
+		{name: "one hrp and to base64", cfg: &CmdConfig{ToHRPs: []string{"one"}, ToBase64: true}, exp: true},
+		{name: "one hrp and to raw", cfg: &CmdConfig{ToHRPs: []string{"one"}, ToRaw: true}, exp: true},
+		{name: "to hex and to base64", cfg: &CmdConfig{ToHex: true, ToBase64: true}, exp: true},
+		{name: "to hex and to raw", cfg: &CmdConfig{ToHex: true, ToRaw: true}, exp: true},
+		{name: "to base64 and to raw", cfg: &CmdConfig{ToBase64: true, ToRaw: true}, exp: true},
+		{
+			name: "one hrp to hex base64 and raw",
+			cfg:  &CmdConfig{ToHRPs: []string{"one"}, ToHex: true, ToBase64: true, ToRaw: true},
+			exp:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := tc.cfg.OutputTypeDefined()
+			assert.Equal(t, tc.exp, actual, "OutputTypeDefined()")
+		})
+	}
+}
+
 func TestToFromVal(t *testing.T) {
 	tests := []struct {
 		str    string
 		exp    FromVal
 		expErr string
 	}{
-		{str: "", exp: FromValDetect, expErr: `invalid --from value "", must be one of ` + FromValOptionsStr},
+		{str: "noclue", exp: FromValDetect, expErr: `invalid --from value "noclue", must be one of ` + FromValOptionsStr},
 
 		{str: "detect", exp: FromValDetect},
 		{str: "DETECT", exp: FromValDetect},
@@ -91,6 +139,7 @@ func TestToFromVal(t *testing.T) {
 		{str: " detect", exp: FromValDetect},
 		{str: "detect ", exp: FromValDetect},
 		{str: " detect ", exp: FromValDetect},
+		{str: "", exp: FromValDetect},
 
 		{str: "bech32", exp: FromValBech32},
 		{str: "BECH32", exp: FromValBech32},
@@ -130,15 +179,6 @@ func TestToFromVal(t *testing.T) {
 }
 
 func TestConvertAndPrintAll(t *testing.T) {
-	mustConvertAndEncodeBech32 := func(hrp string, bz []byte) string {
-		rv, err := bech32.ConvertAndEncode(hrp, bz)
-		if err != nil {
-			panic(err)
-		}
-		return rv
-	}
-	multiFmt := "[%d/%d] %s => %s"
-
 	tests := []struct {
 		name   string
 		cfg    *CmdConfig
@@ -149,7 +189,7 @@ func TestConvertAndPrintAll(t *testing.T) {
 		{
 			name: "nil args",
 			cfg: &CmdConfig{
-				HRPs:     []string{"newhrp"},
+				ToHRPs:   []string{"newhrp"},
 				ToHex:    true,
 				ToBase64: true,
 				Quiet:    false,
@@ -161,7 +201,7 @@ func TestConvertAndPrintAll(t *testing.T) {
 		{
 			name: "empty args",
 			cfg: &CmdConfig{
-				HRPs:     []string{"newhrp"},
+				ToHRPs:   []string{"newhrp"},
 				ToHex:    true,
 				ToBase64: true,
 				Quiet:    false,
@@ -173,7 +213,7 @@ func TestConvertAndPrintAll(t *testing.T) {
 		{
 			name: "1 arg",
 			cfg: &CmdConfig{
-				HRPs:     []string{"newhrp"},
+				ToHRPs:   []string{"newhrp"},
 				ToHex:    true,
 				ToBase64: true,
 				Quiet:    false,
@@ -190,7 +230,7 @@ func TestConvertAndPrintAll(t *testing.T) {
 		{
 			name: "1 invalid arg",
 			cfg: &CmdConfig{
-				HRPs:     []string{"newhrp"},
+				ToHRPs:   []string{"newhrp"},
 				ToHex:    true,
 				ToBase64: true,
 				Quiet:    false,
@@ -202,27 +242,27 @@ func TestConvertAndPrintAll(t *testing.T) {
 		},
 		{
 			name: "2 good args",
-			cfg:  &CmdConfig{HRPs: []string{"myhrp", "yourhrp"}, FromVal: FromValHex, Count: 2},
+			cfg:  &CmdConfig{ToHRPs: []string{"myhrp", "yourhrp"}, FromVal: FromValHex, Count: 2},
 			args: []string{"0a", "0b"},
 			expOut: []string{
-				fmt.Sprintf(multiFmt, 1, 2, "0a", mustConvertAndEncodeBech32("myhrp", []byte{0x0a})),
-				fmt.Sprintf(multiFmt, 1, 2, "0a", mustConvertAndEncodeBech32("yourhrp", []byte{0x0a})),
-				fmt.Sprintf(multiFmt, 2, 2, "0b", mustConvertAndEncodeBech32("myhrp", []byte{0x0b})),
-				fmt.Sprintf(multiFmt, 2, 2, "0b", mustConvertAndEncodeBech32("yourhrp", []byte{0x0b})),
+				fmt.Sprintf(multiFmt, 1, 2, "0a", mustBech32("myhrp", []byte{0x0a})),
+				fmt.Sprintf(multiFmt, 1, 2, "0a", mustBech32("yourhrp", []byte{0x0a})),
+				fmt.Sprintf(multiFmt, 2, 2, "0b", mustBech32("myhrp", []byte{0x0b})),
+				fmt.Sprintf(multiFmt, 2, 2, "0b", mustBech32("yourhrp", []byte{0x0b})),
 			},
 		},
 		{
 			name:   "2 args first bad",
-			cfg:    &CmdConfig{HRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2},
+			cfg:    &CmdConfig{ToHRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2},
 			args:   []string{"x", "0a"},
 			expErr: `could not decode "x" as hex: encoding/hex: invalid byte: U+0078 'x'`,
 		},
 		{
 			name:   "2 args second bad",
-			cfg:    &CmdConfig{HRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2},
+			cfg:    &CmdConfig{ToHRPs: []string{"hhrrpp"}, FromVal: FromValHex, Count: 2},
 			args:   []string{"0a", "x"},
 			expErr: `could not decode "x" as hex: encoding/hex: invalid byte: U+0078 'x'`,
-			expOut: []string{fmt.Sprintf(multiFmt, 1, 2, "0a", mustConvertAndEncodeBech32("hhrrpp", []byte{0x0a}))},
+			expOut: []string{fmt.Sprintf(multiFmt, 1, 2, "0a", mustBech32("hhrrpp", []byte{0x0a}))},
 		},
 	}
 
@@ -247,15 +287,6 @@ func TestConvertAndPrintAll(t *testing.T) {
 }
 
 func TestConvertAndPrint(t *testing.T) {
-	mustConvertAndEncodeBech32 := func(hrp string, bz []byte) string {
-		rv, err := bech32.ConvertAndEncode(hrp, bz)
-		if err != nil {
-			panic(err)
-		}
-		return rv
-	}
-	multiFmt := "[%d/%d] %s => %s"
-
 	tests := []struct {
 		name   string
 		cfg    *CmdConfig
@@ -275,15 +306,15 @@ func TestConvertAndPrint(t *testing.T) {
 			name: "1 count to bech32 base64 and hex",
 			cfg: &CmdConfig{
 				FromVal:  FromValBech32,
-				HRPs:     []string{"newhrp"},
+				ToHRPs:   []string{"newhrp"},
 				ToHex:    true,
 				ToBase64: true,
 				Count:    1,
 			},
-			arg: mustConvertAndEncodeBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 20)),
+			arg: mustBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 20)),
 			i:   1,
 			expOut: []string{
-				mustConvertAndEncodeBech32("newhrp", bytes.Repeat([]byte{0x8a}, 20)),
+				mustBech32("newhrp", bytes.Repeat([]byte{0x8a}, 20)),
 				"ioqKioqKioqKioqKioqKioqKioo=",
 				strings.Repeat("8a", 20),
 			},
@@ -292,22 +323,22 @@ func TestConvertAndPrint(t *testing.T) {
 			name: "2 count to bech32 base64 and hex",
 			cfg: &CmdConfig{
 				FromVal:  FromValBech32,
-				HRPs:     []string{"newhrp"},
+				ToHRPs:   []string{"newhrp"},
 				ToHex:    true,
 				ToBase64: true,
 				Count:    2,
 			},
-			arg: mustConvertAndEncodeBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
+			arg: mustBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
 			i:   1,
 			expOut: []string{
 				fmt.Sprintf(multiFmt, 1, 2,
-					mustConvertAndEncodeBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
-					mustConvertAndEncodeBech32("newhrp", bytes.Repeat([]byte{0x8a}, 5))),
+					mustBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
+					mustBech32("newhrp", bytes.Repeat([]byte{0x8a}, 5))),
 				fmt.Sprintf(multiFmt, 1, 2,
-					mustConvertAndEncodeBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
+					mustBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
 					"ioqKioo="),
 				fmt.Sprintf(multiFmt, 1, 2,
-					mustConvertAndEncodeBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
+					mustBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
 					strings.Repeat("8a", 5)),
 			},
 		},
@@ -315,16 +346,16 @@ func TestConvertAndPrint(t *testing.T) {
 			name: "2 count quiet to bech32 base64 and hex",
 			cfg: &CmdConfig{
 				FromVal:  FromValBech32,
-				HRPs:     []string{"newhrp"},
+				ToHRPs:   []string{"newhrp"},
 				ToHex:    true,
 				ToBase64: true,
 				Count:    2,
 				Quiet:    true,
 			},
-			arg: mustConvertAndEncodeBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
+			arg: mustBech32("oldhrp", bytes.Repeat([]byte{0x8a}, 5)),
 			i:   1,
 			expOut: []string{
-				mustConvertAndEncodeBech32("newhrp", bytes.Repeat([]byte{0x8a}, 5)),
+				mustBech32("newhrp", bytes.Repeat([]byte{0x8a}, 5)),
 				"ioqKioo=",
 				strings.Repeat("8a", 5),
 			},
@@ -352,13 +383,6 @@ func TestConvertAndPrint(t *testing.T) {
 }
 
 func TestGetAddrBytes(t *testing.T) {
-	mustConvertAndEncodeBech32 := func(hrp string, bz []byte) string {
-		rv, err := bech32.ConvertAndEncode(hrp, bz)
-		if err != nil {
-			panic(err)
-		}
-		return rv
-	}
 	tests := []struct {
 		name   string
 		cfg    *CmdConfig
@@ -374,19 +398,19 @@ func TestGetAddrBytes(t *testing.T) {
 		{
 			name:  "detect empty bech32",
 			cfg:   &CmdConfig{FromVal: FromValDetect},
-			input: mustConvertAndEncodeBech32("emptything", []byte{}),
+			input: mustBech32("emptything", []byte{}),
 			exp:   []byte{},
 		},
 		{
 			name:  "detect short bech32",
 			cfg:   &CmdConfig{FromVal: FromValDetect},
-			input: mustConvertAndEncodeBech32("shortthing", bytes.Repeat([]byte{0}, 5)),
+			input: mustBech32("shortthing", bytes.Repeat([]byte{0}, 5)),
 			exp:   bytes.Repeat([]byte{0}, 5),
 		},
 		{
 			name:  "detect normal bech32",
 			cfg:   &CmdConfig{FromVal: FromValDetect},
-			input: mustConvertAndEncodeBech32("normalthing", bytes.Repeat([]byte{1}, 20)),
+			input: mustBech32("normalthing", bytes.Repeat([]byte{1}, 20)),
 			exp:   bytes.Repeat([]byte{1}, 20),
 		},
 		{
@@ -476,31 +500,31 @@ func TestGetAddrBytes(t *testing.T) {
 		{
 			name:  "bech32 empty bytes",
 			cfg:   &CmdConfig{FromVal: FromValBech32},
-			input: mustConvertAndEncodeBech32("one", []byte{9}),
+			input: mustBech32("one", []byte{9}),
 			exp:   []byte{9},
 		},
 		{
 			name:  "bech32 1 byte",
 			cfg:   &CmdConfig{FromVal: FromValBech32},
-			input: mustConvertAndEncodeBech32("one", []byte{9}),
+			input: mustBech32("one", []byte{9}),
 			exp:   []byte{9},
 		},
 		{
 			name:  "bech32 5 bytes",
 			cfg:   &CmdConfig{FromVal: FromValBech32},
-			input: mustConvertAndEncodeBech32("five", bytes.Repeat([]byte{5}, 5)),
+			input: mustBech32("five", bytes.Repeat([]byte{5}, 5)),
 			exp:   bytes.Repeat([]byte{5}, 5),
 		},
 		{
 			name:  "bech32 20 bytes",
 			cfg:   &CmdConfig{FromVal: FromValBech32},
-			input: mustConvertAndEncodeBech32("twenty", bytes.Repeat([]byte{20}, 20)),
+			input: mustBech32("twenty", bytes.Repeat([]byte{20}, 20)),
 			exp:   bytes.Repeat([]byte{20}, 20),
 		},
 		{
 			name:  "bech32 32 bytes",
 			cfg:   &CmdConfig{FromVal: FromValBech32},
-			input: mustConvertAndEncodeBech32("twenty", bytes.Repeat([]byte{32}, 32)),
+			input: mustBech32("twenty", bytes.Repeat([]byte{32}, 32)),
 			exp:   bytes.Repeat([]byte{32}, 32),
 		},
 		{
@@ -641,6 +665,13 @@ func TestGetAddrBytes(t *testing.T) {
 }
 
 func TestEncodeAddr(t *testing.T) {
+	allOuts := &CmdConfig{
+		ToHRPs:   []string{"hrp"},
+		ToBase64: true,
+		ToHex:    true,
+		ToRaw:    true,
+	}
+
 	tests := []struct {
 		name   string
 		cfg    *CmdConfig
@@ -650,13 +681,13 @@ func TestEncodeAddr(t *testing.T) {
 	}{
 		{
 			name: "one hrp",
-			cfg:  &CmdConfig{HRPs: []string{"abc"}},
+			cfg:  &CmdConfig{ToHRPs: []string{"abc"}},
 			addr: bytes.Repeat([]byte{0}, 20),
 			exp:  []string{"abc1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqql9d4m7"},
 		},
 		{
 			name: "two hrps",
-			cfg:  &CmdConfig{HRPs: []string{"abc", "def"}},
+			cfg:  &CmdConfig{ToHRPs: []string{"abc", "def"}},
 			addr: bytes.Repeat([]byte{1}, 20),
 			exp: []string{
 				"abc1qyqszqgpqyqszqgpqyqszqgpqyqszqgp74v53l",
@@ -676,6 +707,12 @@ func TestEncodeAddr(t *testing.T) {
 			exp:  []string{"0303030303030303030303030303030303030303"},
 		},
 		{
+			name: "to raw",
+			cfg:  &CmdConfig{ToRaw: true},
+			addr: []byte("this is a raw string"),
+			exp:  []string{"this is a raw string"},
+		},
+		{
 			name: "no flags",
 			cfg:  &CmdConfig{},
 			addr: bytes.Repeat([]byte{4}, 20),
@@ -683,7 +720,7 @@ func TestEncodeAddr(t *testing.T) {
 		},
 		{
 			name: "three hrps to base64 and to hex",
-			cfg:  &CmdConfig{HRPs: []string{"abc", "def", "xyz"}, ToBase64: true, ToHex: true},
+			cfg:  &CmdConfig{ToHRPs: []string{"abc", "def", "xyz"}, ToBase64: true, ToHex: true},
 			addr: bytes.Repeat([]byte{5}, 20),
 			exp: []string{
 				"abc1q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg90pd5a4",
@@ -695,39 +732,42 @@ func TestEncodeAddr(t *testing.T) {
 		},
 		{
 			name: "single byte",
-			cfg:  &CmdConfig{HRPs: []string{"hrp"}, ToBase64: true, ToHex: true},
+			cfg:  allOuts,
 			addr: []byte{6},
 			exp: []string{
 				"hrp1qcfv3tsc",
 				"Bg==",
 				"06",
+				string([]byte{6}),
 			},
 		},
 		{
 			name: "five bytes",
-			cfg:  &CmdConfig{HRPs: []string{"hrp"}, ToBase64: true, ToHex: true},
+			cfg:  allOuts,
 			addr: bytes.Repeat([]byte{0x0d}, 5),
 			exp: []string{
 				"hrp1p5xs6rgd5ryvhl",
 				"DQ0NDQ0=",
 				"0d0d0d0d0d",
+				string(bytes.Repeat([]byte{0x0d}, 5)),
 			},
 		},
 		{
 			name: "32 bytes",
-			cfg:  &CmdConfig{HRPs: []string{"hrp"}, ToBase64: true, ToHex: true},
+			cfg:  allOuts,
 			addr: bytes.Repeat([]byte{7}, 32),
 			exp: []string{
 				"hrp1qurswpc8qurswpc8qurswpc8qurswpc8qurswpc8qurswpc8qursax9spp",
 				"BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
 				"0707070707070707070707070707070707070707070707070707070707070707",
+				string(bytes.Repeat([]byte{7}, 32)),
 			},
 		},
 		{
 			name: "empty bytes",
-			cfg:  &CmdConfig{HRPs: []string{"ipq"}, ToBase64: true, ToHex: true},
+			cfg:  allOuts,
 			addr: []byte{},
-			exp:  []string{"ipq1dsr0xv", "", ""},
+			exp:  []string{"hrp1vhqs52", "", "", ""},
 		},
 		// Not sure if there's a way to make bech32.ConvertAndEncode return an error.
 	}

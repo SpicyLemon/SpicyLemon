@@ -15,14 +15,27 @@ import (
 
 // CmdConfig contains all the flags and info about the command being run.
 type CmdConfig struct {
-	HRPs     []string
-	ToHex    bool
+	// ToHRPs are the strings provided with the --hrp flag(s).
+	ToHRPs []string
+	// ToHex indicates the presence of the --hex flag.
+	ToHex bool
+	// ToBase64 indicates the presence of the --base64 flag.
 	ToBase64 bool
-	Quiet    bool
-	From     string
-	FromVal  FromVal
-	Writer   io.Writer
-	Count    int
+	// ToRaw indicates the presence of the --raw flag.
+	ToRaw bool
+
+	// Quiet indicates the presence of the --quiet flag.
+	Quiet bool
+
+	// From is the string provided with the --from arg.
+	From string
+	// FromVal is the normalized version of the From field.
+	FromVal FromVal
+
+	// Writer is what's used for printing the output.
+	Writer io.Writer
+	// Count is a count of the args provided.
+	Count int
 }
 
 // Prep sets up the final stuff needed in the CmdConfig before trying to do stuff.
@@ -35,6 +48,11 @@ func (c *CmdConfig) Prep(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return nil
+}
+
+// OutputTypeDefined returns true if any output types have been dictated.
+func (c *CmdConfig) OutputTypeDefined() bool {
+	return len(c.ToHRPs) > 0 || c.ToHex || c.ToBase64 || c.ToRaw
 }
 
 // A FromVal is a valid string to provide with the --from flag.
@@ -66,7 +84,7 @@ var FromValOptionsStr = `"` + strings.Join([]string{
 // ToFromVal converts the provided string into a FromVal or returns an error.
 func ToFromVal(str string) (FromVal, error) {
 	switch strings.ToLower(strings.TrimSpace(str)) {
-	case string(FromValDetect), "d", "det", "any", "a":
+	case string(FromValDetect), "d", "det", "any", "a", "":
 		return FromValDetect, nil
 	case string(FromValBech32), "b32", "32":
 		return FromValBech32, nil
@@ -87,8 +105,22 @@ func NewRootCmd() *cobra.Command {
 		Short: "Convert bech32 strings",
 		Long: `Convert bech32 strings to hex, base64, or new HRPs.
 
-If none of --hrp --base64 or --hex are provided, --hex is used.
-Multiple --hrp values can be provided.`,
+If none of --hrp --base64 --hex or --raw are provided, --hex is used.
+The --hrp flag can be provided multiple times.
+Multiple HRPs can be provided after --hrp by separating each with commas.
+
+When multiple output types are requested, they will be in this order:
+  1. Bech32(s) in the order the HRPs were provided
+  2. Base64
+  3. Hex
+  4. Raw
+
+Example Usage:
+$ bech32 xyz1q5zs2pg9q5zs2pg9q5zs2pg9q5zs2pg9fzxqpn --hrp abc
+$ bech32 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b --hrp abc,def --from hex
+$ bech32 5c5c5c5c5c5c --hrp abc --hrp def --hex --from base64
+
+`,
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: cmdConfig.Prep,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -97,9 +129,10 @@ Multiple --hrp values can be provided.`,
 		SilenceUsage: true,
 	}
 
-	cmd.Flags().StringSliceVar(&cmdConfig.HRPs, "hrp", cmdConfig.HRPs, "Output address as bech32 with provided HRPs")
-	cmd.Flags().BoolVarP(&cmdConfig.ToBase64, "base64", "b", cmdConfig.ToHex, "Output address as base64")
-	cmd.Flags().BoolVarP(&cmdConfig.ToHex, "hex", "x", cmdConfig.ToHex, "Output address as hex")
+	cmd.Flags().StringSliceVar(&cmdConfig.ToHRPs, "hrp", cmdConfig.ToHRPs, "Output address(es) as bech32 with provided HRPs")
+	cmd.Flags().BoolVarP(&cmdConfig.ToBase64, "base64", "b", cmdConfig.ToHex, "Output address(es) as base64")
+	cmd.Flags().BoolVarP(&cmdConfig.ToHex, "hex", "x", cmdConfig.ToHex, "Output address(es) as hex")
+	cmd.Flags().BoolVarP(&cmdConfig.ToRaw, "raw", "r", cmdConfig.ToRaw, "Output raw address(es) bytes")
 	cmd.Flags().BoolVarP(&cmdConfig.Quiet, "quiet", "q", cmdConfig.Quiet, "Only print the converted output")
 	cmd.Flags().StringVar(&cmdConfig.From, "from", string(FromValDetect),
 		"The type of strings being provided, options: "+FromValOptionsStr,
@@ -206,8 +239,8 @@ func GetAddrBytes(cfg *CmdConfig, input string) ([]byte, error) {
 // EncodeAddr encodes the provided address as desired.
 func EncodeAddr(cfg *CmdConfig, addr []byte) ([]string, error) {
 	var err error
-	rv := make([]string, len(cfg.HRPs), len(cfg.HRPs)+2)
-	for i, hrp := range cfg.HRPs {
+	rv := make([]string, len(cfg.ToHRPs), len(cfg.ToHRPs)+3)
+	for i, hrp := range cfg.ToHRPs {
 		rv[i], err = bech32.ConvertAndEncode(hrp, addr)
 		if err != nil {
 			return nil, err
@@ -216,8 +249,11 @@ func EncodeAddr(cfg *CmdConfig, addr []byte) ([]string, error) {
 	if cfg.ToBase64 {
 		rv = append(rv, base64.StdEncoding.EncodeToString(addr))
 	}
-	if cfg.ToHex || len(rv) == 0 {
+	if cfg.ToHex || !cfg.OutputTypeDefined() {
 		rv = append(rv, hex.EncodeToString(addr))
+	}
+	if cfg.ToRaw {
+		rv = append(rv, string(addr))
 	}
 	return rv, nil
 }
