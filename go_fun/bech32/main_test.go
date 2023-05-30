@@ -40,7 +40,7 @@ func TestCmdConfig_Prep(t *testing.T) {
 			name:       "invalid from",
 			c:          &CmdConfig{From: "what"},
 			args:       []string{"0a"},
-			expErr:     `invalid --from value "what", must be one of "detect" "bech32" "base64" "hex"`,
+			expErr:     `invalid --from value "what", must be one of ` + FromValOptionsStr,
 			expFromVal: FromValDetect,
 			expCount:   1,
 		},
@@ -109,6 +109,11 @@ func TestToFromVal(t *testing.T) {
 		{str: "Hex", exp: FromValHex},
 		{str: "h", exp: FromValHex},
 		{str: "x", exp: FromValHex},
+
+		{str: "raw", exp: FromValRaw},
+		{str: "RAW", exp: FromValRaw},
+		{str: "Raw", exp: FromValRaw},
+		{str: "r", exp: FromValRaw},
 	}
 
 	for _, tc := range tests {
@@ -593,6 +598,36 @@ func TestGetAddrBytes(t *testing.T) {
 			cfg:    &CmdConfig{FromVal: FromValBase64},
 			input:  "invalidbase64",
 			expErr: `could not decode "invalidbase64" as base64: illegal base64 data at input byte 12`,
+		},
+		{
+			name:  "raw empty",
+			cfg:   &CmdConfig{FromVal: FromValRaw},
+			input: "",
+			exp:   []byte{},
+		},
+		{
+			name:  "raw 1 byte",
+			cfg:   &CmdConfig{FromVal: FromValRaw},
+			input: "a",
+			exp:   []byte{'a'},
+		},
+		{
+			name:  "raw 5 bytes",
+			cfg:   &CmdConfig{FromVal: FromValRaw},
+			input: "abCde",
+			exp:   []byte("abCde"),
+		},
+		{
+			name:  "raw 20 bytes",
+			cfg:   &CmdConfig{FromVal: FromValRaw},
+			input: "abCde12345ABcDE67890",
+			exp:   []byte("abCde12345ABcDE67890"),
+		},
+		{
+			name:  "raw 32 bytes",
+			cfg:   &CmdConfig{FromVal: FromValRaw},
+			input: "(xXx:~<d[_-'rawbytes'-_]b>~:xXx)",
+			exp:   []byte("(xXx:~<d[_-'rawbytes'-_]b>~:xXx)"),
 		},
 	}
 

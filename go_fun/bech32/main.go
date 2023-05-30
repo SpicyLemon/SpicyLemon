@@ -54,11 +54,13 @@ const (
 	FromValBase64 FromVal = "base64"
 	// FromValHex decodes the input as a hex string.
 	FromValHex FromVal = "hex"
+	// FromValRaw indicates that the input is raw and should not be decoded.
+	FromValRaw FromVal = "raw"
 )
 
 // FromValOptionsStr is a string indicating all the valid --from options.
 var FromValOptionsStr = `"` + strings.Join([]string{
-	FromValDetect.String(), FromValBech32.String(), FromValBase64.String(), FromValHex.String(),
+	FromValDetect.String(), FromValBech32.String(), FromValBase64.String(), FromValHex.String(), FromValRaw.String(),
 }, `" "`) + `"`
 
 // ToFromVal converts the provided string into a FromVal or returns an error.
@@ -72,6 +74,8 @@ func ToFromVal(str string) (FromVal, error) {
 		return FromValBase64, nil
 	case string(FromValHex), "h", "x":
 		return FromValHex, nil
+	case string(FromValRaw), "r":
+		return FromValRaw, nil
 	}
 	return FromValDetect, fmt.Errorf("invalid --from value %q, must be one of %s", str, FromValOptionsStr)
 }
@@ -148,37 +152,45 @@ func GetAddrBytes(cfg *CmdConfig, input string) ([]byte, error) {
 		return []byte{}, nil
 	}
 
-	var addr []byte
-	var err error
-	if cfg.FromVal == FromValBech32 {
-		_, addr, err = bech32.DecodeAndConvert(input)
-	}
-	if cfg.FromVal == FromValBase64 {
-		addr, err = base64.StdEncoding.DecodeString(input)
-	}
-	if cfg.FromVal == FromValHex {
-		addr, err = hex.DecodeString(input)
+	if cfg.FromVal == FromValRaw {
+		return []byte(input), nil
 	}
 
-	if len(cfg.FromVal) > 0 && cfg.FromVal != FromValDetect {
+	isDetect := cfg.FromVal == FromValDetect || len(cfg.FromVal)+len(cfg.From) == 0
+
+	var addr, addrTmp []byte
+	var err error
+	okTypes := make([]string, 0, 3)
+
+	if cfg.FromVal == FromValBech32 || isDetect {
+		_, addrTmp, err = bech32.DecodeAndConvert(input)
+		if err == nil {
+			okTypes = append(okTypes, FromValBech32.String())
+			addr = addrTmp
+		}
+	}
+
+	if cfg.FromVal == FromValBase64 || isDetect {
+		addrTmp, err = base64.StdEncoding.DecodeString(input)
+		if err == nil {
+			okTypes = append(okTypes, FromValBase64.String())
+			addr = addrTmp
+		}
+	}
+
+	if cfg.FromVal == FromValHex || isDetect {
+		addrTmp, err = hex.DecodeString(input)
+		if err == nil {
+			okTypes = append(okTypes, FromValHex.String())
+			addr = addrTmp
+		}
+	}
+
+	if !isDetect {
 		if err != nil {
 			return nil, fmt.Errorf("could not decode %q as %s: %w", input, cfg.FromVal, err)
 		}
 		return addr, nil
-	}
-
-	okTypes := make([]string, 0, 3)
-	if _, addrBech32, errBech32 := bech32.DecodeAndConvert(input); errBech32 == nil {
-		addr = addrBech32
-		okTypes = append(okTypes, FromValBech32.String())
-	}
-	if addrBase64, errBase64 := base64.StdEncoding.DecodeString(input); errBase64 == nil {
-		addr = addrBase64
-		okTypes = append(okTypes, FromValBase64.String())
-	}
-	if addrHex, errHex := hex.DecodeString(input); errHex == nil {
-		addr = addrHex
-		okTypes = append(okTypes, FromValHex.String())
 	}
 
 	switch len(okTypes) {
