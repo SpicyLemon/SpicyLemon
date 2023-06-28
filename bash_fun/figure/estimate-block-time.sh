@@ -70,7 +70,12 @@ Usage: $fn [<options>] <desired date time>
         and the average from there to the current block is used.
 
     --blocks-back <number> sets the number of blocks back to go to estimate ms-per-block.
+        If both --blocks-back and --from-height are provided, the last one is used.
         Default is $blocks_back.
+
+    --from-height <height> is the past height to look up in order to estimate ms-per-block.
+        If both --blocks-back and --from-height are provided, the last one is used.
+        Default is --blocks-back $block_back.
 
 EOF
 )"
@@ -200,7 +205,25 @@ while [[ "$#" -gt '0' ]]; do
                 printf 'The <number> provided after %s flag must be at least 1, have: [%s].\n' "$1" "$2" >&2
                 exit 1
             fi
-            blocks_back="$2"
+            arg_blocks_back="$2"
+            arg_from_height=''
+            shift
+            ;;
+        --from-height|--from_height|--from-block|--from_block)
+            if [[ -z "$2" ]]; then
+                printf 'No <height> provided after %s flag.\n' "$1" >&2
+                exit 1
+            fi
+            if [[ ! "$2" =~ ^[[:digit:]]+$ ]]; then
+                printf 'Invalid <height> provided after %s flag: [%s].\n' "$1" "$2" >&2
+                exit 1
+            fi
+            if [[ "$2" -lt '1' ]]; then
+                printf 'The <height> provided after %s flag must be at least 1, have: [%s].\n' "$1" "$2" >&2
+                exit 1
+            fi
+            arg_from_height="$2"
+            args_blocks_back=''
             shift
             ;;
         *)
@@ -277,6 +300,17 @@ if [[ -n "$arg_ms_per_block" ]]; then
     [[ -n "$verbose" ]] && printf 'Milliseconds per block provided: [%s].\n' "$ms_per_block" >&2
 fi
 
+if [[ -n "$arg_blocks_back" ]]; then
+    blocks_back="$arg_blocks_back"
+    [[ -n "$verbose" ]] && printf 'Blocks back provided: [%s].\n' "$arg_blocks_back" >&2
+elif [[ -n "$arg_from_height" ]]; then
+    old_height="$arg_from_height"
+    [[ -n "$verbose" ]] && printf 'From height provided: [%s].\n' "$arg_from_height" >&2
+else
+    [[ -n "$verbose" ]] && printf 'Using default blocks back: [%s].\n' "$blocks_back" >&2
+fi
+
+
 #############################################
 # Lookup information not provided by args.
 
@@ -312,8 +346,10 @@ current_time_disp="$( epoch_ms_to_date_time "$current_ms" )" || exit $?
 
 if [[ -z "$ms_per_block" ]]; then
     ensure_provd || exit $?
-    old_height="$(( current_height - blocks_back ))" || exit $?
-    if [[ "$old_height" -lt '0' ]]; then
+    if [[ -z "$old_height" ]]; then
+        old_height="$(( current_height - blocks_back ))" || exit $?
+    fi
+    if [[ "$old_height" -lt '1' ]]; then
         old_height=0
     fi
     [[ -n "$verbose" ]] && printf 'Executing command: %s query block %s  ... ' "$PROVD" "$old_height" >&2
