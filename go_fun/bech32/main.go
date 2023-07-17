@@ -286,7 +286,7 @@ func EncodeAddr(cfg *CmdConfig, addr []byte) ([]string, error) {
 		rv = append(rv, base64.StdEncoding.EncodeToString(addr))
 	}
 	if cfg.ToHex || !cfg.OutputTypeDefined() {
-		rv = append(rv, hex.EncodeToString(addr))
+		rv = append(rv, strings.ToUpper(hex.EncodeToString(addr)))
 	}
 	if cfg.ToRaw {
 		rv = append(rv, string(addr))
