@@ -16,7 +16,7 @@ test_all () {
     command -v show_last_exit_code > /dev/null 2>&1 && can_show_last_exit_code='YES'
     command -v say > /dev/null 2>&1 && can_say='YES'
 
-    local fail_fast sound targets skips added_targets
+    local fail_fast sound targets skips added_targets comment_only
     fail_fast='YES'
     sound='on'
     targets=( test test-sim-nondeterminism test-sim-import-export test-sim-after-import test-sim-multi-seed-short )
@@ -28,6 +28,7 @@ test_all () {
                 cat << EOF
 Usage: test_all [[--skip|-s] <targets>] [[--also|-a] <targets>] [[--targets|-t] <targets>]
                 [--continue|-c|--break-b] [--sound [on|off|beep|say]|--noisy|--quiet|--beep|--say]
+                [--help] [--cmt|--comment]
 
 By default, the following make targets are run:
   ${targets[@]}
@@ -62,9 +63,14 @@ This can be controlled using the --sound option.
 If multiple --sound, --quiet, --beep, or --say options are given, the last one is used.
 Proving --sound without specififying an option is the same as providing --sound on.
 
+The --help flag outputs this message.
+The --cmt or --comment flag will output a message for copy/pasting into a Github comment, but won't run any tests.
 
 EOF
                 return 0
+                ;;
+            --cmt|--comment|--cmt-only|--comment-only)
+                comment_only='YES'
                 ;;
             --continue|-c)
                 fail_fast=''
@@ -142,100 +148,109 @@ EOF
         targets+=( "${added_targets[@]}" )
     fi
 
-    local ec i t prog st not_first tec count
+    local ec
     ec=0
-    i=0
-    for t in "${targets[@]}"; do
-        i=$(( i + 1 ))
-        prog="$( printf '[%d/%d]' "$i" "${#targets[@]}" )"
-        # Output a header
-        if [[ -n "$not_first" ]]; then
-            printf '\n\n\n\n'
-        else
-            not_first='YES'
-        fi
-        if [[ -n "$can_hr11" ]]; then
-            hr11 "$prog" "$t"
-        else
-            printf '\033[1m#\n# %s %s\n########################################\033[0m\n' "$prog" "$t"
-        fi
+    if [[ -z "$comment_only" ]]; then
+        local i t prog st not_first tec count
+        i=0
+        for t in "${targets[@]}"; do
+            i=$(( i + 1 ))
+            prog="$( printf '[%d/%d]' "$i" "${#targets[@]}" )"
+            # Output a header
+            if [[ -n "$not_first" ]]; then
+                printf '\n\n\n\n'
+            else
+                not_first='YES'
+            fi
+            if [[ -n "$can_hr11" ]]; then
+                hr11 "$prog" "$t"
+            else
+                printf '\033[1m#\n# %s %s\n########################################\033[0m\n' "$prog" "$t"
+            fi
 
-        # Skip the target if we're supposed to.
-        if [[ "${#skips[@]}" -gt '0' ]]; then
-            for st in "${skips[@]}"; do
-                if [[ "$t" == "$st" ]]; then
-                    printf '\nSkipped\n\n'
-                    continue 2
+            # Skip the target if we're supposed to.
+            if [[ "${#skips[@]}" -gt '0' ]]; then
+                for st in "${skips[@]}"; do
+                    if [[ "$t" == "$st" ]]; then
+                        printf '\nSkipped\n\n'
+                        continue 2
+                    fi
+                done
+            fi
+
+            # Make the target
+            date +"%Y-%m-%d %H:%M:%S%z"
+            time make "$t"
+            tec="$?"
+
+            # Output the target's exit code.
+            printf '\n%s Finished: make %s\n' "$prog" "$t"
+            printf '%s Exit Code:' "$prog"
+            if [[ -n "$can_show_last_exit_code" ]]; then
+                ( exit "$tec"; )
+                show_last_exit_code
+            elif [[ "$tec" -eq '0' ]]; then
+                # 97 = bright white, 42 = green background
+                printf '\033[97;42m %3d \033[0m' "$tec"
+            else
+                # 97 = bright white, 41 = red background
+                printf '\033[97;41m %3d \033[0m' "$tec"
+            fi
+            printf '\n'
+
+            # If it failed, update the final error code and make some noise.
+            if [[ "$tec" -ne '0' ]]; then
+                ec="$tec"
+                if [[ -n "$sound" ]]; then
+                    if [[ -n "$can_say" ]]; then
+                        say "make $t failed with exit code $tec"
+                    else
+                        # Beep 4 times very fast.
+                        count=4
+                        while :; do
+                            printf '\a'
+                            count="$(( count - 1 ))"
+                            [[ "$count" -le '0' ]] && break
+                            sleep .1
+                        done
+                    fi
                 fi
-            done
-        fi
+                [[ -n "$fail_fast" ]] && break
+            fi
+        done
 
-        # Make the target
-        date +"%Y-%m-%d %H:%M:%S%z"
-        time make "$t"
-        tec="$?"
-
-        # Output the target's exit code.
-        printf '\n%s Finished: make %s\n' "$prog" "$t"
-        printf '%s Exit Code:' "$prog"
-        if [[ -n "$can_show_last_exit_code" ]]; then
-            ( exit "$tec"; )
-            show_last_exit_code
-        elif [[ "$tec" -eq '0' ]]; then
-            # 97 = bright white, 42 = green background
-            printf '\033[97;42m %3d \033[0m' "$tec"
-        else
-            # 97 = bright white, 41 = red background
-            printf '\033[97;41m %3d \033[0m' "$tec"
-        fi
-        printf '\n'
-
-        # If it failed, update the final error code and make some noise.
-        if [[ "$tec" -ne '0' ]]; then
-            ec="$tec"
-            if [[ -n "$sound" ]]; then
-                if [[ -n "$can_say" ]]; then
-                    say "make $t failed with exit code $tec"
+        # Make some noise about being done.
+        if [[ -n "$sound" ]]; then
+            if [[ -n "$can_say" ]]; then
+                if [[ "$ec" -eq '0' ]]; then
+                    say 'All tests completed successfully.'
                 else
-                    # Beep 4 times very fast.
+                    say 'Done running tests. There were failures.'
+                fi
+            else
+                if [[ "$ec" -eq '0' ]]; then
+                    # Two beeps, nicely spaced.
+                    printf '\a'
+                    sleep .3
+                    printf '\a'
+                else
+                    # Four beeps, nicely spaced.
                     count=4
                     while :; do
                         printf '\a'
                         count="$(( count - 1 ))"
                         [[ "$count" -le '0' ]] && break
-                        sleep .1
+                        sleep .3
                     done
                 fi
             fi
-            [[ -n "$fail_fast" ]] && break
         fi
-    done
+    fi
 
-    # Make some noise about being done.
-    if [[ -n "$sound" ]]; then
-        if [[ -n "$can_say" ]]; then
-            if [[ "$ec" -eq '0' ]]; then
-                say 'All tests completed successfully.'
-            else
-                say 'Done running tests. There were failures.'
-            fi
-        else
-            if [[ "$ec" -eq '0' ]]; then
-                # Two beeps, nicely spaced.
-                printf '\a'
-                sleep .3
-                printf '\a'
-            else
-                # Four beeps, nicely spaced.
-                count=4
-                while :; do
-                    printf '\a'
-                    count="$(( count - 1 ))"
-                    [[ "$count" -le '0' ]] && break
-                    sleep .3
-                done
-            fi
-        fi
+    if [[ "$ec" -eq '0' ]]; then
+        printf '\nI ran the following `make` targets locally and they all completed successfully:\n'
+        printf '* `make %s`\n' "${targets[@]}"
+        printf '\n'
     fi
 
     return "$ec"
