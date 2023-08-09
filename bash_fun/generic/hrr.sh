@@ -31,7 +31,9 @@ hr () {
     local message termwidth unset_palette available piece_len leftover char block section left_wing right_wing c
     message="$*"
     termwidth=80
-    if command -v "tput" > /dev/null 2>&1; then
+    if [[ -n "$HR_WIDTH" ]]; then
+        termwidth="$HR_WIDTH"
+    elif command -v "tput" > /dev/null 2>&1; then
         termwidth=$( tput cols )
     fi
     pick_a_palette && unset_palette="Yup"
