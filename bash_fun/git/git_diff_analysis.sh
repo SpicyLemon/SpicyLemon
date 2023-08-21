@@ -70,7 +70,8 @@ EOF
     test_entries="$( grep "_test\.go$" <<< "$diff_numstats" )"
     proto_entries="$( grep "\.proto$" <<< "$diff_numstats" )"
     auto_entries="$( grep -e "\.pb\.go$" -e "\.pb\.gw\.go$" <<< "$diff_numstats" )"
-    code_entries="$( grep -v -e "_test\.go$" -e ".proto$" -e "\.pb\.go$" -e "\.pb\.gw\.go$" <<< "$diff_numstats" )"
+    md_entries="$( grep '\.md$' <<< "$diff_numstats" )"
+    code_entries="$( grep -v -e "_test\.go$" -e "\.proto$" -e '\.md$' -e "\.pb\.go$" -e "\.pb\.gw\.go$" <<< "$diff_numstats" )"
 
     total_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$diff_numstats" )"
     total_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$diff_numstats" )"
@@ -80,6 +81,8 @@ EOF
     proto_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$proto_entries" )"
     auto_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$auto_entries" )"
     auto_lines_removed="$( awk '{sum-+$2} END { print sum }' <<< "$auto_entries" )"
+    md_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$md_entries" )"
+    md_lines_removed="$( awk '{sum-+$2} END { print sum }' <<< "$md_entries" )"
     code_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$code_entries" )"
     code_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$code_entries" )"
 
@@ -91,11 +94,12 @@ EOF
         printf '         From Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[0]}" || printf %s "${branches[1]}" )"
         printf '           To Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[1]}" || printf %s "${branches[2]}" )"
         printf '========================================\n'
-        printf 'Line Changes -  Code: %+6d  %s\n' "$code_lines_added" "$( printf '%+6d' "$code_lines_removed" | sed 's/+/-/' )"
-        printf 'Line Changes - Proto: %+6d  %s\n' "$proto_lines_added" "$( printf '%+6d' "$proto_lines_removed" | sed 's/+/-/' )"
-        printf 'Line Changes -  Auto: %+6d  %s\n' "$auto_lines_added" "$( printf '%+6d' "$auto_lines_removed" | sed 's/+/-/' )"
-        printf 'Line Changes - Tests: %+6d  %s\n' "$test_lines_added" "$( printf '%+6d' "$test_lines_removed" | sed 's/+/-/' )"
-        printf 'Line Changes - Total: %+6d  %s\n' "$total_lines_added" "$( printf '%+6d' "$total_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes -     Code: %+6d  %s\n' "$code_lines_added" "$( printf '%+6d' "$code_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes -    Proto: %+6d  %s\n' "$proto_lines_added" "$( printf '%+6d' "$proto_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes -     Auto: %+6d  %s\n' "$auto_lines_added" "$( printf '%+6d' "$auto_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes -    Tests: %+6d  %s\n' "$test_lines_added" "$( printf '%+6d' "$test_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes - Markdown: %+6d  %s\n' "$md_lines_added" "$( printf '%+6d' "$md_lines_removed" | sed 's/+/-/' )"
+        printf 'Line Changes -    Total: %+6d  %s\n' "$total_lines_added" "$( printf '%+6d' "$total_lines_removed" | sed 's/+/-/' )"
     )
 }
 
