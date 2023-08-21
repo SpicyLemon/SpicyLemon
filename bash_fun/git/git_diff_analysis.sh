@@ -90,15 +90,16 @@ EOF
     (
         # Bash and ksh arrays are 0 based while most other shells are 1 based.
         # Luckily, in those other ones, asking for the 0th element will just return nothing.
-        printf '      Repo Directory: %s\n' "$( basename "$( git rev-parse --show-toplevel )" )"
-        printf '         From Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[0]}" || printf %s "${branches[1]}" )"
-        printf '           To Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[1]}" || printf %s "${branches[2]}" )"
-        printf '========================================\n'
+        printf 'Repo Directory: %s\n' "$( basename "$( git rev-parse --show-toplevel )" )"
+        printf ' Source Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[1]}" || printf %s "${branches[2]}" )"
+        printf ' Target Branch: %s\n' "$( [[ -n "${branches[0]}" ]] && printf %s "${branches[0]}" || printf %s "${branches[1]}" )"
+        printf '==============================================\n'
         printf 'Line Changes -     Code: %+6d  %s\n' "$code_lines_added" "$( printf '%+6d' "$code_lines_removed" | sed 's/+/-/' )"
         printf 'Line Changes -    Proto: %+6d  %s\n' "$proto_lines_added" "$( printf '%+6d' "$proto_lines_removed" | sed 's/+/-/' )"
         printf 'Line Changes -     Auto: %+6d  %s\n' "$auto_lines_added" "$( printf '%+6d' "$auto_lines_removed" | sed 's/+/-/' )"
         printf 'Line Changes -    Tests: %+6d  %s\n' "$test_lines_added" "$( printf '%+6d' "$test_lines_removed" | sed 's/+/-/' )"
         printf 'Line Changes - Markdown: %+6d  %s\n' "$md_lines_added" "$( printf '%+6d' "$md_lines_removed" | sed 's/+/-/' )"
+        printf '========================================\n'
         printf 'Line Changes -    Total: %+6d  %s\n' "$total_lines_added" "$( printf '%+6d' "$total_lines_removed" | sed 's/+/-/' )"
     )
 }
