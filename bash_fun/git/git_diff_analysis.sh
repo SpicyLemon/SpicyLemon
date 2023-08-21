@@ -67,11 +67,11 @@ EOF
     diff_numstats_cmd=( git diff ${branches[@]} --numstat )
     [[ -n "$verbose" ]] && printf '  \033[97m%s\033[0m\n' "${diff_numstats_cmd[*]}" >&2
     diff_numstats="$( "${diff_numstats_cmd[@]}" )"
-    test_entries="$( grep "_test\.go$" <<< "$diff_numstats" )"
-    proto_entries="$( grep "\.proto$" <<< "$diff_numstats" )"
-    auto_entries="$( grep -e "\.pb\.go$" -e "\.pb\.gw\.go$" <<< "$diff_numstats" )"
+    test_entries="$( grep '_test\.go$' <<< "$diff_numstats" )"
+    proto_entries="$( grep '\.proto$' <<< "$diff_numstats" )"
+    auto_entries="$( grep -e '\.pb\.go$' -e '\.pb\.gw\.go$' <<< "$diff_numstats" )"
     md_entries="$( grep '\.md$' <<< "$diff_numstats" )"
-    code_entries="$( grep -v -e "_test\.go$" -e "\.proto$" -e '\.md$' -e "\.pb\.go$" -e "\.pb\.gw\.go$" <<< "$diff_numstats" )"
+    code_entries="$( grep -v -e '_test\.go$' -e '\.proto$' -e '\.md$' -e '\.pb\.go$' -e '\.pb\.gw\.go$' <<< "$diff_numstats" )"
 
     total_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$diff_numstats" )"
     total_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$diff_numstats" )"
