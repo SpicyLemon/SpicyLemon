@@ -80,9 +80,9 @@ EOF
     proto_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$proto_entries" )"
     proto_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$proto_entries" )"
     auto_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$auto_entries" )"
-    auto_lines_removed="$( awk '{sum-+$2} END { print sum }' <<< "$auto_entries" )"
+    auto_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$auto_entries" )"
     md_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$md_entries" )"
-    md_lines_removed="$( awk '{sum-+$2} END { print sum }' <<< "$md_entries" )"
+    md_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$md_entries" )"
     code_lines_added="$( awk '{sum+=$1} END { print sum }' <<< "$code_entries" )"
     code_lines_removed="$( awk '{sum+=$2} END { print sum }' <<< "$code_entries" )"
 
