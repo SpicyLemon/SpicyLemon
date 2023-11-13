@@ -66,16 +66,18 @@ Usage: $fn [<options>] <desired date time>
 
     --ms-per-block <milliseconds> is the number of milliseconds it takes to create an average block.
         The <milliseconds> must be digits only, e.g. '5000' (for 5 seconds).
-        If not supplied, the block $blocks_back blocks back will be looked up using provenanced,
+        If not supplied, a previous block will be looked up using provenanced,
         and the average from there to the current block is used.
 
     --blocks-back <number> sets the number of blocks back to go to estimate ms-per-block.
         If both --blocks-back and --from-height are provided, the last one is used.
-        Default is $blocks_back.
 
     --from-height <height> is the past height to look up in order to estimate ms-per-block.
         If both --blocks-back and --from-height are provided, the last one is used.
-        Default is --blocks-back $block_back.
+
+    The default --blocks-back or --from-height depends on the type of input.
+        If a date/time was provided, then the default is --blocks-back $blocks_back.
+        If a height was provided, then the default is --blocks-back (<desired height> - <current height>), minimum 100.
 
 EOF
 )"
@@ -307,6 +309,7 @@ elif [[ -n "$arg_from_height" ]]; then
     old_height="$arg_from_height"
     [[ -n "$verbose" ]] && printf 'From height provided: [%s].\n' "$arg_from_height" >&2
 else
+    use_default_blocks_back='YES'
     [[ -n "$verbose" ]] && printf 'Using default blocks back: [%s].\n' "$blocks_back" >&2
 fi
 
@@ -347,6 +350,13 @@ current_time_disp="$( epoch_ms_to_date_time "$current_ms" )" || exit $?
 if [[ -z "$ms_per_block" ]]; then
     ensure_provd || exit $?
     if [[ -z "$old_height" ]]; then
+        if [[ -n "$desired_height" && -n "$use_default_blocks_back" && "$desired_height" -gt "$current_height" ]]; then
+            blocks_back="$(( desired_height - current_height ))"
+            if [[ "$blocks_back" -lt "100" ]]; then
+                blocks_back='100'
+            fi
+            [[ -n "$verbose" ]] && printf 'Changing blocks back to [%s].\n' "$blocks_back" >&2
+        fi
         old_height="$(( current_height - blocks_back ))" || exit $?
     fi
     if [[ "$old_height" -lt '1' ]]; then
