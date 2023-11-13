@@ -233,7 +233,12 @@ while [[ "$#" -gt '0' ]]; do
                 printf 'Unknown argument: [%s].\n' "$1" >&2
                 exit 1
             fi
-            arg_desired="$1"
+            if [[ -n "$2" && "$2" =~ ^[[:digit:]][[:digit:]]: ]]; then
+                arg_desired="$1 $2"
+                shift
+            else
+                arg_desired="$1"
+            fi
             ;;
     esac
     shift
