@@ -456,7 +456,7 @@ fi
 [[ -n "$moniker" ]] && printf 'Moniker: %s\n' "$moniker"
 printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
 printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
-printf 'Elapsed milliseconds: %s = %s blocks at %s milliseconds per block.\n' "$ms_diff" "$block_diff" "$ms_per_block"
+printf 'Elapsed milliseconds: %s = %s blocks (at %s milliseconds per block from last %s blocks).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back"
 
 
 exit 0
