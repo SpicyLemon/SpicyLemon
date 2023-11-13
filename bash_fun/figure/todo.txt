@@ -1,4 +1,1 @@
-Create a CLI bech32 utility.
-    1: Take in a bech32 and output the HRP and address as hex and base64 encoded.
-    2: Take in a bech32 and HRP and output the same address with the different HRP.
-    3: Take in HRP and address as hex or base64 and output the bech32.
+TODO:
