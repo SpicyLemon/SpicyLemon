@@ -18,7 +18,7 @@ fi
 fn="./$( basename "$0" )"
 
 # The number of blocks to go back when estimating milliseconds per block
-blocks_back='500'
+blocks_back='10000'
 
 req_date_format='YYYY-MM-DD{T| }hh:mm[:ss[.ssssss]][Z]'
 
