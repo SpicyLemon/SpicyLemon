@@ -44,3 +44,19 @@ Make a thing to make it easy to switch go versions.
             If it's not a version, redo the splitting on just the leftover path.
             If all that's left is /, give up and show an error.
         Should probably also make that directory configurable via env var.
+    Enhance go_list_funcs:
+        1. Allow disabling color with a flag. Or maybe do what most other commands do and only do color of not being piped, and have a flag for --color=always.
+        2. Have a flag for suppressing the filename.
+        3. Have a flag for stripping out the 'func ' and converting "(x XXXX) " into "XXXX_".
+        4. Have flags for limiting it to just public or just private funcs.
+        5. Fix it to account for generics
+        6. Add a flag for including more info, e.g. just the type defs or both the type defs and args.
+            * The args part might be a pain when it comes to funcs that define them on multiple lines.
+    Create a utility to find funcs that don't have unit test funcs.
+        It will take in one or more filenames and use go_list_funcs to generate a list of expected TestXXX(t *testing.t) or (s *ZSuite) TestXXX().
+        Should have a flag for whether or not to also check private funcs (default to not looking for them).
+        Maybe allow a directory to be provided and only look at the non *_test.go .go files.
+        Assume that the funcs in abc.go have test funcs in abc_test.go.
+        Currently, here's what I'm doing:
+            { GLF_NO_COLOR=1 go_list_funcs x/exchange/client/cli/query.go | sed -E 's/^.*:func //; s/\[.*$//;' | grep -v '^[a-z]' | sed -E 's/^/Test/;'; GLF_NO_COLOR=1 go_list_funcs x/exchange/client/cli/query_test.go | sed -E 's/^.*:func (\([^)]+\) )?//;' | awk '{ print $0; print $0; }'; } | sort | uniq -u
+        I think I have the beginnings of this function in my exchange module scratchpad.
