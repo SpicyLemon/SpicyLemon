@@ -18,11 +18,13 @@ git_diff_analysis () {
     usage="$( cat << EOF
 git_diff_analysis - Gets some stats on branch differences.
 
-Usage: git_diff_analysis [<main branch> [<branch with changes>]]
+Usage: git_diff_analysis [<main branch> [<branch with changes>]|--commit <hash>] [-v|--verbose]
 
     If no branches are supplied, the diff will be from main to your current branch.
     If only one branch is supplied, the diff will be from that branch to your current branch.
     If two brances are supplied, the diff will be from the first branch to the second.
+
+    Providing --commit <hash> is the same as providing <hash>^ <hash>.
 EOF
 )"
     local branches verbose
@@ -35,6 +37,14 @@ EOF
             ;;
         -v|--verbose)
             verbose='--verbose'
+            ;;
+        --commit)
+            if [[ -z "$2" ]]; then
+                printf 'No <hash> provided after %s\n' "$1"
+                return 1
+            fi
+            branches+=( "${2}^" "$2" )
+            shift
             ;;
         *)
             branches+=( "$1" )
