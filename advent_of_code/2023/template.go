@@ -96,8 +96,8 @@ func AddLineNumbers(lines []string, startAt int) []string {
 }
 
 // DigitFormatForMax returns a format string of the length of the provided maximum number.
-// E.g. DigitFormatForMax(10) returns "%2d"
-// DigitFormatForMax(382920) returns "%6d"
+// E.g. DigitFormatForMax(10) returns "%2d".
+// DigitFormatForMax(382920) returns "%6d".
 func DigitFormatForMax(max int) string {
 	return fmt.Sprintf("%%%dd", len(fmt.Sprintf("%d", max)))
 }
@@ -142,7 +142,7 @@ type Params struct {
 	Custom []string
 }
 
-// String creates a multi-line string representing this Params
+// String creates a multi-line string representing this Params.
 func (c Params) String() string {
 	defer FuncEnding(FuncStarting())
 	nameFmt := "%10s: "
@@ -174,7 +174,7 @@ func (c Params) String() string {
 	return strings.Join(lines, "\n")
 }
 
-// DEFAULT_INPUT_FILE is the default input filename
+// DEFAULT_INPUT_FILE is the default input filename.
 const DEFAULT_INPUT_FILE = "example.input"
 
 // GetParams parses the provided args into the command's params.
@@ -208,7 +208,7 @@ func GetParams(args []string) *Params {
 				"  --lines|-l <value 1> [<value 2> ...]  Defines custom input lines.",
 				"",
 			}
-			// Using fmt.Println here instead of my stdout function because the extra formatting is annoying with help text.
+			// Not using Stdoutf() here because the extra formatting is annoying with help text.
 			fmt.Println(strings.Join(lines, "\n"))
 			rv.HelpPrinted = true
 		case HasPrefixFold(args[i], "--debug"):
@@ -221,9 +221,9 @@ func GetParams(args []string) *Params {
 			if err == nil {
 				switch {
 				case !oldDebug && debug:
-					Stderr("Debugging enabled by CLI arguments.")
+					Stderrf("Debugging enabled by CLI arguments.")
 				case oldDebug && !debug:
-					Stderr("Debugging disabled by CLI arguments.")
+					Stderrf("Debugging disabled by CLI arguments.")
 				}
 			}
 		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
@@ -298,7 +298,7 @@ func (c Params) GetError() error {
 		return c.Errors[0]
 	default:
 		errs := make([]error, 1, 1+len(c.Errors))
-		errs[0] = fmt.Errorf("Found %d errors:", len(c.Errors))
+		errs[0] = fmt.Errorf("Found %d errors:", len(c.Errors)) //nolint:stylecheck,revive // punct okay here.
 		for i, err := range c.Errors {
 			errs = append(errs, fmt.Errorf("  %d: %w", i+1, err))
 		}
@@ -416,7 +416,7 @@ func ParseRepeatedFlagString(args []string) ([]string, int, error) {
 		}
 		rv = append(rv, arg)
 	}
-	if len(rv) >= 0 {
+	if len(rv) > 0 {
 		return rv, len(rv), nil
 	}
 	return rv, 0, fmt.Errorf("no values provided after %s flag", args[0])
@@ -482,10 +482,10 @@ func ParseFlagInt(args []string) (int, int, error) {
 // ReadFile reads a file and splits it into lines.
 func ReadFile(filename string) ([]string, error) {
 	defer FuncEndingAlways(FuncStarting(filename))
-	DebugfAlways("Reading file: %s", filename)
+	DebugAlwaysf("Reading file: %s", filename)
 	dat, err := os.ReadFile(filename)
 	if err != nil {
-		Stderr("error reading file: %v", err)
+		Stderrf("error reading file: %v", err)
 		return []string{}, err
 	}
 	return strings.Split(string(dat), "\n"), nil
@@ -500,7 +500,7 @@ func HandleEnvVars() error {
 	var err error
 	debug, err = GetEnvVarBool("DEBUG")
 	if debug {
-		Stderr("Debugging enabled via environment variable.")
+		Stderrf("Debugging enabled via environment variable.")
 	}
 	return err
 }
@@ -562,7 +562,7 @@ func GetEnvVarBool(name string) (bool, error) {
 func FuncStarting(a ...interface{}) (time.Time, string) {
 	funcDepth++
 	name := GetFuncName(1, a...)
-	DebugfAs(name, "Starting.")
+	DebugAsf(name, "Starting.")
 	return time.Now(), name
 }
 
@@ -574,20 +574,20 @@ func FuncStarting(a ...interface{}) (time.Time, string) {
 func FuncStartingAlways(a ...interface{}) (time.Time, string) {
 	funcDepth++
 	name := GetFuncName(1, a...)
-	DebugfAlwaysAs(name, "Starting.")
+	DebugAlwaysAsf(name, "Starting.")
 	return time.Now(), name
 }
 
-const done_fmt = "Done. Duration: [%s]."
+const DONE_FMT = "Done. Duration: [%s]."
 
 // FuncEnding decrements the function depth and, if debug is on, outputs to stderr how long a function took.
 // Args will usually come from FuncStarting().
 //
 // This differs from FuncEndingAlways in that this only outputs something if debugging is turned on.
 //
-// Standard Usage: defer FuncEnding(FuncStarting())
+// Usage: defer FuncEnding(FuncStarting())
 func FuncEnding(start time.Time, name string) {
-	DebugfAs(name, done_fmt, time.Since(start))
+	DebugAsf(name, DONE_FMT, time.Since(start))
 	if funcDepth > -1 {
 		funcDepth--
 	}
@@ -599,7 +599,7 @@ func FuncEnding(start time.Time, name string) {
 //
 // Usage: defer FuncEndingAlways(FuncStarting())
 func FuncEndingAlways(start time.Time, name string) {
-	DebugfAlwaysAs(name, done_fmt, time.Since(start))
+	DebugAlwaysAsf(name, DONE_FMT, time.Since(start))
 	if funcDepth > -1 {
 		funcDepth--
 	}
@@ -607,17 +607,17 @@ func FuncEndingAlways(start time.Time, name string) {
 
 // DurClock converts a duration to a string in minimal clock notation with nanosecond precision.
 //
-// - If one or more hours, format is "H:MM:SS.NNNNNNNNNs", e.g. "12:01:02.000000000"
-// - If less than one hour, format is "M:SS.NNNNNNNNNs",   e.g. "34:00.000000789"
-// - If less than one minute, format is "S.NNNNNNNNNs",    e.g. "56.000456000"
-// - If less than one second, format is "0.NNNNNNNNNs",    e.g. "0.123000000"
+// - If one or more hours, format is "H:MM:SS.NNNNNNNNNs", e.g. "12:01:02.000000000".
+// - If less than one hour, format is "M:SS.NNNNNNNNNs",   e.g. "34:00.000000789".
+// - If less than one minute, format is "S.NNNNNNNNNs",    e.g. "56.000456000".
+// - If less than one second, format is "0.NNNNNNNNNs",    e.g. "0.123000000".
 func DurClock(d time.Duration) string {
 	h := int(d.Hours())
 	m := int(d.Minutes())
 	s := int(d.Seconds())
 	n := int(d.Nanoseconds()) - 1000000000*s
-	s = s - 60*m
-	m = m - 60*h
+	s -= 60 * m
+	m -= 60 * h
 	switch {
 	case h > 0:
 		return fmt.Sprintf("%d:%02d:%02d.%09d", h, m, s, n)
@@ -630,9 +630,9 @@ func DurClock(d time.Duration) string {
 
 // GetFuncName gets the name of the function at the given depth.
 //
-// depth 0 = the function calling GetFuncName.
-// depth 1 = the function calling the function calling GetFuncName.
-// etc.
+// Depth 0 = the function calling GetFuncName.
+// Depth 1 = the function calling the function calling GetFuncName.
+// Etc.
 //
 // Extra arguments provided will be converted to stings using %v and included as part of the function name.
 // Only values needed to differentiate start/stop output lines should be provided.
@@ -691,55 +691,55 @@ func GetOutputPrefix(funcName string) string {
 	return fmt.Sprintf("(%14s) %s[%s] ", DurClock(time.Since(startTime)), tabs, funcName)
 }
 
-// Stdout outputs to stdout with a prefixed run duration and automatic function name.
-func Stdout(format string, a ...interface{}) {
+// Stdoutf outputs to stdout with a prefixed run duration and automatic function name.
+func Stdoutf(format string, a ...interface{}) {
 	fmt.Printf(GetOutputPrefix(GetFuncName(1))+format+"\n", a...)
 }
 
-// Stderr outputs to stderr with a prefixed run duration and automatic function name.
-func Stderr(format string, a ...interface{}) {
+// Stderrf outputs to stderr with a prefixed run duration and automatic function name.
+func Stderrf(format string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, GetOutputPrefix(GetFuncName(1))+format+"\n", a...)
 }
 
-// StdoutAs outputs to stdout with a prefixed run duration and provided function name.
-func StdoutAs(funcName, format string, a ...interface{}) {
+// StdoutAsf outputs to stdout with a prefixed run duration and provided function name.
+func StdoutAsf(funcName, format string, a ...interface{}) {
 	fmt.Printf(GetOutputPrefix(funcName)+format+"\n", a...)
 }
 
-// StderrAs outputs to stderr with a prefixed run duration and provided functio name.
-func StderrAs(funcName, format string, a ...interface{}) {
+// StderrAsf outputs to stderr with a prefixed run duration and provided function name.
+func StderrAsf(funcName, format string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, GetOutputPrefix(funcName)+format+"\n", a...)
 }
 
-// Debugf outputs to stderr if the debug flag is set.
+// Debugf is like Stderrf if the debug flag is set; otherwise it does nothing.
 func Debugf(format string, a ...interface{}) {
 	if debug {
-		StderrAs(GetFuncName(1), format, a...)
+		StderrAsf(GetFuncName(1), format, a...)
 	}
 }
 
-// DebugfAs outputs to stderr if the debug flag is set.
-func DebugfAs(funcName, format string, a ...interface{}) {
+// DebugAsf is like StderrAsf if the debug flag is set; otherwise it does nothing.
+func DebugAsf(funcName, format string, a ...interface{}) {
 	if debug {
-		StderrAs(funcName, format, a...)
+		StderrAsf(funcName, format, a...)
 	}
 }
 
-// DebugfAlways outputs to stderr if the debug flag is set, otherwise to stdout.
-func DebugfAlways(format string, a ...interface{}) {
+// DebugAlwaysf is like Stderrf if the debug flag is set; otherwise it's like Stdoutf.
+func DebugAlwaysf(format string, a ...interface{}) {
 	if debug {
-		StderrAs(GetFuncName(1), format, a...)
+		StderrAsf(GetFuncName(1), format, a...)
 	} else {
-		StdoutAs(GetFuncName(1), format, a...)
+		StdoutAsf(GetFuncName(1), format, a...)
 	}
 }
 
-// DebugfAlways outputs to stderr if the debug flag is set, otherwise to stdout.
-func DebugfAlwaysAs(funcName, format string, a ...interface{}) {
+// DebugAlwaysAsf is like StderrAsf if the debug flag is set; otherwise it's like StdoutAsf.
+func DebugAlwaysAsf(funcName, format string, a ...interface{}) {
 	if debug {
-		StderrAs(funcName, format, a...)
+		StderrAsf(funcName, format, a...)
 	} else {
-		StdoutAs(funcName, format, a...)
+		StdoutAsf(funcName, format, a...)
 	}
 }
 
@@ -770,7 +770,7 @@ func main() {
 		err = Run()
 	}
 	if err != nil {
-		// Not using Stderr(...) here because I don't want the time and function prefix on this.
+		// Not using Stderrf(...) here because I don't want the time and function prefix on this.
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
@@ -797,6 +797,6 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	Stdout("Answer: %s", answer)
+	Stdoutf("Answer: %s", answer)
 	return nil
 }
