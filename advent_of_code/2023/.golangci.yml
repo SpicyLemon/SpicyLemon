@@ -70,6 +70,17 @@ linters-settings:
     capital: true
   govet:
     check-shadowing: true
+    settings:
+      printf:
+        funcs:
+          - Stdoutf
+          - Stderrf
+          - StdoutAsf
+          - StderrAsf
+          - Debugf
+          - DebugAsf
+          - DebugAlwaysf
+          - DebugAlwaysAsf
   lll:
     tab-width: 4
   misspell:
