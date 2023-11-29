@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -51,20 +50,20 @@ func ParseInput(lines []string) (*Input, error) {
 
 const MIN_INT8 = int8(-128)
 const MAX_INT8 = int8(127)
-const MIN_INT16 = int16(-32768)
-const MAX_INT16 = int16(32767)
-const MIN_INT32 = int32(-2147483648)
-const MAX_INT32 = int32(2147483647)
-const MIN_INT64 = int64(-9223372036854775808)
-const MAX_INT64 = int64(9223372036854775807)
-const MIN_INT = -9223372036854775808
-const MAX_INT = 9223372036854775807
+const MIN_INT16 = int16(-32_768)
+const MAX_INT16 = int16(32_767)
+const MIN_INT32 = int32(-2_147_483_648)
+const MAX_INT32 = int32(2_147_483_647)
+const MIN_INT64 = int64(-9_223_372_036_854_775_808)
+const MAX_INT64 = int64(9_223_372_036_854_775_807)
+const MIN_INT = -9_223_372_036_854_775_808
+const MAX_INT = 9_223_372_036_854_775_807
 
 const MAX_UINT8 = uint8(255)
-const MAX_UINT16 = uint16(65535)
-const MAX_UINT32 = uint32(4294967295)
-const MAX_UINT64 = uint64(18446744073709551615)
-const MAX_UINT = uint(18446744073709551615)
+const MAX_UINT16 = uint16(65_535)
+const MAX_UINT32 = uint32(4_294_967_295)
+const MAX_UINT64 = uint64(18_446_744_073_709_551_615)
+const MAX_UINT = uint(18_446_744_073_709_551_615)
 
 // SplitParseInts splits a string using the given separator and converts each part into an int.
 // Uses strings.Split(s, sep) for the splitting and strconv.Atoi to parse it to an int.
@@ -298,11 +297,12 @@ func (c Params) GetError() error {
 	case 1:
 		return c.Errors[0]
 	default:
-		lines := []string{fmt.Sprintf("Found %d errors:", len(c.Errors))}
+		errs := make([]error, 1, 1+len(c.Errors))
+		errs[0] = fmt.Errorf("Found %d errors:", len(c.Errors))
 		for i, err := range c.Errors {
-			lines = append(lines, fmt.Sprintf("  %d: %s", i, err.Error()))
+			errs = append(errs, fmt.Errorf("  %d: %w", i+1, err))
 		}
-		return errors.New(strings.Join(lines, "\n"))
+		return errors.Join(errs...)
 	}
 }
 
@@ -483,7 +483,7 @@ func ParseFlagInt(args []string) (int, int, error) {
 func ReadFile(filename string) ([]string, error) {
 	defer FuncEndingAlways(FuncStarting(filename))
 	DebugfAlways("Reading file: %s", filename)
-	dat, err := ioutil.ReadFile(filename)
+	dat, err := os.ReadFile(filename)
 	if err != nil {
 		Stderr("error reading file: %v", err)
 		return []string{}, err
@@ -525,36 +525,40 @@ func GetEnvVarBool(name string) (bool, error) {
 // If all you want is starting/ending messages when debug is on, use:
 //    defer FuncEnding(FuncStarting())
 // If, when debug is on, you want starting/ending messages,
-// but when debug is off, you still the function duration, then use:
+// but when debug is off, you still want the function duration, then use:
 //    defer FuncEndingAlways(FuncStarting())
 
 // FuncStarting outputs that a function is starting (if debug is true).
 // It returns the params needed by FuncEnding or FuncEndingAlways.
 //
 // Arguments provided will be converted to stings using %v and included as part of the function name.
-// Minimal values needed to differentiate start/stop output lines should be provided.
-// Long strings and complex structs should be avoided.
+// Only provide minimal values needed to differentiate start/stop output lines.
+// Long strings and complex structs should be avoided as args.
 //
 // Example 1: In a function named "foo", you have this:
-//     FuncStarting()
-//   The printed message will note that "foo" is starting.
-//   That same string will also be returned as the 2nd return paremeter.
+//
+//	  FuncStarting()
+//	The printed message will note that "foo" is starting.
+//	That same string will also be returned as the 2nd return paremeter.
 //
 // Example 2: In a function named "bar", you have this:
-//     FuncStarting(3 * time.Second)
-//   The printed message will note that "bar: 3s" is starting.
-//   That same string will also be returned as the 2nd return paremeter.
+//
+//	  FuncStarting(3 * time.Second)
+//	The printed message will note that "bar: 3s" is starting.
+//	That same string will also be returned as the 2nd return paremeter.
 //
 // Example 3:
-//     func sum(ints ...int) {
-//         FuncStarting(ints...)
-//     }
-//     sum(1, 2, 3, 4, 20, 21, 22)
-//   The printed message will note that "sum: 1, 2, 3, 4, 20, 21, 22" is starting.
-//   That same string will also be returned as the 2nd return paremeter.
+//
+//	  func sum(ints ...int) {
+//	      FuncStarting(ints...)
+//	  }
+//	  sum(1, 2, 3, 4, 20, 21, 22)
+//	The printed message will note that "sum: 1, 2, 3, 4, 20, 21, 22" is starting.
+//	That same string will also be returned as the 2nd return paremeter.
 //
 // Standard Usage: defer FuncEnding(FuncStarting())
-//             Or: defer FuncEndingAlways(FuncStarting())
+//
+//	Or: defer FuncEndingAlways(FuncStarting())
 func FuncStarting(a ...interface{}) (time.Time, string) {
 	funcDepth++
 	name := GetFuncName(1, a...)
@@ -576,7 +580,7 @@ func FuncStartingAlways(a ...interface{}) (time.Time, string) {
 
 const done_fmt = "Done. Duration: [%s]."
 
-// FuncEnding decrements the function depth and, if debug is on, outputs to stderr that how long a function took.
+// FuncEnding decrements the function depth and, if debug is on, outputs to stderr how long a function took.
 // Args will usually come from FuncStarting().
 //
 // This differs from FuncEndingAlways in that this only outputs something if debugging is turned on.
