@@ -30,7 +30,7 @@ else
     gofmtcmd+=( -d )
 fi
 
-for f in $( find . -type f -name '*.go' ); do
+for f in $( find . -type f -name '*.go' | sort ); do
     printf '%s %s\n' "${gofmtcmd[*]}" "$f"
     "${gofmtcmd[@]}" "$f"
     printf '%s %s\n' "${lintcicmd[*]}" "$f"
