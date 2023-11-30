@@ -17,10 +17,10 @@ AoC 2021 go template:
       --lines|--line|--custom|--val|-l <value 1> [<value 2> ...]  Defines custom input lines.
 Constants:
     DEFAULT_COUNT = 0
-    Min and Max: int, int8, int16, int32, int64
+    Min and Max: int, int8, int16, int32, int64, e.g. MIN_INT
     Max: uinit, uint8, uint16, uint32, uint64
     DEFAULT_INPUT_FILE = "example.input"
-    done_fmt = "Done. Duration: [%s]."
+    DONE_FMT = "Done. Duration: [%s]."
 Globals:
     debug bool: whether to output debug info
     startTime time.Time: the time the program started
@@ -65,14 +65,14 @@ Functions:
         GetMyExe() string: returns how to execute the program including any args provided.
     Output wrappers:
         GetOutputPrefix(funcName string) string: creates a prefix with timing info and the given func name.
-        Stdout(format string, a ...interface{}): prints to stdout, like fmt.Printf, but always includes an output prefix.
-        Stderr(format string, a ...interface{}): prints to stderr, like fmt.Printf, but always includes an output prefix.
-        StdoutAs(funcName, format string, a ...interface{}): like Stdout(...) but uses the provided function name instead of looking it up.
-        StderrAs(funcName, format string, a ...interface{}): like Stderr(...) but uses the provided function name instead of looking it up.
+        Stdoutf(format string, a ...interface{}): prints to stdout, like fmt.Printf, but always includes an output prefix.
+        Stderrf(format string, a ...interface{}): prints to stderr, like fmt.Printf, but always includes an output prefix.
+        StdoutAsf(funcName, format string, a ...interface{}): like Stdout(...) but uses the provided function name instead of looking it up.
+        StderrAsf(funcName, format string, a ...interface{}): like Stderr(...) but uses the provided function name instead of looking it up.
         Debugf(format string, a ...interface{}): like Stderr(...) but only outputs if debug is on.
-        DebugfAs(funcName, format string, a ...interface{}): Like StderrAs(...) but only outputs if debug is on.
-        DebugfAlways(format string, a ...interface{}): if debug then StdErr(...), else Stdout(...)
-        DebugfAlwaysAs(funcName, format string, a ...interface{}): if debug then StdErrAs(...), else StdoutAs(...)
+        DebugAsf(funcName, format string, a ...interface{}): Like StderrAs(...) but only outputs if debug is on.
+        DebugAlwaysf(format string, a ...interface{}): if debug then StdErr(...), else Stdout(...)
+        DebugAlwaysAsf(funcName, format string, a ...interface{}): if debug then StdErrAs(...), else StdoutAs(...)
     Primary Program Running Parts:
         init(): sets funcDepth to -1
         main(): sets the start time, handles env vars, calls Run and handles any error.
