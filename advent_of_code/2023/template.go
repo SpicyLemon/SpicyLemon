@@ -36,6 +36,7 @@ func (i Input) String() string {
 }
 
 func ParseInput(lines []string) (*Input, error) {
+	defer FuncEnding(FuncStarting())
 	rv := Input{}
 	// TODO: Update this to parse the lines and create the puzzle input.
 	for i, line := range lines {
