@@ -177,7 +177,7 @@ func getPart(r, c int, schematic [][]byte) (int, bool) {
 		if !isDigitCell(cell) {
 			break
 		}
-		part = part + string(cell)
+		part += string(cell)
 	}
 
 	rv, err := strconv.Atoi(part)
