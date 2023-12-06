@@ -47,7 +47,7 @@ go_get_func () {
         if [[ ! -f "$file" ]]; then
             printf 'File not found: %q\n' "$file"
         else
-            results="$( awk -v funcre=" $func\\\(" \
+            results="$( awk -v funcre=" $func\(\\\(\|\\\[\)" \
                 '{
                     if(in_func == 1) {
                         print $0;
