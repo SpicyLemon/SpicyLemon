@@ -53,12 +53,12 @@ __git_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'git-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
-        '__git_echo_do'              '__git_get_all_repos'  'git_change_branch'        'git_change_branch_all'
-        'git_checkout_tag'           'git_clean_repo'       'git_clone'               'git_commit_diff'          'git_delete_branches'
-        'git_diff_analysis'          'git_fresh_branch'     'git_get_default_branch'  'git_list_extra_branches'  'git_master_pull_all'
-        'git_merge_diff'             'git_pull_merge'       'git_recolor_diff'        'git_set_default_branch'   'git_set_upstream'
-        'in_git_folder'              'git_diff_explorer'    'git_remotes'             'git_stats'
-        'git_diff_next_file'         'git_next_file'        'vi_next_file'
+        '__git_echo_do'            '__git_get_all_repos'  'git_add_next_file'       'git_change_branch'  'git_change_branch_all'
+        'git_checkout_tag'         'git_clean_repo'       'git_clone'               'git_commit_diff'    'git_delete_branches'
+        'git_diff_analysis'        'git_diff_explorer'    'git_diff_next_file'      'git_fresh_branch'   'git_get_default_branch'
+        'git_list_extra_branches'  'git_master_pull_all'  'git_merge_diff'          'git_next_file'      'git_pull_merge'
+        'git_recolor_diff'         'git_remotes'          'git_set_default_branch'  'git_set_upstream'   'git_stats'
+        'in_git_folder'            'vi_next_file'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
