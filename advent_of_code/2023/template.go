@@ -83,6 +83,11 @@ func SplitParseInts(s string, sep string) ([]int, error) {
 	return rv, nil
 }
 
+// StringNumberJoin maps the slice to strings, numbers them and joins them.
+func StringNumberJoin[S ~[]E, E Stringer](slice S, startAt int, sep string) string {
+	return strings.Join(AddLineNumbers(MapSlice(slice, E.String), startAt), sep)
+}
+
 // AddLineNumbers adds line numbers to each string.
 func AddLineNumbers(lines []string, startAt int) []string {
 	if len(lines) == 0 {
@@ -119,6 +124,56 @@ func PrefixLines(pre string, strs ...string) string {
 		}
 	}
 	return rv.String()
+}
+
+// Stringer is an interface for something that can be turned into a string.
+type Stringer interface {
+	String() string
+}
+
+// MapSlice returns a new slice with each element run through the provided mapper function.
+// Use MapSlice if the slice and mapper are either both concrete or both pointers.
+// Use MapPSlice if the slice is pointers, but the mapper takes in a concrete E.
+// Use MapSliceP if the slice is concrete, but the mapper takes in a pointer to E.
+func MapSlice[S ~[]E, E any, R any](slice S, mapper func(E) R) []R {
+	if slice == nil {
+		return nil
+	}
+	rv := make([]R, len(slice))
+	for i, e := range slice {
+		rv[i] = mapper(e)
+	}
+	return rv
+}
+
+// MapPSlice returns a new slice with each element run through the provided mapper function.
+// Use MapSlice if the slice and mapper are either both concrete or both pointers.
+// Use MapPSlice if the slice is pointers, but the mapper takes in a concrete E.
+// Use MapSliceP if the slice is concrete, but the mapper takes in a pointer to E.
+func MapPSlice[S ~[]*E, E any, R any](slice S, mapper func(E) R) []R {
+	if slice == nil {
+		return nil
+	}
+	rv := make([]R, len(slice))
+	for i, e := range slice {
+		rv[i] = mapper(*e)
+	}
+	return rv
+}
+
+// MapSliceP returns a new slice with each element run through the provided mapper function.
+// Use MapSlice if the slice and mapper are either both concrete or both pointers.
+// Use MapPSlice if the slice is pointers, but the mapper takes in a concrete E.
+// Use MapSliceP if the slice is concrete, but the mapper takes in a pointer to E.
+func MapSliceP[S ~[]E, E any, R any](slice S, mapper func(*E) R) []R {
+	if slice == nil {
+		return nil
+	}
+	rv := make([]R, len(slice))
+	for i, e := range slice {
+		rv[i] = mapper(&e)
+	}
+	return rv
 }
 
 // -------------------------------------------------------------------------------------------------

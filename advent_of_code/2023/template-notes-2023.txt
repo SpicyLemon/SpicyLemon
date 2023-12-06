@@ -39,9 +39,14 @@ Functions:
         ParseInput(lines []string) (*Input, error): // TODO: Write this to parse the input file lines to an Input object.
     Generic Stuff:
         SplitParseInts(s string, sep string) ([]int, error): Splits s at each sep (removing sep) and converts each into an int.
+        StringNumberJoin(slice S, startAt int, sep string) string: Maps a slice to strings, numbers them, and joins them.
+        Stringer: An interface for things that have a String() string method.
         AddLineNumbers(lines []string, startAt int) []string: Adds line numbers to the start of each line.
         DigitFormatForMax(max int): creates a digit format with enough digits to contain max, e.g. 10 -> "%2d", 382920 -> "%6d".
         PrefixLines(pre string, strs ...string): Splits each provided string on \n and adds the prefix to each line.
+        MapSlice(slice []E, mapper func(E) R) []R: Converts a slice by running a func on each entry.
+        MapPSlice(slice []*E, mapper func(E) R) []R: Converts a slice of pointers by running a func on each entry.
+        MapSliceP(slice []E, mapper func(*E) R) []R: Converts a slice by running a pointer func on each entry.
     CLI params and input parsing:
         GetParams(args []string) *Params): parses the given args into params
         IsOneOfStrFold(str string, opts ...string) bool: returns true if str is equal (ignoring case) to one of the opts.
