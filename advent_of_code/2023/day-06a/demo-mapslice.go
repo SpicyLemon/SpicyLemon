@@ -191,6 +191,7 @@ func MapSliceP[S ~[]E, E any, R any](slice S, mapper func(*E) R) []R {
 	}
 	rv := make([]R, len(slice))
 	for i, e := range slice {
+		e := e
 		rv[i] = mapper(&e)
 	}
 	return rv

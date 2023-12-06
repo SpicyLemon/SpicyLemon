@@ -33,12 +33,13 @@ func Solve(params *Params) (string, error) {
 }
 
 type Input struct {
-	Seeds []int
+	Seeds   []int
 	Almanac []*Entry
 }
 
 func (i Input) String() string {
-	return fmt.Sprintf("Seeds: %v\nAlmanac:\n%s", i.Seeds, strings.Join(AddLineNumbers(MapSlice(i.Almanac, EntryString), 1), "\n"))
+	return fmt.Sprintf("Seeds: %v\nAlmanac:\n%s", i.Seeds,
+		strings.Join(AddLineNumbers(MapSlice(i.Almanac, EntryString), 1), "\n"))
 }
 
 func ParseInput(lines []string) (*Input, error) {
@@ -66,9 +67,9 @@ func ParseInput(lines []string) (*Input, error) {
 			}
 			parts := strings.Split(strings.TrimSuffix(line, " map:"), "-")
 			if len(parts) != 3 {
-				return nil, fmt.Errorf("unable to parse map line %q: expected exactly two dashes.", line)
+				return nil, fmt.Errorf("unable to parse map line %q: expected exactly two dashes", line)
 			}
-			
+
 			lastEntry = &Entry{Source: parts[0], Dest: parts[2]}
 			rv.Almanac = append(rv.Almanac, lastEntry)
 			continue
@@ -84,7 +85,7 @@ func ParseInput(lines []string) (*Input, error) {
 		}
 		lastEntry.Ranges = append(lastEntry.Ranges, Range{
 			Source: rangeParts[1],
-			Dest: rangeParts[0],
+			Dest:   rangeParts[0],
 			Length: rangeParts[2]},
 		)
 	}
@@ -93,7 +94,7 @@ func ParseInput(lines []string) (*Input, error) {
 
 type Entry struct {
 	Source string
-	Dest string
+	Dest   string
 	Ranges []Range
 }
 
@@ -127,7 +128,7 @@ func GetLocation(seed int, almanac []*Entry) int {
 
 type Range struct {
 	Source int
-	Dest int
+	Dest   int
 	Length int
 }
 
@@ -141,7 +142,6 @@ func (r Range) Convert(n int) (int, bool) {
 	}
 	return 0, false
 }
-
 
 // -------------------------------------------------------------------------------------------------
 // -------------------------------------  Some generic stuff  --------------------------------------
