@@ -81,12 +81,14 @@ EOF
     # -s = --no-messages => Don't output an error message about files being dirs or not existing.
     # -H = --with-filename => Always include the filename in the output.
     # In the colorings, the |$ part of the pattern causes a line to be included even if it doesn't match what trying to coloring.
+    # Since the name part might have a '[' (generics) and the color codes add '[', that one has to be done first.
+    # The name one doesn't have |$ because everything before it is optional, so it also matches just $ anyway.
 
-    grep -oEsH '^func( \([^)]+\))? [^[:space:](]+' "${files[@]}" \
+    grep -oEsH '^func( \([^)]+\))? [^[:space:]([]+(\[[^(]+)?' "${files[@]}" \
+        | GREP_COLOR="${col_name:-1}"  grep --color=$color -E '[^[:space:]]*(\[.*\])?$' \
         | GREP_COLOR="${col_file:-36}" grep --color=$color -E '^[^:]+|$' \
         | GREP_COLOR="${col_func:-90}" grep --color=$color -E 'func|$' \
-        | GREP_COLOR="${col_rcvr:-95}" grep --color=$color -E '\([^)]*\)|$' \
-        | GREP_COLOR="${col_name:-1}"  grep --color=$color -E '[^[:space:]]*$'
+        | GREP_COLOR="${col_rcvr:-95}" grep --color=$color -E '\([^)]*\)|$'
 
     return 0
 }
