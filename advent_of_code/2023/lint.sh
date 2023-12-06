@@ -31,9 +31,10 @@ else
 fi
 
 for f in $( find . -type f -name '*.go' | sort ); do
-    printf '%s %s\n' "${gofmtcmd[*]}" "$f"
+    printf '%s gofmt ... ' "$f"
     "${gofmtcmd[@]}" "$f"
-    printf '%s %s\n' "${lintcicmd[*]}" "$f"
+    printf 'golangci-lint ... '
     "${lintcicmd[@]}" "$f"
+    printf 'Done\n'
 done
 
