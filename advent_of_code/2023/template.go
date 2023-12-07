@@ -545,7 +545,11 @@ func ReadFile(filename string) ([]string, error) {
 		Stderrf("error reading file: %v", err)
 		return []string{}, err
 	}
-	return strings.Split(string(dat), "\n"), nil
+	rv := strings.Split(string(dat), "\n")
+	for len(rv[len(rv)-1]) == 0 {
+		rv = rv[:len(rv)-1]
+	}
+	return rv, nil
 }
 
 // -------------------------------------------------------------------------------------------------
