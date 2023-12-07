@@ -3,7 +3,6 @@
 # This file can be sourced to add the go_get_type function to your environment.
 # This file can also be executed to run the go_get_type function without adding it to your environment.
 #
-# TODO: Update this to handle the types declared in a type ( ... ) set of lines.
 
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \
@@ -48,19 +47,35 @@ go_get_type () {
         if [[ ! -f "$file" ]]; then
             printf 'File not found: %q\n' "$file"
         else
-            results="$( awk -v typere=" $typename\(\\\[| \)" \
+            results="$( awk -v typere="^\(type\)?\[\[:space:\]\]+$typename\(\\\[| \)" \
                 '{
                     if(in_type == 1) {
                         print $0;
-                        if (/^\}/) { in_type = 0; };
+                        if (/^[[:space:]]*\}/) {
+                            in_type = $0;
+                            if (length(in_type_block) > 0) { print ")"; };
+                        };
                     };
-                    if (/^type/ && $0 ~ typere) {
-                        if (length(comment) > 0) { print comment; }
+                    if (/^type[[:space:]]*\(/) {
+                        in_type_block = $0;
+                        block_comment = comment;
+                        comment = "";
+                    };
+                    if ((length(in_type_block) > 0 || /^type/) && $0 ~ typere) {
+                        if (length(in_type_block) > 0) {
+                            if (length(block_comment) > 0) { print block_comment; };
+                            print in_type_block;
+                        };
+                        if (length(comment) > 0) { print comment; };
                         print $0;
-                        if ($0 ~ /\{/ && $0 !~ /\}[[:space:]]*$/) { in_type=1; };
+                        if (/\{/ && $0 !~ /\}[[:space:]]*$/) { in_type = 1; };
                     };
+                    if (length(in_type_block) > 0 && /^\)/) {
+                        in_type_block = ""
+                        block_comment = ""
+                    }
                     if(in_type != 1) {
-                        if (/^\/\//) {
+                        if (/^[[:space:]]*\/\//) {
                             if (length(comment) == 0) {
                                 comment = $0;
                             } else {
