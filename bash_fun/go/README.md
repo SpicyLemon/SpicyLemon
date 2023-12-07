@@ -13,10 +13,10 @@ This directory contains functions/scripts for doing various golang related thing
   * [go_find_funcs_without_comments.sh](#user-content-go_find_funcs_without_commentssh)
   * [go_get_func.sh](#user-content-go_get_funcsh)
   * [go_list_funcs.sh](#user-content-go_list_funcssh)
+  * [go_imports.sh](#user-content-go_importssh)
+  * [go_count_imports.sh](#user-content-go_count_importssh)
   * [go_mod_fix.sh](#user-content-go_mod_fixsh)
-  * [go_use_1.18.sh](#user-content-go_use_1_18sh)
-  * [go_use_1.19.sh](#user-content-go_use_1_19sh)
-  * [go_use_1.20.sh](#user-content-go_use_1_20sh)
+  * [go_use.sh](#user-content-go_usesh)
 
 ## Usage
 
@@ -120,51 +120,61 @@ Example:
 
 
 
-### `go_use_1.18.sh`
+### `go_imports.sh`
 
-[go_use_1.18.sh](go_use_1.18.sh) - Function/script for switching the go binary to version 1.18.3.
+[go_imports.sh](go_imports.sh) - Function/script for getting the imports from one or more files.
 
-This is specific to my system (a mac) that used brew to install go. It may not be very protable.
+Usage: `go_imports <file> [<file 2> ...] [--no-filenames]`
 
-Usage: `go_use_1.18`
+If more than one file is provided, each filename is printed before the imports (unless --no-filenames was provided).
+A file of - will read stdin as filenames.
 
 Example:
 ```console
-> go_use_1.18
-    Was: lrwxr-xr-x  1 danielwedul  admin  20 Feb 16 15:57 /opt/homebrew/bin/go -> /usr/local/go/bin/go
- Is Now: lrwxr-xr-x  1 danielwedul  admin  32 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go@1.18/1.18.10/bin/go
+> go_imports fulfillment.go
+"errors"
+"fmt"
+sdkmath "cosmossdk.io/math"
+sdk "github.com/cosmos/cosmos-sdk/types"
+banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 ```
 
 
 
-### `go_use_1.19.sh`
+### `go_count_imports.sh`
 
-[go_use_1.19.sh](go_use_1.19.sh) - Function/script for switching the go binary to version 1.19.
+[go_count_imports.sh](go_count_imports.sh) - Function/script for counting the wasy imports are aliased in a directory (recursively).
 
-This is specific to my system (a mac) that used brew to install go. It may not be very protable.
+Usage: `go_count_imports [<dir> ...]`
 
-Usage: `go_use_1.19`
+If no directories are provided, the current directory is used.
 
 Example:
 ```console
-> go_use_1.19
-    Was: lrwxr-xr-x  1 danielwedul  admin  32 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go@1.18/1.18.10/bin/go
- Is Now: lrwxr-xr-x  1 danielwedul  admin  26 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go/1.19.6/bin/go
+> go_count_imports x/hold
+1 "bytes" [none]
+1 "cosmossdk.io/math" sdkmath
+1 "fmt" [none]
+1 "github.com/cometbft/cometbft-db" dbm
+2 "github.com/cosmos/cosmos-sdk/x/auth/vesting/types" vesting vestingtypes
+2 "github.com/provenance-io/provenance/x/hold" [none] hold
+2 "github.com/provenance-io/provenance/x/hold/keeper" [none] holdkeeper
+4 "cosmossdk.io/errors" [none] cerrs errorsmod sdkerrors
 ```
 
 
 
-### `go_use_1.20.sh`
+### `go_use.sh`
 
-[go_use_1.20.sh](go_use_1.20.sh) - Function/script for switching the go binary to version 1.20.
+[go_use.sh](go_use.sh) - Function/script for switching the go binary to different versions.
 
-This is specific to my system (a mac) that used the go installer to install go. It may not be very protable.
+This is specific to my system (a mac) that used the go installer to install go 1.20 and brew to install 1.18, 1.19 and 1.21. It may not be very protable.
 
-Usage: `go_use_1.20`
+Usage: `go_use {1.18|1.19|1.20|1.21|list} [-v|--verbose]`
 
 Example:
 ```console
-> go_use_1.20
+> go_use 1.20
     Was: lrwxr-xr-x  1 danielwedul  admin  26 Feb 16 15:57 /opt/homebrew/bin/go -> ../Cellar/go/1.19.6/bin/go
  Is Now: lrwxr-xr-x  1 danielwedul  admin  20 Feb 16 15:58 /opt/homebrew/bin/go -> /usr/local/go/bin/go
 ```
