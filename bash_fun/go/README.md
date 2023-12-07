@@ -12,6 +12,7 @@ This directory contains functions/scripts for doing various golang related thing
   * [go-setup.sh](#user-content-go-setupsh)
   * [go_find_funcs_without_comments.sh](#user-content-go_find_funcs_without_commentssh)
   * [go_get_func.sh](#user-content-go_get_funcsh)
+  * [go_get_type.sh](#user-content-go_get_typesh)
   * [go_list_funcs.sh](#user-content-go_list_funcssh)
   * [go_imports.sh](#user-content-go_importssh)
   * [go_count_imports.sh](#user-content-go_count_importssh)
@@ -74,6 +75,19 @@ All provided files will be searched for a function with the given name.
 When one is found, the filename, leading function comment, and entire function will be printed.
 
 The filenames can also be piped in. For example `find ... | go_get_func <func name>`.
+
+
+
+### `go_get_type.sh`
+
+[go_get_type.sh](go_get_type.sh) - function/script for getting a type from a go file.
+
+Usage: `go_get_type <func name> <file> [<file 2> ...]`
+
+All provided files will be searched for a type with the given name.
+When one is found, the filename, leading type comment, and entire type will be printed.
+
+The filenames can also be piped in. for example `find ... | go_get_type <type name>`.
 
 
 
