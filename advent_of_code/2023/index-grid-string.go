@@ -187,10 +187,16 @@ func (p Point) GetY() int {
 	return p.Y
 }
 
+// GetXY gets this Point's (X, Y) values.
+func (p Point) GetXY() (int, int) {
+	return p.X, p.Y
+}
+
 // XY is something that has an X and Y value.
 type XY interface {
 	GetX() int
 	GetY() int
+	GetXY() (int, int)
 }
 
 // CreateIndexedGridString creates a string of the provided vals matrix.
