@@ -67,7 +67,8 @@ func CountOptionsRec(target []byte, groups []int) int {
 	needed := sum + len(groups) - 1
 	tarLen := len(target)
 	if tarLen < needed {
-		Debugf("%d %s: Target length is less than needed length %d = %d + %d - 1", tarLen, target, needed, sum, len(groups))
+		Debugf("%d %s: Target length is less than needed length %d = %d + %d - 1",
+			tarLen, target, needed, sum, len(groups))
 		return 0
 	}
 
@@ -78,7 +79,7 @@ func CountOptionsRec(target []byte, groups []int) int {
 		if CanBe(check, target, sum) {
 			if len(groups) == 1 {
 				Debugf("%d %s %d/%d: Check: %s => Count It", tarLen, target, i, extra, check)
-				rv += 1
+				rv++
 			} else {
 				newTar := target[len(check):]
 				if len(groups) == 2 && IsAllBz(newTar, Unknown) {
@@ -117,10 +118,7 @@ func CanBe(check, target []byte, minBroke int) bool {
 	broke += bytes.Count(target[len(check):], []byte{Damaged})
 	broke += bytes.Count(target[len(check):], []byte{Unknown})
 	// Debugf("Target: %s, Check: %s, minBroke: %d, Broke: %d", target, check, minBroke, broke)
-	if broke < minBroke {
-		return false
-	}
-	return true
+	return broke >= minBroke
 }
 
 func MakeCheck(opers int, groups []int, tarLen int) []byte {
@@ -148,7 +146,8 @@ func CountOptionsIter(s *Spring) int {
 	for i, g := range groups {
 		optRanges[i] = BuildOptRanges(g)
 		if debug {
-			Debugf("%d: %s options (%d):\n%s", i, g, len(optRanges[i]), PrefixLines(fmt.Sprintf("%d: ", i), StringNumberJoin(optRanges[i], 0, "\n")))
+			Debugf("%d: %s options (%d):\n%s", i, g, len(optRanges[i]),
+				PrefixLines(fmt.Sprintf("%d: ", i), StringNumberJoin(optRanges[i], 0, "\n")))
 		}
 	}
 
