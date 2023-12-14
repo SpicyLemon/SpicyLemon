@@ -1,8 +1,7 @@
-1. Fix go_get_type when the type is multi-line function.
+* Fix go_get_type when the type is multi-line function.
     E.g. $ go_get_type AppExporter /Users/danielwedul/git/cosmos-sdk/server/types/app.go
     It's stopping after the "AppExporter func(" line.
-2. Add recursive directory support for go_get_func and go_get_type.
-3. Make a thing to make it easy to switch go versions.
+* Make a thing to make it easy to switch go versions.
     First, look into getting it added to sdkman.
     The directories in /opt/homebrew/Cellar/go/ give the available versions.
     Then update the /opt/homebrew/bin/go symlink to the desired version.
@@ -48,7 +47,7 @@
             If it's not a version, redo the splitting on just the leftover path.
             If all that's left is /, give up and show an error.
         Should probably also make that directory configurable via env var.
-4. Enhance go_list_funcs:
+* Enhance go_list_funcs:
     1. Allow disabling color with a flag. Or maybe do what most other commands do and only do color of not being piped, and have a flag for --color=always.
     2. Have a flag for suppressing the filename.
     3. Have a flag for stripping out the 'func ' and converting "(x XXXX) " into "XXXX_".
@@ -56,7 +55,7 @@
     5. Fix it to account for generics
     6. Add a flag for including more info, e.g. just the type defs or both the type defs and args.
         * The args part might be a pain when it comes to funcs that define them on multiple lines.
-5. Create a utility to find funcs that don't have unit test funcs.
+* Create a utility to find funcs that don't have unit test funcs.
     It will take in one or more filenames and use go_list_funcs to generate a list of expected TestXXX(t *testing.t) or (s *ZSuite) TestXXX().
     Should have a flag for whether or not to also check private funcs (default to not looking for them).
     Maybe allow a directory to be provided and only look at the non *_test.go .go files.

@@ -11,14 +11,17 @@
 ) && sourced='YES' || sourced='NO'
 
 go_get_func () {
-    local usage func files file results
-    usage='Usage: go_get_func <func name> <file> [<file 2> ...]'
+    local usage func files recurse file results
+    usage='Usage: go_get_func <func name> <file> [<file 2> ...] [-r|--recursive]'
     files=()
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             --help|-h|help)
                 printf '%s\n' "$usage"
                 return 0
+                ;;
+            -r|--recursive)
+                recurse=1
                 ;;
             -)
                 files+=( $( cat - ) )
@@ -43,9 +46,21 @@ go_get_func () {
         return 0
     fi
 
+    if [[ "${#files[@]}" -eq '1' && -d "${files[*]}" ]]; then
+        recurse=1
+    fi
+
     for file in "${files[@]}"; do
         if [[ ! -f "$file" ]]; then
-            printf 'File not found: %q\n' "$file"
+            if [[ -d "$file" ]]; then
+                if [[ "$recurse" ]]; then
+                    find "$file" -type f -name '*.go' -not -path '*/vendor/*' | go_get_func "$func" -
+                else
+                    printf 'Skipping directory: %q\n' "$file"
+                fi
+            else
+                printf 'File not found: %q\n' "$file"
+            fi
         else
             results="$( awk -v funcre=" $func\(\\\(\|\\\[\)" \
                 '{
