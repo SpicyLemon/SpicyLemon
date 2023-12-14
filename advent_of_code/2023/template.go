@@ -641,6 +641,8 @@ func FuncStartingAlways(a ...interface{}) (time.Time, string) {
 
 const DONE_FMT = "Done. Duration: [%s]."
 
+var panicPrinted bool
+
 // FuncEnding decrements the function depth and, if debug is on, outputs to stderr how long a function took.
 // Args will usually come from FuncStarting().
 //
@@ -648,7 +650,18 @@ const DONE_FMT = "Done. Duration: [%s]."
 //
 // Usage: defer FuncEnding(FuncStarting())
 func FuncEnding(start time.Time, name string) {
-	DebugAsf(name, DONE_FMT, time.Since(start))
+	if !panicPrinted {
+		if r := recover(); r != nil {
+			DebugAlwaysAsf(name, "PANIC")
+			panicPrinted = true
+			defer func() {
+				panic(r)
+			}()
+		}
+	}
+	if !panicPrinted {
+		DebugAsf(name, DONE_FMT, time.Since(start))
+	}
 	if funcDepth > -1 {
 		funcDepth--
 	}
@@ -660,7 +673,18 @@ func FuncEnding(start time.Time, name string) {
 //
 // Usage: defer FuncEndingAlways(FuncStarting())
 func FuncEndingAlways(start time.Time, name string) {
-	DebugAlwaysAsf(name, DONE_FMT, time.Since(start))
+	if !panicPrinted {
+		if r := recover(); r != nil {
+			DebugAlwaysAsf(name, "PANIC")
+			panicPrinted = true
+			defer func() {
+				panic(r)
+			}()
+		}
+	}
+	if !panicPrinted {
+		DebugAlwaysAsf(name, DONE_FMT, time.Since(start))
+	}
 	if funcDepth > -1 {
 		funcDepth--
 	}
