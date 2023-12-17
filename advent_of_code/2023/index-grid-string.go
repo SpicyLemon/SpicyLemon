@@ -177,6 +177,11 @@ type Point struct {
 	Y int
 }
 
+// String returns a string of this point in the format "(x,y)".
+func (p Point) String() string {
+	return fmt.Sprintf("(%d,%d)", p.X, p.Y)
+}
+
 // GetX gets this Point's X value.
 func (p Point) GetX() int {
 	return p.X
@@ -199,9 +204,40 @@ type XY interface {
 	GetXY() (int, int)
 }
 
+// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// The result will have row and column indexes and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string {
+	strs := make([][]string, len(vals))
+	for y, row := range vals {
+		strs[y] = make([]string, len(row))
+		for x, val := range row {
+			strs[y][x] = string(val)
+		}
+	}
+	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
+}
+
+// IntType is each of the integer types.
+type IntType interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
+
+// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// The result will have row and column indexes and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridStringNums[M ~[][]N, N IntType, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string {
+	strs := make([][]string, len(vals))
+	for y, row := range vals {
+		strs[y] = make([]string, len(row))
+		for x, val := range row {
+			strs[y][x] = fmt.Sprintf("%d", val)
+		}
+	}
+	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
+}
+
 // CreateIndexedGridString creates a string of the provided vals matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
-func CreateIndexedGridString(vals [][]string, colorPoints []XY, highlightPoints []XY) string {
+func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string {
 	// Get the height. If it's zero, there's nothing to return.
 	height := len(vals)
 	if height == 0 {
