@@ -1,6 +1,7 @@
 * Fix go_get_type when the type is multi-line function.
     E.g. $ go_get_type AppExporter /Users/danielwedul/git/cosmos-sdk/server/types/app.go
     It's stopping after the "AppExporter func(" line.
+* Fix go_imports to omit lines that are empty/whitespace after the comment is removed.
 * Make a thing to make it easy to switch go versions.
     First, look into getting it added to sdkman.
     The directories in /opt/homebrew/Cellar/go/ give the available versions.
