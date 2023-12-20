@@ -83,9 +83,19 @@ func SplitParseInts(s string, sep string) ([]int, error) {
 	return rv, nil
 }
 
-// StringNumberJoin maps the slice to strings, numbers them and joins them.
+// StringNumberJoin maps the slice to strings, numbers them, and joins them.
 func StringNumberJoin[S ~[]E, E Stringer](slice S, startAt int, sep string) string {
 	return strings.Join(AddLineNumbers(MapSlice(slice, E.String), startAt), sep)
+}
+
+// StringNumberJoinFunc maps the slice to strings using the provided stringer, numbers them, and joins them.
+func StringNumberJoinFunc[S ~[]E, E any](slice S, stringer func(E) string, startAt int, sep string) string {
+	return strings.Join(AddLineNumbers(MapSlice(slice, stringer), startAt), sep)
+}
+
+// SliceToStrings runs String() on each entry of the provided slice.
+func SliceToStrings[S ~[]E, E Stringer](slice S) []string {
+	return MapSlice(slice, E.String)
 }
 
 // AddLineNumbers adds line numbers to each string.
