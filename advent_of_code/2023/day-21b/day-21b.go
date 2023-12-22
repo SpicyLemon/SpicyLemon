@@ -28,6 +28,9 @@ func Solve(params *Params) (string, error) {
 		return "STOP", nil
 	}
 	Debugf("Parsed Input:\n%s", input)
+	if params.InputFile == "example.input" {
+		Stderrf("WARNING: The solutions for the example input are wrong.")
+	}
 	solver := NewSolver(input.Garden, params.Count, input.Start)
 	solver.Wander(params)
 	if params.HasCustom("grow") {
@@ -58,6 +61,9 @@ func Solve(params *Params) (string, error) {
 		Stdoutf("Wrong answer: %d", wrongAnswer)
 	}
 	answer := solver.PolyCount(params)
+	if params.InputFile == "example.input" {
+		Stderrf("WARNING: The solutions for the example input are wrong.")
+	}
 	return fmt.Sprintf("%d", answer), nil
 }
 
@@ -301,6 +307,28 @@ func (s *Solver) ExpandAndCount(params *Params) int {
 		Stdoutf("Y Full Ranges:\n%s", strings.Join(yFulls, "\n"))
 	}
 
+	if params.Verbose {
+		sumRs := func(rs map[int]*MinMax) int {
+			rv := 0
+			for _, r := range rs {
+				rv += r.Count()
+			}
+			return rv
+		}
+		totXFull := sumRs(xFullRanges)
+		totYFull := sumRs(yFullRanges)
+		totXHas := sumRs(xHasSpotsRanges)
+		totYHas := sumRs(yHasSpotsRanges)
+		totXPart := totXHas - totXFull
+		totYPart := totYHas - totYFull
+		Stdoutf("Total sections with spots via X ranges: %12d", totXHas)
+		Stdoutf("Total sections with spots via Y ranges: %12d", totYHas)
+		Stdoutf("      Total full sections via X ranges: %12d", totXFull)
+		Stdoutf("      Total full sections via Y ranges: %12d", totYFull)
+		Stdoutf("   Total partial sections via X ranges: %12d", totXPart)
+		Stdoutf("   Total partial sections via Y ranges: %12d", totYPart)
+	}
+
 	fullEven := CountVals(minGrids[0][0], s.MaxSteps)
 	fullOdd := CountVals(minGrids[0][1], s.MaxSteps)
 	params.Verbosef("A full even grid (e.g. 0, 0) has %d valid spots", fullEven)
@@ -450,7 +478,6 @@ func (s *Solver) Wander(params *Params) {
 }
 
 func (s *Solver) CalculateNext() {
-	defer FuncEnding(FuncStarting())
 	keyNode, _ := heap.Pop(&s.Unvisited).(*PQNode)
 	s.Last = keyNode
 	if !s.IsBetter(keyNode) {
@@ -486,7 +513,6 @@ const (
 )
 
 func (s Solver) GetNextMoves(cur *PQNode) []*PQNode {
-	defer FuncEnding(FuncStarting())
 	possibles := cur.GetNextSteps()
 	rv := make([]*PQNode, 0, len(possibles))
 	for _, p := range possibles {
@@ -525,6 +551,9 @@ func NewSolver(garden Grid, maxSteps int, start *Point) *Solver {
 	// Through some trial and error, I found that:
 	// With actual.input and Extra = 2, all the edge diffs are uniform.
 	// With exampe.input and Extra = 4, all the edge diffs are uniform.
+	// 2 still gave the wrong answer (when doing the calc the hard way).
+	// It was low by 6675900. I tried bumping it to 3, but it didn't change the result.
+	// So I bumped it to 3 and the test one to 6.
 	rv.Extra = 2
 	if rv.Width < 20 {
 		// test.input
