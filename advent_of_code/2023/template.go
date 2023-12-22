@@ -210,33 +210,33 @@ type Params struct {
 }
 
 // String creates a multi-line string representing this Params.
-func (c Params) String() string {
+func (p Params) String() string {
 	defer FuncEnding(FuncStarting())
 	nameFmt := "%10s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", debug),
-		fmt.Sprintf(nameFmt+"%t", "Verbose", c.Verbose),
-		fmt.Sprintf(nameFmt+"%d", "Errors", len(c.Errors)),
-		fmt.Sprintf(nameFmt+"%d", "Count", c.Count),
-		fmt.Sprintf(nameFmt+"%s", "Input File", c.InputFile),
-		fmt.Sprintf(nameFmt+"%d lines", "Input", len(c.Input)),
-		fmt.Sprintf(nameFmt+"%d lines", "Custom", len(c.Custom)),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", p.Verbose),
+		fmt.Sprintf(nameFmt+"%d", "Errors", len(p.Errors)),
+		fmt.Sprintf(nameFmt+"%d", "Count", p.Count),
+		fmt.Sprintf(nameFmt+"%s", "Input File", p.InputFile),
+		fmt.Sprintf(nameFmt+"%d lines", "Input", len(p.Input)),
+		fmt.Sprintf(nameFmt+"%d lines", "Custom", len(p.Custom)),
 	}
-	if len(c.Errors) > 0 {
-		lines = append(lines, fmt.Sprintf("Errors (%d):", len(c.Errors)))
-		errors := make([]string, len(c.Errors))
-		for i, err := range c.Errors {
+	if len(p.Errors) > 0 {
+		lines = append(lines, fmt.Sprintf("Errors (%d):", len(p.Errors)))
+		errors := make([]string, len(p.Errors))
+		for i, err := range p.Errors {
 			errors[i] = err.Error()
 		}
 		lines = append(lines, AddLineNumbers(errors, 1)...)
 	}
-	if len(c.Input) > 0 {
-		lines = append(lines, fmt.Sprintf("Input (%d):", len(c.Input)))
-		lines = append(lines, AddLineNumbers(c.Input, 0)...)
+	if len(p.Input) > 0 {
+		lines = append(lines, fmt.Sprintf("Input (%d):", len(p.Input)))
+		lines = append(lines, AddLineNumbers(p.Input, 0)...)
 	}
-	if len(c.Custom) > 0 {
-		lines = append(lines, fmt.Sprintf("Custom Input (%d):", len(c.Custom)))
-		lines = append(lines, AddLineNumbers(c.Custom, 0)...)
+	if len(p.Custom) > 0 {
+		lines = append(lines, fmt.Sprintf("Custom Input (%d):", len(p.Custom)))
+		lines = append(lines, AddLineNumbers(p.Custom, 0)...)
 	}
 	return strings.Join(lines, "\n")
 }
@@ -344,33 +344,50 @@ func GetParams(args []string) *Params {
 }
 
 // AppendError adds an error to this Params as long as the error is not nil.
-func (c *Params) AppendError(err error) {
+func (p *Params) AppendError(err error) {
 	if err != nil {
-		c.Errors = append(c.Errors, err)
+		p.Errors = append(p.Errors, err)
 	}
 }
 
 // HasError returns true if this Params has one or more errors.
-func (c Params) HasError() bool {
-	return len(c.Errors) != 0
+func (p Params) HasError() bool {
+	return len(p.Errors) != 0
 }
 
 // Error flattens the Errors slice into a single string.
 // It also makes the Params struct satisfy the error interface.
-func (c Params) GetError() error {
-	switch len(c.Errors) {
+func (p Params) GetError() error {
+	switch len(p.Errors) {
 	case 0:
 		return nil
 	case 1:
-		return c.Errors[0]
+		return p.Errors[0]
 	default:
-		errs := make([]error, 1, 1+len(c.Errors))
-		errs[0] = fmt.Errorf("Found %d errors:", len(c.Errors)) //nolint:stylecheck,revive // punct okay here.
-		for i, err := range c.Errors {
+		errs := make([]error, 1, 1+len(p.Errors))
+		errs[0] = fmt.Errorf("Found %d errors:", len(p.Errors)) //nolint:stylecheck,revive // punct okay here.
+		for i, err := range p.Errors {
 			errs = append(errs, fmt.Errorf("  %d: %w", i+1, err))
 		}
 		return errors.Join(errs...)
 	}
+}
+
+// Verbosef outputs to Stderr if the verbose flag was provided. Does nothing otherwise.
+func (p Params) Verbosef(format string, a ...interface{}) {
+	if p.Verbose {
+		StderrAsf(GetFuncName(1), format, a...)
+	}
+}
+
+// HasCustom returns true if the provided string was given as a custom arg.
+func (p Params) HasCustom(str string) bool {
+	for _, cust := range p.Custom {
+		if cust == str {
+			return true
+		}
+	}
+	return false
 }
 
 // IsOneOfStrFold tests if the given string is equal (ignoring case) to one of the given options.
