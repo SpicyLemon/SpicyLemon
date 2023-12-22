@@ -285,7 +285,7 @@ func (v Vector) Step(cur byte) []Vector {
 		rv2.Y += rv2.DY
 		return []Vector{rv1, rv2}
 	default:
-		panic(fmt.Errorf("Unknown current space: %q", string(cur)))
+		panic(fmt.Errorf("unknown current space: %q", string(cur)))
 	}
 }
 
@@ -294,7 +294,10 @@ func (v Vector) Equal(v2 Vector) bool {
 }
 
 func (v Vector) Same(v2 Vector) bool {
-	return v.X == v2.X && v.Y == v2.Y && ((v.DX == 0 && v.DY == 0) || (v2.DX == 0 && v2.DY == 0) || (v.DX == v2.DX && v.DY == v2.DY))
+	return v.X == v2.X && v.Y == v2.Y &&
+		((v.DX == 0 && v.DY == 0) ||
+			(v2.DX == 0 && v2.DY == 0) ||
+			(v.DX == v2.DX && v.DY == v2.DY))
 }
 
 func (v Vector) EqualXY(v2 XY) bool {
