@@ -74,7 +74,7 @@ func (s *Solver) PolyCount(params *Params) int {
 	f := s.MaxSteps / s.Width
 	rv := c + d1*f + (f*(f-1)/2)*(d2-d1)
 	params.Verbosef("rv = c + d1*f + (f*(f-1)/2)*(d2-d1)\n c: %d\nd1: %d\nd2: %d\n f: %d\nrv: %d", c, d1, d2, f, rv)
-	return c + d1*f + (f*(f-1)/2)*(d2-d1)
+	return rv
 }
 
 func (s *Solver) ExpandAndCount(params *Params) int {
