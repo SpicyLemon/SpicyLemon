@@ -1,0 +1,320 @@
+   6       243.083µs       23
+  10       373.292µs       72
+  50      9.689375ms     2993
+ 100     42.03925ms     12708
+ 500    1.11344175s    331750
+1000    4.489990416s  1334305
+5000 2m11.092545333s 33444293
+
+
+26,501,365
+
+God dammit. Fucking repeates and shit.
+
+How the fuck do I want to do this....
+
+I feel like I need to
+a) calculate the mins for all points in the 3x3 area, or maybe 5x5.
+
+a b c d e
+f g h i j
+k l m n o
+p q r s t
+u v w x y
+
+I should then have enough info to start replicating.
+Figure out the diffs in mins from l to k
+Adding those diffs to k should give the next to the left. Do that until everything is above the max steps.
+The diff from h to c can be applied up the same way.
+The diff from r to w for down, and n to o for right.
+
+Okay. Here are the diffs I care about.
+Center   h: n o
+Center+1 h: s t
+Center+x h: x y
+Center   v: r w
+Center+1 v: s x
+Center+x v: t y
+
+So, I only need to do this:
+m n o
+r s t
+w x y
+
+then, I can use all those other diffs to just repeat each, adding the diffs until I get over the maxes.
+
+Or better yet, I use the diffs to calculate how many repeates it'd have.
+I can then calculate all the edges. Should only need a center and either one or four edges and calculate repeates.
+
+
+The actual grid is 130 x 130. So I need to figure out all of them in a 390 x 390 grid first.
+
+
+What about this.
+Do all steps until an edge is reached.
+Count the solutions.
+If that step count %2 != max %2, do one more step, otherwise two.
+Count the solutions and compare.
+Increase by 2 steps.
+Count the solutions and compare.
+It should be roughly going up by n * steps ^2
+
+Example:
+The garden is 11 x 11 = 121 spaces.
+It has 81 garden plots, and 40 rocks.
+With an even number of steps:
+Without rocks, there would be 61 possible spots.
+But there are 19 rocks in the way, leaving only 42 possible spots.
+With an odd number of steps:
+Without rocks, there would be 60 possible spots.
+But there are 21 rocks in the way, leaving only 39 possible spots.
+
+Actual:
+The garden is 131 x 131 = 17161 spaces.
+It has 14598 garden plots, and 2563 rocks.
+With an even number of steps:
+Without rocks, there would be 8581 possible spots.
+But there are 1266 rocks in the way, leaving only 7315 possible spots.
+With an odd number of steps:
+Without rocks, there would be 8580 possible spots.
+But there are 1297 rocks in the way, leaving only 7283 possible spots.
+
+
+
+
+
+Okay. So, if the grid is 11 x 11
+Min = 0, Max = 10
+
+If I replicate it 3 times, there's 1 extra per side.
+b c d
+And make c have the start.
+b min = -11  b max = -1
+c min =   0  c max = 10
+d min =  11  d max = 21
+If i do it 5 times, there's 2 extra per side.
+a b c d e
+a min = -22  a max = -12
+b min = -11  b max =  -1
+c min =   0  c max =  10
+d min =  11  d max =  21
+e min =  22  e max =  32
+
+So... 
+overall min = -1 * extra * width
+overall max = (extra + 1) * width - 1
+
+
+  (extra + 1) * width - 1 - (-1 * extra * width) + 1
+= (extra + 1) * width + extra * width
+= (2 * extra + 1) * width
+Yay!
+
+
+max - min + 1 = 11
+-12 - min + 1 = 11
+-12 - 11 + 1 = min
+
+with 2 extras, and a orig width of 11, each section has these min/max.
+[-22,-12][-11,-1][0,10][11,21][22,32]
+I need those to translate into -2, -1, 0, 1, 2.
+
+What about just /11?
+-22 / 11 = -2
+-21 / 11 = -1
+-12 / 11 = -1
+0 / 11 = 0
+10 / 11 = 0
+11 / 11 = 1
+21 / 11 = 1
+22 / 11 = 2
+32 / 11 = 2
+
+So it works for positives!!
+
+But for negatives, what do I need to do?
+Maybe
+(x - w + 1) / w?
+-22 => (-22 - 11 + 1) / 11 = (-33 + 1) / 11 = -32/11 = -2
+-12 => (-12 - 11 + 1) / 11 = (-23 + 1) / 11 = -22/11 = -2
+-11 => (-11 - 11 + 1) / 11 = (-22 + 1) / 11 = -21/11 = -1
+
+
+Okay. for the. Whew... ON track I guess.
+
+I've got all the diffs. Now I just need to grow things.
+
+Here's the grids I have:
+a b c d e 
+f g h i j
+k l m n o
+p q r s t
+u v w x y
+
+Turns out that all these are equal for the example:
+    a-b, b-c, d-c, e-d,
+    f-g, j-i,
+    p-q, t-s,
+    u-v, v-w, x-w, y-x
+
+
+Dah fuck.
+
+Okay. I think that, eventually the center rows settle on a repating patter of all the same. But I'm not sure how best to get there.
+Maybe I redo the wander stuff. Ugh.
+
+My thought is this: wander the 25 first.
+Calculate the edge diffs.
+For each edge diff that isn't uniform, do wander the next one over.
+The starts will be the far edge of cells.
+I think I'll only need this for the center line, at least.
+
+
+Have -22 -11, and that needs to become 0 to 10 (width = 11).
+Have 22 32 and that needs to befome 0 to 10 (wdith = 11).
+Oh fuck. That's just ShiftCoord.
+
+With extra = 2
+actual = 131 x 5 = 655
+test is 11. 655 / 11 = 60.
+60 - 1 = 59
+59 / 2 = 30
+
+So.. when width = 131, I want 2 extra.
+When width = 11, I want 30 extra.
+
+I want the resulting width to be at least 655.
+
+So, width * (2 * extra + 1) = 655.
+655/width = 2*extra + 1
+(655/width - 1) = 2*extra
+(655/width - 1)/2 = extra.
+
+Check
+655/131 = 5
+5-1 = 4
+4/2 = 2
+655/11 = 60
+60-1 = 59
+59/2 = 30
+
+11 * (2 * 30 + 1) = 671
+11 * (2 * 29 + 1) = 649
+Basically...
+Extra = ((actually x (2*2+1)) / test - 1) / 2
+
+
+(actually/test x (2*2+1) - 1) / 2
+actually/(2*test) x (2+1) - 1/2
+
+Check
+13
+
+
+
+Okay. I have the range of the center left space, section coords 0, -1*Extra
+I want to find the first one that will have maxSteps in it.
+Made up Example: [10,20] with max steps = 5000 and exra is 4. Each section goes up by 11.
+
+The next one over (0, -1*Extra - 1) will have range [21,31]
+I need to find n where 10+11*n <= 5000 and 20+11*n >= 5000
+
+min+d*n = 5000
+d*n = 5000-min
+n = (5000-min)/d
+= (5000-10)/11 = 4990/11 = 453.636363636364. I probably want to floor this?
+
+max+d*n = 5000
+d*n = 5000-max
+n = (5000-max)/d
+= (5000-20)/11 = 4980/11 = 452.727272727273. I probably want to ceil this?
+
+n   shfit  min   max
+452 4972   4982  4992 full
+453 4983   4993  5003 partial
+454 4994   5004  5014 none
+
+So, maybe a better plan is to just start at n = (max steps - max)/d (integer math).
+Make that section and get the range.
+while the range doesn't contain max steps, n+1, add the diff, and reget the range.
+If the range max is less than max steps, its full => n+1 until there's one that contains the max steps.
+
+
+
+God dammit..
+
+Example at 5000:
+The full grids combine to a total of 16452882
+The partial grids combine to a total of 503369
+Answer: 16956251
+Real answer: 16733044
+I'm 223,207 over.
+
+Okay. Fixed some double counting: and now got 16884900. that's still too high, by 151,856.
+Well fuck. I fixed the thing where MAddFlat was adding even to the zero spaces, but then it gave me 326802... TOTAL....
+
+Now 16528702, which is 204342 under. :/
+
+
+
+Yup...
+
+
+This is too high.
+(   1.426531625) [(*Solver).ExpandAndCount] In the initial 25 sections, there are 182246 valid spots.
+(  40.930798250) [(*Solver).ExpandAndCount] A full even grid (e.g. 0, 0) has 7274 valid spots
+(  40.930831666) [(*Solver).ExpandAndCount] A full  odd grid (e.g. 0, 1) has 7307 valid spots
+(  40.944542875) [(*Solver).ExpandAndCount] The full grids combine to a total of 596728703760974
+(5:02.695808083) [(*Solver).ExpandAndCount] The partial grids combine to a total of 18089729736
+(5:02.695840583) [Solve] Done. Duration: [5m2.695462334s].
+(5:02.695845750) [Run] Answer: 596746793490710
+
+Just tried the 596728703760974, to get a bounds. It's too low.
+
+
+Okay, holy fuck.. Figured it out.
+
+When I'm adding the stuff to the matrix, I need to ignore things that start at zero.
+
+
+
+Okay. Cheating. Something about polynomials.
+
+When steps % width == total % width
+
+total % width = 65 (for the actual).
+
+So. When does steps % width = 65?
+
+65 % 131 = 65
+196, 327, and 458 also. I think 327 is sufficient, though.
+
+So, I need to run the solver until the shortest steps left are 328.
+
+With the example at 5000 steps
+
+5000 % 11 = 6
+
+So 6, 17, 23.
+
+Okay. So what I have should be sufficient to get the numbers I need.
+
+
+( f * (f - 1) / 2 ) * (p2-p1)
+
+Right answer: 596734624269210
+Wrong answer: 596734617593310
+Wrong Full    596728703760974
+Wrong part         5913832336
+
+Off: Wrong            6675900 short
+Off: Wrong Full    5920508236 short
+
+
+
+
+
+
+
+
+
