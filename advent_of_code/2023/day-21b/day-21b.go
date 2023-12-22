@@ -53,8 +53,28 @@ func Solve(params *Params) (string, error) {
 		Stdoutf("Not Shown: %d", notShown)
 		Stdoutf("  Max Min: %d", solver.GetMaxMin())
 	}
-	answer := solver.ExpandAndCount(params)
+	if params.HasCustom("wrong") {
+		wrongAnswer := solver.ExpandAndCount(params)
+		Stdoutf("Wrong answer: %d", wrongAnswer)
+	}
+	answer := solver.PolyCount(params)
 	return fmt.Sprintf("%d", answer), nil
+}
+
+func (s *Solver) PolyCount(params *Params) int {
+	poly := make([]int, 3)
+	for m := range poly {
+		steps := s.MaxSteps%s.Width + m*s.Width
+		spots := s.GetSolutions(steps)
+		poly[m] = len(spots)
+	}
+	c := poly[0]
+	d1 := poly[1] - poly[0]
+	d2 := poly[2] - poly[1]
+	f := s.MaxSteps / s.Width
+	rv := c + d1*f + (f*(f-1)/2)*(d2-d1)
+	params.Verbosef("rv = c + d1*f + (f*(f-1)/2)*(d2-d1)\n c: %d\nd1: %d\nd2: %d\n f: %d\nrv: %d", c, d1, d2, f, rv)
+	return c + d1*f + (f*(f-1)/2)*(d2-d1)
 }
 
 func (s *Solver) ExpandAndCount(params *Params) int {
@@ -1877,7 +1897,7 @@ func (p Params) HasCustom(val string) bool {
 
 func (p Params) Verbosef(format string, a ...interface{}) {
 	if p.Verbose {
-		Stderrf(format, a...)
+		StderrAsf(GetFuncName(1), format, a...)
 	}
 }
 
