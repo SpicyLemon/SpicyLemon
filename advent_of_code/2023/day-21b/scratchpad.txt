@@ -311,6 +311,12 @@ Off: Wrong            6675900 short
 Off: Wrong Full    5920508236 short
 
 
+(1:00.334556541) [(*Solver).ExpandAndCount] Total sections with spots via X ranges:  81851793801
+(1:00.334585250) [(*Solver).ExpandAndCount] Total sections with spots via Y ranges:  81851793801
+(1:00.334591250) [(*Solver).ExpandAndCount]       Total full sections via X ranges:  81850175401
+(1:00.334596125) [(*Solver).ExpandAndCount]       Total full sections via Y ranges:  81850175401
+(1:00.334600833) [(*Solver).ExpandAndCount]    Total partial sections via X ranges:      1618400
+(1:00.334605833) [(*Solver).ExpandAndCount]    Total partial sections via Y ranges:      1618400
 
 
 
