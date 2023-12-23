@@ -139,7 +139,8 @@ func BuildGraph(cells [][]byte, params *Params) Graph {
 		}
 		endNode := rv.Get(end)
 		if endNode == nil {
-			panic(fmt.Errorf("following vector %s ended at %s after %d, but that is not a junction", vector, end, length))
+			panic(fmt.Errorf("following vector %s ended at %s after %d, but that is not a junction",
+				vector, end, length))
 		}
 		vector.Node.AddEdge(length, endNode)
 		nodesLinked++
@@ -242,7 +243,7 @@ func NewVector(node *GraphNode, dir byte) *Vector {
 }
 
 func (v Vector) String() string {
-	return fmt.Sprintf("%s+(%d,%d)", v.Node.Point, DirString(v.Dir))
+	return fmt.Sprintf("%s+%s", v.Node.Point, DirString(v.Dir))
 }
 
 func (v Vector) GetX() int {
@@ -408,19 +409,19 @@ func (n GraphNode) String() string {
 	return fmt.Sprintf("%s: %s", n.Point, strings.Join(MapSlice(n.Edges, (*GraphEdge).ToString), " "))
 }
 
-func (g *GraphNode) AddEdge(length int, to *GraphNode) {
-	g.Edges = append(g.Edges, &GraphEdge{
-		From:   g,
+func (n *GraphNode) AddEdge(length int, to *GraphNode) {
+	n.Edges = append(n.Edges, &GraphEdge{
+		From:   n,
 		Length: length,
 		To:     to,
 	})
 }
 
-func (g *GraphNode) Equal(g2 *GraphNode) bool {
-	if g == g2 {
+func (n *GraphNode) Equal(n2 *GraphNode) bool {
+	if n == n2 {
 		return true
 	}
-	return g.X == g2.X && g.Y == g2.Y
+	return n.X == n2.X && n.Y == n2.Y
 }
 
 type GraphEdge struct {
