@@ -1,0 +1,667 @@
+12853 is too low.
+19899 is too high. <--- from not taking time into account.
+
+part 2
+7101231601488 is too low
+557743507346377 is not right.
+557743507346378 not right either.
+
+
+st1: (308205470708820,82023714100543,475164418926765)+(42,274,-194): [430570386494.3686 to 1160497393793.6387]
+st2: (181131495901179,203192543192516,192147093685464)+(-66,428,-86): {not in area}
+     Intersection: (254173252824759.9688,241084779141228.4062)
+     st1 gets there at t = -1286481378191.9055
+     st1 at that time: (254173252824759.9688,-270472183524039.1250)
+     st1 diffs: (0.0000,511556962665267.5000)
+     st2 gets there at t = -1106693286720.9238
+     st2 at that time: (254173252824759.9688,-270472183524039.4062)
+     st2 diffs: (0.0000,511556962665267.8125)
+
+ wtf.... That intersection is in the area, but the line doesn't pass through it?
+
+254173252824759.9688,
+241084779141228.4062
+200000000000000
+(181131495901179,203192543192516,192147093685464)+(-66,428,-86)
+m = 428/-66 = -6.48484848484848
+b = 181131495901179 - m*203192543192516 = -1.13654135995332E15
+
+y = mx + b
+At x = 200000000000000
+y = -6.48484848484848 * 200000000000000 + -1.13654135995332E15
+y = -2.43351105692302E15
+y = -6.48484848484848 * 400000000000000 + -1.13654135995332E15
+y = -1.09513504218372E15
+
+
+(   0.001925500) [Solve] Stones that never enter the area (7):
+1: (175729396408775,244797169650096,128806276358740)+(42,-129,731): {not in area}
+2: (181131495901179,203192543192516,192147093685464)+(-66,428,-86): {not in area}
+3: (179984791194567,218292895033112,184203528780140)+(-11,196,52): {not in area}
+4: (189645462731372,252662848961763,194455991578315)+(10,-114,36): {not in area}
+5: (187417435701745,348575505839391,213223104916546)+(19,-888,-121): {not in area}
+6: (204298669454859,147532126048376,151082843228084)+(-72,641,357): {not in area}
+7: (176287266640963,256169421940834,198148881082558)+(39,-262,-112): {not in area}
+
+9223372036854775807
+    200000000000000
+   -149052433334413
+      9136259399293.2617
+     30721450657401.3086
+
+
+
+     46116.8601842739 away from max int.
+     23058.4300921369 away.
+     sqrt(46116...) = 214.7483648.
+     sqrt(23058...) = 151.850024998802.
+     I'm defiitely doing that.
+
+Okay...
+For each line, we have
+xit = xi + dxi*ti
+yit = yi + dyi*ti
+zit = zi + dzi*ti
+xigt = xg + dxg*tig
+yigt = yg + dyg*tig
+zigt = zg + dzg*tig
+xit = xigt
+yit = yigt
+zit = zigt
+ti = tig
+
+
+Plugging those bottom 4 into the other six, gives us these:
+xit = xi + dxi*ti
+yit = yi + dyi*ti
+zit = zi + dzi*ti
+xit = xg + dxg*ti
+yit = yg + dyg*ti
+zit = zg + dyz*ti
+
+We can then simplify again to give:
+xi + dxi*ti = xg + dxg*ti
+yi + dyi*ti = yg + dyg*ti
+zi + dzi*ti = zg + dzg*ti
+
+Unknowns:
+ti, xg, yg, zg, dxg, dyg, dzg
+
+That's 3 equations and 7 unknowns.
+
+The next equation gives us
+xj + dxj*tj = xg + dxg*tj
+yj + dyj*tj = yg + dyg*tj
+zj + dzj*tj = zg + dzg*tj
+
+New unknowns: tj
+So now we have 6 equations and 8 unknowns.
+
+Adding the 3rd gives
+xk + dxk*tk = xg + dxg*tk
+yk + dyk*tk = yg + dyg*tk
+zk + dzk*tk = zg + dzg*tk
+
+
+Now we have 9 equations and 9 unknowns. So we should be able to find a solution.
+
+Equations:                  Unknowns: xg, yg, zg, dxg, dyg, dzg, ti, tj, tk
+xi + dxi*ti = xg + dxg*ti   I don't really care what ti, tj or tk are.
+xj + dxj*tj = xg + dxg*tj
+xk + dxk*tk = xg + dxg*tk
+
+yi + dyi*ti = yg + dyg*ti
+yj + dyj*tj = yg + dyg*tj
+yk + dyk*tk = yg + dyg*tk
+
+zi + dzi*ti = zg + dzg*ti
+zj + dzj*tj = zg + dzg*tj
+zk + dzk*tk = zg + dzg*tk
+
+
+Looking at just one dimension:
+xi + dxi*ti = xg + dxg*ti => xg = xi + dxi*ti - dxg*ti    (1)
+xj + dxj*tj = xg + dxg*tj => xg = xj + dxj*tj - dxg*tj    (2)
+xk + dxk*tk = xg + dxg*tk => xg = xk + dxk*tk - dxg*tk    (3)
+
+So, combining (1) and (2):
+    xi + dxi*ti - dxg*ti = xj + dxj*tj - dxg*tj
+ => xi - xj + dxi*ti - dxj*tj = dxg*ti - dxg*tj = dxg*(ti - tj)
+ => (xi - xj + dxi*ti - dxj*tj)/(ti - tj) = dxg
+
+ hmmm. I don't think I'm going the right way here. I think I need to get rid of the ts first.
+
+ So here's the equations:
+xi + dxi*ti = xg + dxg*ti
+yi + dyi*ti = yg + dyg*ti
+zi + dzi*ti = zg + dzg*ti
+
+xj + dxj*tj = xg + dxg*tj
+yj + dyj*tj = yg + dyg*tj
+zj + dzj*tj = zg + dzg*tj
+
+xk + dxk*tk = xg + dxg*tk
+yk + dyk*tk = yg + dyg*tk
+zk + dzk*tk = zg + dzg*tk
+
+Looking at just ti:
+xi + dxi*ti = xg + dxg*ti => xi - xg = ti * (dxg - dxi) => ti = (xi - xg) / (dxg - dxi)   (1)
+yi + dyi*ti = yg + dyg*ti => yi - yg = ti * (dyg - dyi) => ti = (yi - yg) / (dyg - dyi)   (2)
+zi + dzi*ti = zg + dzg*ti => zi - zg = ti * (dzg - dzi) => ti = (zi - zg) / (dzg - dzi)   (3)
+
+
+Plug (1) into (2) and solve for xg:
+(xi - xg) / (dxg - dxi) = (yi - yg) / (dyg - dyi)
+xi - xg = (yi - yg) * (dxg - dxi) / (dyg - dyi)
+xg = xi - (yi - yg) * (dxg - dxi) / (dyg - dyi)   (4)
+
+Plug (1) into (3) and again, solve for xg:
+(xi - xg) / (dxg - dxi) = (zi - zg) / (dzg - dzi)
+xi - xg = (zi - zg) * (dxg - dxi) / (dzg - dzi)
+xg = xi - (zi - zg) * (dxg - dxi) / (dzg - dzi)   (5)
+
+And combine (4) and (5) to solve for dxg
+xi - (yi - yg) * (dxg - dxi) / (dyg - dyi) = xi - (zi - zg) * (dxg - dxi) / (dzg - dzi)
+(yi - yg) * (dxg - dxi) / (dyg - dyi) = (zi - zg) * (dxg - dxi) / (dzg - dzi)
+(yi - yg) / (dyg - dyi) = (zi - zg) / (dzg - dzi)   (6)
+So... combining all the ti stuff, I was able to take out ti, xg, and dxg.
+I went from 3 equations with 7 unknowns to 1 equation with 4 unknowns.
+
+Moving on to the tj stuff:
+xj + dxj*tj = xg + dxg*tj => xj - xg = tj * (dxg - dxj) => tj = (xj - xg) / (dxg - dxj)   (7)
+yj + dyj*tj = yg + dyg*tj => yj - yg = tj * (dyg - dyj) => tj = (yj - yg) / (dyg - dyj)   (8)
+zj + dzj*tj = zg + dzg*tj => zj - zg = tj * (dzg - dzj) => tj = (zj - zg) / (dzg - dzj)   (9)
+
+Plug (8) into (7) and solve for yg:
+(yj - yg) / (dyg - dyj) = (xj - xg) / (dxg - dxj)
+yj - yg = (xj - xg) * (dyg - dyj) / (dxg - dxj)
+yg = yj - (xj - xg) * (dyg - dyj) / (dxg - dxj)   (10)
+
+Plug (8) into (9) and solve for yg again:
+(yj - yg) / (dyg - dyj) = (zj - zg) / (dzg - dzj)
+yj - yg = (zj - zg) * (dyg - dyj) / (dzg - dzj)
+yg = yj - (zj - zg) * (dyg - dyj) / (dzg - dzj)   (11)
+
+Combine (10) and (11) to solve for dyg:
+yj - (xj - xg) * (dyg - dyj) / (dxg - dxj) = yj - (zj - zg) * (dyg - dyj) / (dzg - dzj)
+(xj - xg) * (dyg - dyj) / (dxg - dxj) = (zj - zg) * (dyg - dyj) / (dzg - dzj)
+(xj - xg) / (dxg - dxj) = (zj - zg) / (dzg - dzj)   (12)
+
+Doing the same with the tks and zg and dzg:
+(xk - xg) / (dxg - dxk) = (yk - yg) / (dyg - dyk)   (13)
+
+So we have these:
+(yi - yg) / (dyg - dyi) = (zi - zg) / (dzg - dzi)   (6)
+(xj - xg) / (dxg - dxj) = (zj - zg) / (dzg - dzj)   (12)
+(xk - xg) / (dxg - dxk) = (yk - yg) / (dyg - dyk)   (13)
+
+That's 3 equations and ... 6 unknowns.
+
+However, adding the next 3 lines adds zero more unknowns but 3 more equations.
+
+Switching to numbers. i = 1, j = 2, k = 3.
+(y1 - yg) / (dyg - dy1) = (z1 - zg) / (dzg - dz1)   (6)
+(x2 - xg) / (dxg - dx2) = (z2 - zg) / (dzg - dz2)   (12)
+(x3 - xg) / (dxg - dx3) = (y3 - yg) / (dyg - dy3)   (13)
+(y4 - yg) / (dyg - dy4) = (z4 - zg) / (dzg - dz4)   (14)
+(x5 - xg) / (dxg - dx5) = (z5 - zg) / (dzg - dz5)   (15)
+(x6 - xg) / (dxg - dx6) = (y6 - yg) / (dyg - dy6)   (16)
+
+Let's get these in a flatter form.
+(6) becomes:
+    (y1 - yg) / (dyg - dy1) = (z1 - zg) / (dzg - dz1)
+ => (y1 - yg) * (dzg - dz1) = (z1 - zg) * (dyg - dy1)
+ => y1*dzg - y1*dz1 - yg*dzg + yg*dz1 = z1*dyg - z1*dy1 - zg*dyg + zg*dy1
+ => yg*dzg - yg*dz1 - y1*dzg + y1*dz1 = zg*dyg - zg*dy1- z1*dyg + z1*dy1
+
+
+Heh. I think I'm coming full circle. :/
+
+Basically, I have 6 equations of the form:
+P1*D1 - b1*P1 - c1*D1 + b1*c1 = P2*D2 - b2*P2 - c2*D2 + b2*c2
+
+Since its quadratic, I'm not quite sure what to do other than the hard way.
+
+Solve (6) for yg:
+(y1 - yg) / (dyg - dy1) = (z1 - zg) / (dzg - dz1)
+y1 - yg = (z1 - zg) / ((dzg - dz1) * (dyg - dy1))
+yg = y1 - (z1 - zg) / ((dzg - dz1) * (dyg - dy1))   (7)
+
+Put that into (14) and solve for dyg:
+(y4 - y1 + (z1 - zg) / ((dzg - dz1) * (dyg - dy1))) / (dyg - dy4) = (z4 - zg) / (dzg - dz4)
+(dzg - dz4) * (y4 - y1 + (z1 - zg) / ((dzg - dz1) * (dyg - dy1))) = (dyg - dy4) * (z4 - zg)
+
+
+Bah. Fuck... How can I just do this with a program?
+
+Do we do ranges
+
+With one line, we have infinate possibilities for xg, yg, zg, dxg, dyg, dzg
+When we add the second line: FUck fuck.... :( I can't think.
+
+Let's see if I can figure out the equations for the intersection of two lines in 3d space.
+Say the lines are in the form: ax + by + cz + d = 0
+The primary problem is how to figure out d.
+I'd assume a = -dx, b = -dy, and z = -dz.
+
+If c == 0 then d = x*dy - y*dx
+
+Okay.. None of the dx, dy, or dz values are zero. :D
+
+L1 = [x1, y1, z1] + t1[dx1, dy1, dz1]
+L2 = [x2, y2, z2] + t2[dx2, dy2, dz2]
+
+Set them equal:
+[x1+t1*dx1, y1+t1*dy1, z1+t1*dz1] = [x2+t2*dx2, y2+t2*dy2, z2+t2*dz2]
+
+So
+x1+t1*dx1 = x2+t2*dx2   (1)
+y1+t1*dy1 = y2+t2*dy2   (2)
+z1+t1*dz1 = z2+t2*dz2   (3)
+
+Combine (1) and (2) to get rid of t1
+  (1) + a(2)
+x1 + t1*dx1 + a*(y1 + t1*dy1) = x2 + t2*dx2 + a*(y2+t2*dy2)
+x1 + t1*dx1 + a*y1 + a*t1*dy1 = x2 + t2*dx2 + a*(y2+t2*dy2)
+t1*dx1 + a*t1*dy1 = x2 + t2*dx2 + a*(y2+t2*dy2) - x1 - a*y1
+t1 * (dx1 + a*dy1) = x2 + t2*dx2 + a*(y2+t2*dy2) - x1 - a*y1
+
+So, dx1 + a*dy nees to be zero.
+dx1 + a*dy1 = 0
+a * dy1 = -dx1
+a = -dx1/dy1
+
+Check. In their thing, dx1 = 1, and dy1 = -2 and they have a = 1/2
+-dx1/dy1 = -(1/-2) = 1/2
+
+Okay. So. (1) + a(2) where a = -1 * (dx1/dy1) gives
+x2 + t2*dx2 + a*(y2 + t2*dy2) - x1 - a*y1 = 0
+t2*dx2 + a*(y2 + t2*dy2) = x1 + a*y1 - x2
+t2*dx2 + a*y2 + a*t2*dy2 = x1 + a*y1 - x2
+t2*dx2 + a*t2*dy2 = x1 + a*y1 - x2 - a*y2
+t2*(dx2 + a*dy2) = x1 + a*y1 - x2 - a*y2
+t2*(dx2 + a*dy2) = x1 - x2 + a*(y1 - y2)
+t2 = (x1 - x2 + a*(y1 - y2)) / (dx2 + a*dy2)
+
+Pulling a back out:
+t2 = (x1 - x2 + a*(y1 - y2)) / (dx2 + a*dy2)
+t2 = (x1 - x2 - (dx1/dy1)*(y1 - y2)) / (dx2 - (dx1/dy1)*dy2)
+
+I wonder if I can just do it dimension by dimension.
+
+xgtn = xg + dxg*tgn => xgtn - xg = dxg*tgn => (xgtn - xg)/dxg = tgn
+x1t  = x1 + dx1*t1  => x1t  - x1 = dx1*t1  => (x1t  - x1)/dx1 = t1
+
+xgt1 = x1t
+tg1 = t1
+
+x1t = xg + dxg*t1 => t1 = (x1t - xg)/dxg
+x1t = x1 + dx1*t1 => t1 = (x1t - x1)/dx1
+
+
+xg + dxg*t1 = x1 + dx1*t1
+xg = x1 + dx1*t1 - dxg*t1
+xg = x1 + t1*(dx1 - dxg)
+
+So:
+xg = x1 + t1*(dx1 - dxg)  (1X) ===> 1 eq, 3 unknown: xg, dxg, t1
+xg = x2 + t2*(dx2 - dxg)  (2X) ===> 2 eq, 4 unknown: xg, dxg, t1, t2
+xg = x3 + t3*(dx3 - dxg)  (3X) ===> 3 eq, 5 unknown: xg, dxg, t1, t2, t3
+xg = x4 + t4*(dx4 - dxg)  (4X) ===> 4 eq, 6 unknown: xg, dxg, t1, t2, t3, t4
+xg = x5 + t5*(dx5 - dxg)  (5X) ===> 5 eq, 7 unknown: xg, dxg, t1, t2, t3, t4, t5
+xg = x6 + t6*(dx6 - dxg)  (6X) ===> 6 eq, 8 unknown: xg, dxg, t1, t2, t3, t4, t5, t6
+Not making progress.
+
+If I also include the y stuff
+yg = y1 + t1*(dy1 - dyg)  (1Y) ===>  7 eq, 10 unknown: xg, dxg, yg, dyg, t1, t2, t3, t4, t5, t6
+yg = y2 + t2*(dy2 - dyg)  (2Y) ===>  8 eq, 10 unknown: xg, dxg, yg, dyg, t1, t2, t3, t4, t5, t6
+yg = y3 + t3*(dy3 - dyg)  (3Y) ===>  9 eq, 10 unknown: xg, dxg, yg, dyg, t1, t2, t3, t4, t5, t6
+yg = y4 + t4*(dy4 - dyg)  (4Y) ===> 10 eq, 10 unknown: xg, dxg, yg, dyg, t1, t2, t3, t4, t5, t6
+yg = y5 + t5*(dy5 - dyg)  (5Y) ===> 11 eq, 10 unknown: xg, dxg, yg, dyg, t1, t2, t3, t4, t5, t6
+yg = y6 + t6*(dy6 - dyg)  (6Y) ===> 12 eq, 10 unknown: xg, dxg, yg, dyg, t1, t2, t3, t4, t5, t6
+
+Let's see the smallest number I can do
+xg = x1 + t1*(dx1 - dxg)  (1X) ===> 1 eq, 3 unknown: xg, dxg, t1
+yg = y1 + t1*(dy1 - dyg)  (1Y) ===> 2 eq, 5 unknown: xg, dxg, yg, dyg, t1
+zg = z1 + t1*(dz1 - dzg)  (1Z) ===> 3 eq, 7 unknown: xg, dxg, yg, dyg, zg, dzg, t1
+xg = x2 + t2*(dx2 - dxg)  (2X) ===> 4 eq, 8 unknown: xg, dxg, yg, dyg, zg, dzg, t1, t2
+yg = y2 + t2*(dy2 - dyg)  (2Y) ===> 5 eq, 8 unknown: xg, dxg, yg, dyg, zg, dzg, t1, t2
+zg = z2 + t2*(dz2 - dzg)  (2Z) ===> 6 eq, 8 unknown: xg, dxg, yg, dyg, zg, dzg, t1, t2
+xg = x3 + t3*(dx3 - dxg)  (3X) ===> 7 eq, 9 unknown: xg, dxg, yg, dyg, zg, dzg, t1, t2, t3
+yg = y3 + t3*(dy3 - dyg)  (3Y) ===> 8 eq, 9 unknown: xg, dxg, yg, dyg, zg, dzg, t1, t2, t3
+zg = z3 + t3*(dz3 - dzg)  (3Z) ===> 9 eq, 9 unknown: xg, dxg, yg, dyg, zg, dzg, t1, t2, t3
+
+Okay. I need to separate all the variables somehow maybe?
+
+xg = xn + tn*(dxn - dxg)
+xg = xn + tn*dxn - tn*dxg
+xg + tn*dxg = xn + tn*dxn
+tn*dxg - tn*dxn + xg - xn = 0
+
+tn*(dxg - dxn) + xg - xn = 0
+tn + (xg - xn)/(dxg - dxn) = 0
+
+Hmmm. So that only works if dxg - dxn is not zero.
+There's 300 lines. The d values seem to be in that range too.
+So maybe I just try starting with -300 to 300 as options, and remove all the d values for a given axis. Then try the rest.
+
+But that doesn't account for the starting point values.
+Okay. So, let's assume we have a dg value.
+tn = (xn - xg)/(dxg - dxn)
+tn = (yn - yg)/(dyg - dyn)
+tn = (zn - zg)/(dzg - dzn)
+
+
+ X: [49567919141675 to 532659576750811] (300) (483091657608837)
+DX: [-273 to 356] (211) (419)
+ Y: [4032650622148 to 538361240124304] (300) (534328589501857)
+DY: [-930 to 706] (242) (1395)
+ Z: [4691494807438 to 558065450705398] (300) (553373955897661)
+DZ: [-794 to 756] (237) (1314)
+
+419 * 1395 * 1314 = 768,039,570
+768039570 different dx, dy, dz combos. Not too bad. But I'm not sure this works.
+
+
+Assume known: xn, dxn, dxg. Need xg, but don't know tn either.
+    tn = (xn - xg)/(dxg - dxn)
+ => tn * (dxg - dxn) = xn - xg
+ => tn * (dxg - dxn) - xg + xn = 0
+ => tn - xg/(dxg - dxn) + xn/(dxg - dxn) = 0
+    tn = (xn - xg)/(dxg - dxn)
+ => tn * (dxg - dxn) = xn - xg
+ => xg = xn - tn * (dxg - dxn)
+
+So, we have these equations:
+t1 - xg/(dxg - dx1) + x1/(dxg - dx1) = 0  (X1) 2 unknown: xg, t1
+t1 - yg/(dyg - dy1) + y1/(dyg - dy1) = 0  (Y1) 3 unknown: xg, yg, t1
+t1 - zg/(dzg - dz1) + z1/(dzg - dz1) = 0  (Z1) 4 unknown: xg, yg, zg, t1
+
+t2 - xg/(dxg - dx2) + x2/(dxg - dx2) = 0  (X2) 2 unknown: xg, yg, zg, t1, t2
+t2 - yg/(dyg - dy2) + y2/(dyg - dy2) = 0  (Y2) 3 unknown: xg, yg, zg, t1, t2
+t2 - zg/(dzg - dz2) + z2/(dzg - dz2) = 0  (Z2) 4 unknown: xg, yg, zg, t1, t2
+
+Let's combine (X1) and (X2) to get rid of dx so we can find t1 and t2.
+    x1 - t1 * (dxg - dx1) = x2 - t2 * (dxg - dx2)
+ => t1 * (dxg - dx1) = x1 - x2 + t2 * (dxg - dx2)
+ => t1 = (x1 - x2 + t2 * (dxg - dx2))/(dxg - dx1)
+
+Combining (Y1) and (Y2) to get rid of dy gives:
+    t1 = (y1 - y2 + t2 * (dyg - dy2))/(dyg - dy1)
+
+Putting those two together should give me t2:
+    (x1 - x2 + t2 * (dxg - dx2))/(dxg - dx1) = (y1 - y2 + t2 * (dyg - dy2))/(dyg - dy1)
+ => (x1 - x2 + t2 * (dxg - dx2)) * (dyg - dy1) = (y1 - y2 + t2 * (dyg - dy2)) * (dxg - dx1)
+ => (x1 - x2) * (dyg - dy1) + t2 * (dxg - dx2) * (dyg - dy1) = (y1 - y2) * (dxg - dx1) + t2 * (dyg - dy2) * (dxg - dx1)
+ => t2 * (dxg - dx2) * (dyg - dy1) - t2 * (dyg - dy2) * (dxg - dx1) = (y1 - y2) * (dxg - dx1) - (x1 - x2) * (dyg - dy1)
+ => t2 * ((dxg - dx2) * (dyg - dy1) - (dyg - dy2) * (dxg - dx1)) = (y1 - y2) * (dxg - dx1) - (x1 - x2) * (dyg - dy1)
+ => t2 = ((y1 - y2) * (dxg - dx1) - (x1 - x2) * (dyg - dy1))
+         / ((dxg - dx2) * (dyg - dy1) - (dyg - dy2) * (dxg - dx1))
+
+ Then plug that back into t1 = (y1 - y2 + t2 * (dyg - dy2))/(dyg - dy1) to get t1.
+ Then back into the other three for the xg, yg, and zg values.
+
+
+Okay. Fuck.. What do those numbers look like?
+First. I'll shift them to zeros, then shift them back. So that'll help
+Shifted:
+ X: [-150432080858325 to 332659576750811] (300) (483091657608837)
+DX: [-273 to 356] (211) (419)
+ Y: [-195967349377852 to 338361240124304] (300) (534328589501857)
+DY: [-930 to 706] (242) (1395)
+ Z: [-195308505192562 to 358065450705398] (300) (553373955897661)
+DZ: [-794 to 756] (237) (1314)
+
+Max int:  9223372036854775807 = 19 digits.
+
+y1-y2 can be -400000000000000 to 700000000000000
+dxg - dx1 would be -472500 to 160000
+Those two multiplied together are -1.89E20 to 1.12E20 which would overflow.
+So, let's use floats for this Should be a quick double check without the shift.
+
+
+
+zg = z1 + t1*(dz1 - dzg)
+t1*(dz1 - dzg) = zg - z1
+dz1 - dzg = (zg - z1) / t1
+dzg - dz1 = (z1 - zg) / t1
+dzg = (z1 - zg) / t1 + dz1
+
+
+
+
+974958687558326 is too high. So I've got more work to do. :/
+Also, the example doesn't work.
+
+
+God dammit.
+
+Okay. The lines (x1, y1, z1) + t * (dx1, dy1, dz1) = 0 and (x1, y1, z1) + t * (dx1, dy1, dz1) = 0 intersect at
+.. I can cheat since I know both t values are equal.
+
+x1 + t*dx1 = 0
+y1 + t*dy1 = 0
+z1 + t*dz1 = 0
+
+
+L1 = [x1, y1, z1] + t1[dx1, dy1, dz1]
+L2 = [x2, y2, z2] + t2[dx2, dy2, dz2]
+
+Set them equal:
+[x1+t1*dx1, y1+t1*dy1, z1+t1*dz1] = [x2+t2*dx2, y2+t2*dy2, z2+t2*dz2]
+
+Given (x1, y1, z1) and (x2, y2, z2) what is the d for each.
+
+Using 1 as the primary point.
+dx = (x2 - x1)
+
+
+
+
+
+Checking if a line contains a point.
+Oh. heh. I can cheat because I have the time?
+
+(x3 - x1) / dx = (y3 - y1) / dy = (z3 - z1) / dz
+
+
+God dammit. I don't know why I thought t1 needed to equal t2.
+No wonder nothing's working.
+
+So, we have a whole bunch of
+
+For the guess line:
+xngt = xg + dxg*tng
+yngt = yg + dyg*tng
+zngt = zg + dzg*tng
+
+For each line, we have
+xnt = xn + dxn*tn
+ynt = yn + dyn*tn
+znt = zn + dzn*tn
+xnt = xngt
+ynt = yngt
+znt = zngt
+tn = tng
+
+
+
+So, for each line, we have
+xn + dxn*tn = xg + dxg*tn
+yn + dyn*tn = yg + dyg*tn
+zn + dzn*tn = zg + dzg*tn
+
+So for the first line:
+x1 + dx1*t1 = xg + dxg*t1   (1)
+y1 + dy1*t1 = yg + dyg*t1   (2)
+z1 + dz1*t1 = zg + dzg*t1   (3)
+3 equations, 7 unknowns: xg, dxg, yg, dyg, zg, dzg, t1
+
+2nd line:
+x2 + dx2*t2 = xg + dxg*t2   (4)
+y2 + dy2*t2 = yg + dyg*t2   (5)
+z2 + dz2*t2 = zg + dzg*t2   (6)
+6 equations, 8 unknowns: xg, dxg, yg, dyg, zg, dzg, t1, t2
+
+Plus the third:
+x3 + dx3*t3 = xg + dxg*t3   (7)
+y3 + dy3*t3 = yg + dyg*t3   (8)
+z3 + dz3*t3 = zg + dzg*t3   (9)
+9 equations 9 unknowns: xg, dxg, yg, dyg, zg, dzg, t1, t2, t3
+
+That *should* be enough.
+
+Let's rework each to equal a different variable.
+x1 + dx1*t1 = xg + dxg*t1       (1)
+xg = x1 + (dx1 - dxg) * t1      (1')
+
+y1 + dy1*t1 = yg + dyg*t1       (2)
+dyg = y1/t1 - yg/t1 + dy1       (2')
+
+z1 + dz1*t1 = zg + dzg*t1       (3)
+t1 = (zg - z1) / (dz1 - dzg)    (3')
+
+
+x2 + dx2*t2 = xg + dxg*t2       (4)
+dxg = x2/t2 - xg/t2 + dx2       (4')
+
+y2 + dy2*t2 = yg + dyg*t2       (5)
+t2 = (yg - y2) / (dy2 - dyg)    (5')
+
+z2 + dz2*t2 = zg + dzg*t2       (6)
+zg = z2 + (dz2 - dzg) * t2      (6')
+
+
+x3 + dx3*t3 = xg + dxg*t3       (7)
+t3 = (xg - x3) / (dx3 - dxg)    (7')
+
+y3 + dy3*t3 = yg + dyg*t3       (8)
+yg = y3 + (dy3 - dyg) * t3      (8')
+
+z3 + dz3*t3 = zg + dzg*t3       (9)
+dzg = z3/t3 - zg/t3 + dz3       (9')
+
+
+Just the new forms:
+xg = x1 + (dx1 - dxg) *t1       (1')
+dyg = y1/t1 - yg/t1 + dy1       (2')
+t1 = (zg - z1) / (dz1 - dzg)    (3')
+dxg = (x2 - xg + dx2*t2) / t2   (4')
+t2 = (yg - y2) / (dy2 - dyg)    (5')
+zg = z2 + (dz2 - dzg) * t2      (6')
+t3 = (xg - x3) / (dx3 - dxg)    (7')
+yg = y3 + (dy3 - dyg) * t3      (8')
+dzg = z3/t3 - zg/t3 + dz3       (9')
+
+
+Different order.
+t1 = (zg - z1) / (dz1 - dzg)    (3')
+t2 = (yg - y2) / (dy2 - dyg)    (5')
+t3 = (xg - x3) / (dx3 - dxg)    (7')
+xg = x1 + (dx1 - dxg) * t1      (1')
+yg = y3 + (dy3 - dyg) * t3      (8')
+zg = z2 + (dz2 - dzg) * t2      (6')
+dxg = x2/t2 - xg/t2 + dx2       (4')
+dyg = y1/t1 - yg/t1 + dy1       (2')
+dzg = z3/t3 - zg/t3 + dz3       (9')
+
+The order I feel like applying them.
+dxg = x2/t2 - xg/t2 + dx2       (4')
+t3 = (xg - x3) / (dx3 - dxg)    (7')
+yg = y3 + (dy3 - dyg) * t3      (8')
+dyg = y1/t1 - yg/t1 + dy1       (2')
+t2 = (yg - y2) / (dy2 - dyg)    (5')
+zg = z2 + (dz2 - dzg) * t2      (6')
+dzg = z3/t3 - zg/t3 + dz3       (9')
+t1 = (zg - z1) / (dz1 - dzg)    (3')
+xg = x1 + (dx1 - dxg) * t1      (1')
+
+
+(4') into (7')
+t3 = (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2)
+Into (8')
+yg = y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2)
+Into (2')
+dyg = y1/t1 - (y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2))/t1 + dy1
+Into (5')
+t2 = (yg - y2) / (dy2 - (y1/t1 - (y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2))/t1 + dy1))
+t2 = (yg - y2) / (dy2 - y1/t1 + (y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2))/t1 + dy1)
+Into (6')
+zg = z2 + (dz2 - dzg) * (yg - y2) / (dy2 - y1/t1 + (y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2))/t1 + dy1)
+Into (9')
+dzg = z3/t3 - (z2 + (dz2 - dzg) * (yg - y2) / (dy2 - y1/t1 + (y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2))/t1 + dy1))/t3 + dz3
+Into (3')
+t1 = (zg - z1) / (dz1 - (z3/t3 - (z2 + (dz2 - dzg) * (yg - y2) / (dy2 - y1/t1 + (y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2))/t1 + dy1))/t3 + dz3))
+And finally, into (1')
+xg = x1 + (dx1 - dxg) * ((zg - z1) / (dz1 - (z3/t3 - (z2 + (dz2 - dzg) * (yg - y2) / (dy2 - y1/t1 + (y3 + (dy3 - dyg) * (xg - x3) / (dx3 - x2/t2 - xg/t2 + dx2))/t1 + dy1))/t3 + dz3)))
+
+Well fuck. Didn't do that right....
+Well
+
+The order I feel like applying them.
+dxg = x2/t2 - xg/t2 + dx2       (4')
+t3 = (xg - x3) / (dx3 - dxg)    (7')
+yg = y3 + (dy3 - dyg) * t3      (8')
+dyg = y1/t1 - yg/t1 + dy1       (2')
+t2 = (yg - y2) / (dy2 - dyg)    (5')
+zg = z2 + (dz2 - dzg) * t2      (6')
+dzg = z3/t3 - zg/t3 + dz3       (9')
+t1 = (zg - z1) / (dz1 - dzg)    (3')
+xg = x1 + (dx1 - dxg) * t1      (1')
+
+Trying again.
+(4') into (7')
+t3 = (xg - x3) / (dx3 - (xg - x3) / (dx3 - dxg))
+t3 = (xg - x3) / (dx3 + (x3 - xg) / (dx3 - dxg))
+Bringing in (8')
+yg = y3 + (dy3 - dyg) * (xg - x3) / (dx3 + (x3 - xg) / (dx3 - dxg))
+Bringing in (2')
+dyg = y1/t1 - (y3 + (dy3 - dyg) * (xg - x3) / (dx3 + (x3 - xg) / (dx3 - dxg)))/t1 + dy1
+dyg = y1/t1 - y3/t1 - (dy3 - dyg) * (xg - x3) / (dx3 + (x3 - xg) / (dx3 - dxg)) / t1 + dy1
+dyg = dy1 + y1/t1 - y3/t1 - (dy3 - dyg) * (xg - x3) / (dx3/t1 + (x3 - xg) / (t1 * (dx3 - dxg)))
+
+
+dx3 + (x3 - xg) / (t1 * (dx3 - dxg))
+
+Fuck it. It's not going to work that way.
+
+
+
+
+Maybe doing it with each dimension first.
+x1 + dx1*t1 = xg + dxg*t1   (1)
+x2 + dx2*t2 = xg + dxg*t2   (4)
+x3 + dx3*t3 = xg + dxg*t3   (7)
+y1 + dy1*t1 = yg + dyg*t1   (2)
+y2 + dy2*t2 = yg + dyg*t2   (5)
+y3 + dy3*t3 = yg + dyg*t3   (8)
+z1 + dz1*t1 = zg + dzg*t1   (3)
+z2 + dz2*t2 = zg + dzg*t2   (6)
+z3 + dz3*t3 = zg + dzg*t3   (9)
+
+x1 - xg + (dx1 - dxg) * t1 = 0
+x2 - xg + (dx2 - dxg) * t2 = 0
+x3 - xg + (dx3 - dxg) * t3 = 0
+
+
+
+
+
+
+X: 159153037374406.999984741210937500000000000000 is not an integer.
+Y: 228139153674672.000030517578125000000000000000 is not an integer.
+Z: 170451316297299.999969482421875000000000000000 is not an integer.
+Rock: (159153037374406,228139153674672,170451316297299)+(245,75,221)
+
+
+
+
+
+
+
+
+
+
+
+
+
