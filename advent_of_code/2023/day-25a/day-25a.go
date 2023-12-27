@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/heap"
 	"errors"
 	"fmt"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"time"
 )
 
-const DEFAULT_COUNT = 0
+const DEFAULT_COUNT = -1
 
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
@@ -23,22 +24,426 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
+	var graph *Graph
 	if params.HasCustom("cut") {
-		var graph *Graph
 		graph, err = CustomCut(input.Graph, params)
-		if err != nil {
-			return "", err
-		}
-		Stdoutf("After Cut:\n%s", graph)
-		return "STOPPED", nil
+	} else {
+		graph = FindAndCut(input.Graph, params)
 	}
-	// TODO: Solve the problem!
-	answer := -999999999999999999
+	if err != nil {
+		return "", err
+	}
+	Debugf("After Cut:\n%s", graph)
+	counts := CountGroups(graph, params)
+	Debugf("Group counts: %v", counts)
+	answer := MulInts(counts)
 	return fmt.Sprintf("%d", answer), nil
 }
 
+func FindAndCut(graph *Graph, params *Params) *Graph {
+	cutsLeft := 3
+	for cutsLeft > 0 {
+		cuts := FindCuts(graph, cutsLeft, params)
+		Debugf("Cuts: %s", SliceToStrings(cuts))
+		if len(cuts) == 0 {
+			return graph
+		}
+		for _, cut := range cuts {
+			params.Verbosef("Making cut: %s", cut)
+			graph.CutConnection(cut)
+			cutsLeft--
+		}
+	}
+	return graph
+}
+
+func FindCuts(graph *Graph, cutsLeft int, params *Params) []*GraphEdge {
+	minMax := 4
+	if params.InputFile != DEFAULT_INPUT_FILE {
+		minMax = 6
+	}
+	names := MapSlice(graph.GetNodes(), (*GraphNode).GetName)
+	var paths [][]*GraphEdge
+	i := 0
+	di := 1
+	for {
+		j := (i + di) % len(names)
+		path := FindPath(graph, names[i], names[j], params)
+		if path == nil {
+			panic(fmt.Errorf("no path found from %s to %s", names[i], names[j]))
+		}
+		if len(path) >= 3 {
+			edges := PathToEdges(path)
+			if len(edges) != len(path)-1 {
+				panic(fmt.Errorf("could not convert path [%s] to edges [%s]",
+					strings.Join(SliceToStrings(path), " : "),
+					strings.Join(SliceToStrings(edges), " : ")))
+			}
+			paths = append(paths, edges)
+		}
+		if len(paths) >= 4 {
+			rv := GetMostCommonEdges(paths, minMax)
+			if debug {
+				Stderrf("Paths: %d, Most Common Edges (%d): %s",
+					len(paths), len(rv), strings.Join(SliceToStrings(rv), ", "))
+			}
+			if len(rv) > 0 && len(rv) <= cutsLeft {
+				return rv
+			}
+		}
+		i++
+		if i >= len(names) {
+			i = 0
+			di++
+		}
+	}
+}
+
+func GetMostCommonEdges(paths [][]*GraphEdge, minMax int) []*GraphEdge {
+	keyer := func(edge *GraphEdge) string {
+		a, b := OrderStrings(edge.A.Name, edge.B.Name)
+		return fmt.Sprintf("%s-%s", a, b)
+	}
+
+	counts := make(map[string]int)
+	edgeMap := make(map[string]*GraphEdge)
+	for _, path := range paths {
+		// if debug {
+		//	Stderrf("Counting edges: %s", SliceToStrings(path))
+		// }
+		for _, edge := range path {
+			// Debugf("Counting: %s", edge)
+			key := keyer(edge)
+			counts[key]++
+			edgeMap[key] = edge
+		}
+	}
+
+	Debugf("Counts: %v", counts)
+
+	var max int
+	var maxes []*GraphEdge
+	for key, count := range counts {
+		switch {
+		case count > max:
+			max = count
+			maxes = []*GraphEdge{edgeMap[key]}
+		case count == max:
+			maxes = append(maxes, edgeMap[key])
+		}
+	}
+
+	if max < minMax {
+		Debugf("Max Count %d is less than %d", max, minMax)
+		return nil
+	}
+
+	return maxes
+}
+
+func PathToEdges(path []*GraphNode) []*GraphEdge {
+	var rv []*GraphEdge
+	for i := 0; i < len(path)-1; i++ {
+		edge := path[i].GetEdge(path[i+1].Name)
+		if edge == nil {
+			panic(fmt.Errorf("path has no edge from [%d]: %s to [%d] %s", i, path[i], i+1, path[i+1].Name))
+		}
+		rv = append(rv, edge)
+	}
+	return rv
+}
+
+func MulInts(vals []int) int {
+	rv := 1
+	for _, v := range vals {
+		rv *= v
+	}
+	return rv
+}
+
+func FindPath(graph *Graph, from, to string, params *Params) []*GraphNode {
+	// defer FuncEnding(FuncStarting())
+	finder := NewPathFinder(graph, from, to)
+	finder.FindSolution(params)
+	if debug {
+		Debugf("Path from %s to %s: %s", from, to, strings.Join(MapSlice(finder.Solution, (*GraphNode).GetName), " "))
+	}
+	return finder.Solution
+}
+
+type PathFinder struct {
+	Graph     *Graph
+	From      string
+	To        string
+	Unvisited PriorityQueue
+	Visited   map[string]*PathNode
+	Last      *PathNode
+	Solution  []*GraphNode
+}
+
+func NewPathFinder(graph *Graph, from, to string) *PathFinder {
+	node := graph.Get(from)
+	if node == nil {
+		panic(fmt.Errorf("node %q does not exist", from))
+	}
+	rv := &PathFinder{
+		Graph:     graph,
+		From:      from,
+		To:        to,
+		Unvisited: make(PriorityQueue, 0, 100),
+		Visited:   make(map[string]*PathNode),
+	}
+	rv.Unvisited.Push(NewPathNode(node, nil))
+	// Debugf("Initializing Solver: %s", rv)
+	heap.Init(&rv.Unvisited)
+	return rv
+}
+
+func (f PathFinder) String() string {
+	solution := "<nil>"
+	if f.Solution != nil {
+		solution = fmt.Sprintf("(%d):\n%s", len(f.Solution), StringNumberJoin(f.Solution, 0, "\n"))
+	}
+	return fmt.Sprintf("%s to %s:\nUnvisited: %d\nVisited: %d\nLast: %s\nSolution: %s",
+		f.From, f.To, len(f.Unvisited), len(f.Visited), f.Last, solution)
+}
+
+func (f PathFinder) IsDone() bool {
+	return f.Solution != nil || len(f.Unvisited) == 0
+}
+
+func (f *PathFinder) FindSolution(params *Params) {
+	// defer FuncEnding(FuncStarting())
+	i := 0
+	for !f.IsDone() {
+		i++
+		f.CalculateNext()
+		if params.Verbose && i%1_000_000 == 0 {
+			Stderrf("Calculated %d million moves.\nPathFinder:%s", i/1_000_000, f)
+		}
+	}
+}
+
+func (f *PathFinder) CalculateNext() {
+	keyNode := heap.Pop(&f.Unvisited).(*PathNode) //nolint:forcetypeassert // want panic here.
+	// Debugf("Key Node: %s", keyNode)
+	// Debugf("Path Finder: %s", f)
+	f.Last = keyNode
+	f.Visited[keyNode.Name] = keyNode
+
+	keyEdges := keyNode.GetEdges()
+	for _, edge := range keyEdges {
+		if edge.A.Name == f.To {
+			f.Solution = MapSlice(keyNode.GetPath(), (*PathNode).GetGraphNode)
+			f.Solution = append(f.Solution, edge.A)
+			return
+		}
+		if edge.B.Name == f.To {
+			f.Solution = MapSlice(keyNode.GetPath(), (*PathNode).GetGraphNode)
+			f.Solution = append(f.Solution, edge.B)
+			return
+		}
+		if f.Visited[edge.A.Name] == nil {
+			pn := NewPathNode(edge.A, keyNode)
+			heap.Push(&f.Unvisited, pn)
+		}
+		if f.Visited[edge.B.Name] == nil {
+			pn := NewPathNode(edge.B, keyNode)
+			heap.Push(&f.Unvisited, pn)
+		}
+	}
+}
+
+type PriorityQueue []*PathNode
+
+func (q PriorityQueue) String() string {
+	return strings.Join(SliceToStrings(q), "\n")
+}
+
+func (q PriorityQueue) Len() int {
+	return len(q)
+}
+
+func (q PriorityQueue) Less(i, j int) bool {
+	if q[i].Length != q[j].Length {
+		return q[i].Length < q[j].Length
+	}
+	return q[i].Name < q[j].Name
+}
+
+func (q PriorityQueue) Swap(i, j int) {
+	q[i], q[j] = q[j], q[i]
+	q[i].Index = i
+	q[j].Index = j
+}
+
+func (q *PriorityQueue) Push(x interface{}) {
+	node := x.(*PathNode) //nolint:forcetypeassert // want panic here.
+	node.Index = len(*q)
+	*q = append(*q, node)
+}
+
+func (q *PriorityQueue) Pop() interface{} {
+	old := *q
+	n := len(old)
+	node := old[n-1]
+	old[n-1] = nil  // avoid memory leak
+	node.Index = -1 // for safety
+	*q = old[0 : n-1]
+	return node
+}
+
+func (q *PriorityQueue) Update(node *PathNode, prev *PathNode) {
+	node.Length = prev.Length + 1
+	node.Prev = prev
+	heap.Fix(q, node.Index)
+}
+
+type PathNode struct {
+	GraphNode
+	Prev   *PathNode
+	Length int
+	Index  int
+}
+
+func NewPathNode(node *GraphNode, prev *PathNode) *PathNode {
+	rv := &PathNode{GraphNode: *node, Length: 1, Index: -1}
+	if prev != nil {
+		rv.Prev = prev
+		rv.Length = prev.Length + 1
+	}
+	return rv
+}
+
+func (p PathNode) String() string {
+	prev := "<nil>"
+	if p.Prev != nil {
+		prev = p.Prev.Name
+	}
+	return fmt.Sprintf("[%d]: (%d) %s From %s", p.Index, p.Length, p.GraphNode, prev)
+}
+
+func (p PathNode) GetLength() int {
+	return p.Length
+}
+
+func (p PathNode) GetPath() []*PathNode {
+	rv := make([]*PathNode, 1, p.Length)
+	cur := &p
+	rv[0] = cur
+	for cur.Prev != nil {
+		cur = cur.Prev
+		rv = append(rv, cur)
+	}
+	slices.Reverse(rv)
+	return rv
+}
+
+func (p PathNode) GetGraphNode() *GraphNode {
+	return &p.GraphNode
+}
+
+type NodeGroup map[string]*GraphNode
+
+func NewNodeGroup() NodeGroup {
+	return make(NodeGroup)
+}
+
+func (g NodeGroup) String() string {
+	return strings.Join(StringKeys(g), " ")
+}
+
+func (g NodeGroup) Add(node *GraphNode) {
+	g[node.Name] = node
+}
+
+func (g NodeGroup) AddAll(group NodeGroup) {
+	for k, v := range group {
+		g[k] = v
+	}
+}
+
+func (g NodeGroup) Has(node *GraphNode) bool {
+	return g[node.Name] != nil
+}
+
+func (g NodeGroup) HasOneOf(nodes []*GraphNode) bool {
+	for _, node := range nodes {
+		if g.Has(node) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g NodeGroup) GetNodes() []*GraphNode {
+	return OrderedVals(g)
+}
+
+func (g NodeGroup) Count() int {
+	return len(g)
+}
+
+func CountGroups(graph *Graph, params *Params) []int {
+	groupMap := make(map[string]NodeGroup)
+	var groups []NodeGroup
+	allNodes := graph.GetNodes()
+	for _, node := range allNodes {
+		var nodeGroups []NodeGroup
+		for _, edge := range node.GetEdges() {
+			if group := groupMap[edge.A.Name]; group != nil {
+				nodeGroups = append(nodeGroups, group)
+			}
+			if group := groupMap[edge.B.Name]; group != nil {
+				nodeGroups = append(nodeGroups, group)
+			}
+		}
+		var group NodeGroup
+		switch len(nodeGroups) {
+		case 0:
+			group = NewNodeGroup()
+			groups = append(groups, group)
+		case 1:
+			group = nodeGroups[0]
+		default:
+			group = NewNodeGroup()
+			for _, subGroup := range nodeGroups {
+				for name, subNode := range subGroup {
+					group.Add(subNode)
+					groupMap[name] = group
+				}
+			}
+			var newGroups []NodeGroup
+			newGroupNodes := group.GetNodes()
+			for _, oldGroup := range groups {
+				if !oldGroup.HasOneOf(newGroupNodes) {
+					newGroups = append(newGroups, oldGroup)
+				}
+			}
+			newGroups = append(newGroups, group)
+			groups = newGroups
+		}
+		group.Add(node)
+		groupMap[node.Name] = group
+	}
+
+	if params.Verbose {
+		Stdoutf("Node Groups (%d):\n%s", len(groups), StringNumberJoin(groups, 1, "\n"))
+	}
+
+	return MapSlice(groups, NodeGroup.Count)
+}
+
+func CombineGroups(groups []NodeGroup) NodeGroup {
+	rv := NewNodeGroup()
+	for _, group := range groups {
+		rv.AddAll(group)
+	}
+	return rv
+}
+
 func CustomCut(graph *Graph, params *Params) (*Graph, error) {
-	var cuts []*GraphEdge
+	cuts := make([]*GraphEdge, 0, len(params.Custom)-1)
 	inCut := false
 	for _, custom := range params.Custom {
 		if custom == "cut" {
@@ -238,6 +643,10 @@ func (n GraphNode) String() string {
 	return fmt.Sprintf("%s: %s", n.Name, strings.Join(StringKeys(n.Edges), " "))
 }
 
+func (n GraphNode) GetName() string {
+	return n.Name
+}
+
 func (n *GraphNode) AddEdge(edge *GraphEdge) {
 	if n.Edges == nil {
 		n.Edges = make(map[string]*GraphEdge)
@@ -302,6 +711,13 @@ func (e *GraphEdge) Equal(e2 *GraphEdge) bool {
 
 func (e GraphEdge) GetNames() []string {
 	return []string{e.A.Name, e.B.Name}
+}
+
+func OrderStrings(a, b string) (string, string) {
+	if a < b {
+		return a, b
+	}
+	return b, a
 }
 
 type Input struct {
