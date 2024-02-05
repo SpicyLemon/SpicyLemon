@@ -56,7 +56,9 @@ unset sourced
 # e.g. HASH_PRICE_SOURCE=dlob && unset HASH_JQ_FILTER HASH_PRICE_URL && source get_hash_price.sh
 case "${HASH_PRICE_SOURCE:-yahoo}" in
     dlob)
-        HASH_PRICE_URL="${HASH_PRICE_URL:-https://www.dlob.io/aggregator/external/api/v1/order-books/pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g/daily-price}"
+        # nhash:cfigureomni = pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g
+        # nhash:cusd.deposit = pb1w6ul64t5fjcg65mmscec758dgyml6xmmw5fy2vyxxc9dhq3tmhusyzcj3r
+        HASH_PRICE_URL="${HASH_PRICE_URL:-https://www.dlob.io/aggregator/external/api/v1/order-books/pb1w6ul64t5fjcg65mmscec758dgyml6xmmw5fy2vyxxc9dhq3tmhusyzcj3r/daily-price}"
         HASH_JQ_FILTER="${HASH_JQ_FILTER:-.latestDisplayPricePerDisplayUnit}"
         ;;
     yahoo)
