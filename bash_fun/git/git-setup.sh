@@ -58,7 +58,7 @@ __git_do_setup () {
         'git_diff_analysis'        'git_diff_explorer'    'git_diff_next_file'      'git_fresh_branch'   'git_get_default_branch'
         'git_list_extra_branches'  'git_master_pull_all'  'git_merge_diff'          'git_next_file'      'git_pull_merge'
         'git_recolor_diff'         'git_remotes'          'git_set_default_branch'  'git_set_upstream'   'git_stats'
-        'in_git_folder'            'vi_next_file'
+        'in_git_folder'            'vi_next_file'         'git_commit_number'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
