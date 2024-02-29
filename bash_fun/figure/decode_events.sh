@@ -13,13 +13,17 @@
 # Usage: decode_events <tx json file>
 #    or: <stuff> | decode_events
 decode_events () {
+    local ec="$?"
     if [[ -n "$1" ]]; then
-        if [[ ( "$1" == 'help' || "$1" == '--help' || "$1" == '-h' ) ]]; then
-            printf 'Usage: decode_events <tx json file>  or <stuff> | decode_events\n'
+        if [[ "$1" == 'help' || "$1" == '--help' || "$1" == '-h' ]]; then
+            printf 'Usage: decode_events <tx json file>   or   <stuff> | decode_events\n'
             return 0
         fi
         cat "$1" | decode_events
         return $?
+    fi
+    if [[ "$ec" -ne '0' ]]; then
+        return "$ec"
     fi
     jq -r '.events|to_entries|.[]| (.key|tostring) + " " + .value.type + " " + (.value.attributes|to_entries|.[]| (.key|tostring) + " " + .value.key + " " + .value.value)' \
         | while read i1 i1t i2 key value; do
