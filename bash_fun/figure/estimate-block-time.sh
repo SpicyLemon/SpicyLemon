@@ -225,7 +225,7 @@ while [[ "$#" -gt '0' ]]; do
                 exit 1
             fi
             arg_from_height="$2"
-            args_blocks_back=''
+            arg_blocks_back=''
             shift
             ;;
         *)
@@ -354,6 +354,9 @@ current_time_disp="$( epoch_ms_to_date_time "$current_ms" )" || exit $?
 
 if [[ -z "$ms_per_block" ]]; then
     ensure_provd || exit $?
+    if [[ -n "$old_height" ]]; then
+        blocks_back="$(( current_height - old_height ))"
+    fi
     if [[ -z "$old_height" ]]; then
         if [[ -n "$desired_height" && -n "$use_default_blocks_back" && "$desired_height" -gt "$current_height" ]]; then
             blocks_back="$(( desired_height - current_height ))"
