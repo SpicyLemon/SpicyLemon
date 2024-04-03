@@ -11,32 +11,31 @@
 ) && sourced='YES' || sourced='NO'
 
 go_use () {
-    local v118 v119 v120 v121
+    local n118 v118 n120 v120 n121 v121
+    n118='1.18'
     v118='../Cellar/go@1.18/1.18.10/bin/go'
-    v119='../Cellar/go/1.19.6/bin/go'
+    n120='1.20'
     v120='/usr/local/go/bin/go' # 1.20.1
+    n121='1.21'
     v121='../Cellar/go/1.21.4/bin/go'
 
     local verbose listing which_go desired_link cur_link rv
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             -h|--help)
-                printf 'Usage: go_use {1.18|1.19|1.20|1.21|list} [-v|--verbose]\n'
+                printf 'Usage: go_use {%s|list} [-v|--verbose]\n' "$n118|$n120|$n121"
                 return 0
                 ;;
             -v|--verbose)
                 verbose=1
                 ;;
-            1.18|v1.18)
+            "$n118"|"v$n118")
                 desired_link="$v118"
                 ;;
-            1.19|v1.19)
-                desired_link="$v119"
-                ;;
-            1.20|v1.20)
+            "$n120"|"v$n120")
                 desired_link="$v120"
                 ;;
-            1.21|v1.21)
+            "$n121"|"v$n121")
                 desired_link="$v121"
                 ;;
             -l|--list|l|list)
@@ -68,9 +67,17 @@ go_use () {
     [[ "$verbose" ]] && printf '%q\n' "$cur_link"
 
     if [[ "$listing" ]]; then
+        local opts
+        opts=()
+        opts+=( "$( n="$n118"; v="$v118"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
+        opts+=( "$( n="$n120"; v="$v120"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
+        opts+=( "$( n="$n121"; v="$v121"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
+
         printf 'available versions:\n'
-        printf '  %s: %s\n' '1.18' "$v118" '1.19' "$v119" '1.20' "$v120" '1.21' "$v121"
-        printf 'Current: %s\n' "$cur_link"
+        printf '%b\n' "${opts[@]}"
+        if ! grep -qF '(current)' <<< "${opts[*]}" > /dev/null 2>&1; then
+            printf '\033[1mCurrent\033[0m: %s\n' "$cur_link"
+        fi
         return 0
     fi
 
