@@ -70,7 +70,7 @@ __generic_do_setup () {
         'echo_bad'               'echo_blue'       'echo_bold'          'echo_cyan'    'echo_debug'               'echo_error'
         'echo_good'              'echo_green'      'echo_info'          'echo_red'     'echo_success'             'echo_underline'
         'echo_warn'              'echo_yellow'     'hhr'                'hr'           'hr1'                      'hr11'
-        'hr3'                    'hr5'             'hr7'                'hr9'          'palette_vector_generate'  'palette_vector_no_wrap'
+        'hr3'                    'hr5'             'hr7'                'hr9'  'hrx'   'palette_vector_generate'  'palette_vector_no_wrap'
         'palette_vector_random'  'pick_a_palette'  'show_all_palettes'  'show_colors'  'test_palette'             'what_palette_was_that'
     )
 

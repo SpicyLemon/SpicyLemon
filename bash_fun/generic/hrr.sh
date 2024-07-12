@@ -13,6 +13,7 @@
 #   hr7  --------------------> Creates a 7-line horizontal rule in the terminal with a message in it.
 #   hr9  --------------------> Creates a 9-line horizontal rule in the terminal with a message in it.
 #   hr11  -------------------> Creates an 11-line horizontal rule in the terminal with a message in it.
+#   hrx  --------------------> Is a combination of all the hrs that uses flags for stuff.
 #   pick_a_palette  ---------> Sets the PALETTE environment variable if not already set.
 #   what_palette_was_that  --> Prints out the last palette that was used.
 #   show_all_palettes  ------> Uses hr1 to output all the different palettes available.
@@ -36,24 +37,38 @@ hr () {
     elif command -v "tput" > /dev/null 2>&1; then
         termwidth=$( tput cols )
     fi
-    pick_a_palette && unset_palette="Yup"
     available=$(( termwidth - ${#message} ))
-    piece_len=$(( available / ${#PALETTE[@]} / 2 ))
-    leftover=$(( available - piece_len * ${#PALETTE[@]} * 2 ))
+    if [[ -z "$HR_NO_COLOR" ]]; then
+        pick_a_palette && unset_palette="Yup"
+        piece_len=$(( available / ${#PALETTE[@]} / 2 ))
+        leftover=$(( available - piece_len * ${#PALETTE[@]} * 2 ))
+    else
+        piece_len=$(( available / 2 ))
+        leftover=$(( available - piece_len * 2 ))
+    fi
     char='#'
     block="$( printf '%0.1s' "$char"{1..500} )"
     section="${block:0:$piece_len}"
-    left_wing=''
-    right_wing=''
-    for c in ${PALETTE[@]}; do
+    if [[ -z "$HR_NO_COLOR" ]]; then
+        right_wing=''
+        left_wing=''
+        for c in ${PALETTE[@]}; do
+            [[ "$leftover" -le '0' ]] && char=''
+            right_wing="${right_wing}\033[38;5;${c}m${char}${section}\033[0m"
+            leftover=$(( leftover - 1 ))
+            [[ "$leftover" -le '0' ]] && char=''
+            left_wing="\033[38;5;${c}m${char}${section}\033[0m${left_wing}"
+            leftover=$(( leftover - 1 ))
+        done
+        printf '%b\033[38;5;15m%s\033[0m%b\n' "$left_wing" "$message" "$right_wing"
+    else
         [[ "$leftover" -le '0' ]] && char=''
-        right_wing="${right_wing}\033[38;5;${c}m${char}${section}\033[0m"
+        right_wing="${char}${section}"
         leftover=$(( leftover - 1 ))
         [[ "$leftover" -le '0' ]] && char=''
-        left_wing="\033[38;5;${c}m${char}${section}\033[0m${left_wing}"
-        leftover=$(( leftover - 1 ))
-    done
-    printf '%b\033[38;5;15m%s\033[0m%b\n' "$left_wing" "$message" "$right_wing"
+        left_wing="${char}${section}"
+        printf '%s%s%s\n' "$left_wing" "$message" "$right_wing"
+    fi
     [[ -n "$unset_palette" ]] && unset PALETTE
     return 0
 }
@@ -197,6 +212,103 @@ hr11 () {
     return 0
 }
 
+# Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--] <message>
+hrx () {
+    local n width color msg no_color
+    width=120
+    msg=()
+    if [[ "$#" -eq '0' ]]; then
+        set -- --help
+    fi
+    while [[ "$#" -gt '0' ]]; do
+        case "$1" in
+            --help|-h)
+                printf 'Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--] <message>\n'
+                printf '<n> => the hr height: 1, 3, 5, 7, 9, or 11.\n'
+                printf -- '--width <width> will output the hr using the provided width. Default is 120. Can be either "full" or a number.\n'
+                printf -- '--color will cause a random palette to be picked.\n'
+                printf -- '--no-color will output without picking a color palette. This is the default behavior.\n'
+                printf -- '--palette <number> will use the provided palette. Can be shortenned to --pal <number>\n'
+                printf 'All other args are treated as the message.\n'
+                printf 'Provide the message after -- if it contains one of the flags.\n'
+                return 0
+                ;;
+            --width|-w)
+                if [[ -z "$2" ]]; then
+                    printf 'No argument provided after the %s flag.\n' "$1"
+                    return 1
+                fi
+                if [[ "$2" == 'full' ]]; then
+                    width=''
+                elif [[ "$2" =~ ^[[:digit:]]+$ ]]; then
+                    width="$2"
+                else
+                    printf 'Invalid %s: [%s]. Must be either "full" or only digits.\n'
+                    return 1
+                fi
+                shift
+                ;;
+            --color|-c)
+                color="YES"
+                ;;
+            --no-color)
+                color=''
+                ;;
+            --palette|--pal|-p)
+                if [[ -z "$2" ]]; then
+                    printf 'No argument provided after the %s flag.\n' "$1"
+                    return 1
+                fi
+                if [[ "$2" =~ [^[:digit:]] ]]; then
+                    printf 'Invalid %s value: [%s]. Must only contain digits.\n' "$1" "$2"
+                    return 1
+                fi
+                color="$2"
+                shift
+                ;;
+            --)
+                if [[ -n "${msg[*]}" ]]; then
+                    printf 'Unknown argments: %s\n' "${msg[*]}"
+                    return 1
+                fi
+                shift
+                break
+                ;;
+            *)
+                if [[ -z "$n" ]]; then
+                    if [[ "$1" -ne '1' && "$1" -ne '3' && "$1" -ne '5' && "$1" -ne '7' && "$1" -ne '9' && "$1" -ne '11' ]]; then
+                        printf 'Invalid height number [%s]. Must be one of 1, 3, 5, 7, 9, or 11.\n' "$1"
+                        return 1
+                    fi
+                    n="$1"
+                else
+                    msg+=( "$1" )
+                fi
+                ;;
+        esac
+        shift
+    done
+
+    if [[ -n "$*" ]]; then
+        msg+=( "$@" )
+    fi
+
+    if [[ -n "$color" ]]; then
+        if [[ "$color" == 'YES' ]]; then
+            pick_a_palette && unset_palette="Yup"
+        else
+            pick_a_palette "$color" && unset_palette="Yup"
+        fi
+        no_color=''
+    else
+        no_color='1'
+    fi
+
+    HR_WIDTH="$width" HR_NO_COLOR="$no_color" "hr$n" "${msg[@]}"
+
+    [[ -n "$unset_palette" ]] && unset PALETTE
+}
+
 # Usage: pick_a_palette [<choice>]
 # Sets the PALETTE environment variable if it's not already set.
 # An exit code of 0 means it has not been set yet, and you are in charge of unsetting it later.
@@ -208,6 +320,9 @@ hr11 () {
 #   then random numbers will be picked for the palette.
 # If not provided, a <choice> will be chosen randomly.
 pick_a_palette () {
+    if [[ -n "$HR_NO_COLOR" ]]; then
+        return 1
+    fi
     if [[ -n "$1" || -z "${PALETTE+x}" ]]; then
         local choice
         if command -v palette_vector_no_wrap > /dev/null 2>&1; then

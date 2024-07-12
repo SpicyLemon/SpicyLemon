@@ -481,12 +481,16 @@ If you source the `hrr.sh` file, the following functions become available:
 - `hr7`: Displays 7 lines containing a message on the middle one (if provided).
 - `hr9`: Displays 9 lines containing a message on the middle one (if provided).
 - `hr11`: Displays 11 lines containing a message on the middle one (if provided).
+- `hrx`: A combination of all the hrs that uses flags for stuff.
 - `pick_a_palette`: If a palette has not already been set, it will pick a random one.
 - `what_palette_was_that`: Outputs the color codes of the palette most previously used.
 - `show_all_palettes`: Loops through all palette options and uses hr to display a message with them.
 - `test_palette`: Outputs each of the various hr heights using the provided palette and optional message.
 
 The width is determined using `tput` to get your terminal width, or if that's not available, it defaults to `80`.
+Or, you can set your own width by setting the `HR_WIDTH` environment variable to the desired width.
+
+By default, a random color palette will be used. To not use color, set the `HR_NO_COLOR` environment variable to something other than an empty string.
 
 Example Usage:
 ```console
