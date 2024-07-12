@@ -65,6 +65,10 @@ case "${HASH_PRICE_SOURCE:-yahoo}" in
         HASH_PRICE_URL="${HASH_PRICE_URL:-https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,shortName,regularMarketPrice&symbols=HASH1-USD}"
         HASH_JQ_FILTER="${HASH_JQ_FILTER:-.quoteResponse.result[0].regularMarketPrice}"
         ;;
+    figure)
+        HASH_PRICE_URL="${HASH_PRICE_URL:-https://figuremarkets.com/service-hft-exchange/api/v1/markets/HASH-USD}"
+        HASH_JQ_FILTER="${HASH_JQ_FILTER:-.lastTradedPrice}"
+        ;;
     custom)
         # This option exists as a way to suppress the complaints about a wrong HASH_PRICE_SOURCE or missing env vars.
         # There's nothing to actually set for it though.
