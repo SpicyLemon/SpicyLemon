@@ -54,20 +54,26 @@ unset sourced
 # If set to 'custom', HASH_PRICE_URL and HASH_JQ_FILTER aren't set and warnings about missing env vars is suppressed.
 # That means re-sourcing this file will not change them unless they're unset first,
 # e.g. HASH_PRICE_SOURCE=dlob && unset HASH_JQ_FILTER HASH_PRICE_URL && source get_hash_price.sh
-case "${HASH_PRICE_SOURCE:-yahoo}" in
+case "${HASH_PRICE_SOURCE:-osmosis}" in
     dlob)
+        # Do Not Use: Last I knew, this one was not available anymore.
         # nhash:cfigureomni = pb18vd8fpwxzck93qlwghaj6arh4p7c5n894vnu5g
         # nhash:cusd.deposit = pb1w6ul64t5fjcg65mmscec758dgyml6xmmw5fy2vyxxc9dhq3tmhusyzcj3r
         HASH_PRICE_URL="${HASH_PRICE_URL:-https://www.dlob.io/aggregator/external/api/v1/order-books/pb1w6ul64t5fjcg65mmscec758dgyml6xmmw5fy2vyxxc9dhq3tmhusyzcj3r/daily-price}"
         HASH_JQ_FILTER="${HASH_JQ_FILTER:-.latestDisplayPricePerDisplayUnit}"
         ;;
     yahoo)
+        # Do Not Use: Last I knew, this one was not available anymore.
         HASH_PRICE_URL="${HASH_PRICE_URL:-https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&fields=symbol,shortName,regularMarketPrice&symbols=HASH1-USD}"
         HASH_JQ_FILTER="${HASH_JQ_FILTER:-.quoteResponse.result[0].regularMarketPrice}"
         ;;
     figure)
         HASH_PRICE_URL="${HASH_PRICE_URL:-https://figuremarkets.com/service-hft-exchange/api/v1/markets/HASH-USD}"
         HASH_JQ_FILTER="${HASH_JQ_FILTER:-.lastTradedPrice}"
+        ;;
+    osmosis)
+        HASH_PRICE_URL="${HASH_PRICE_URL:-https://api-osmosis.imperator.co/tokens/v2/price/HASH}"
+        HASH_JQ_FILTER="${HASH_JQ_FILTER:-.price}"
         ;;
     custom)
         # This option exists as a way to suppress the complaints about a wrong HASH_PRICE_SOURCE or missing env vars.
