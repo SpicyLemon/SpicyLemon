@@ -307,6 +307,7 @@ hrx () {
     HR_WIDTH="$width" HR_NO_COLOR="$no_color" "hr$n" "${msg[@]}"
 
     [[ -n "$unset_palette" ]] && unset PALETTE
+    return 0
 }
 
 # Usage: pick_a_palette [<choice>]
