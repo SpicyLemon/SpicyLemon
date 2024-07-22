@@ -133,9 +133,9 @@ epoch_ms_to_date_time () {
     ms="$1"
     s="$(( ms / 1000 ))" || return $?
     if [[ -n "$use_gnu_date" ]]; then
-        rv="$( date -d "@$s" +'%F %T %z' )" || return $?
+        rv="$( date -d "@$s" +'%a %F %T %z (%Z)' )" || return $?
     else
-        rv="$( date -j -f '%s' "$s" +'%F %T %z' )" || return $?
+        rv="$( date -j -f '%s' "$s" +'%a %F %T %z (%Z)' )" || return $?
     fi
     printf '%s' "$rv"
     return 0
@@ -389,7 +389,6 @@ if [[ -n "$provd_used" ]]; then
     ec=$?
     if [[ "$ec" -eq '0' ]]; then
         [[ -n "$verbose" ]] && printf 'Done\n' >&2
-        moniker="$( grep '^moniker=' <<< "$config_all" | sed 's/^moniker="//; s/"$//;' )"
         chain_id="$( grep '^chain-id=' <<< "$config_all" | sed 's/^chain-id="//; s/"$//;' )"
     else
         [[ -n "$verbose" ]] && printf 'Failed with code %s.\n%s' "$ec" "$config_all" >&2
@@ -456,7 +455,6 @@ fi
 
 [[ -n "$pio_home" ]] && printf 'PIO Home: %s\n' "$pio_home"
 [[ -n "$chain_id" ]] && printf 'Chain-Id: %s\n' "$chain_id"
-[[ -n "$moniker" ]] && printf 'Moniker: %s\n' "$moniker"
 printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
 printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
 printf 'Elapsed milliseconds: %s = %s blocks (at %s milliseconds per block from last %s blocks).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back"
