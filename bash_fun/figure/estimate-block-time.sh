@@ -68,6 +68,13 @@ Usage: $fn [<options>] <desired date time>
         The <milliseconds> must be digits only, e.g. '5000' (for 5 seconds).
         If not supplied, a previous block will be looked up using provenanced,
         and the average from there to the current block is used.
+        Cannot be provided along with --us-per-block.
+
+    --us-per-block <microseconds> is the number of microseconds it takes to create an average block.
+        The <microseconds> must be digits only, e.g. '5000' (for 5 seconds).
+        If not supplied, a previous block will be looked up using provenanced,
+        and the average from there to the current block is used.
+        Cannot be provided along with --ms-per-block.
 
     --blocks-back <number> sets the number of blocks back to go to estimate ms-per-block.
         If both --blocks-back and --from-height are provided, the last one is used.
@@ -141,6 +148,12 @@ epoch_ms_to_date_time () {
     return 0
 }
 
+# Usage: micro_to_milli <microseconds>
+# Converts the microseconds to milliseconds.
+micro_to_milli () {
+    sed -E 's/^(.)$/000\1/; s/^(..)$/00\1/; s/^(...)$/0\1/; s/^(.*)(...)$/\1.\2/' <<< "$1"
+}
+
 ensure_provd () {
     if [[ -z "$PROVD" ]]; then
         if ! command -v provenanced > /dev/null 2>&1; then
@@ -192,6 +205,14 @@ while [[ "$#" -gt '0' ]]; do
                 exit 1
             fi
             arg_ms_per_block="$2"
+            shift
+            ;;
+        --us-per-block|--microseconds-per-block)
+            if [[ -z "$2" ]]; then
+                printf 'No <microseconds> provided after %s flag.\n' "$1" >&2
+                exit 1
+            fi
+            arg_us_per_block="$2"
             shift
             ;;
         --blocks_back|--blocks-back)
@@ -298,13 +319,29 @@ if [[ -n "$arg_current_time" ]]; then
     fi
 fi
 
+if [[ -n "$arg_ms_per_block" && -n "$arg_us_per_block" ]]; then
+    printf 'Cannot provide both milliseconds and microseconds per block.\n'
+    exit 1
+fi
+
 if [[ -n "$arg_ms_per_block" ]]; then
     if [[ "$arg_ms_per_block" =~ [^[:digit:]] ]]; then
         printf 'Invalid <milliseconds>: [%s]. Must only contain digits.\n' "$arg_ms_per_block" >&2
         exit 1
     fi
-    ms_per_block="$arg_ms_per_block"
-    [[ -n "$verbose" ]] && printf 'Milliseconds per block provided: [%s].\n' "$ms_per_block" >&2
+    ms_per_block="${arg_ms_per_block}.000"
+    us_per_block="${arg_ms_per_block}000"
+    [[ -n "$verbose" ]] && printf 'Milliseconds per block provided: [%s] = [%s] microseconds.\n' "$ms_per_block" "$us_per_block" >&2
+fi
+
+if [[ -n "$arg_us_per_block" ]]; then
+    if [[ "$arg_us_per_block" =~ [^[:digit:]] ]]; then
+        printf 'Invalid <microseconds>: [%s]. Must only contain digits.\n' "$arg_us_per_block" >&2
+        exit 1
+    fi
+    us_per_block="$arg_us_per_block"
+    ms_per_block="$( micro_to_milli "$us_per_block" )"
+    [[ -n "$verbose" ]] && printf 'Microseconds per block provided: [%s] = [%s] milliseconds.\n' "$us_per_block" "$ms_per_block" >&2
 fi
 
 if [[ -n "$arg_blocks_back" ]]; then
@@ -352,7 +389,7 @@ if [[ -z "$current_ms" ]]; then
 fi
 current_time_disp="$( epoch_ms_to_date_time "$current_ms" )" || exit $?
 
-if [[ -z "$ms_per_block" ]]; then
+if [[ -z "$us_per_block" ]]; then
     ensure_provd || exit $?
     if [[ -n "$old_height" ]]; then
         blocks_back="$(( current_height - old_height ))"
@@ -379,7 +416,8 @@ if [[ -z "$ms_per_block" ]]; then
     [[ -n "$verbose" ]] && printf 'Old block date time: [%s].\n' "$old_time" >&2
     old_ms="$( to_epoch_ms "$old_time" )" || exit $?
     [[ -n "$verbose" ]] && printf 'Old block date time epoch ms: [%s].\n' "$old_ms" >&2
-    ms_per_block="$(( ( ( ( ( current_ms - old_ms ) * 10 ) / ( current_height - old_height ) ) + 5 ) / 10 ))" || exit $?
+    us_per_block="$(( ( ( ( ( current_ms - old_ms ) * 10000 ) / ( current_height - old_height ) ) + 5 ) / 10 ))" || exit $?
+    ms_per_block="$( micro_to_milli "$us_per_block" )"
     [[ -n "$verbose" ]] && printf 'Milliseconds per block calculated: [%s].\n' "$ms_per_block" >&2
 fi
 
@@ -418,7 +456,7 @@ if [[ -z "$desired_height" ]]; then
         printf 'Desired date time [%s] must be after the current date time [%s].\n' "$desired_time_disp" "$current_time_disp" >&2
         exit 1
     fi
-    block_diff="$(( ms_diff / ms_per_block ))" || exit $?
+    block_diff="$(( ms_diff * 1000 / us_per_block ))" || exit $?
     [[ -n "$verbose" ]] && printf '  Elapsed blocks: [%s].\n' "$block_diff" >&2
     desired_height="$(( current_height + block_diff ))" || exit $?
     [[ -n "$verbose" ]] && printf '  Desired height: [%s].\n' "$desired_height" >&2
@@ -438,7 +476,7 @@ elif [[ -z "$desired_ms" ]]; then
     fi
     block_diff="$(( desired_height - current_height ))" || exit $?
     [[ -n "$verbose" ]] && printf '  Elapsed blocks: [%s].\n' "$block_diff" >&2
-    ms_diff="$(( block_diff * ms_per_block ))" || exit $?
+    ms_diff="$(( block_diff * us_per_block / 1000 ))" || exit $?
     [[ -n "$verbose" ]] && printf '  Elapsed milliseconds: [%s].\n' "$ms_diff" >&2
     desired_ms="$(( current_ms + ms_diff ))" || exit $?
     [[ -n "$verbose" ]] && printf '  Desired epoch milliseconds: [%s].\n' "$desired_ms" >&2
