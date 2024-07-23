@@ -379,7 +379,7 @@ if [[ -z "$ms_per_block" ]]; then
     [[ -n "$verbose" ]] && printf 'Old block date time: [%s].\n' "$old_time" >&2
     old_ms="$( to_epoch_ms "$old_time" )" || exit $?
     [[ -n "$verbose" ]] && printf 'Old block date time epoch ms: [%s].\n' "$old_ms" >&2
-    ms_per_block="$(( ( current_ms - old_ms ) / ( current_height - old_height ) ))" || exit $?
+    ms_per_block="$(( ( ( ( ( current_ms - old_ms ) * 10 ) / ( current_height - old_height ) ) + 5 ) / 10 ))" || exit $?
     [[ -n "$verbose" ]] && printf 'Milliseconds per block calculated: [%s].\n' "$ms_per_block" >&2
 fi
 
