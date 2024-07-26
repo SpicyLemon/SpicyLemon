@@ -361,18 +361,18 @@ fi
 
 if [[ -z "$current_height" ]]; then
     ensure_provd || exit $?
-    [[ -n "$verbose" ]] && printf 'Executing command: %s query block  ... ' "$PROVD" >&2
-    current_block="$( "$PROVD" query block )" || exit $?
+    [[ -n "$verbose" ]] && printf 'Executing command: %s status  ... ' "$PROVD" >&2
+    current_status="$( "$PROVD" status )" || exit $?
     [[ -n "$verbose" ]] && printf 'Done\n' >&2
     provd_used='YES'
-    [[ "$verbose" =~ vv ]] && jq '.' <<< "$current_block" >&2
-    current_height="$( jq -r '.block.header.height' <<< "$current_block" )"
+    [[ "$verbose" =~ vv ]] && jq '.' <<< "$current_status" >&2
+    current_height="$( jq -r '.sync_info.latest_block_height' <<< "$current_status" )"
     [[ -n "$verbose" ]] && printf 'Current height looked up: [%s].\n' "$current_height" >&2
 fi
 
 if [[ -z "$current_time" ]]; then
-    if [[ -n "$current_block" ]]; then
-        current_time="$( jq -r '.block.header.time' <<< "$current_block" )"
+    if [[ -n "$current_status" ]]; then
+        current_time="$( jq -r '.sync_info.latest_block_time' <<< "$current_status" )"
         [[ -n "$verbose" ]] && printf 'Current date time from block: [%s].\n' "$current_time" >&2
     elif [[ -n "$use_gnu_date" ]]; then
         current_time="$( date '+%FT%T.%N%z' )"
@@ -408,11 +408,11 @@ if [[ -z "$us_per_block" ]]; then
         old_height=0
     fi
     [[ -n "$verbose" ]] && printf 'Executing command: %s query block %s  ... ' "$PROVD" "$old_height" >&2
-    old_block="$( "$PROVD" query block "$old_height" )" || exit $?
+    old_block="$( "$PROVD" query block "$old_height" --type height )" || exit $?
     [[ -n "$verbose" ]] && printf 'Done\n' >&2
     provd_used='YES'
     [[ "$verbose" =~ vv ]] && jq '.' <<< "$old_block" >&2
-    old_time="$( jq -r '.block.header.time' <<< "$old_block" )"
+    old_time="$( jq -r '.header.time' <<< "$old_block" )"
     [[ -n "$verbose" ]] && printf 'Old block date time: [%s].\n' "$old_time" >&2
     old_ms="$( to_epoch_ms "$old_time" )" || exit $?
     [[ -n "$verbose" ]] && printf 'Old block date time epoch ms: [%s].\n' "$old_ms" >&2
