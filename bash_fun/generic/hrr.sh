@@ -214,21 +214,24 @@ hr11 () {
 
 # Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--] <message>
 hrx () {
-    local n width color msg no_color
+    local n width color msg no_color no_copy
     width=120
     msg=()
+    color='YES'
     if [[ "$#" -eq '0' ]]; then
         set -- --help
     fi
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             --help|-h)
-                printf 'Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--] <message>\n'
+                printf 'Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--copy|--no-copy] [--] <message>\n'
                 printf '<n> => the hr height: 1, 3, 5, 7, 9, or 11.\n'
                 printf -- '--width <width> will output the hr using the provided width. Default is 120. Can be either "full" or a number.\n'
-                printf -- '--color will cause a random palette to be picked.\n'
-                printf -- '--no-color will output without picking a color palette. This is the default behavior.\n'
+                printf -- '--color will cause a random palette to be picked. This is the default behavior.\n'
+                printf -- '--no-color will output without picking a color palette.\n'
                 printf -- '--palette <number> will use the provided palette. Can be shortenned to --pal <number>\n'
+                printf -- '--copy will put the header in your clipboard too (as long as pbcopy is available).  This is the default behavior.\n'
+                printf -- '--no-copy will not attempt to do anything with your clipboard.\n'
                 printf 'All other args are treated as the message.\n'
                 printf 'Provide the message after -- if it contains one of the flags.\n'
                 return 0
@@ -265,6 +268,9 @@ hrx () {
                 fi
                 color="$2"
                 shift
+                ;;
+            --no-copy|--no-pbcopy)
+                no_copy='YES'
                 ;;
             --)
                 if [[ -n "${msg[*]}" ]]; then
@@ -305,6 +311,10 @@ hrx () {
     fi
 
     HR_WIDTH="$width" HR_NO_COLOR="$no_color" "hr$n" "${msg[@]}"
+    if [[ -z "$no_copy" ]] && command -v pbcopy > /dev/null 2>&1; then
+        HR_WIDTH="$width" HR_NO_COLOR='1' "hr$n" "${msg[@]}" | pbcopy
+        printf ' - copied to clipboard.\n'
+    fi
 
     [[ -n "$unset_palette" ]] && unset PALETTE
     return 0
