@@ -30,7 +30,7 @@ __figure_do_setup () {
     # input vars
     local where_i_am
     # Variables defining configuration.
-    local title func_dir func_base_file_names extra_funcs_to_check required_external desired_external
+    local title func_dir func_base_file_names exe_alias_base_file_names extra_funcs_to_check required_external desired_external
     # Variables that define strings used in verbose output.
     local info ok warn error
     # Variables that will hold output.
@@ -54,6 +54,12 @@ __figure_do_setup () {
     #   ls *.sh | grep -v 'figure-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
         'b642id'  'decode_events' 'get_hash_price'  'id2b64' 'query_prov_using_next_key' 'test_all' 'to_hash'
+    )
+
+    # Executable files that we will create aliases for.
+    # Each will create an alias <entry>=$func_dir/<entry>.sh
+    exe_alias_base_file_names=(
+        'estimate-block-time' 'get-block-times'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
@@ -89,13 +95,23 @@ __figure_do_setup () {
     # And, let's get started!
     __figure_if_verbose "$info" 0 "Loading $title functions."
 
-    __figure_if_verbose "$info" 1 "Creating aliases."
-        # estimate-block-time: call the estimate-block-time.sh script.
-        # Usage: estimate-block-time <args>
-        __figure_if_verbose "$info" 2 "Creating alias [estimate-block-time]."
-        alias estimate-block-time="$where_i_am/estimate-block-time.sh" \
-            || __figure_if_verbose "$error" 3 'Creation of alias [estimate-block-time] failed.'
-    __figure_if_verbose "$info" 1 "Done creating aliases."
+    if [[ "${#exe_alias_base_file_names[@]}" -gt '0' ]]; then
+        __figure_if_verbose "$info" 1 "Creating aliases."
+        for entry in "${exe_alias_base_file_names[@]}"; do
+            __figure_if_verbose "$info" 2 "Creating alias [$entry]."
+            func_file="$func_dir/estimate-block-time.sh"
+            if [[ ! -x "$func_file" ]]; then
+                __figure_if_verbose "$error" 3 "Executable file not found: [$func_file]."
+            else
+                if alias "$entry"="$func_file"; then
+                    __figure_if_verbose "$ok" 3 "Alias created: [$entry]."
+                else
+                    __figure_if_verbose "$error" 3 "Creation of alias [$entry] failed."
+                fi
+            fi
+        done
+        __figure_if_verbose "$info" 1 "Done creating aliases."
+    fi
 
     if [[ "${#required_external[@]}" -gt '0'  ]]; then
         __figure_if_verbose "$info" 1 "Checking for needed external programs and functions."
