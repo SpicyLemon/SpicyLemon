@@ -14,6 +14,9 @@ These scripts/functions are specific to activities associated with Figure Techno
 * `state-sync-setup.sh` - Sets up a directory to house a node that uses statesync.
 * `cosmovisor-setup.sh` - Sets up a cosmovisor directory.
 * `test_all.sh` - Runs a standard set of test make targets.
+* `to_hash.sh` - Converts amounts of nhash into hash and includes commas.
+* `estimate-block-time.sh` - Estimate future block heights for a time or time for a height.
+* `get-block-times.sh` - Get information about block times, and how long each took to cut.
 
 ## Details
 
@@ -298,3 +301,72 @@ This can be controlled using the --sound option.
 If multiple --sound, --quiet, --beep, or --say options are given, the last one is used.
 Proving --sound without specififying an option is the same as providing --sound on.
 ```
+
+### `to_hash`
+
+[to_hash.sh](to_hash.sh) - Function/script that converts nhash amounts to hash, with commas.
+
+Example:
+
+```console
+$ to_hash 2398473897439322
+2,398,473.897439322 hash
+```
+
+### `estimate-block-time`
+
+[estimate-block-time.sh](estimate-block-time.sh) - Script that will estimate future blocks and times.
+
+The `figure-setup.sh` script will create the alias `estimate-block-time` to this file.
+
+Estimate the height at a future time:
+```console
+$ estimate-block-time '2025-04-20 04:20:00'
+Chain-Id: pio-mainnet-1
+Current: Mon 2024-08-12 18:03:49 -0600 (MDT) Height: 18318320
+Desired: Sun 2025-04-20 04:20:00 -0600 (MDT) Height: 22573864
+Elapsed milliseconds: 21636970229 = 4255544 blocks (at 5084.419 milliseconds per block from last 10000 blocks).
+```
+
+Estimate when a block will happen:
+```console
+$ estimate-block-time 20000000
+Chain-Id: pio-mainnet-1
+Current: Mon 2024-08-12 18:05:00 -0600 (MDT) Height: 18318336
+Desired: Thu 2024-11-07 02:41:36 -0700 (MST) Height: 20000000
+Elapsed milliseconds: 7464995624 = 1681664 blocks (at 4439.053 milliseconds per block from last 1681664 blocks).
+```
+
+See `estimate-block-time.sh --help` for full usage information.
+
+### `get-block-times`
+
+[get-block-times.sh](get-block-times.sh) - Script that will output information about block times including how long each took to cut.
+
+A cache directory is used to store block information. If any blocks are needed, but not in the cache, they will be retrieved first.
+
+Example:
+```
+$ get-block-times 18310001 18310010
+Querying for 12 blocks.
+[1/12]: Querying for block 18310000 and storing result: ./archive/blocks/block-18310000.json
+[11/12]: Querying for block 18310010 and storing result: ./archive/blocks/block-18310010.json
+[12/12]: Querying for block 18310011 and storing result: ./archive/blocks/block-18310011.json
+Stamp                           Height    Time     Tx  R  Votes
+2024-08-12T13:35:20.783455733Z  18310001   4.945s   0  1  56/63
+2024-08-12T13:35:30.334802694Z  18310002   9.551s   0  0  56/63
+2024-08-12T13:35:35.273044370Z  18310003   4.939s   0  0  56/63
+2024-08-12T13:35:37.749266832Z  18310004   2.476s   0  0  56/63
+2024-08-12T13:35:40.135845046Z  18310005   2.386s   0  1  56/63
+2024-08-12T13:35:49.667859637Z  18310006   9.532s   0  0  56/63
+2024-08-12T13:35:52.097876318Z  18310007   2.430s   0  0  56/63
+2024-08-12T13:35:54.470095116Z  18310008   2.373s   0  2  56/63
+2024-08-12T13:36:09.652685386Z  18310009  15.182s   0  1  56/63
+2024-08-12T13:36:19.260191563Z  18310010   9.608s   0  0  56/63
+```
+
+See `get-block-times --help` for full usage information.
+
+The only thing `get-block-times` prints to stdout is the resulting table (including its header).
+All other output is to stderr (e.g. the "Querying for block ..." lines).
+
