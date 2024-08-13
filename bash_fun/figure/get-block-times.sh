@@ -19,7 +19,7 @@ show_usage () {
     cat << EOF >&2
 Get block times for a range of blocks.
 
-Usage: ./get-block-times.sh <height1> [<height2>] [--cache <dir>] [--prov <provenanced>]
+Usage: ./get-block-times.sh <height1> [<height2>] [--cache <dir>] [--prov <provenanced>] [--force]
 
 If <height2> is provided, <height1> and <height2> define an inclusive height range.
 
@@ -36,6 +36,9 @@ If <height2> is provided, <height1> and <height2> define an inclusive height ran
     Otherwise, if the file ./prov or ./provenanced exists and is executable, that is the default.
     Otherwise, provenanced is the default and must be in your PATH env var.
     The provenanced commmand is not used if the cache already has all needed blocks.
+
+--force
+    Providing the --force flag allows the querying of more than 100 blocks in a single invocation.
 
 EOF
 
@@ -68,6 +71,9 @@ while [[ "$#" -gt '0' ]]; do
             fi
             prov_cmd="$2"
             shift
+            ;;
+        --force)
+            force="$1"
             ;;
         *)
             if [[ -z "$h1" ]]; then
@@ -147,13 +153,24 @@ while [[ "$h" -le "$h_stop" ]]; do
             printf '%d: Block file is not a file: %s\n' "$h" "$bf" >&2
             exit 1
         fi
-        [[ -n "$verbose" ]] && printf '%d: Using existing block file: %s\n' "$h" "$bf" >&2
+        if grep -q '.' "$bf" > /dev/null 2>&1; then
+            [[ -n "$verbose" ]] && printf '%d: Using existing block file: %s\n' "$h" "$bf" >&2
+        else
+            [[ -n "$verbose" ]] && printf '%d: Query needed. Block file exists, but was empty: %s\n' "$h" "$bf" >&2
+            rm "$bf" || exit 1
+            to_query_count=$(( to_query_count + 1 ))
+        fi
     else
         [[ -n "$verbose" ]] && printf '%d: Query needed. File does not exist: %s\n' "$h" "$bf" >&2
         to_query_count=$(( to_query_count + 1 ))
     fi
     h=$(( h + 1 ))
 done
+
+if [[ "$to_query_count" -gt '100' && -z "$force" ]]; then
+    printf 'There are %d blocks that need to be queried. Run the command again with the --force flag to allow this.\n' "$to_query_count" >&2
+    exit 1
+fi
 
 # Do any querying that's needed.
 if [[ "$to_query_count" -ne '0' ]]; then
