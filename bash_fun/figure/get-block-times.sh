@@ -186,7 +186,7 @@ if [[ "$to_query_count" -ne '0' ]]; then
             if [[ -n "$verbose" || "$to_query_count" -lt '10' || "$i" -eq "$to_query_count" || "$(( i % 10 ))" -eq '1' ]]; then
                 printf '[%d/%d]: Querying for block %s and storing result: %s\n' "$i" "$to_query_count" "$h" "$bf" >&2
             fi
-            if ! "$prov_cmd" query block --type height "$h" > "$bf"; then
+            if ! $prov_cmd query block --type height "$h" > "$bf"; then
                 printf '[%d/%d]: Query failed for block %s.\n' "$i" "$to_query_count" "$h" >&2
                 cat "$bf" >&2 2> /dev/null
                 rm "$bf" > /dev/null 2>&1
