@@ -99,7 +99,7 @@ __figure_do_setup () {
         __figure_if_verbose "$info" 1 "Creating aliases."
         for entry in "${exe_alias_base_file_names[@]}"; do
             __figure_if_verbose "$info" 2 "Creating alias [$entry]."
-            func_file="$func_dir/estimate-block-time.sh"
+            func_file="${func_dir}/${entry}.sh"
             if [[ ! -x "$func_file" ]]; then
                 __figure_if_verbose "$error" 3 "Executable file not found: [$func_file]."
             else
