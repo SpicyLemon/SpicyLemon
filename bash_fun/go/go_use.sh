@@ -10,22 +10,29 @@
   || [[ -n "$BASH_VERSION" ]] && (return 0 2>/dev/null) \
 ) && sourced='YES' || sourced='NO'
 
+# To add a new version, add/update stuff above the ADD_VERSION comments: [1] [2] [3] [4].
+
 go_use () {
-    local n118 v118 n120 v120 n121 v121 n123 v123
+    local n118 v118
     n118='1.18'
     v118='../Cellar/go@1.18/1.18.10/bin/go'
+    local n120 v120
     n120='1.20'
     v120='/usr/local/go/bin/go' # 1.20.1
+    local n121 v121
     n121='1.21'
     v121='../Cellar/go/1.21.4/bin/go'
+    local n123 v123
     n123='1.23'
     v123='../Cellar/go/1.23.0/bin/go'
+    # ADD_VERSION[1]: Create new nXYZ and vXYZ variables
 
     local verbose listing which_go desired_link cur_link rv
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             -h|--help)
                 printf 'Usage: go_use {%s|list} [-v|--verbose]\n' "$n118|$n120|$n121|$n123"
+                # ADD_VERSION[2]: Add the new nXYZ variable to the above list.
                 return 0
                 ;;
             -v|--verbose)
@@ -43,6 +50,7 @@ go_use () {
             "$n123"|"v$n123")
                 desired_link="$v123"
                 ;;
+            # ADD_VERSION[3]: Add case for new version.
             -l|--list|l|list)
                 listing=1
                 ;;
@@ -78,6 +86,7 @@ go_use () {
         opts+=( "$( n="$n120"; v="$v120"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
         opts+=( "$( n="$n121"; v="$v121"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
         opts+=( "$( n="$n123"; v="$v123"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
+        # ADD_VERSION[4]: Add new version to opts.
 
         printf 'available versions:\n'
         printf '%b\n' "${opts[@]}"
