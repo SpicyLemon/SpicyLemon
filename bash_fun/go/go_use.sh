@@ -13,57 +13,63 @@
 # To add a new version, add/update stuff above the ADD_VERSION comments: [1] [2] [3] [4].
 
 go_use () {
-    local n118 v118
-    n118='1.18'
-    v118='../Cellar/go@1.18/1.18.10/bin/go'
-    local n120 v120
-    n120='1.20'
-    v120='/usr/local/go/bin/go' # 1.20.1
-    local n121 v121
-    n121='1.21'
-    v121='../Cellar/go/1.21.4/bin/go'
-    local n123 v123
-    n123='1.23'
-    v123='../Cellar/go/1.23.0/bin/go'
-    # ADD_VERSION[1]: Create new nXYZ and vXYZ variables
+    local list verbose listing desired which_go cur_link desired_link rv ln_flags
+    # To add new versions, just add a new entry to this list.
+    # Required line format: <one or more spaces><version>:<one or more spaces><link path>
+    # When invoking this function to make a switch, a user would supply just the <version> as an arg.
+    # If the <link path> is relative, it's relative to the result of `which go` (which for me is /opt/homebrew/bin/go).
+    # The full version of 1.20 is 1.20.1. The others have the patch versions in their paths.
+    list="$( cat << EOF
+  1.18: ../Cellar/go@1.18/1.18.10/bin/go
+  1.20: /usr/local/go/bin/go
+  1.21: ../Cellar/go/1.21.4/bin/go
+  1.23: ../Cellar/go/1.23.0/bin/go
+EOF
 
-    local verbose listing which_go desired_link cur_link rv
+)"
+
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
-            -h|--help)
-                printf 'Usage: go_use {%s|list} [-v|--verbose]\n' "$n118|$n120|$n121|$n123"
-                # ADD_VERSION[2]: Add the new nXYZ variable to the above list.
+            -h|--help|help)
+                printf 'Usage: go_use {%slist} [-v|--verbose]\n' "$( sed -E 's/^[[:space:]]+//; s/:.*$//' <<< "$list" | tr '\n' '|' )"
                 return 0
                 ;;
             -v|--verbose)
                 verbose=1
                 ;;
-            "$n118"|"v$n118")
-                desired_link="$v118"
-                ;;
-            "$n120"|"v$n120")
-                desired_link="$v120"
-                ;;
-            "$n121"|"v$n121")
-                desired_link="$v121"
-                ;;
-            "$n123"|"v$n123")
-                desired_link="$v123"
-                ;;
-            # ADD_VERSION[3]: Add case for new version.
             -l|--list|l|list)
                 listing=1
                 ;;
             *)
-                printf 'Unknown argument: %q\n' "$1"
-                return 1
+                if [[ -n "$desired" ]]; then
+                    printf 'Unknown argument: %q\n' "$1"
+                    return 1
+                fi
+                desired="$1"
                 ;;
         esac
         shift
     done
 
-    if [[ -z "$desired_link" ]]; then
+    rv=0
+
+    if [[ -z "$desired" ]]; then
         listing=1
+    else
+        # If desired starts with a v, remove it now.
+        if [[ "$desired" =~ ^v ]]; then
+            desired="${desired:1}"
+        fi
+
+        [[ "$verbose" ]] && printf 'Identifying desired link for %q: ' "$desired"
+        desired_link="$( grep -F " $desired:" <<< "$list" | sed -E 's/^[^:]*:[[:space:]]+//' )"
+        [[ "$verbose" ]] && printf '%q\n' "$desired_link"
+
+        if [[ -z "$desired_link" ]]; then
+            printf 'Unknown version: %q\n' "$desired" >&2
+            listing=1
+            rv=1
+        fi
     fi
 
     [[ "$verbose" ]] && printf 'which go: '
@@ -79,37 +85,41 @@ go_use () {
     cur_link="$( readlink "$which_go" )"
     [[ "$verbose" ]] && printf '%q\n' "$cur_link"
 
+
     if [[ "$listing" ]]; then
-        local opts
-        opts=()
-        opts+=( "$( n="$n118"; v="$v118"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
-        opts+=( "$( n="$n120"; v="$v120"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
-        opts+=( "$( n="$n121"; v="$v121"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
-        opts+=( "$( n="$n123"; v="$v123"; if [[ "$cur_link" == "$v" ]]; then printf '  \033[1m%s\033[0m: %s  \033[1m(current)\033[0m\n' "$n" "$v"; else printf '  %s: %s' "$n" "$v"; fi )" )
-        # ADD_VERSION[4]: Add new version to opts.
-
-        printf 'available versions:\n'
-        printf '%b\n' "${opts[@]}"
-        if ! grep -qF '(current)' <<< "${opts[*]}" > /dev/null 2>&1; then
-            printf '\033[1mCurrent\033[0m: %s\n' "$cur_link"
-        fi
-        return 0
-    fi
-
-    if [[ "$cur_link" == "$desired_link" ]]; then
+        printf 'Available Versions:\n'
+        awk -v cur_link="$cur_link" -v which_go="$which_go" '{
+            if (index($0,cur_link) > 0) {
+                cur=$0;
+                sub(/^[[:space:]]+/,"",cur);
+                sub(/:.*$/,"",cur);
+                i=index($0,cur);
+                print substr($0,1,i-1) "\033[1m" cur "\033[0m" substr($0,i+length(cur)) "  \033[1m<- " which_go "\033[0m";
+                found="1";
+            } else {
+                print;
+            };
+        }
+        END {
+            if (found=="") {
+                print "  \033[1mActual\033[0m: " cur_link "  \033[1m<- " which_go "\033[0m";
+            };
+        }' <<< "$list"
+    elif [[ "$cur_link" == "$desired_link" ]]; then
         printf 'Already: '
         ls -al "$which_go"
-        return 0
+    else
+        printf '    Was: '
+        ls -al "$which_go"
+        ln_flags='-sf'
+        [[ "$verbose" ]] && ln_flags="${ln_flags}v"
+        [[ "$verbose" ]] && printf 'ln %s %q %q\n' "$ln_flags" "$desired_link" "$which_go"
+        ln $ln_flags "$desired_link" "$which_go" || rv=$?
+        printf ' Is Now: '
+        ls -al "$which_go"
     fi
-    rv=0
-    printf '    Was: '
-    ls -al "$which_go"
-    ln_flags='-sf'
-    [[ "$verbose" ]] && ln_flags="${ln_flags}v"
-    [[ "$verbose" ]] && printf 'ln %s %q %q\n' "$ln_flags" "$desired_link" "$which_go"
-    ln $ln_flags "$desired_link" "$which_go" || rv=$?
-    printf ' Is Now: '
-    ls -al "$which_go"
+
+    printf 'Current: ' && go version
     return $rv
 }
 
