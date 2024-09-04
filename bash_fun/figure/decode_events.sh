@@ -3,6 +3,10 @@
 # This file can be sourced to add the decode_events function to your environment.
 # This file can also be executed to run the decode_events function without adding it to your environment.
 #
+# This decode_events function has been deprecated.
+# It's replaced by: get_events --long --decode
+# Although, you probably don't need the --decode flag now since the SDK fixed it so that the keys and values are no longer base64 encoded.
+#
 
 # Determine if this script was invoked by being executed or sourced.
 ( [[ -n "$ZSH_EVAL_CONTEXT" && "$ZSH_EVAL_CONTEXT" =~ :file$ ]] \

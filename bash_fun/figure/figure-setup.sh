@@ -53,7 +53,8 @@ __figure_do_setup () {
     # Handy command for generating this:
     #   ls *.sh | grep -v 'figure-setup' | sed 's/\.sh$//' | re_line -p -n 5 -d '~' -w "'" | column -s '~' -t | tee_pbcopy
     func_base_file_names=(
-        'b642id'  'decode_events' 'get_hash_price'  'id2b64' 'query_prov_using_next_key' 'test_all' 'to_hash'
+        'b642id'  'decode_events'              'get_events'  'get_hash_price'
+        'id2b64'  'query_prov_using_next_key'  'test_all'    'to_hash'
     )
 
     # Executable files that we will create aliases for.

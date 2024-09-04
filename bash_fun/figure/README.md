@@ -10,7 +10,8 @@ These scripts/functions are specific to activities associated with Figure Techno
 * `b642id.sh` - Converts base64 encoded strings into a `MetadataAddress`, and display it's various pieces.
 * `id2b64.sh` - Converts hex values (meant to make up a `MetadataAddress`) into a base64 encoded string.
 * `query_prov_using_next_key.sh` - Gets multiple pages of a paginated provenanced query.
-* `decode_events.sh` - Decodes the event strings returned from a tx query.
+* `decode_events.sh` - Deprecated in favor of `get_events`: Decodes the event strings returned from a tx query.
+* `get_events.sh` - Concisely print tx events and optionally decode them.
 * `state-sync-setup.sh` - Sets up a directory to house a node that uses statesync.
 * `cosmovisor-setup.sh` - Sets up a cosmovisor directory.
 * `test_all.sh` - Runs a standard set of test make targets.
@@ -179,6 +180,10 @@ Example:
 
 [decode_events.sh](decode_events.sh) - Function/script decoding the base64 encoded events from a tx JSON response.
 
+**DEPRECATED**: This `decode_events` function/script has been deprecated in favor of `get_events`.
+The direct replacement of `decode_events` is `get_events --decode --long`.
+The only difference is that each line of the new output will start with `.events` instead of just `events`.
+
 Either provide a JSON file or stream in some JSON with the results of a tx query and it will decode and output the events.
 The output is one line per event attribute with this format:
 ```
@@ -217,6 +222,60 @@ events[4].attributes[0] (tx): "fee" = "100000000000nhash"
 events[5].attributes[0] (tx): "acc_seq" = "tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys/170"
 events[6].attributes[0] (tx): "signature" = "Kn46lGBBbEyT8vkltURU8b0Q0h6aMQZ4mwAN5t6VclNbJAUJ7n5rJhxT9NhhUwstYcVPQZeL2AILEeFZ88mlVQ=="
 ```
+
+### `get_events`
+
+[get_events.sh](get_events.sh) - Function/script that consicely outputs tx event info from a json file.
+
+Example Use from file:
+```console
+$ provenanced q tx --type hash 0ABDB417D4EBDE76AA4F3F2E8CBCE71600C385E955D5F7EA980B85E44A533639 -o json > 0ABDB417.json
+$ get_events 0ABDB417.json
+[0]coin_spent[0]: spender = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys
+[0]coin_spent[1]: amount = 90000000000nhash
+[1]coin_received[0]: receiver = tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt
+[1]coin_received[1]: amount = 90000000000nhash
+[2]transfer[0]: recipient = tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt
+[2]transfer[1]: sender = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys
+[2]transfer[2]: amount = 90000000000nhash
+[3]message[0]: sender = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys
+[4]tx[0]: fee = 100000000000nhash
+[5]tx[0]: acc_seq = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys/170
+[6]tx[0]: signature = Kn46lGBBbEyT8vkltURU8b0Q0h6aMQZ4mwAN5t6VclNbJAUJ7n5rJhxT9NhhUwstYcVPQZeL2AILEeFZ88mlVQ==
+```
+
+Example Use from stream and with long output format:
+```console
+$ provenanced q tx --type hash 0ABDB417D4EBDE76AA4F3F2E8CBCE71600C385E955D5F7EA980B85E44A533639 -o json | get_events --long
+.events[0].attributes[0] (coin_spent): spender = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys
+.events[0].attributes[1] (coin_spent): amount = 90000000000nhash
+.events[1].attributes[0] (coin_received): receiver = tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt
+.events[1].attributes[1] (coin_received): amount = 90000000000nhash
+.events[2].attributes[0] (transfer): recipient = tp17xpfvakm2amg962yls6f84z3kell8c5l2udfyt
+.events[2].attributes[1] (transfer): sender = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys
+.events[2].attributes[2] (transfer): amount = 90000000000nhash
+.events[3].attributes[0] (message): sender = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys
+.events[4].attributes[0] (tx): fee = 100000000000nhash
+.events[5].attributes[0] (tx): acc_seq = tp172yscg9eu72hknhue4sae5z3yyddxlfsfntcys/170
+.events[6].attributes[0] (tx): signature = Kn46lGBBbEyT8vkltURU8b0Q0h6aMQZ4mwAN5t6VclNbJAUJ7n5rJhxT9NhhUwstYcVPQZeL2AILEeFZ88mlVQ==
+```
+
+```console
+$ get_events --help
+get_events - Concisely display tx events.
+
+Usage: get_events <tx json file> [--path|-p <path>] [--decode|-d] [--long|-l]
+   or: <stuff> | get_events [--path|-p <path>] [--decode|-d] [--long|-l]
+
+The --path <path> option allows you to define the json path to the list of events.
+    The default <path> is '.events'.
+The --decode flag will cause the attribute keys and values to be base64 decoded.
+The --long flag causes the full json path to each attribute to be displayed instead of a shorter form.
+    Standard output format: [<event index>]<event type>[<attribute index>]: <key> = <value>
+    Long output format:     <path to events>[<event index>].attributes[<attribute index>] (<event type>): <key> = <value>
+
+```
+
 
 ### `state-sync-setup`
 
