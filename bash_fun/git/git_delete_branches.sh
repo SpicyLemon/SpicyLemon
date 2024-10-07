@@ -19,11 +19,26 @@ git_delete_branches () {
         printf 'git_delete_branches: Not in a git repo.\n' >&2
         return 1
     fi
-    local default_branch local_branches branches
+    local default_branch cur_branch local_branches head_inst head_def head_cur header height branches
+    # Don't allow selection of the current branch because it can't be deleted without switching branches.
+    # Also don't allow selection of the default branch since that's almost never what someone wants to do.
+    # The fzf header should list the unselectable branches because completely omitting them causes confusion.
+    # If we're in a detatched state:
+    #   `git branch --show-current` returns nothing.
+    #   `git rev-parse --abbrev-ref HEAD` returns "HEAD".
+    #   `git branch` puts a "* " before an entry that looks like "(HEAD detatched at <hash/tag>)" (or something similar).
+    # I use `git branch` here to identify the current branch so that we get that extra context when detatched.
+    # I've no idea if that will help anything, but I'm pretty sure it won't hurt anything.
     default_branch="$( git_get_default_branch )"
+    cur_branch="$( git branch | grep '^*' | sed 's/^\*[[:space:]]*//; s/[[:space:]]*$//;' )"
     local_branches="$( git branch | grep -v '^\*' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//g;' | grep -vFx "$default_branch" | sort )"
     if [[ -n "$local_branches" ]]; then
-        branches="$( fzf --tac -m --cycle --header="Select branches to delete using tab. Press enter when ready (or esc to cancel)." <<< "$local_branches" )"
+        head_inst='Select branches to delete using tab. Press enter when ready (or esc to cancel).'
+        head_def="Default: $default_branch (not listed)."
+        head_cur="Current: $cur_branch (not listed)."
+        printf -v header '%s\n%s  %s\n' "$head_inst" "$head_cur" "$head_def"
+        height="$(( $( wc -l <<< "$local_branches" ) + 4 ))" # +2 for the header and +2 for the fzf info line and prompt.
+        branches="$( fzf --layout reverse-list -m --cycle --header-lines 2 --height "$height" <<< "${header}${local_branches}" )"
         if [[ -n "$branches" ]]; then
             for branch in $( sed -l '' <<< "$branches" ); do
                 __git_echo_do git branch -D "$branch"
