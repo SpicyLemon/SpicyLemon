@@ -43,6 +43,7 @@ git_delete_branches () {
             for branch in $( sed -l '' <<< "$branches" ); do
                 __git_echo_do git branch -D "$branch"
             done
+            __git_echo_do git branch
         else
             printf 'No branches selected for deletion.\n' >&2
             return 2
