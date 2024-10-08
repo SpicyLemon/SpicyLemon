@@ -17,6 +17,7 @@ This directory contains functions/scripts for doing various golang related thing
   * [go_imports.sh](#user-content-go_importssh)
   * [go_count_imports.sh](#user-content-go_count_importssh)
   * [go_mod_fix.sh](#user-content-go_mod_fixsh)
+  * [go_resolve_mod.sh](#user-content-go_resolve_modsh)
   * [go_use.sh](#user-content-go_usesh)
 
 ## Usage
@@ -130,6 +131,25 @@ Example:
 > go_mod_fix
 ./go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
 ./submodule/go.mod: go mod tidy ... go mod vendor ... go mod verify ... all modules verified
+```
+
+
+
+### `go_resolve_mod.sh`
+
+[go_resolve_mod.sh](go_resolve_mod.sh) - Function/script that will identify the go.mod file that applies to the provided file.
+
+Usage: `go_resolve_mod [<path>]`
+If no `<path>` is provided, `.` is used.
+
+Examples (from the Cosmos-SDK repo):
+```console
+> go_resolve_mod x/circuit/module.go
+x/circuit/go.mod
+> go_resolve_mod x/circuit/ante/circuit_test.go
+x/circuit/go.mod
+> go_resolve_mod crypto/keys/internal/ecdsa/pubkey.go
+go.mod
 ```
 
 
