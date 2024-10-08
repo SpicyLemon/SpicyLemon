@@ -1,4 +1,11 @@
 TODO:
+    indiff <range1> <range2> <file>
+        <range1> and <range2> have the format "<start line number>-<end line number>".
+        This will extract the range1 and range2 content from <file> and run a diff on it.
+        Basically, use getlines to extract the chunks to temp files and diff the temp files, then delete them.
+        It'd also be pretty cool if it opened the file in something and let me select the start/end lines.
+            Maybe something like `nl <file> | fzf` and then extract the selected line numbers.
+        It'd be pretty awesome if it could be a vim plugin too. Somehow select the two sections to diff, then open a new window with the diff.
     Add recursive functionality to list.sh.
         Will need to keep track of directories seen (using pwd -P) to prevent infinite loops.
     Create a thing that takes in a URL and gets info about it including where it might redirect to.
