@@ -13,7 +13,7 @@
 go_mod_fix () {
     local d
     d="${1:-.}"
-    find "$d" -name 'go.mod' \
+    find "$d" -name 'go.mod' -not -path '*/vendor/*' \
         | while IFS= read -r modfile; do
             (
                 printf '%s: ' "$modfile"
