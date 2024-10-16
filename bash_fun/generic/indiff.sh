@@ -28,11 +28,12 @@ indiff () {
 Usage: indiff <start1>-<end1> <start2>-<end2> <file>
    or: indiff <start1> <end1> <start2> <end2> <file>
    or: indiff (-l|--left) <start1>-<end1> (-r|--right) <start2>-<end2> (-f|--file) <file>
+   or: indiff <file> --select
 
 The <file> can be provided in any position in the args.
 EOF
 )"
-    local range_rx verbose l_start l_end r_start r_end filename line_max
+    local range_rx verbose do_select l_start l_end r_start r_end filename line_max
     range_rx='^[[:digit:]]+[- ][[:digit:]]+$'
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -50,6 +51,9 @@ EOF
                 fi
                 filename="$2"
                 shift
+                ;;
+            -s|--select)
+                do_select="$1"
                 ;;
             -l|--left)
                 if [[ -n "$2" ]]; then
@@ -123,6 +127,48 @@ EOF
     fi
     line_max="$( grep -c '^' "$filename" )"
 
+    if [[ -n "$verbose" ]]; then
+        printf 'filename="%s"\n' "$filename"
+        printf 'line_max="%s"\n' "$line_max"
+    fi
+
+    if [[ -n "$do_select" ]]; then
+        if [[ -n "$l_start" ]]; then
+            printf 'Cannot provide both %s and <start1>: [%s]\n' "$do_select" "$l_start"
+            return 1
+        elif [[ -n "$l_end" ]]; then
+            printf 'Cannot provide both %s and <end1>: [%s]\n' "$do_select" "$l_end"
+            return 1
+        elif [[ -n "$r_start" ]]; then
+            printf 'Cannot provide both %s and <start2>: [%s]\n' "$do_select" "$r_start"
+            return 1
+        elif [[ -n "$r_end" ]]; then
+            printf 'Cannot provide both %s and <end2>: [%s]\n' "$do_select" "$r_end"
+            return 1
+        fi
+
+        local selected s_count
+        [[ -n "$verbose" ]] && printf 'Selecting lines using fzf on file: [%s].\n' "$filename"
+        selected="$( nl -b a "$filename" \
+            | fzf --layout=reverse-list --multi --header 'Select exactly 4 lines for <start1> <end1> <start2> <end2>' \
+            | sed -E 's/^[[:blank:]]*([[:digit:]]+)[[:blank:]].*$/\1/'
+        )"
+        s_count="$( printf '%s' "$selected" | grep -c '^' )"
+        if [[ -n "$verbose" ]]; then
+            printf 's_count="%s"\n' "$s_count"
+            printf 'selected=%q\n' "$selected"
+        fi
+        if [[ "$s_count" -ne '4' ]]; then
+            printf 'You selected %d lines, but must select exactly 4.\n' "$s_count"
+            return 1
+        fi
+        selected="$( sed -E 's/^[[:blank:]]*([[:digit:]]+)[[:blank:]].*$/\1/' <<< "$selected" )"
+        l_start="$( head -n 1 <<< "$selected" )"
+        l_end="$( head -n 2 <<< "$selected" | tail -n 1 )"
+        r_start="$( head -n 3 <<< "$selected" | tail -n 1 )"
+        r_end="$( tail -n 1 <<< "$selected" )"
+    fi
+
     if [[ -z "$l_start" ]]; then
         printf 'No <start1> provided.\n'
         cat <<< "$usage"
@@ -178,8 +224,6 @@ EOF
     fi
 
     if [[ -n "$verbose" ]]; then
-        printf 'filename="%s"\n' "$filename"
-        printf 'line_max="%s"\n' "$line_max"
         printf ' l_start="%s"\n' "$l_start"
         printf '   l_end="%s"\n' "$l_end"
         printf ' r_start="%s"\n' "$r_start"

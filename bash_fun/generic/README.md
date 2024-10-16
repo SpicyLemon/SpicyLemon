@@ -567,6 +567,7 @@ $ hr11 This is a test of hr11
 Usage: indiff <start1>-<end1> <start2>-<end2> <file>
    or: indiff <start1> <end1> <start2> <end2> <file>
    or: indiff (-l|--left) <start1>-<end1> (-r|--right) <start2>-<end2> (-f|--file) <file>
+   or: indiff <file> --select
 
 The <file> can be provided in any position in the args.
 ```
