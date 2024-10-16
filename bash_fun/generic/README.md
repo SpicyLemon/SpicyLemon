@@ -27,6 +27,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [getlines.sh](#user-content-getlinessh)
   * [h2b64.sh](#user-content-h2b64sh)
   * [hrr.sh](#user-content-hrrsh)
+  * [indiff.sh](#user-content-indiffsh)
   * [java_sdk_switcher.sh](#user-content-java_sdk_switchersh)
   * [join_str.sh](#user-content-join_strsh)
   * [list.sh](#user-content-listsh)
@@ -557,6 +558,20 @@ $ hr11 This is a test of hr11
 ########################################################################################################################
 ########################################################################################################################
 ```
+
+### `indiff.sh`
+
+[indiff.sh](indiff.sh) - Function for comparing two sections of the same file.
+
+```
+Usage: indiff <start1>-<end1> <start2>-<end2> <file>
+   or: indiff <start1> <end1> <start2> <end2> <file>
+   or: indiff (-l|--left) <start1>-<end1> (-r|--right) <start2>-<end2> (-f|--file) <file>
+
+The <file> can be provided in any position in the args.
+```
+
+It will use [getlines](#user-content-getlinessh) to extract the two ranges to a temp file, then it will diff them (and clean up).
 
 ### `java_sdk_switcher.sh`
 
