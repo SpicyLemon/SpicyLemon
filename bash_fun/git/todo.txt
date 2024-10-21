@@ -1,5 +1,24 @@
 TODO:
     Write a README.md
+    Create a function/script that will help analyze merge conflicts.
+        It should take in a filepath to a file with merge conflicts.
+        Then it'll create the different versions of the file in a temp dir.
+        Then diff them in a way that highlights word-level changes.
+            Or at least give it the ability to do word-level changes in an easy way.
+        Then it'll use multidiff to diff them.
+            Git adds the markers <<<<<<<, =======, and >>>>>>> to the file.
+            Something I have in my setup will also have a ||||||| marker.
+            I think this is what each marker means:
+            * <<<<<<< - The start of a conflict. The lines after it are what the current branch had before starting the merge.
+            * ======= - End of the lines that the current branch had before the start of the merge. The lines after it are the lines from the other version (that's getting merged in).
+            * ||||||| - (optional) End of the lines from the other version that's getting merged in. The lines after it are the lines from the file as it existed in the common ancestor.
+            * >>>>>>> - End of the conflict section.
+            Sometimes the markers have branch/commit info after it, but I can't remember the exact formatting right now.
+        By default, it should show just the first conflict.
+        It should have options that allow the following:
+            * Show the first n conflicts
+            * Show all conflicts
+            * Show specific conflicts (defined by index). E.g. show just the 3rd and 7th conflicts.
     Create a function/script to get a file/folder link in github.
         At least start with github. I'd have to look into other places to see how their url paths differ.
         Example github links:
