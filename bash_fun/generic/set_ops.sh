@@ -35,7 +35,7 @@ EOF
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             --help|-h)
-                printf '%s\n' "$usage"
+                printf '%s\n' "$usage" >&2
                 return 0
                 ;;
             --swap|-x|-s)
@@ -52,7 +52,7 @@ EOF
                 elif [[ -z "$file2" ]]; then
                     file2="$1"
                 else
-                    printf 'Unknown arg: [%s].\n' "$1"
+                    printf 'Unknown arg: [%s].\n' "$1" >&2
                     return 1
                 fi
                 ;;
@@ -61,25 +61,25 @@ EOF
     done
 
     if [[ -n "$verbose" ]]; then
-        printf 'file1: %q\n' "$file1"
-        printf '   op: %q\n' "$op"
-        printf 'file2: %q\n' "$file2"
+        printf 'file1: %q\n' "$file1" >&2
+        printf '   op: %q\n' "$op" >&2
+        printf 'file2: %q\n' "$file2" >&2
     fi
 
     if [[ -z "$file1" || -z "$op" || -z "$file2" ]]; then
-        printf '%s\n' "$usage"
-        return 0
+        printf '%s\n' "$usage" >&2
+        return 1
     fi
 
     # Allow for the op to be in any arg position.
     if [[ -f "$op" ]]; then
         if [[ ! -f "$file1" ]]; then
-            [[ -n "$verbose" ]] && printf 'Swapping: file1 <-> op : [%s] <-> [%s]\n' "$file1" "$op"
+            [[ -n "$verbose" ]] && printf 'Swapping: file1 <-> op : [%s] <-> [%s]\n' "$file1" "$op" >&2
             tmp="$file1"
             file1="$op"
             op="$tmp"
         elif [[ ! -f "$file2" ]]; then
-            [[ -n "$verbose" ]] && printf 'Swapping: op <-> file2 : [%s] <-> [%s]\n' "$op" "$file2"
+            [[ -n "$verbose" ]] && printf 'Swapping: op <-> file2 : [%s] <-> [%s]\n' "$op" "$file2" >&2
             tmp="$file2"
             file2="$op"
             op="$tmp"
@@ -87,7 +87,7 @@ EOF
     fi
 
     if [[ -n "$swap" ]]; then
-        [[ -n "$verbose" ]] && printf 'Swapping: file1 <-> file2 : [%s] <-> [%s]\n' "$file1" "$file2"
+        [[ -n "$verbose" ]] && printf 'Swapping: file1 <-> file2 : [%s] <-> [%s]\n' "$file1" "$file2" >&2
         tmp="$file1"
         file1="$file2"
         file2="$tmp"
@@ -95,11 +95,11 @@ EOF
 
     ec=0
     if [[ ! -f "$file1" ]]; then
-        printf 'File not found: %s\n' "$file1"
+        printf 'File not found: %s\n' "$file1" >&2
         ec=1
     fi
     if [[ ! -f "$file2" ]]; then
-        printf 'File not found: %s\n' "$file2"
+        printf 'File not found: %s\n' "$file2" >&2
         ec=1
     fi
     if [[ "$ec" -ne '0' ]]; then
@@ -131,7 +131,7 @@ EOF
             ;;
     esac
 
-    [[ -n "$verbose" ]] && printf '%s | sort | %s\n' "${cat_cmd[*]}" "${uniq_cmd[*]}"
+    [[ -n "$verbose" ]] && printf '%s | sort | %s\n' "${cat_cmd[*]}" "${uniq_cmd[*]}" >&2
     "${cat_cmd[@]}" | sort | "${uniq_cmd[@]}"
 }
 
