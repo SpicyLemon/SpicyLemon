@@ -44,6 +44,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [pvarn.sh](#user-content-print_pvarnsh)
   * [re_line.sh](#user-content-re_linesh)
   * [sdkman_fzf.sh](#user-content-sdkman_fzfsh)
+  * [set_ops.sh](#user-content-set_opssh)
   * [set_title.sh](#user-content-set_titlesh)
   * [show_last_exit_code.sh](#user-content-show_last_exit_codesh)
   * [show_palette.sh](#user-content-show_palettesh)
@@ -1093,6 +1094,26 @@ If none of the provided areguments are underscores, it's the same as the the `sd
 I even have it aliased:
 ```console
 $ alias sdk='sdkman_fzf'
+```
+
+### `set_ops.sh`
+
+[set_ops.sh](set_ops.sh) - Function/script for applying set operations to lines in two files.
+
+```
+Usage: set_ops <file1> <op> <file2> [--swap]
+
+The <op> can be one of the following:
+    union  u  +  or
+    intersection  n  and  intersect
+    compliment  -  c  not  subtract  sub  minus
+    symetric-difference  sym-diff  symdiff  simdiff  sim-diff  diff  s  xor
+
+The --swap flag will cause <file1> and <file2> to trade places for the operation.
+    This is primarily for compliment, where the file order matters.
+    These two commands are equivalent:
+      $ set_ops file1 - file2 --swap
+      $ set_ops file2 - file1
 ```
 
 ### `set_title.sh`
