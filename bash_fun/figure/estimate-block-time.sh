@@ -71,7 +71,7 @@ Usage: $fn [<options>] <desired date time>
         Cannot be provided along with --us-per-block.
 
     --us-per-block <microseconds> is the number of microseconds it takes to create an average block.
-        The <microseconds> must be digits only, e.g. '5000' (for 5 seconds).
+        The <microseconds> must be digits only, e.g. '5000000' (for 5 seconds).
         If not supplied, a previous block will be looked up using provenanced,
         and the average from there to the current block is used.
         Cannot be provided along with --ms-per-block.
@@ -419,6 +419,7 @@ if [[ -z "$us_per_block" ]]; then
     us_per_block="$(( ( ( ( ( current_ms - old_ms ) * 10000 ) / ( current_height - old_height ) ) + 5 ) / 10 ))" || exit $?
     ms_per_block="$( micro_to_milli "$us_per_block" )"
     [[ -n "$verbose" ]] && printf 'Milliseconds per block calculated: [%s].\n' "$ms_per_block" >&2
+    old_time_disp="$( epoch_ms_to_date_time "$old_ms" )" || exit $?
 fi
 
 if [[ -n "$provd_used" ]]; then
@@ -493,6 +494,7 @@ fi
 
 [[ -n "$pio_home" ]] && printf 'PIO Home: %s\n' "$pio_home"
 [[ -n "$chain_id" ]] && printf 'Chain-Id: %s\n' "$chain_id"
+[[ -n "$old_time_disp" ]] && printf '   Past: %s Height: %s\n' "$old_time_disp" "$old_height"
 printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
 printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
 printf 'Elapsed milliseconds: %s = %s blocks (at %s milliseconds per block from last %s blocks).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back"
