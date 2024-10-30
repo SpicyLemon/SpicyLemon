@@ -407,6 +407,7 @@ if [[ -z "$us_per_block" ]]; then
     if [[ "$old_height" -lt '1' ]]; then
         old_height=0
     fi
+    printf -v blocks_back_disp ' from last %s blocks' "$blocks_back"
     [[ -n "$verbose" ]] && printf 'Executing command: %s query block %s  ... ' "$PROVD" "$old_height" >&2
     old_block="$( "$PROVD" query block "$old_height" --type height )" || exit $?
     [[ -n "$verbose" ]] && printf 'Done\n' >&2
@@ -488,7 +489,6 @@ else
     exit 2
 fi
 
-
 #########################
 # Do the output dance!
 
@@ -497,7 +497,7 @@ fi
 [[ -n "$old_time_disp" ]] && printf '   Past: %s Height: %s\n' "$old_time_disp" "$old_height"
 printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
 printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
-printf 'Elapsed milliseconds: %s = %s blocks (at %s milliseconds per block from last %s blocks).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back"
+printf 'Elapsed ms: %s = %s blocks (at %s ms/block%s).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back_disp"
 
 
 exit 0
