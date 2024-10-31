@@ -497,7 +497,7 @@ fi
 [[ -n "$old_time_disp" ]] && printf '   Past: %s Height: %s\n' "$old_time_disp" "$old_height"
 printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
 printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
-printf 'Elapsed ms: %s = %s blocks (at %s ms/block%s).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back_disp"
+printf 'Elapsed: %s ms = %s blocks (at %s ms/block%s).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back_disp"
 
 
 exit 0
