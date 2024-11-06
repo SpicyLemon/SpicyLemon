@@ -452,6 +452,11 @@ func TestDTVal_FormattedString(t *testing.T) {
 			val:  NewDurVal(time.Hour * 24 * 8),
 			exp:  "8d",
 		},
+		{
+			name: "duration with fractional seconds.",
+			val:  NewDurVal(time.Hour + time.Minute*2 + time.Second*3 + time.Millisecond*40),
+			exp:  "1h2m3.04s",
+		},
 	}
 
 	for _, tc := range tests {

@@ -260,7 +260,7 @@ $ date-math 5 x 3
 ```
 
 ```console
-$date-math 3 x 5
+$ date-math 3 x 5
 15
 ```
 
