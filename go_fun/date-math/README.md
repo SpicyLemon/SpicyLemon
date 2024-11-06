@@ -6,6 +6,15 @@ Do calculations with datetimes and durations.
 
 
 
+## Installation
+
+To build the `date-math` executable, you can use either:
+* `make install` - places it your standard go installation directory.
+* `make build` - places it in the `build/` directory.
+* `go build .` - places it in your current directory.
+
+
+
 ## Usage
 
 ```plaintext
@@ -275,11 +284,3 @@ $ date-math 6 / 3
 $ date-math 5 / 3
 1
 ```
-
-
-## Building
-
-To build the `date-math` executable, you can use either:
-* `make build` - places it in the `build/` directory.
-* `make install` - places it your standard go installation directory.
-* `go build .` - places it in your current directory.
