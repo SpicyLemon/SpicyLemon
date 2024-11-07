@@ -1,0 +1,3 @@
+TODO:
+* Enhance DoCalculation to better handle the discrepancy between <num> and <epoch>.
+  Basically, if an arg is a whole number, and `ApplyCalculation` gives an "operation not defined", try it again as the other type.
