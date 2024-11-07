@@ -282,15 +282,20 @@ Similarly, the --file <entry>, --dir <entry>, --entry <entry>, and --name <entry
 
 [dict.sh](dict.sh) - A function/script for grepping a dict file.
 
-Defines the environment variable `DICT_FILE` (if not already defined) with a default of /usr/share/dict/words.
+```usage
+$ dict banana
+banana
+cassabanana
+$ dict
+/usr/share/dict/words
+```
 
-Contains three functions:
-* `dict <grep args>` - Greps the dict file as requested.
-* `dict_file` - Outputs the full path the dict file (i.e `$DICT_FILE`).
-* `dict_dir` - Outputs the path to the directory with the dict file.
+If sourced:
+* The `dict` function will be added to your environment.
+* A `DICT_FILE` environment variable will be defined (if not yet already). It will have the full path the the dict file. This is the FILE provided to grep in the `dict` function.
 
-If sourced, the DICT_FILE variable and those functions will be added to your environment.
-If executed, it will execute the `dict` function with the provided args.
+If executed:
+* The `dict` function is executed with the provided arguments.
 
 ### `echo_color.sh`
 

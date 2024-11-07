@@ -73,7 +73,6 @@ __generic_do_setup () {
         'echo_warn'              'echo_yellow'     'hhr'                'hr'           'hr1'                      'hr11'
         'hr3'                    'hr5'             'hr7'                'hr9'  'hrx'   'palette_vector_generate'  'palette_vector_no_wrap'
         'palette_vector_random'  'pick_a_palette'  'show_all_palettes'  'show_colors'  'test_palette'             'what_palette_was_that'
-        'dict_file'              'dict_dir'
     )
 
     # These are commands defined externally to check on before sourcing these files.

@@ -6,8 +6,6 @@
 # File contents:
 #   dict  -------> Grep the dict file.
 #   DICT_FILE  --> Environment variable containing the path to the dict file.
-#   dict_file  --> Print the $DICT_FILE.
-#   dict_dir  ---> Print the directory containing the $DICT_FILE.
 #
 
 # Determine if this script was invoked by being executed or sourced.
@@ -21,17 +19,11 @@ DICT_FILE=${DICT_FILE:-/usr/share/dict/words}
 
 # Usage: dict <grep options>
 dict () {
+    if [[ "$#" -eq '0' ]]; then
+        printf '%s\n' "$DICT_FILE"
+        return 0
+    fi
     grep "$@" "$DICT_FILE"
-}
-
-# Usage: dict_file
-dict_file () {
-    printf '%s\n' "$DICT_FILE"
-}
-
-# Usage: dict_dir
-dict_dir () {
-    dirname "$DICT_FILE"
 }
 
 if [[ "$sourced" != 'YES' ]]; then
