@@ -525,9 +525,19 @@ func TestParseDTVal(t *testing.T) {
 			expVal: NewNumVal(1_000_000),
 		},
 		{
+			name:   "number 1,000,001",
+			arg:    "n1000001",
+			expVal: NewNumVal(1000001),
+		},
+		{
 			name:   "epoch 1,000,001",
 			arg:    "1000001",
 			expVal: NewTimeVal(time.Date(1970, 1, 12, 13, 46, 41, 0, time.Local)),
+		},
+		{
+			name:   "epoch 1,000,000",
+			arg:    "e1000000",
+			expVal: NewTimeVal(time.Date(1970, 1, 12, 13, 46, 40, 0, time.Local)),
 		},
 		{
 			name: "invalid short",
@@ -760,8 +770,18 @@ func TestParseEpoch(t *testing.T) {
 			expTime: time.Date(2022, 4, 20, 4, 20, 0, 0, time.Local),
 		},
 		{
+			name:    "e whole number",
+			arg:     "e1650428400",
+			expTime: time.Date(2022, 4, 20, 4, 20, 0, 0, time.Local),
+		},
+		{
 			name:    "with 3 fractional seconds",
 			arg:     "2000000000.246",
+			expTime: time.Date(2033, 5, 18, 3, 33, 20, 246000000, time.Local),
+		},
+		{
+			name:    "e with 3 fractional seconds",
+			arg:     "e2000000000.246",
 			expTime: time.Date(2033, 5, 18, 3, 33, 20, 246000000, time.Local),
 		},
 		{
@@ -770,8 +790,18 @@ func TestParseEpoch(t *testing.T) {
 			expTime: time.Date(2013, 1, 11, 10, 26, 40, 86427000, time.Local),
 		},
 		{
+			name:    "e with 6 fractional seconds",
+			arg:     "e1357900000.086427",
+			expTime: time.Date(2013, 1, 11, 10, 26, 40, 86427000, time.Local),
+		},
+		{
 			name:    "with 9 fractional seconds",
 			arg:     "1876543209.000000002",
+			expTime: time.Date(2029, 6, 19, 6, 0, 9, 2, time.Local),
+		},
+		{
+			name:    "e with 9 fractional seconds",
+			arg:     "e1876543209.000000002",
 			expTime: time.Date(2029, 6, 19, 6, 0, 9, 2, time.Local),
 		},
 		{
@@ -780,9 +810,104 @@ func TestParseEpoch(t *testing.T) {
 			expTime: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC).In(time.Local),
 		},
 		{
+			name:    "e known",
+			arg:     "e981173106",
+			expTime: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC).In(time.Local),
+		},
+		{
+			name:   "n known",
+			arg:    "n981173106",
+			expErr: "could not parse seconds from \"n981173106\": strconv.ParseInt: parsing \"n981173106\": invalid syntax",
+		},
+		{
 			name:    "zero",
 			arg:     "0",
 			expTime: time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).In(time.Local),
+		},
+		{
+			name:    "e zero",
+			arg:     "e0",
+			expTime: time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).In(time.Local),
+		},
+		{
+			name:    "ends with decimal",
+			arg:     "981173106.",
+			expTime: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC).In(time.Local),
+		},
+		{
+			name:    "e ends with decimal",
+			arg:     "e981173106.",
+			expTime: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC).In(time.Local),
+		},
+		{
+			name:    "starts with decimal",
+			arg:     ".123",
+			expTime: time.Date(1970, 1, 1, 0, 0, 0, 123000000, time.UTC).In(time.Local),
+		},
+		{
+			name:    "e starts with decimal",
+			arg:     "e.123",
+			expTime: time.Date(1970, 1, 1, 0, 0, 0, 123000000, time.UTC).In(time.Local),
+		},
+		{
+			name:   "only decimal",
+			arg:    ".",
+			expErr: "invalid number: \".\"",
+		},
+		{
+			name:   "e only decimal",
+			arg:    "e.",
+			expErr: "invalid number: \".\"",
+		},
+		{
+			name:   "just e",
+			arg:    "e",
+			expErr: "no value provided after epoch designator 'e'",
+		},
+		{
+			name:   "invalid whole number",
+			arg:    "123four",
+			expErr: "could not parse seconds from \"123four\": strconv.ParseInt: parsing \"123four\": invalid syntax",
+		},
+		{
+			name:   "e invalid whole number",
+			arg:    "e123four",
+			expErr: "could not parse seconds from \"123four\": strconv.ParseInt: parsing \"123four\": invalid syntax",
+		},
+		{
+			name:   "invalid fractional part",
+			arg:    "123.4five6",
+			expErr: "could not parse nanoseconds from \"123.4five6\": strconv.ParseInt: parsing \"4five6000\": invalid syntax",
+		},
+		{
+			name:   "e invalid fractional part",
+			arg:    "e123.4five6",
+			expErr: "could not parse nanoseconds from \"123.4five6\": strconv.ParseInt: parsing \"4five6000\": invalid syntax",
+		},
+		{
+			name:    "zero with fractional",
+			arg:     "0.975",
+			expTime: time.Date(1970, 1, 1, 0, 0, 0, 975000000, time.UTC).In(time.Local),
+		},
+		{
+			name:    "e zero with fractional",
+			arg:     "e0.975",
+			expTime: time.Date(1970, 1, 1, 0, 0, 0, 975000000, time.UTC).In(time.Local),
+		},
+		{
+			name:    "zero fractional",
+			arg:     "123.000000000",
+			expTime: time.Date(1970, 1, 1, 0, 2, 3, 0, time.UTC).In(time.Local),
+		},
+		{
+			name:    "e zero fractional",
+			arg:     "e123.000000000",
+			expTime: time.Date(1970, 1, 1, 0, 2, 3, 0, time.UTC).In(time.Local),
+		},
+		{
+			name:    "e one",
+			arg:     "e1",
+			expTime: time.Date(1970, 1, 1, 0, 0, 1, 0, time.UTC).In(time.Local),
 		},
 	}
 
@@ -880,6 +1005,84 @@ func TestParseDur(t *testing.T) {
 			require.NotPanics(t, testFunc, "ParseDur(%q)", tc.arg)
 			AssertEqualError(t, tc.expErr, err, "ParseDur(%q) error", tc.arg)
 			assert.Equal(t, tc.expDur, actDur, "ParseDur(%q) duration\nExpected: %s,  Actual: %s", tc.arg, tc.expDur, actDur)
+		})
+	}
+}
+
+func TestParseNum(t *testing.T) {
+	tests := []struct {
+		name   string
+		arg    string
+		expNum int
+		expErr string
+	}{
+		{
+			name:   "empty string",
+			arg:    "",
+			expErr: "strconv.Atoi: parsing \"\": invalid syntax",
+		},
+		{
+			name:   "just n",
+			arg:    "n",
+			expErr: "strconv.Atoi: parsing \"\": invalid syntax",
+		},
+		{
+			name:   "zero",
+			arg:    "0",
+			expNum: 0,
+		},
+		{
+			name:   "n zero",
+			arg:    "n0",
+			expNum: 0,
+		},
+		{
+			name:   "e zero",
+			arg:    "e0",
+			expErr: "strconv.Atoi: parsing \"e0\": invalid syntax",
+		},
+		{
+			name:   "one",
+			arg:    "1",
+			expNum: 1,
+		},
+		{
+			name:   "n one",
+			arg:    "n1",
+			expNum: 1,
+		},
+		{
+			name:   "e one",
+			arg:    "e1",
+			expErr: "strconv.Atoi: parsing \"e1\": invalid syntax",
+		},
+		{
+			name:   "big number",
+			arg:    "987654321",
+			expNum: 987654321,
+		},
+		{
+			name:   "n big number",
+			arg:    "n987654321",
+			expNum: 987654321,
+		},
+		{
+			name:   "e big number",
+			arg:    "e987654321",
+			expErr: "strconv.Atoi: parsing \"e987654321\": invalid syntax",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actNum int
+			var err error
+			testFunc := func() {
+				actNum, err = ParseNum(tc.arg)
+			}
+			require.NotPanics(t, testFunc, "ParseNum(%q)", tc.arg)
+			AssertEqualError(t, tc.expErr, err, "ParseNum(%q) error", tc.arg)
+			assert.Equal(t, tc.expNum, actNum, "ParseNum(%q) number", tc.arg)
 		})
 	}
 }

@@ -37,8 +37,13 @@ A <value> can either be a <date>, <epoch>, <dur>, or <num>.
         The "d" and "w" time units are non-standard and represent days and weeks.
         It's assumed that 1w = 7d and 1d = 24h = 1440m = 86400s, even though that
         isn't always the case, e.g. time changes and leap seconds.
-  <num> A possibly signed whole number. Limited to -1,000,000 and 1,000,000
-        (inclusive), otherwise it's treated as an epoch.
+  <num> A possibly signed whole number.
+
+A whole number might be either an <epoch> or <num>. By default, a whole number
+greater than 1,000,000 or less than -1,000,000 is treated as an <epoch>. A whole
+number between -1,000,000 and -1,000,000 (inclusive) is treated as a <num>.
+To force a whole number to be an <epoch>, prepend it with 'e', e.g. 'e1000000'.
+To force a whole number to be a <num>, prepend it with 'n', e.g. 'n1000001'.
 
 The <op> can be + - x or /. Only the following operations are defined:
   <time> - <time> => <dur>   e.g. 2020-01-09 4:30:00 - 2020-01-09 3:29:28 => 1h2s

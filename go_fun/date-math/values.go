@@ -229,7 +229,7 @@ func ParseDTVal(arg string) (*DTVal, error) {
 	t, errT := ParseTime(arg)
 	e, errE := ParseEpoch(arg)
 	d, errD := ParseDur(arg)
-	i, errI := strconv.Atoi(arg)
+	i, errI := ParseNum(arg)
 
 	// Make bools for these to make stuff easier to read.
 	var isT, isE, isD, isI bool
@@ -334,17 +334,32 @@ func ParseEpoch(arg string) (time.Time, error) {
 	if len(arg) == 0 {
 		return time.Time{}, errors.New("empty string not allowed")
 	}
-	parts := strings.Split(arg, ".")
-	s, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("could not parse seconds from %q: %w", arg, err)
+	if arg == "e" {
+		return time.Time{}, errors.New("no value provided after epoch designator 'e'")
 	}
-	var ns int64
-	if len(parts) > 1 {
+	if arg[0] == 'e' {
+		arg = arg[1:]
+	}
+	parts := strings.Split(arg, ".")
+	var err error
+	var s, ns int64
+	var haveS, haveNS bool
+	if len(parts[0]) > 0 {
+		s, err = strconv.ParseInt(parts[0], 10, 64)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("could not parse seconds from %q: %w", arg, err)
+		}
+		haveS = true
+	}
+	if len(parts) > 1 && len(parts[1]) > 0 {
 		ns, err = strconv.ParseInt((parts[1] + "000000000")[:9], 10, 64)
 		if err != nil {
 			return time.Time{}, fmt.Errorf("could not parse nanoseconds from %q: %w", arg, err)
 		}
+		haveNS = true
+	}
+	if !haveS && !haveNS {
+		return time.Time{}, fmt.Errorf("invalid number: %q", arg)
 	}
 	return time.Unix(s, ns), nil
 }
@@ -389,4 +404,12 @@ func ParseDur(arg string) (time.Duration, error) {
 		return baseDur + wdDur, nil
 	}
 	return baseDur - wdDur, nil
+}
+
+// ParseNum parses a number, allowing it to be prefixed with 'n'.
+func ParseNum(arg string) (int, error) {
+	if len(arg) > 0 && arg[0] == 'n' {
+		arg = arg[1:]
+	}
+	return strconv.Atoi(arg)
 }
