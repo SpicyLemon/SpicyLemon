@@ -61,7 +61,7 @@ __generic_do_setup () {
         'palette_generators'  'pbsort'             'print_args'          'ps_grep'              'pvarn'
         're_line'             'sdkman_fzf'         'set_title'           'show_last_exit_code'  'show_palette'
         'string_repeat'       'tee_strip_colors'   'timealert'           'to_date'              'to_epoch'
-        'tryhard'             'set_ops'
+        'tryhard'             'set_ops'            'dict'
     )
 
     # These are extra functions defined in the files that will be checked (along with the primary functions).
@@ -73,6 +73,7 @@ __generic_do_setup () {
         'echo_warn'              'echo_yellow'     'hhr'                'hr'           'hr1'                      'hr11'
         'hr3'                    'hr5'             'hr7'                'hr9'  'hrx'   'palette_vector_generate'  'palette_vector_no_wrap'
         'palette_vector_random'  'pick_a_palette'  'show_all_palettes'  'show_colors'  'test_palette'             'what_palette_was_that'
+        'dict_file'              'dict_dir'
     )
 
     # These are commands defined externally to check on before sourcing these files.

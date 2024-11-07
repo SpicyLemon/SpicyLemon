@@ -20,6 +20,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [beepbeep.sh](#user-content-beepbeepsh)
   * [change_word.sh](#user-content-change_wordsh)
   * [cpm.sh](#user-content-cpmsh)
+  * [dict.sh](#user-content-dictsh)
   * [echo_color.sh](#user-content-echo_colorsh)
   * [echo_do.sh](#user-content-echo_dosh)
   * [find_dead_links.sh](#user-content-find_dead_linkssh)
@@ -276,6 +277,20 @@ Similarly, the --file <entry>, --dir <entry>, --entry <entry>, and --name <entry
   add the <entry> to either the sources or targets depending on it's position.
 
 ```
+
+### `dict.sh`
+
+[dict.sh](dict.sh) - A function/script for grepping a dict file.
+
+Defines the environment variable `DICT_FILE` (if not already defined) with a default of /usr/share/dict/words.
+
+Contains three functions:
+* `dict <grep args>` - Greps the dict file as requested.
+* `dict_file` - Outputs the full path the dict file (i.e `$DICT_FILE`).
+* `dict_dir` - Outputs the path to the directory with the dict file.
+
+If sourced, the DICT_FILE variable and those functions will be added to your environment.
+If executed, it will execute the `dict` function with the provided args.
 
 ### `echo_color.sh`
 
