@@ -72,6 +72,7 @@ case "${HASH_PRICE_SOURCE:-osmosis}" in
         HASH_JQ_FILTER="${HASH_JQ_FILTER:-.lastTradedPrice}"
         ;;
     osmosis)
+        # This seemed to stop working around 10:00 AM MDT Thu Nov 7, 2024.
         HASH_PRICE_URL="${HASH_PRICE_URL:-https://api-osmosis.imperator.co/tokens/v2/price/HASH}"
         HASH_JQ_FILTER="${HASH_JQ_FILTER:-.price}"
         ;;
