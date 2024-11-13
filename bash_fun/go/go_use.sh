@@ -23,7 +23,7 @@ go_use () {
   1.18: ../Cellar/go@1.18/1.18.10/bin/go
   1.20: /usr/local/go/bin/go
   1.21: ../Cellar/go/1.21.4/bin/go
-  1.23: ../Cellar/go/1.23.0/bin/go
+  1.23: ../Cellar/go/1.23.3/bin/go
 EOF
 
 )"
