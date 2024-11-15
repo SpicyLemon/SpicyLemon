@@ -215,7 +215,7 @@ hr11 () {
 # Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--] <message>
 hrx () {
     local n width color msg no_color no_copy
-    width=120
+    width=80
     msg=()
     color='YES'
     if [[ "$#" -eq '0' ]]; then
@@ -226,7 +226,7 @@ hrx () {
             --help|-h)
                 printf 'Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--copy|--no-copy] [--] <message>\n'
                 printf '<n> => the hr height: 1, 3, 5, 7, 9, or 11.\n'
-                printf -- '--width <width> will output the hr using the provided width. Default is 120. Can be either "full" or a number.\n'
+                printf -- '--width <width> will output the hr using the provided width. Default is 80. Can be either "full" or a number.\n'
                 printf -- '--color will cause a random palette to be picked. This is the default behavior.\n'
                 printf -- '--no-color will output without picking a color palette.\n'
                 printf -- '--palette <number> will use the provided palette. Can be shortenned to --pal <number>\n'
