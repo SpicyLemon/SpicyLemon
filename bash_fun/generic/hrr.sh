@@ -214,7 +214,7 @@ hr11 () {
 
 # Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--] <message>
 hrx () {
-    local n width color msg no_color no_copy
+    local n width color msg no_color no_copy comment cmd
     width=80
     msg=()
     color='YES'
@@ -232,6 +232,7 @@ hrx () {
                 printf -- '--palette <number> will use the provided palette. Can be shortenned to --pal <number>\n'
                 printf -- '--copy will put the header in your clipboard too (as long as pbcopy is available).  This is the default behavior.\n'
                 printf -- '--no-copy will not attempt to do anything with your clipboard.\n'
+                printf -- '--comment reduce width by 3 and prepend each line with //<space>.\n'
                 printf 'All other args are treated as the message.\n'
                 printf 'Provide the message after -- if it contains one of the flags.\n'
                 return 0
@@ -272,6 +273,9 @@ hrx () {
             --no-copy|--no-pbcopy)
                 no_copy='YES'
                 ;;
+            --comment)
+                comment='YES'
+                ;;
             --)
                 if [[ -n "${msg[*]}" ]]; then
                     printf 'Unknown argments: %s\n' "${msg[*]}"
@@ -282,7 +286,7 @@ hrx () {
                 ;;
             *)
                 if [[ -z "$n" ]]; then
-                    if [[ "$1" -ne '1' && "$1" -ne '3' && "$1" -ne '5' && "$1" -ne '7' && "$1" -ne '9' && "$1" -ne '11' ]]; then
+                    if [[ ! "$1" =~ ^(1|3|5|7|9|11)$ ]]; then
                         printf 'Invalid height number [%s]. Must be one of 1, 3, 5, 7, 9, or 11.\n' "$1"
                         return 1
                     fi
@@ -309,10 +313,15 @@ hrx () {
     else
         no_color='1'
     fi
+    if [[ -n "$comment" ]]; then
+        if [[ "$width" -gt '3' ]]; then
+            width=$(( width - 3 ))
+        fi
+    fi
 
-    HR_WIDTH="$width" HR_NO_COLOR="$no_color" "hr$n" "${msg[@]}"
+    HR_WIDTH="$width" HR_NO_COLOR="$no_color" "hr$n" "${msg[@]}" | { if [[ -n "$comment" ]]; then sed -E 's|^|// |'; else cat -; fi; }
     if [[ -z "$no_copy" ]] && command -v pbcopy > /dev/null 2>&1; then
-        HR_WIDTH="$width" HR_NO_COLOR='1' "hr$n" "${msg[@]}" | pbcopy
+        HR_WIDTH="$width" HR_NO_COLOR="1" "hr$n" "${msg[@]}" | { if [[ -n "$comment" ]]; then sed -E 's|^|// |'; else cat -; fi; } | pbcopy
         printf ' - copied to clipboard.\n'
     fi
 
