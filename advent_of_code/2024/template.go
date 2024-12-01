@@ -66,12 +66,12 @@ const MAX_UINT32 = uint32(4_294_967_295)
 const MAX_UINT64 = uint64(18_446_744_073_709_551_615)
 const MAX_UINT = uint(18_446_744_073_709_551_615)
 
-// SplitParseInts splits a string using the given separator and converts each part into an int.
-// Uses strings.Split(s, sep) for the splitting and strconv.Atoi to parse it to an int.
+// SplitParseInts splits a string on whitespace and converts each part into an int.
+// Uses strings.Fields(s) for the splitting and strconv.Atoi to parse it to an int.
 // Leading and trailing whitespace on each entry are ignored.
-func SplitParseInts(s string, sep string) ([]int, error) {
+func SplitParseInts(s string) ([]int, error) {
 	rv := []int{}
-	for _, entry := range strings.Split(s, sep) {
+	for _, entry := range strings.Fields(s) {
 		if len(entry) > 0 {
 			i, err := strconv.Atoi(strings.TrimSpace(entry))
 			if err != nil {
@@ -84,7 +84,7 @@ func SplitParseInts(s string, sep string) ([]int, error) {
 }
 
 // StringNumberJoin maps the slice to strings, numbers them, and joins them.
-func StringNumberJoin[S ~[]E, E Stringer](slice S, startAt int, sep string) string {
+func StringNumberJoin[S ~[]E, E fmt.Stringer](slice S, startAt int, sep string) string {
 	return strings.Join(AddLineNumbers(MapSlice(slice, E.String), startAt), sep)
 }
 
@@ -94,7 +94,7 @@ func StringNumberJoinFunc[S ~[]E, E any](slice S, stringer func(E) string, start
 }
 
 // SliceToStrings runs String() on each entry of the provided slice.
-func SliceToStrings[S ~[]E, E Stringer](slice S) []string {
+func SliceToStrings[S ~[]E, E fmt.Stringer](slice S) []string {
 	return MapSlice(slice, E.String)
 }
 
@@ -134,11 +134,6 @@ func PrefixLines(pre string, strs ...string) string {
 		}
 	}
 	return rv.String()
-}
-
-// Stringer is an interface for something that can be turned into a string.
-type Stringer interface {
-	String() string
 }
 
 // MapSlice returns a new slice with each element run through the provided mapper function.
@@ -185,6 +180,50 @@ func MapSliceP[S ~[]E, E any, R any](slice S, mapper func(*E) R) []R {
 		rv[i] = mapper(&e)
 	}
 	return rv
+}
+
+// Abs returns the absolute value of the provided number.
+func Abs[V Number](v V) V {
+	var zero V
+	if v < zero {
+		return zero - v
+	}
+	return v
+}
+
+// Signed is a constraint of signed integer types. Same as golang.org/x/exp/constraints.Signed.
+type Signed interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+
+// Signed is a constraint of unsigned integer types. Same as golang.org/x/exp/constraints.Unsigned.
+type Unsigned interface {
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
+
+// Integer is a constraint of integer types. Same as golang.org/x/exp/constraints.Integer.
+type Integer interface {
+	Signed | Unsigned
+}
+
+// Float is a constraint of float types. Same as golang.org/x/exp/constraints.Float.
+type Float interface {
+	~float32 | ~float64
+}
+
+// Ordered is a constraint for types that can be compared using > etc. Same as golang.org/x/exp/constraints.Ordered.
+type Ordered interface {
+	Integer | Float | ~string
+}
+
+// Complex is a constraint of complex types. Same as golang.org/x/exp/constraints.Complex.
+type Complex interface {
+	~complex64 | ~complex128
+}
+
+// Number is a constraint of integers and floats.
+type Number interface {
+	Integer | Float
 }
 
 // -------------------------------------------------------------------------------------------------
