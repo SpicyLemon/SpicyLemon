@@ -180,8 +180,8 @@ func AddLineNumbers(lines []string, startAt int) []string {
 // DigitFormatForMax returns a format string of the length of the provided maximum number.
 // E.g. DigitFormatForMax(10) returns "%2d".
 // DigitFormatForMax(382920) returns "%6d".
-func DigitFormatForMax(max int) string {
-	return fmt.Sprintf("%%%dd", len(fmt.Sprintf("%d", max)))
+func DigitFormatForMax(maximum int) string {
+	return fmt.Sprintf("%%%dd", len(fmt.Sprintf("%d", maximum)))
 }
 
 // PrefixLines splits each provided string on \n then adds a prefix to each line, then puts it all back together.
