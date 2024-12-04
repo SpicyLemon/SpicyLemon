@@ -171,10 +171,26 @@ func ParsePoint(str string) (Point, error) {
 	return Point{x, y}, nil
 }
 
+// Integer is each of the integer types.
+type Integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
+
+// #############################################################################
+// #############################################################################
+// ######################   Everything Below is Copied   #######################
+// #############################################################################
+// #############################################################################
+
 // A Point contains an X and Y value.
 type Point struct {
 	X int
 	Y int
+}
+
+// NewPoint creates a new Point with the given coordinates.
+func NewPoint(x, y int) *Point {
+	return &Point{X: x, Y: y}
 }
 
 // String returns a string of this point in the format "(x,y)".
@@ -217,14 +233,9 @@ func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highl
 	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
 }
 
-// IntType is each of the integer types.
-type IntType interface {
-	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
-}
-
 // CreateIndexedGridString creates a string of the provided vals bytes matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
-func CreateIndexedGridStringNums[M ~[][]N, N IntType, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string {
+func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string {
 	strs := make([][]string, len(vals))
 	for y, row := range vals {
 		strs[y] = make([]string, len(row))

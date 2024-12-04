@@ -226,6 +226,192 @@ type Number interface {
 	Integer | Float
 }
 
+// -----------------------------------------------------------------------------
+// -------------------------  CreateIndexedGridString  -------------------------
+// -----------------------------------------------------------------------------
+
+// A Point contains an X and Y value.
+type Point struct {
+	X int
+	Y int
+}
+
+// NewPoint creates a new Point with the given coordinates.
+func NewPoint(x, y int) *Point {
+	return &Point{X: x, Y: y}
+}
+
+// String returns a string of this point in the format "(x,y)".
+func (p Point) String() string {
+	return fmt.Sprintf("(%d,%d)", p.X, p.Y)
+}
+
+// GetX gets this Point's X value.
+func (p Point) GetX() int {
+	return p.X
+}
+
+// GetY gets this Point's Y value.
+func (p Point) GetY() int {
+	return p.Y
+}
+
+// GetXY gets this Point's (X, Y) values.
+func (p Point) GetXY() (int, int) {
+	return p.X, p.Y
+}
+
+// XY is something that has an X and Y value.
+type XY interface {
+	GetX() int
+	GetY() int
+	GetXY() (int, int)
+}
+
+// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// The result will have row and column indexes and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string {
+	strs := make([][]string, len(vals))
+	for y, row := range vals {
+		strs[y] = make([]string, len(row))
+		for x, val := range row {
+			strs[y][x] = string(val)
+		}
+	}
+	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
+}
+
+// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// The result will have row and column indexes and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string {
+	strs := make([][]string, len(vals))
+	for y, row := range vals {
+		strs[y] = make([]string, len(row))
+		for x, val := range row {
+			strs[y][x] = fmt.Sprintf("%d", val)
+		}
+	}
+	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
+}
+
+// CreateIndexedGridString creates a string of the provided vals matrix.
+// The result will have row and column indexes and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string {
+	// Get the height. If it's zero, there's nothing to return.
+	height := len(vals)
+	if height == 0 {
+		return ""
+	}
+
+	// Get the max cell length and the max row width.
+	cellLen := 0
+	width := len(vals[0])
+	for _, r := range vals {
+		if len(r) > width {
+			width = len(r)
+		}
+		for _, c := range r {
+			if len(c) > cellLen {
+				cellLen = len(c)
+			}
+		}
+	}
+	// Add an extra space if there's two or more characters per cell.
+	if cellLen > 1 {
+		cellLen++
+	}
+
+	// Define the format that each line will start with and for each cell.
+	leadFmt := fmt.Sprintf("%%%dd:", len(fmt.Sprintf("%d", height)))
+	blankLead := strings.Repeat(" ", len(fmt.Sprintf(leadFmt, 0)))
+	cellFmt := fmt.Sprintf("%%%ds", cellLen)
+
+	// If none of the rows have anything, just print out the row numbers.
+	if width == 0 {
+		lines := make([]string, len(vals))
+		for y := range vals {
+			lines[y] = fmt.Sprintf(leadFmt, y)
+		}
+		return strings.Join(lines, "\n")
+	}
+
+	// Create the index numbers across the top.
+	dCount := len(fmt.Sprintf("%d", width-1))
+	dLen := width * cellLen
+	digits := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"}
+	topIndexLines := make([]string, dCount+1)
+	topIndexLines[dCount] = strings.Repeat("-", dLen)
+	rep := 1
+	for l := 1; l <= dCount; l++ {
+		first := " "
+		if l == 1 {
+			first = "0"
+		}
+		first = strings.Repeat(fmt.Sprintf(cellFmt, first), rep)
+
+		var sb strings.Builder
+		for _, s := range digits {
+			if len(first)+sb.Len() >= dLen {
+				break
+			}
+			sb.WriteString(strings.Repeat(fmt.Sprintf(cellFmt, s), rep))
+		}
+
+		rep *= 10
+		line := first + strings.Repeat(sb.String(), 1+width/rep)
+		topIndexLines[dCount-l] = line[:dLen]
+	}
+
+	// Create a matrix indicating desired text formats.
+	textFmt := make([][]int, height)
+	for y := range textFmt {
+		textFmt[y] = make([]int, width)
+	}
+	for _, p := range colorPoints {
+		if p.GetY() < height && p.GetX() < width {
+			textFmt[p.GetY()][p.GetX()] = 1
+		}
+	}
+	for _, p := range highlightPoints {
+		if p.GetY() < height && p.GetX() < width && textFmt[p.GetY()][p.GetX()] <= 1 {
+			textFmt[p.GetY()][p.GetX()] += 2
+		}
+	}
+
+	// Start with the top index lines shifted right a bit to account for row indexes in the lines to follow.
+	var rv strings.Builder
+	for _, l := range topIndexLines {
+		rv.WriteString(fmt.Sprintf("%s%s\n", blankLead, l))
+	}
+
+	// Add all the line numbers, and cells (with the desired coloring/marking).
+	for y, r := range vals {
+		rv.WriteString(fmt.Sprintf(leadFmt, y))
+		for x := 0; x < width; x++ {
+			v := ""
+			if x < len(r) {
+				v = r[x]
+			}
+			cell := fmt.Sprintf(cellFmt, v)
+			switch textFmt[y][x] {
+			case 0: // default look.
+				rv.WriteString(cell)
+			case 1: // color only.
+				rv.WriteString("\033[94m" + cell + "\033[0m") // Light-blue text.
+			case 2: // highlight only
+				rv.WriteString("\033[7m" + cell + "\033[0m") // Foreground<->Background Reversed.
+			case 3: // color and highlight
+				rv.WriteString("\033[94;7m" + cell + "\033[0m") // Light-blue background after fg<->bg reversed.
+			default: // Unknown, make it ugly.
+				rv.WriteString("\033[93;41m" + cell + "\033[0m") // Bright yellow text on a red background.
+			}
+		}
+		rv.WriteByte('\n')
+	}
+
+	return rv.String()
+}
+
 // -------------------------------------------------------------------------------------------------
 // --------------------------------  CLI params and input parsing  ---------------------------------
 // -------------------------------------------------------------------------------------------------
