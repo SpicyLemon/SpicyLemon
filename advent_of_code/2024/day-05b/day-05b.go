@@ -37,27 +37,6 @@ func Solve(params *Params) (string, error) {
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func FixUpdates(ctx *Context, updates [][]int) [][]int {
-	rv := make([][]int, len(updates))
-	for u, update := range updates {
-		rv[u] = FixUpdate(ctx, update)
-	}
-	return rv
-}
-
-func FixUpdate(ctx *Context, update []int) []int {
-	rv := make([]int, len(update))
-	copy(rv, update)
-	sort.Slice(rv, func(i, j int) bool {
-		yep, known := ctx.RightOrderMap[rv[i]]
-		if !known {
-			return false
-		}
-		return yep[rv[j]]
-	})
-	return rv
-}
-
 type Context struct {
 	Params        *Params
 	Input         *Input
@@ -76,6 +55,27 @@ func NewContext(params *Params, input *Input) *Context {
 		params.Verbosef("WrongOrderMap:\n%s", orderMapString(rv.WrongOrderMap))
 		params.Verbosef("RightOrderMap:\n%s", orderMapString(rv.RightOrderMap))
 	}
+	return rv
+}
+
+func FixUpdates(ctx *Context, updates [][]int) [][]int {
+	rv := make([][]int, len(updates))
+	for u, update := range updates {
+		rv[u] = FixUpdate(ctx, update)
+	}
+	return rv
+}
+
+func FixUpdate(ctx *Context, update []int) []int {
+	rv := make([]int, len(update))
+	copy(rv, update)
+	sort.Slice(rv, func(i, j int) bool {
+		yep, known := ctx.RightOrderMap[rv[i]]
+		if !known {
+			return false
+		}
+		return yep[rv[j]]
+	})
 	return rv
 }
 
