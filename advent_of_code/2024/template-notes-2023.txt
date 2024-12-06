@@ -1,4 +1,20 @@
-AoC 2021 go template:
+AoC 2024 go template notes.
+
+Standard input filenames: example.input actual.input
+
+When parsing the input, you'll often want one of: SplitParseInts(s) or SplitParseIntsD(s, d).
+For input.String(), you'll often want at least one of: StringNumberJoin, StringNumberJoinFunc, SliceToStrings, or MapSlice.
+MapSlice is when you have []X and the func takes in X, or []*X and takes in a *X.
+MapPSlice is when you have []*X and the func takes in X.
+MapSliceP is when you have []X and the func takes in *X.
+CreateIndexedGridString, CreateIndexedGridStringBz, and CreateIndexedGridStringNums are nice for string output too, but probably aren't good in a loop.
+
+The ./newday.sh script will copy the template into the new day's directory as the days solution.
+Then, I just need to complete all the TODOs in it.
+
+The DEBUG env var can be used instead of --debug and will give you debug output starting a little earlier.
+
+Template help: go run template.go --help
     Usage: go run template.go [<input file>] [<flags>]
     Default <input file> is example.input
     Flags:
@@ -8,45 +24,72 @@ AoC 2021 go template:
     Single Options:
       Providing these multiple times will overwrite the previously provided value.
       --input|-i <input file>  An option to define the input file.
-      --count|-c|-n <number>   Defines a count.
+      --count|-n <number>      Defines a count.
 
     Repeatable Options:
       Providing these multiple times will add to previously provided values.
       Values are read until the next one starts with a dash.
       To provide entries that start with a dash, you can use --flag='<value>' syntax.
-      --lines|--line|--custom|--val|-l <value 1> [<value 2> ...]  Defines custom input lines.
+      --lines|-l <value 1> [<value 2> ...]  Defines custom input lines.
+
 Constants:
     DEFAULT_COUNT = 0
     Min and Max: int, int8, int16, int32, int64, e.g. MIN_INT
     Max: uinit, uint8, uint16, uint32, uint64
     DEFAULT_INPUT_FILE = "example.input"
     DONE_FMT = "Done. Duration: [%s]."
+
 Globals:
-    debug bool: whether to output debug info
-    startTime time.Time: the time the program started
+    debug bool: whether to output debug info.
+    startTime time.Time: the time the program started.
     funcDepth int: keeps track of function call depth (for output indentation).
+    panicPrinted: keeps track of whether panic info has been printed.
+
 Types:
     Input struct: // TODO: Write this to represent the input
-        .String(): makes a string of it
+        .String(): makes a string of it.
     Params struct: Anything that might be provided via command-line arguments: Verbose, HelpPrinted, Errors, Count, InputFile, Input, Custom
-        .String(): makes a string of it
-        .AppendError(err error): adds an error
+        .String(): makes a string of it.
+        .AppendError(err error): adds an error.
         .HasError() bool: returns true if there's an error in it.
         .GetError() error: collapses all known errors into a single one, or returns nil if there's no errors.
+        .Verbosef(format string, a ...interface{}): outputs to Stderr if the verbose flag was provided. Does nothing otherwise.
+        .HasCustom(str string) bool: returns true if the provided string was given as a custom arg.
+    Constraint types copied from golang.org/x/exp/constraints:
+        Signed, Unsigned, Integer, Float, Ordered, Complex, Number
+    Point: A two dimensional point with an X and Y.
+        .String(): makes a string of it.
+        .GetX() int: returns the X value.
+        .GetY() int: returns the Y value.
+        .GetXY() (int, int): returns the X and Y value respectively.
+    XY: Interface for something that has an X and Y value.
+        GetX() int: returns the X value.
+        GetY() int: returns the Y value.
+        GetXY() (int, int): returns the X and Y value respectively.
+
 Functions:
     Problem specific:
         Solve(params *Params) (string, error): // TODO: Write this to solve the problem
         ParseInput(lines []string) (*Input, error): // TODO: Write this to parse the input file lines to an Input object.
     Generic Stuff:
-        SplitParseInts(s string, sep string) ([]int, error): Splits s at each sep (removing sep) and converts each into an int.
+        SplitParseInts(s string, sep string) ([]int, error): Splits s whitespace and converts each into an int.
+        SplitParseIntsD(s string, sep string) ([]int, error): Splits s at each sep (removing sep) and converts each into an int.
         StringNumberJoin(slice S, startAt int, sep string) string: Maps a slice to strings, numbers them, and joins them.
-        Stringer: An interface for things that have a String() string method.
+        StringNumberJoinFunc[S ~[]E, E any](slice S, stringer func(E) string, startAt int, sep string) string: maps the slice to strings using the provided stringer, numbers them, and joins them.
+        SliceToStrings[S ~[]E, E fmt.Stringer](slice S) []string: runs String() on each entry of the provided slice.
         AddLineNumbers(lines []string, startAt int) []string: Adds line numbers to the start of each line.
         DigitFormatForMax(max int): creates a digit format with enough digits to contain max, e.g. 10 -> "%2d", 382920 -> "%6d".
         PrefixLines(pre string, strs ...string): Splits each provided string on \n and adds the prefix to each line.
         MapSlice(slice []E, mapper func(E) R) []R: Converts a slice by running a func on each entry.
         MapPSlice(slice []*E, mapper func(E) R) []R: Converts a slice of pointers by running a func on each entry.
         MapSliceP(slice []E, mapper func(*E) R) []R: Converts a slice by running a pointer func on each entry.
+        Abs[V Number](v V) V: returns the absolute value of the provided number.
+    CreateIndexedGridString:
+        NewPoint(x, y int) *Point: creates a new Point with the given coordinates.
+        AddPoints(points ...*Point) *Point: returns a new point that is the sum of the provided points.
+        CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string
+        CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string
+        CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string
     CLI params and input parsing:
         GetParams(args []string) *Params): parses the given args into params
         IsOneOfStrFold(str string, opts ...string) bool: returns true if str is equal (ignoring case) to one of the opts.

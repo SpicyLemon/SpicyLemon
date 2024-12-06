@@ -182,6 +182,11 @@ type Integer interface {
 // #############################################################################
 // #############################################################################
 
+// CreateIndexedGridStringBz is for [][]byte
+// CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
+// CreateIndexedGridString is for [][]string
+// All of them have the signature (vals, color, highlight)
+
 // A Point contains an X and Y value.
 type Point struct {
 	X int
@@ -213,6 +218,16 @@ func (p Point) GetXY() (int, int) {
 	return p.X, p.Y
 }
 
+// AddPoints returns a new point that is the sum of the provided points.
+func AddPoints(points ...*Point) *Point {
+	rv := NewPoint(0, 0)
+	for _, p := range points {
+		rv.X += p.X
+		rv.Y += p.Y
+	}
+	return rv
+}
+
 // XY is something that has an X and Y value.
 type XY interface {
 	GetX() int
@@ -220,7 +235,7 @@ type XY interface {
 	GetXY() (int, int)
 }
 
-// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// CreateIndexedGridStringBz creates a string of the provided bytes matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string {
 	strs := make([][]string, len(vals))
@@ -233,7 +248,7 @@ func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highl
 	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
 }
 
-// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// CreateIndexedGridStringNums creates a string of the provided numbers matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string {
 	strs := make([][]string, len(vals))
@@ -246,7 +261,7 @@ func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colo
 	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
 }
 
-// CreateIndexedGridString creates a string of the provided vals matrix.
+// CreateIndexedGridString creates a string of the provided strings matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string {
 	// Get the height. If it's zero, there's nothing to return.

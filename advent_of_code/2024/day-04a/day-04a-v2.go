@@ -77,7 +77,8 @@ func GetChar(chars [][]byte, x, y int) byte {
 	return chars[y][x]
 }
 
-// MakeWord attempts to create the provided word by starting at (x,y) in the chars grid and advancing (dx,dy) for each successive letter.
+// MakeWord attempts to create the provided word by starting at (x,y) in the chars grid and advancing
+// by (dx,dy) for each successive letter.
 // Returns a string up to (but not including) the first wrong character and the points for each character.
 func MakeWord(word string, chars [][]byte, x, y, dx, dy int) (string, []*Point) {
 	if dx == 0 && dy == 0 {
@@ -106,7 +107,6 @@ func Join[S ~[]E, E any](slices ...S) S {
 	return rv
 }
 
-// func MakeGrid[G ~[]R, R ~[]E, E any](width, height int, ini E) G {
 func MakeGrid[E any](width, height int, ini E) [][]E {
 	rv := make([][]E, height)
 	for y := range rv {

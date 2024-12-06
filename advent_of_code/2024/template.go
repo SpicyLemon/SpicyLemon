@@ -32,6 +32,12 @@ type Input struct {
 }
 
 func (i Input) String() string {
+	// StringNumberJoin(slice, startAt, sep) string
+	// StringNumberJoinFunc(slice, stringer, startAt, sep) string
+	// SliceToStrings(slice) []string
+	// AddLineNumbers(lines, startAt) []string
+	// MapSlice(slice, mapper) slice  or  MapPSlice  or  MapSliceP
+	// CreateIndexedGridString(grid, color, highlight) string  or  CreateIndexedGridStringBz  or  CreateIndexedGridStringNums)
 	return "TODO"
 }
 
@@ -40,6 +46,7 @@ func ParseInput(lines []string) (*Input, error) {
 	rv := Input{}
 	// TODO: Update this to parse the lines and create the puzzle input.
 	for i, line := range lines {
+		// SplitParseInts(line) []int  or  SplitParseIntsD(line, ",")
 		_, _ = i, line
 	}
 	return &rv, nil
@@ -72,6 +79,23 @@ const MAX_UINT = uint(18_446_744_073_709_551_615)
 func SplitParseInts(s string) ([]int, error) {
 	rv := []int{}
 	for _, entry := range strings.Fields(s) {
+		if len(entry) > 0 {
+			i, err := strconv.Atoi(strings.TrimSpace(entry))
+			if err != nil {
+				return rv, err
+			}
+			rv = append(rv, i)
+		}
+	}
+	return rv, nil
+}
+
+// SplitParseIntsD splits a string on the provided delimiter and converts each part into an int.
+// Uses strings.Fields(s) for the splitting and strconv.Atoi to parse it to an int.
+// Leading and trailing whitespace on each entry are ignored.
+func SplitParseIntsD(s, d string) ([]int, error) {
+	rv := []int{}
+	for _, entry := range strings.Split(s, d) {
 		if len(entry) > 0 {
 			i, err := strconv.Atoi(strings.TrimSpace(entry))
 			if err != nil {
@@ -230,6 +254,11 @@ type Number interface {
 // -------------------------  CreateIndexedGridString  -------------------------
 // -----------------------------------------------------------------------------
 
+// CreateIndexedGridStringBz is for [][]byte
+// CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
+// CreateIndexedGridString is for [][]string
+// All of them have the signature (vals, color, highlight)
+
 // A Point contains an X and Y value.
 type Point struct {
 	X int
@@ -261,6 +290,16 @@ func (p Point) GetXY() (int, int) {
 	return p.X, p.Y
 }
 
+// AddPoints returns a new point that is the sum of the provided points.
+func AddPoints(points ...*Point) *Point {
+	rv := NewPoint(0, 0)
+	for _, p := range points {
+		rv.X += p.X
+		rv.Y += p.Y
+	}
+	return rv
+}
+
 // XY is something that has an X and Y value.
 type XY interface {
 	GetX() int
@@ -268,7 +307,7 @@ type XY interface {
 	GetXY() (int, int)
 }
 
-// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// CreateIndexedGridStringBz creates a string of the provided bytes matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string {
 	strs := make([][]string, len(vals))
@@ -281,7 +320,7 @@ func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highl
 	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
 }
 
-// CreateIndexedGridString creates a string of the provided vals bytes matrix.
+// CreateIndexedGridStringNums creates a string of the provided numbers matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string {
 	strs := make([][]string, len(vals))
@@ -294,7 +333,7 @@ func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colo
 	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
 }
 
-// CreateIndexedGridString creates a string of the provided vals matrix.
+// CreateIndexedGridString creates a string of the provided strings matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string {
 	// Get the height. If it's zero, there's nothing to return.
