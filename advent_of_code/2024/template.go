@@ -127,7 +127,7 @@ func AddLineNumbers(lines []string, startAt int) []string {
 	if len(lines) == 0 {
 		return []string{}
 	}
-	lineFmt := DigitFormatForMax(len(lines)) + ": %s"
+	lineFmt := DigitFormatForMax(len(lines)-1+startAt) + ": %s"
 	rv := make([]string, len(lines))
 	for i, line := range lines {
 		rv[i] = fmt.Sprintf(lineFmt, i+startAt, line)
