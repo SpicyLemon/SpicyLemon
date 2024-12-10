@@ -281,7 +281,7 @@ hashcache_refresh () {
     # Curl the url storing both the header and output into the cache.
     [[ "$v" -ge '1' ]] && printf 'Curling url: %s ... ' "$HASH_PRICE_URL" >&2
     [[ -n "$bcv" ]] && printf '\n' >&2
-    curl -s "$HASH_PRICE_URL" \
+    curl -s --fail-with-body "$HASH_PRICE_URL" \
          --dump-header "$( hashcache file "$HASH_CN_PRICE_HEADER" $bcv )" \
          --output "$( hashcache file "$HASH_CN_PRICE_JSON" $bcv )" 2> /dev/null
     ec=$?
@@ -297,9 +297,9 @@ hashcache_refresh () {
         # Apply the jq filter to the newly cached result to get the desired value.
         [[ "$v" -ge '1' ]] && printf 'Applying jq filter '"'"'%s'"'"' ... ' "$HASH_JQ_FILTER" >&2
         [[ -n "$bcv" ]] && printf '\n' >&2
-        val="$( jq -r "$HASH_JQ_FILTER" "$( hashcache file "$HASH_CN_PRICE_JSON" $bcv )" 2> "$( hashcache file "$HASH_CN_JQ_ERROR" $bcv )" )"
+        val="$( jq --exit-status -r "$HASH_JQ_FILTER" "$( hashcache file "$HASH_CN_PRICE_JSON" $bcv )" 2> "$( hashcache file "$HASH_CN_JQ_ERROR" $bcv )" )"
         ec=$?
-        [[ "$v" -ge '1' ]] && printf 'Done. Exit code: %d\n' "$ec" >&2
+        [[ "$v" -ge '1' ]] && printf 'Done. Exit code: %d, val: %s\n' "$ec" "$val" >&2
         if [[ "$ec" -ne '0' && "$v" -ge '1' || "$v" -ge '2' ]]; then
             if [[ "$ec" -eq '0' ]]; then
                 printf 'Result: %s\n' "$val" >&2
@@ -312,7 +312,7 @@ hashcache_refresh () {
     fi
 
     # If there as a problem, use the default value.
-    if [[ "$ec" -ne '0' || -z "$val" ]]; then
+    if [[ "$ec" -ne '0' || -z "$val" || "$val" == 'null' ]]; then
         [[ "$v" -ge '1' ]] && printf 'Using default value: %s\n' "$HASH_DEFAULT_VALUE" >&2
         val="$HASH_DEFAULT_VALUE"
         [[ "$ec" -eq '0' ]] && ec=21
