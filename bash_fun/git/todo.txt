@@ -35,8 +35,11 @@ TODO:
             type: "blob" for files, "tree" for directories. Will need to test locally to see which to use.
             branch: Get this from `git branch --show-current`.
             path: Get this as input to the function/script.
+            Maybe create the config entry spicylemon.linkurl (similar to spicylemon.defaultbranch).
+                If that's there, use that instead of trying to parse it out.
         Have flags to override the repo, type, and branch.
         Have flag for adding line numbers.
+            Bonus points for being able to provide a function name to scan the file and add the correct line numbers for it.
         Will need to do a trick (or something) get take in relative filepaths and get their full path relative to the repo root.
         Maybe also look into the `gh` command line tool to see if there's something already there for this.
         Example gitlab links:
