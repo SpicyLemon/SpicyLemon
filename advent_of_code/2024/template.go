@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const DEFAULT_COUNT = 0
@@ -216,6 +217,15 @@ func Abs[V Number](v V) V {
 	return v
 }
 
+// ConversionRunes are some chars used to represent numbers for smaller output. See also: GetRune.
+var ConversionRunes = []rune("0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ~-_+=|¦:;!@#$¢£¥%^&*()[]{}<>«»/?¿÷°§¶¤")
+
+// GetRune returns the rune used to represent the provided number for smaller output.
+// The runes will repeat every 100. E.g. IntRune(3) returns the same as IntRune(103).
+func GetRune(i int) rune {
+	return ConversionRunes[i%len(ConversionRunes)]
+}
+
 // Signed is a constraint of signed integer types. Same as golang.org/x/exp/constraints.Signed.
 type Signed interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64
@@ -367,7 +377,7 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 		}
 		for _, c := range r {
 			if len(c) > cellLen {
-				cellLen = len(c)
+				cellLen = utf8.RuneCountInString(c)
 			}
 		}
 	}
