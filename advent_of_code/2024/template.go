@@ -37,7 +37,8 @@ func (i Input) String() string {
 	// SliceToStrings(slice) []string
 	// AddLineNumbers(lines, startAt) []string
 	// MapSlice(slice, mapper) slice  or  MapPSlice  or  MapSliceP
-	// CreateIndexedGridString(grid, color, highlight) string  or  CreateIndexedGridStringBz  or  CreateIndexedGridStringNums)
+	// CreateIndexedGridString(grid, color, highlight) string  or  CreateIndexedGridStringBz  or  CreateIndexedGridStringNums
+	// CreateIndexedGridStringFunc(grid, converter, color, highlight)
 	return "TODO"
 }
 
@@ -258,6 +259,7 @@ type Number interface {
 // CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
 // CreateIndexedGridString is for [][]string
 // All of them have the signature (vals, color, highlight)
+// CreateIndexedGridStringFunc is for any other [][]; signature = (vals, converter, color, highlight)
 
 // A Point contains an X and Y value.
 type Point struct {
@@ -309,7 +311,7 @@ type XY interface {
 
 // CreateIndexedGridStringBz creates a string of the provided bytes matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
-func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string {
+func CreateIndexedGridStringBz[S ~[]E, E XY, B byte | rune](vals [][]B, colorPoints S, highlightPoints S) string {
 	strs := make([][]string, len(vals))
 	for y, row := range vals {
 		strs[y] = make([]string, len(row))
@@ -328,6 +330,20 @@ func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colo
 		strs[y] = make([]string, len(row))
 		for x, val := range row {
 			strs[y][x] = fmt.Sprintf("%d", val)
+		}
+	}
+	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
+}
+
+// CreateIndexedGridStringFunc creates a string of the provided matrix.
+// The converter should take in a cell's value and output the string to use for that cell.
+// The result will have row and column indexes and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridStringFunc[S ~[]E, E XY, G any](vals [][]G, converter func(G) string, colorPoints S, highlightPoints S) string {
+	strs := make([][]string, len(vals))
+	for y, row := range vals {
+		strs[y] = make([]string, len(row))
+		for x, val := range row {
+			strs[y][x] = converter(val)
 		}
 	}
 	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
