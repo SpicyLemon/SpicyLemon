@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // main is the main function that gets run for this file.
@@ -186,6 +187,7 @@ type Integer interface {
 // CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
 // CreateIndexedGridString is for [][]string
 // All of them have the signature (vals, color, highlight)
+// CreateIndexedGridStringFunc is for any other [][]; signature = (vals, converter, color, highlight)
 
 // A Point contains an X and Y value.
 type Point struct {
@@ -237,7 +239,7 @@ type XY interface {
 
 // CreateIndexedGridStringBz creates a string of the provided bytes matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
-func CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string {
+func CreateIndexedGridStringBz[M ~[][]B, B byte | rune, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string {
 	strs := make([][]string, len(vals))
 	for y, row := range vals {
 		strs[y] = make([]string, len(row))
@@ -261,6 +263,20 @@ func CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colo
 	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
 }
 
+// CreateIndexedGridStringFunc creates a string of the provided matrix.
+// The converter should take in a cell's value and output the string to use for that cell.
+// The result will have row and column indexes and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridStringFunc[M ~[][]G, G any, S ~[]E, E XY](vals M, converter func(G) string, colorPoints S, highlightPoints S) string {
+	strs := make([][]string, len(vals))
+	for y, row := range vals {
+		strs[y] = make([]string, len(row))
+		for x, val := range row {
+			strs[y][x] = converter(val)
+		}
+	}
+	return CreateIndexedGridString(strs, colorPoints, highlightPoints)
+}
+
 // CreateIndexedGridString creates a string of the provided strings matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string {
@@ -279,7 +295,7 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 		}
 		for _, c := range r {
 			if len(c) > cellLen {
-				cellLen = len(c)
+				cellLen = utf8.RuneCountInString(c)
 			}
 		}
 	}
