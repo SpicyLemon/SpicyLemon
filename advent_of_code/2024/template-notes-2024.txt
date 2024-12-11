@@ -44,6 +44,7 @@ Globals:
     startTime time.Time: the time the program started.
     funcDepth int: keeps track of function call depth (for output indentation).
     panicPrinted: keeps track of whether panic info has been printed.
+    ConversionRunes = []rune with 100 printable characters in it. See GetRune(int).
 
 Types:
     Input struct: // TODO: Write this to represent the input
@@ -84,11 +85,13 @@ Functions:
         MapPSlice(slice []*E, mapper func(E) R) []R: Converts a slice of pointers by running a func on each entry.
         MapSliceP(slice []E, mapper func(*E) R) []R: Converts a slice by running a pointer func on each entry.
         Abs[V Number](v V) V: returns the absolute value of the provided number.
+        GetRune(i int) rune: returns the ConversionRunes entry for the given int.
     CreateIndexedGridString:
         NewPoint(x, y int) *Point: creates a new Point with the given coordinates.
         AddPoints(points ...*Point) *Point: returns a new point that is the sum of the provided points.
-        CreateIndexedGridStringBz[S ~[]E, E XY](vals [][]byte, colorPoints S, highlightPoints S) string
+        CreateIndexedGridStringBz[M ~[][]B, B byte | rune, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string
         CreateIndexedGridStringNums[M ~[][]N, N Integer, S ~[]E, E XY](vals M, colorPoints S, highlightPoints S) string
+        CreateIndexedGridStringFunc[M ~[][]G, G any, S ~[]E, E XY](vals M, converter func(G) string, colorPoints S, highlightPoints S) string
         CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string
     CLI params and input parsing:
         GetParams(args []string) *Params): parses the given args into params
