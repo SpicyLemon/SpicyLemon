@@ -1,23 +1,33 @@
 #!/bin/bash
 # This script will run the linter on the files in this dir.
 
+files=()
 while [[ "$#" -gt '0' ]]; do
     case "$1" in
     --help|-h)
-        printf 'Usage: %s [--fix]\n' "$0"
+        printf 'Usage: %s [--fix] [<file> [...]]\n' "$0"
         exit 0
         ;;
     --fix)
         fix='YES'
         ;;
-    default)
-        printf 'Usage: %s [--fix]\n' "$0"
-        printf 'Unknown arg: %q\n' "$1"
-        exit 1
+    *)
+        if [[ -f "$1" ]]; then
+            files+=( "$1" )
+        elif [[ -d "$1" ]]; then
+            files+=( $( find "$1" -type f -name '*.go' | sort ) )
+        else
+            printf 'Unknown argument: [%s]\n' "$1"
+            exit 1
+        fi
         ;;
     esac
     shift
 done
+
+if [[ "${#files[@]}" -eq '0' ]]; then
+    files=( $( find . -type f -name '*.go' | sort ) )
+fi
 
 scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -30,7 +40,7 @@ else
     gofmtcmd+=( -d )
 fi
 
-for f in $( find . -type f -name '*.go' | sort ); do
+for f in "${files[@]}"; do
     printf '%s gofmt ... ' "$f"
     "${gofmtcmd[@]}" "$f"
     printf 'golangci-lint ... '

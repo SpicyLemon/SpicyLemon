@@ -81,6 +81,7 @@ linters-settings:
           - DebugAlwaysf
           - DebugAlwaysAsf
   lll:
+    line-length: 140
     tab-width: 4
   misspell:
     locale: US
