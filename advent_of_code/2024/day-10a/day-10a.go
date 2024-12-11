@@ -22,11 +22,11 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
-	answer := CountPathsToTop(params, input.Heights)
+	answer := CountPathsToTop(input.Heights)
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func CountPathsToTop(params *Params, heights [][]int) int {
+func CountPathsToTop(heights [][]int) int {
 	nodes := AsNodeMap(heights)
 	BuildPaths(nodes)
 

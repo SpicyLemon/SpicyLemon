@@ -163,6 +163,7 @@ func (f *File) Split(newLen int) *File {
 func (f *File) CombineLeft() {
 	if f == nil {
 		Debugf("cannot combine nil file")
+		return
 	}
 	if f.Left == nil {
 		Debugf("nothing to the left")
@@ -217,7 +218,7 @@ func (f *File) FillWith(f2 *File) *File {
 	}
 
 	if cur.Length > f2.Length {
-		Debugf("f2 %s fits in cur %s, splitting cur %s", f2, cur)
+		Debugf("f2 %s fits in cur %s, splitting cur at %d", f2, cur, f2.Length)
 		newFile := cur.Split(f2.Length)
 		cur.ID = f2.ID
 		f2.ID = emptyID
