@@ -206,10 +206,6 @@ func (n *Node[V]) PointString() string {
 	return n.Point.String()
 }
 
-func pathString[V any](path []*Node[V]) string {
-	return "[" + StringNumberJoinFunc(path, (*Node[V]).PointString, 0, ",") + "]"
-}
-
 func Ternary[E any](test bool, ifTrue, ifFalse E) E {
 	if test {
 		return ifTrue
