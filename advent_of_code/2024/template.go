@@ -217,6 +217,8 @@ func Abs[V Number](v V) V {
 	return v
 }
 
+// Alternates: ©®¬ÆæØøÞþ
+
 // ConversionRunes are some chars used to represent numbers for smaller output. See also: GetRune.
 var ConversionRunes = []rune("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~-_+=|¦:;!@#$¢£¥%^&*()[]{}<>«»/?¿÷°§¶¤")
 
