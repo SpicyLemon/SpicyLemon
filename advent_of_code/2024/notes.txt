@@ -1,0 +1,62 @@
+Advent of Code - Danny Wedul
+
+Standard input filenames: example.input actual.input
+
+Use ./newday.sh to create the next solution directory and file.
+    If it's an 'a', it'll have a copy of the template as the solution file.
+    If it's a 'b', it'll have a copy of the 'a' solution file (renamed to b).
+
+There's 4 TODOs that will at least get you through parsing the input.
+
+Don't forget to ./lint.sh
+
+Output Notes:
+    Debugf(...) prints stuff if running with debug.
+        debug is a global variable indicating if running with debug.
+        To enable: invoke with --debug or set the DEBUG env var.
+    params.Verbosef(...) prints stuff if running verbosely (or with debug).
+        params.Verbose is the bool indicating verbosity.
+        To enable: invoke with -v or --verbose.
+    Don't use the fmt.Print. Use Stdoutf(...) or Stderrf(...) so you also get func and timing info.
+        Both Debugf and params.Verbosef end up using Stderrf.
+    If any args to Debugf or params.Verbosef are function calls/results, wrap it in an if debug or if params.Verbose block.
+        That way, it's only making the function calls (which are often expensive) in debug or verbose mode.
+    defer FuncEnding(FuncStarting())               outputs func start/stop messages ONLY when in debug mode.
+    defer FuncEndingAlways(FuncStartingAlways())   outputs func start/stop messages always (even when not in debug mode).
+    GetRune(int) - use this if you've got some numbers that go above 10, but you want a 1-character representation.
+        Has a set of 100 unique chars to use, and they'll cycle for numbers above 100.
+    CreateIndexedGridString CreateIndexedGridStringBz CreateIndexedGridStringNums CreateIndexedGridStringFunc
+        Creates fancy strings of a 2-d matrix. Points can be provided for color and highlights (in that order).
+
+Input Customization:
+    params.Count will have the -n or --count value (or DEFAULT_COUNT).
+    params.Custom will have anything provided with --lines option(s).
+    params.HasCustom(string) can be used to check for specific things provided with the --line flag.
+        E.g. invoke with --line xyz, then use HasCustom("xyz") to see do whatever is supposed to happen.
+
+General flow:
+ 1. Open two terminals.
+ 2. In one terminal: set_title AoC edit
+ 3. In the other: set_title AoC run
+ 4. In edit: ./newday.sh
+ 5. In edit: vi <new solution file>
+ 6. In run: cd <new solution dir>
+ 7. Start reading through the puzzle.
+ 8. Copy the example text. Then, in run: pbpase > example.input
+ 9. Start working out the solution.
+10. Open and copy the actual text. Then, in run: pbpase > actual.input
+11. Periodically, in run: go run <solution file>
+12. Once the example output is as expected, in run: go run <solution file> actual.input
+13. Once the answer is accepted:
+    * In edit: 1. exit vim  2. ./newday.sh  3. vi <new solution file 2>
+    * In run: cd ../<new solution dir 2>
+14. Read part 2 and work out the solution.
+15. Once the answer is accepted:
+    * In edit: exit vim
+    * In run: cd ..
+16: Stage and commit the solutions.
+17: ./lint.sh and fix anything, making sure it still gives the right answers, commit any changes.
+
+To set up for a new year:
+1. Create the dir for the year.
+2. Copy all the files that are directly in this year's directory. Don't copy any of the solution dirs or their contents.
