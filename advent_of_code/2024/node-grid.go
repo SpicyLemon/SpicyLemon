@@ -12,6 +12,7 @@ import (
 )
 
 // If copying this stuff, you'll want to copy all the stuff between the BeginCopy and EndCopy comments.
+// Should get it all: getlines node-grid.go 18-320
 // BeginCopy
 
 // -----------------------------------------------------------------------------
@@ -318,6 +319,7 @@ func MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R {
 }
 
 // EndCopy
+// Should get it all: getlines node-grid.go 18-320
 // If copying this stuff, you'll want to copy all the stuff between the BeginCopy and EndCopy comments.
 
 // #############################################################################

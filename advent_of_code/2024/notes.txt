@@ -60,3 +60,7 @@ General flow:
 To set up for a new year:
 1. Create the dir for the year.
 2. Copy all the files that are directly in this year's directory. Don't copy any of the solution dirs or their contents.
+
+The stuff in index-grid-string.go is also in template.go. The former is executable to let you play with it a bit.
+The stuff in node-grid.go is NOT in the template. It's also executable for the purposes of demonstration.
+    When that stuff's needed, just copy it as directed and paste it where its needed.
