@@ -47,6 +47,9 @@ hr () {
         leftover=$(( available - piece_len * 2 ))
     fi
     char='#'
+    if [[ -n "$HR_CHAR" ]]; then
+        char="$HR_CHAR"
+    fi
     block="$( printf '%0.1s' "$char"{1..500} )"
     section="${block:0:$piece_len}"
     if [[ -z "$HR_NO_COLOR" ]]; then
@@ -214,7 +217,7 @@ hr11 () {
 
 # Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--] <message>
 hrx () {
-    local n width color msg no_color no_copy comment cmd
+    local n width color msg no_color no_copy comment char cmd
     width=80
     msg=()
     color='YES'
@@ -224,15 +227,17 @@ hrx () {
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
             --help|-h)
-                printf 'Usage: hrx <n> [--width <width>] [--color|--no-color|--palette <number>] [--copy|--no-copy] [--] <message>\n'
+                printf 'Usage: hrx <n> [<flags>] [--] <message>\n'
                 printf '<n> => the hr height: 1, 3, 5, 7, 9, or 11.\n'
-                printf -- '--width <width> will output the hr using the provided width. Default is 80. Can be either "full" or a number.\n'
-                printf -- '--color will cause a random palette to be picked. This is the default behavior.\n'
-                printf -- '--no-color will output without picking a color palette.\n'
-                printf -- '--palette <number> will use the provided palette. Can be shortenned to --pal <number>\n'
-                printf -- '--copy will put the header in your clipboard too (as long as pbcopy is available).  This is the default behavior.\n'
-                printf -- '--no-copy will not attempt to do anything with your clipboard.\n'
-                printf -- '--comment reduce width by 3 and prepend each line with //<space>.\n'
+                printf 'Flags:\n'
+                printf -- '  --width <width>     Make the lines the provided width. Default is 80. Can be either "full" or a number.\n'
+                printf -- '  --color             Use a random palette to be picked. This is the default behavior.\n'
+                printf -- '  --no-color          Do not color the output.\n'
+                printf -- '  --palette <number>  Use the provided palette. Can be shortenned to --pal <number>\n'
+                printf -- '  --copy              Put the header in your clipboard too (requires pbcopy). This is the default behavior.\n'
+                printf -- '  --no-copy           Do not put the header in the clipboard.\n'
+                printf -- '  --comment           Reduce width by 3 and prepend each line with //<space>.\n'
+                printf -- '  --char <char>       Use the provided character (instead of #).\n'
                 printf 'All other args are treated as the message.\n'
                 printf 'Provide the message after -- if it contains one of the flags.\n'
                 return 0
@@ -275,6 +280,14 @@ hrx () {
                 ;;
             --comment)
                 comment='YES'
+                ;;
+            --char)
+                if [[ -z "$2" ]]; then
+                    printf 'No argument provided after the %s flag.\n' "$1"
+                    return 1
+                fi
+                char="$2"
+                shift
                 ;;
             --)
                 if [[ -n "${msg[*]}" ]]; then
@@ -319,9 +332,12 @@ hrx () {
         fi
     fi
 
-    HR_WIDTH="$width" HR_NO_COLOR="$no_color" "hr$n" "${msg[@]}" | { if [[ -n "$comment" ]]; then sed -E 's|^|// |'; else cat -; fi; }
+    HR_WIDTH="$width" HR_NO_COLOR="$no_color" HR_CHAR="$char" "hr$n" "${msg[@]}" \
+        | { if [[ -n "$comment" ]]; then sed -E 's|^|// |'; else cat -; fi; }
     if [[ -z "$no_copy" ]] && command -v pbcopy > /dev/null 2>&1; then
-        HR_WIDTH="$width" HR_NO_COLOR="1" "hr$n" "${msg[@]}" | { if [[ -n "$comment" ]]; then sed -E 's|^|// |'; else cat -; fi; } | pbcopy
+        HR_WIDTH="$width" HR_NO_COLOR="1" HR_CHAR="$char" "hr$n" "${msg[@]}" \
+            | { if [[ -n "$comment" ]]; then sed -E 's|^|// |'; else cat -; fi; } \
+            | pbcopy
         printf ' - copied to clipboard.\n'
     fi
 
