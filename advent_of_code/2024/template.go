@@ -218,7 +218,7 @@ func Abs[V Number](v V) V {
 }
 
 // ConversionRunes are some chars used to represent numbers for smaller output. See also: GetRune.
-var ConversionRunes = []rune("0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ~-_+=|¦:;!@#$¢£¥%^&*()[]{}<>«»/?¿÷°§¶¤")
+var ConversionRunes = []rune("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~-_+=|¦:;!@#$¢£¥%^&*()[]{}<>«»/?¿÷°§¶¤")
 
 // GetRune returns the rune used to represent the provided number for smaller output.
 // The runes will repeat every 100. E.g. IntRune(3) returns the same as IntRune(103).
