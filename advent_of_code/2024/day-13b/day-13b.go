@@ -136,7 +136,7 @@ func (i Input) String() string {
 func ParseInput(lines []string) (*Input, error) {
 	defer FuncEnding(FuncStarting())
 	rv := Input{}
-	var next []string
+	next := make([]string, 0, 4)
 	for i, line := range lines {
 		next = append(next, line)
 		if len(line) == 0 || i+1 == len(lines) {
@@ -145,7 +145,7 @@ func ParseInput(lines []string) (*Input, error) {
 				return &rv, err
 			}
 			rv.Machines = append(rv.Machines, m)
-			next = nil
+			next = make([]string, 0, 4)
 		}
 	}
 	return &rv, nil

@@ -24,53 +24,82 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
+
+	machines := input.Machines
+	if len(params.Custom) > 0 {
+		machines = nil
+		for i, line := range params.Custom {
+			m, err := strconv.Atoi(line)
+			if err != nil {
+				return "", fmt.Errorf("invalid custom index [%d] %q: %w", i, line, err)
+			}
+			if m < 0 || m >= len(input.Machines) {
+				return "", fmt.Errorf("invalid custom index [%d] %q: min=0, max=%d: value out of range", i, line, len(input.Machines)-1)
+			}
+			machines = append(machines, input.Machines[m])
+		}
+	}
+
 	answer := 0
-	for i, machine := range input.Machines {
-		cost, ok := GetCost(machine)
-		if !ok {
-			params.Verbosef("[%d]: %s = no solution", i, machine)
+	for i, machine := range machines {
+		pushes, err := SolveMachine(machine)
+		if err != nil {
+			Stderrf("[%3d]: %s = fail: %v", i, machine, err)
 			continue
 		}
-		params.Verbosef("[%d]: %s = %d", i, machine, cost)
+		cost := pushes.X*3 + pushes.Y
+		Stderrf("[%3d]: %s = WINNER: %s = %d", i, machine, pushes, cost)
 		answer += cost
 	}
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func GetCost(machine *Machine) (int, bool) {
-	pushes := SolveMachine(machine)
-	if pushes == nil {
-		return 0, false
+// SolveMachine returns a Point where X is the number of times to press A, and Y for B.
+func SolveMachine(m *Machine) (*Point, error) {
+	defer FuncEnding(FuncStarting())
+	Debugf("%s", m)
+	btl := m.A.Y * m.Prize.X
+	btr := m.A.X * m.Prize.Y
+	bTop := btl - btr
+	Debugf("  bTop = %d = %d - %d = %d*%d - %d*%d", bTop, btl, btr, m.A.Y, m.Prize.X, m.A.X, m.Prize.Y)
+	bbl := m.A.Y * m.B.X
+	bbr := m.A.X * m.B.Y
+	bBot := bbl - bbr
+	Debugf("  bBot = %d = %d - %d = %d*%d - %d*%d", bBot, bbl, bbr, m.A.Y, m.B.X, m.A.X, m.B.Y)
+	if bBot == 0 {
+		return nil, fmt.Errorf("cannot calculate b: bBot=%d: division by zero", bBot)
 	}
-	rv := pushes.X*3 + pushes.Y
-	Debugf("cost: %s = %d", machine, rv)
-	return rv, true
-}
-
-func SolveMachine(m *Machine) *Point {
-	bTop := (m.A.Y*m.Prize.X - m.A.X*m.Prize.Y)
-	bBot := (m.A.Y*m.B.X - m.A.X*m.B.Y)
 	bMod := bTop % bBot
-	if bBot == 0 || bMod != 0 {
-		Debugf("fail: %s bTop=%d bBot=%d modded=%d", m, bTop, bBot, bMod)
-		return nil
+	Debugf("  bMod = %d = %d %% %d", bMod, bTop, bBot)
+	if bMod != 0 {
+		return nil, fmt.Errorf("cannot calculate b: bTop=%d bBot=%d modded=%d: non-integer result", bTop, bBot, bMod)
 	}
 	b := bTop / bBot
+	Debugf("  b = %d = %d / %d", b, bTop, bBot)
 	if b < 0 || b > 100 {
-		Debugf("fail: %s invalid b=%d =%d/%d", m, b, bTop, bBot)
+		return nil, fmt.Errorf("invalid b=%d <= %d/%d: out of range", b, bTop, bBot)
 	}
-	aTop := (m.Prize.X - b*m.B.X)
-	if m.A.X == 0 || aTop%m.A.X != 0 {
-		Debugf("fail: %s aTop=%d aBot=%d", m, aTop, m.A.X)
-		return nil
+
+	atl := b * m.B.X
+	aTop := m.Prize.X - atl
+	Debugf("  aTop = %d = %d - %d = %d - %d*%d", aTop, m.Prize.X, atl, m.Prize.X, b, m.B.X)
+	aBot := m.A.X
+	Debugf("  aBot = %d", aBot)
+	if aBot == 0 {
+		return nil, fmt.Errorf("cannot calculate a: aBot=%d: division by zero", aBot)
 	}
-	a := aTop / m.A.X
+	aMod := aTop % aBot
+	Debugf("  aMod = %d = %d %% %d", aMod, aTop, aBot)
+	if aMod != 0 {
+		return nil, fmt.Errorf("cannot calculate a: aTop=%d aBot=%d modded=%d: non-integer result", aTop, aBot, aMod)
+	}
+	a := aTop / aBot
+	Debugf("  a = %d = %d / %d", a, aTop, aBot)
 	if a < 0 || a > 100 {
-		Debugf("fail: %s invalid a=%d =%d/%d", m, a, aTop, m.A.X)
+		return nil, fmt.Errorf("invaid a=%d <= %d/%d: out of range", a, aTop, aBot)
 	}
-	rv := NewPoint(a, b)
-	Debugf("PASS: %s = %s", m, rv)
-	return rv
+
+	return NewPoint(a, b), nil
 }
 
 type Machine struct {
@@ -80,7 +109,7 @@ type Machine struct {
 }
 
 func (m *Machine) String() string {
-	return fmt.Sprintf("A=%s,B=%s,Prize=%s", m.A, m.B, m.Prize)
+	return fmt.Sprintf("A=(%2d,%2d),B=(%2d,%2d),Prize=(%5d,%5d)", m.A.X, m.A.Y, m.B.X, m.B.Y, m.Prize.X, m.Prize.Y)
 }
 
 var (
