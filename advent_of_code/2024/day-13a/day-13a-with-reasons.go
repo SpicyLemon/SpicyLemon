@@ -57,6 +57,20 @@ func Solve(params *Params) (string, error) {
 // SolveMachine returns a Point where X is the number of times to press A, and Y for B.
 func SolveMachine(m *Machine) (*Point, error) {
 	defer FuncEnding(FuncStarting())
+	// Need to find integer values for a and b in the following equations:
+	// Prize.X = a * A.X + b * B.X
+	// Prize.Y = a * A.Y + b * B.Y
+	// Solve both for a and set equal:
+	// a = (Prize.X - b*B.X)/A.X = (Prize.Y - b*B.Y)/A.Y
+	// Solve for b:
+	// (Prize.X - b*B.X)/A.X = (Prize.Y - b*B.Y)/A.Y
+	// A.Y * (Prize.X - b*B.X) = A.X * (Prize.Y - b*B.Y)    (mul both sides by A.X*A.Y)
+	// A.Y*Prize.X - b*A.Y*B.X = A.X*Prize.Y - b*A.X*B.Y    (expand)
+	// A.Y*Prize.X - A.X*Prize.Y = b*A.Y*B.X - b*A.X*B.Y    (sub A.X*Prize.Y and add b*A.Y*B.X to both sides)
+	// b * (A.Y*B.X - A.X*B.Y) = A.Y*Prize.X - A.X*Prize.Y  (swap sides, factor b out)
+	// b = (A.Y*Prize.X - A.X*Prize.Y)/(A.Y*B.X - A.X*B.Y)  (div both sides by A.Y*B.X - A.X*B.Y)
+	// Then use one of the equations for a now that we know b. Arbitrarily chose to use the X based one.
+
 	Debugf("%s", m)
 	btl := m.A.Y * m.Prize.X
 	btr := m.A.X * m.Prize.Y

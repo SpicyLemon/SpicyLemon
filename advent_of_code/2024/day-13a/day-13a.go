@@ -48,8 +48,22 @@ func GetCost(machine *Machine) (int, bool) {
 }
 
 func SolveMachine(m *Machine) *Point {
-	bTop := (m.A.Y*m.Prize.X - m.A.X*m.Prize.Y)
-	bBot := (m.A.Y*m.B.X - m.A.X*m.B.Y)
+	// Need to find integer values for a and b in the following equations:
+	// Prize.X = a * A.X + b * B.X
+	// Prize.Y = a * A.Y + b * B.Y
+	// Solve both for a and set equal:
+	// a = (Prize.X - b*B.X)/A.X = (Prize.Y - b*B.Y)/A.Y
+	// Solve for b:
+	// (Prize.X - b*B.X)/A.X = (Prize.Y - b*B.Y)/A.Y
+	// A.Y * (Prize.X - b*B.X) = A.X * (Prize.Y - b*B.Y)    (mul both sides by A.X*A.Y)
+	// A.Y*Prize.X - b*A.Y*B.X = A.X*Prize.Y - b*A.X*B.Y    (expand)
+	// A.Y*Prize.X - A.X*Prize.Y = b*A.Y*B.X - b*A.X*B.Y    (sub A.X*Prize.Y and add b*A.Y*B.X to both sides)
+	// b * (A.Y*B.X - A.X*B.Y) = A.Y*Prize.X - A.X*Prize.Y  (swap sides, factor b out)
+	// b = (A.Y*Prize.X - A.X*Prize.Y)/(A.Y*B.X - A.X*B.Y)  (div both sides by A.Y*B.X - A.X*B.Y)
+	// Then use one of the equations for a now that we know b. Arbitrarily chose to use the X based one.
+
+	bTop := m.A.Y*m.Prize.X - m.A.X*m.Prize.Y
+	bBot := m.A.Y*m.B.X - m.A.X*m.B.Y
 	bMod := bTop % bBot
 	if bBot == 0 || bMod != 0 {
 		Debugf("fail: %s bTop=%d bBot=%d modded=%d", m, bTop, bBot, bMod)
@@ -59,7 +73,7 @@ func SolveMachine(m *Machine) *Point {
 	if b < 0 || b > 100 {
 		Debugf("fail: %s invalid b=%d =%d/%d", m, b, bTop, bBot)
 	}
-	aTop := (m.Prize.X - b*m.B.X)
+	aTop := m.Prize.X - b*m.B.X
 	if m.A.X == 0 || aTop%m.A.X != 0 {
 		Debugf("fail: %s aTop=%d aBot=%d", m, aTop, m.A.X)
 		return nil
