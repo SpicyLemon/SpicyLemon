@@ -14,12 +14,34 @@ import (
 	"unicode/utf8"
 )
 
-const DEFAULT_COUNT = 100
+const DEFAULT_COUNT = 0
 
 var (
 	Width  = 101 // 11
 	Height = 103 // 7
 )
+
+// This solution is different from my others.
+// When run, it will show a map and wait until you press enter.
+// To stop it, just use ctrl-c.
+// Originally, I had the following variable values:
+// sMin, sMax := 0, 1000
+// sKey, step := 0, 1
+// I executed: go run day-14b.go actual.input
+// Then I made the font really small (cmd+minus several times) until the whole grid fit on a single screen.
+// I noticed that at 18, things looked a little more ordered than the other states.
+// I noticed similar orderings again at 121, 224, and 327 and that those are each 103 apart.
+// So I changed to: sKey, step := 18, 103
+// I then executed: go run day-14b.go actual.input --lines 0 10000
+// After 80 grids, the Christmas Tree was obvious directly in the middle at 8258 seconds.
+// I then changed to: sMin, sMax: 8000, 10000
+// Now, executing  go run day-14b.go  gets you the answer after a couple steps.
+
+// This program utilizes the --lines option to provide some stuff.
+// Usage: go run day-14b.go actual.input [<flags>] [--lines <smin> [<smax> [<skey> [<step>]]]]
+// <smin> and <smax> are the smallest and largest seconds to consider.
+// <skey> is a number of seconds to a state of interest.
+// <step> is the number of seconds to advance each time.
 
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
@@ -30,39 +52,63 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
-	startIn, stop := 8258, 8258
+	sMin, sMax := 8000, 10000
+	sKey, step := 18, 103
 	if len(params.Custom) > 0 {
-		startIn, err = strconv.Atoi(params.Custom[0])
+		sMin, err = strconv.Atoi(params.Custom[0])
 		if err != nil {
-			return "", fmt.Errorf("invalid custom start %q: %w", params.Custom[0], err)
+			return "", fmt.Errorf("invalid custom smin %q: %w", params.Custom[0], err)
 		}
 	}
 	if len(params.Custom) > 1 {
-		stop, err = strconv.Atoi(params.Custom[1])
+		sMax, err = strconv.Atoi(params.Custom[1])
 		if err != nil {
-			return "", fmt.Errorf("invalid custom stop %q: %w", params.Custom[1], err)
+			return "", fmt.Errorf("invalid custom smax %q: %w", params.Custom[1], err)
 		}
 	}
-	params.Verbosef("Start: %d", startIn)
-	params.Verbosef("Stop: %d", stop)
-
-	start := 18
-	step := 103
-	for start < startIn {
-		start += step
+	if len(params.Custom) > 2 {
+		sKey, err = strconv.Atoi(params.Custom[2])
+		if err != nil {
+			return "", fmt.Errorf("invalid custom skey %q: %w", params.Custom[2], err)
+		}
 	}
-	robots := input.Robots
-	MoveRobots(robots, start)
+	if len(params.Custom) > 3 {
+		step, err = strconv.Atoi(params.Custom[3])
+		if err != nil {
+			return "", fmt.Errorf("invalid custom step %q: %w", params.Custom[3], err)
+		}
+	}
+	params.Verbosef("sMin: %d", sMin)
+	params.Verbosef("sMax: %d", sMax)
+	params.Verbosef("sKey: %d", sKey)
+	params.Verbosef("step: %d", step)
 
-	reader := bufio.NewReader(os.Stdin)
-	for i := start; i <= stop; i += step {
-		Stdoutf("After %d seconds:\n%s", i, DrawGrid(robots))
-		if i+step <= stop {
-			_, _ = reader.ReadString('\n')
+	cur := sKey
+	for cur < sMin {
+		cur += step
+	}
+
+	if cur > sMax {
+		Stdoutf("Invalid configuration: sMin = %d, sMax = %d, sKey = %d, step = %d: first seconds to show %d is greater than the max.",
+			sMin, sMax, sKey, step, cur)
+	}
+
+	GoThroughStates(input.Robots, cur, step, sMax)
+
+	return "The answer is the number of seconds noted around the one that has a tree in it.", nil
+}
+
+func GoThroughStates(robots []*Robot, cur, step, sMax int) {
+	stdin := bufio.NewReader(os.Stdin)
+	MoveRobots(robots, cur)
+	for cur <= sMax {
+		Stdoutf("After %d seconds:\n%sPress Enter to continue, ctrl+c to stop. You're looking for a portrait of a christmas tree.", cur, DrawGrid(robots, cur))
+		_, _ = stdin.ReadString('\n')
+		cur += step
+		if cur <= sMax {
 			MoveRobots(robots, step)
 		}
 	}
-	return fmt.Sprintf("%d", stop), nil
 }
 
 func MoveRobots(robots []*Robot, seconds int) {
@@ -74,7 +120,7 @@ func MoveRobots(robots []*Robot, seconds int) {
 	}
 }
 
-func DrawGrid(robots []*Robot) string {
+func DrawGrid(robots []*Robot, seconds int) string {
 	grid := make([][]int, Height)
 	for y := range grid {
 		grid[y] = make([]int, Width)
@@ -84,8 +130,9 @@ func DrawGrid(robots []*Robot) string {
 		grid[r.P.Y][r.P.X]++
 		rs[i] = r.P
 	}
+	pre := fmt.Sprintf("<%d> | ", seconds)
 
-	return CreateIndexedGridStringNums(grid, rs, rs)
+	return PrefixLines(pre, CreateIndexedGridStringNums(grid, rs, rs))
 }
 
 func (r *Robot) Move(seconds int) {
