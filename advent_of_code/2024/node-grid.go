@@ -12,7 +12,7 @@ import (
 )
 
 // If copying this stuff, you'll want to copy all the stuff between the BeginCopy and EndCopy comments.
-// Should get it all: getlines node-grid.go 18-320
+// Should get it all: getlines node-grid.go 18-423
 // BeginCopy
 
 // -----------------------------------------------------------------------------
@@ -107,11 +107,19 @@ func NewNode[V any](x, y int, value V) *Node[V] {
 	return &Node[V]{Point: Point{X: x, Y: y}, Value: value}
 }
 
-// String converts this node into a string with the format "(<x>,<y>)=<value>:[<neighbor flags>]".
+// String gets a string of this node that contains the point and value.
+func (n *Node[V]) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("%s=%s", n.Point, GenericValueString(n.Value))
+}
+
+// FullString converts this node into a string with the format "(<x>,<y>)=<value>:[<neighbor flags>]".
 // If a node has all four neighbors, the <neighbor flags> will be "UDLR".
 // Any neighbor directions the node does NOT have are replaced with a space in that string.
 // E.g the node in the upper right corner of the grid only has neighbors to the right and down, so it's " D R".
-func (n *Node[V]) String() string {
+func (n *Node[V]) FullString() string {
 	if n == nil {
 		return "<nil>"
 	}
@@ -128,6 +136,98 @@ func (n *Node[V]) PointString() string {
 		return "<nil>"
 	}
 	return n.Point.String()
+}
+
+// GetUp is a nil-safe way to get the node up from this one.
+func (n *Node[V]) GetUp() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Up
+}
+
+// GetDown is a nil-safe way to get the node down from this one.
+func (n *Node[V]) GetDown() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Down
+}
+
+// GetLeft is a nil-safe way to get the node to the left of this one.
+func (n *Node[V]) GetLeft() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Left
+}
+
+// GetRight is a nil-safe way to get the node to the right of this one.
+func (n *Node[V]) GetRight() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Right
+}
+
+// Get returns the node that is at this one plus the provided d.
+func (n *Node[V]) Get(d XY) *Node[V] {
+	if n == nil {
+		return nil
+	}
+	if d == nil {
+		return n
+	}
+	dx, dy := d.GetXY()
+
+	cur := n
+	switch {
+	case dy > 0:
+		for y := 0; y < dy; y++ {
+			cur = cur.Down
+			if cur == nil {
+				return nil
+			}
+		}
+	case dy < 0:
+		for y := 0; y > dy; y-- {
+			cur = cur.Up
+			if cur == nil {
+				return nil
+			}
+		}
+	}
+
+	switch {
+	case dx > 0:
+		for x := 0; x < dx; x++ {
+			cur = cur.Right
+			if cur == nil {
+				return nil
+			}
+		}
+	case dx < 0:
+		for x := 0; x > dx; x-- {
+			cur = cur.Left
+			if cur == nil {
+				return nil
+			}
+		}
+	}
+
+	return cur
+}
+
+// Follow returns the node reached when starting at the provide node and moving the directions.
+func Follow[V any, S ~[]E, E XY](start *Node[V], directions S) *Node[V] {
+	rv := start
+	for _, point := range directions {
+		rv = rv.Get(point)
+		if rv == nil {
+			return nil
+		}
+	}
+	return rv
 }
 
 // -----------------------------------------------------------------------------
@@ -319,7 +419,7 @@ func MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R {
 }
 
 // EndCopy
-// Should get it all: getlines node-grid.go 18-320
+// Should get it all: getlines node-grid.go 18-423
 // If copying this stuff, you'll want to copy all the stuff between the BeginCopy and EndCopy comments.
 
 // #############################################################################
