@@ -196,6 +196,7 @@ func (p *Path) CopyAppend(nextDir byte) *Path {
 func FindAllCheapPaths(maxCost int, start, end *Point, grid [][]*Node[Cell], curPath *Path) []*Path {
 	cur := Get(grid, start)
 	if cur == nil {
+		Debugf("Ran into wall at %s", start)
 		return nil
 	}
 	if IsSameXY(start, end) {
@@ -217,12 +218,15 @@ func FindAllCheapPaths(maxCost int, start, end *Point, grid [][]*Node[Cell], cur
 	}
 
 	if len(nextDirs) == 0 {
+		Debugf("Dead end at %s", start)
 		return nil
 	}
 	if len(nextDirs) == 1 {
 		nextCell := nextCells[0]
+		Debugf("Only one possibility at %s. Continuing.", nextCell)
 		curPath.AddStep(nextDirs[0])
 		if curPath.Cost > maxCost {
+			Debugf("Next path from %s is too costly.", nextCell)
 			return nil
 		}
 		return FindAllCheapPaths(maxCost, nextCell.Point.Copy(), end, grid, curPath)
@@ -233,10 +237,12 @@ func FindAllCheapPaths(maxCost int, start, end *Point, grid [][]*Node[Cell], cur
 		nextCell := nextCells[i]
 		nextPath := curPath.CopyAppend(nextDir)
 		if nextPath.Cost > maxCost {
+			Debugf("[%d/%d]: Path splits at %s, but is too costly.", nextCell)
 			continue
 		}
-
+		Debugf("[%d/%d]: Path splits at %s, going %c.", i+1, len(nextDirs), nextCell, nextDir)
 		goodPaths := FindAllCheapPaths(maxCost, nextCell.Point.Copy(), end, grid, nextPath)
+		Debugf("[%d/%d]: Split path at %s came back. Went %c. Found %d paths.", i+1, len(nextDirs), nextCell, nextDir, len(goodPaths))
 		rvs = append(rvs, goodPaths...)
 	}
 
