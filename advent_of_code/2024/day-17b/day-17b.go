@@ -14,6 +14,24 @@ import (
 
 const DEFAULT_COUNT = 0
 
+// Program evolution:
+// 1. Made it just loop over all numbers.
+// 2. Found that it started taking a long time sometimes starting around 100000000.
+// 3. Added the histogram stuff to FindRemakeV1.
+//    In the first 200000000, there was only 1 that had 9 digits right.
+//    Also noticed that all the numbers with at least 2 right were all even. So I changed the loop to += 2.
+//    That drasticly spead things up. There must have been some odds that took a long time to get to the first output.
+// 4. Ran it up to 1,000,000,000 and found 6 more with 9 digits right.
+//    Tried factoring the numbers, but I didn't see anything popping out.
+// 5. I threw them in a spreadsheet to get the differences.
+//    The 1st plus 113803264 is the 2nd. The 2nd plus 154632192 is the 3rd.
+//    The 3rd plus 113803264 is the 4th. The 4th plus 154632192 is the 5th.
+//    The 5th plus 113803264 is the 6th. The 7th plus 154632192 is the 7th.
+//    So I created the current version of FindRemake that started at 142879634 (the 1st with 9 right) and
+//    advanced alternating 113803264 and 154632192.
+//    I found that the 2nd one was 113803264 after the first and the 3rd was 154632192 after that.
+// It runs in under a second if you:  go run day-17b.go actual.input 2>/dev/null
+
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
 func Solve(params *Params) (string, error) {
@@ -38,6 +56,11 @@ func Solve(params *Params) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("invalid maxA %q: %w", params.Custom[1])
 		}
+	}
+
+	if params.InputFile == DEFAULT_INPUT_FILE && params.Count == 0 {
+		Stderrf("Example input file detected, using 1st version of solver (e.g. --count 1).")
+		params.Count = 1
 	}
 
 	Debugf("Parsed Input:\n%s", input)
