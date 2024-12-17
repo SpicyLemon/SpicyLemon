@@ -26,12 +26,50 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
-	answer := FindSmallestPath(params, input.Start, input.End, input.Maze)
+	answer, grid := FindSmallestPath(input.Start, input.End, input.Maze)
+	if params.Verbose {
+		end := Get(grid, input.End)
+		var path []*Point
+		if end != nil {
+			params.Verbosef("End Cell: %s", end)
+			path = PathToPoints(input.Start, end.Value.PathTo)
+			params.Verbosef("Cost Grid:\n%s", CreateIndexedGridStringFunc(grid, CostString, path, path))
+		}
+	}
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func FindSmallestPath(params *Params, start *Point, end *Point, maze [][]byte) int {
+func PathToPoints(start XY, path []byte) []*Point {
+	var rv []*Point
+	cur := NewPoint(start.GetX(), start.GetY())
+	rv = append(rv, cur)
+	Debugf("Start: %s", cur)
+	for _, dir := range path {
+		if dir == Turn {
+			Debugf("Turning at %s", cur)
+			continue
+		}
+		cur = cur.Move(dir)
+		rv = append(rv, cur)
+		Debugf("Move %s to %s", DirNames[dir], cur)
+	}
+	return rv
+}
+
+func (p *Point) Move(dir byte) *Point {
+	if p == nil {
+		return nil
+	}
+	d, ok := DPoints[dir]
+	if !ok {
+		return p
+	}
+	return AddPoints(p, d)
+}
+
+func FindSmallestPath(start *Point, end *Point, maze [][]byte) (int, [][]*Node[Cell]) {
 	grid := make([][]*Node[Cell], len(maze))
+
 	var unchecked []*Node[Cell]
 	enqueue := func(cell *Node[Cell]) {
 		Debugf("Adding to queue: %s", cell)
@@ -108,14 +146,15 @@ func FindSmallestPath(params *Params, start *Point, end *Point, maze [][]byte) i
 				nextCell.Value.PathTo = CopyAppend(cur.Value.PathTo, addedSteps...)
 			}
 
-			if nextCell.Value.IsEnd {
-				Debugf("      Found end at cost %s.", nextCell)
-				return nextCell.Value.Cost
-			}
 			enqueue(nextCell)
 		}
 	}
-	return MAX_INT
+
+	rv := Get(grid, end)
+	if rv == nil {
+		return MAX_INT, grid
+	}
+	return rv.Value.Cost, grid
 }
 
 const Turn = byte('T')
@@ -155,6 +194,16 @@ func BStr(test bool, str string) string {
 		return str
 	}
 	return " "
+}
+
+func CostString(node *Node[Cell]) string {
+	if node == nil {
+		return ""
+	}
+	if node.Value.Cost == MAX_INT {
+		return "-1"
+	}
+	return strconv.Itoa(node.Value.Cost)
 }
 
 // CompareNodeCells returns 0 if a and b are equivalent, -1 if a < b, 1 if a > b

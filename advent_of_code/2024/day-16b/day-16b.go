@@ -26,15 +26,280 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
-	answer := FindSmallestPath(params, input.Start, input.End, input.Maze)
+	minCost, grid := FindSmallestPath(input.Start, input.End, input.Maze)
+	if params.Verbose {
+		Stderrf("Min Cost: %d, End Cell: %s", minCost, Get(grid, input.End))
+	}
+	bestPaths := FindAllCheapPaths(minCost, input.Start, input.End, grid, nil)
+	switch {
+	case debug:
+		Stderrf("Found %d paths with cost %d or less:\n%s", len(bestPaths), minCost, StringNumberJoin(bestPaths, 1, "\n"))
+	case params.Verbose:
+		Stderrf("Found %d paths with cost %d or less.", len(bestPaths), minCost)
+	}
+	bestPoints := FlattenPaths(bestPaths)
+	answer := len(bestPoints)
+	if params.Verbose {
+		Stderrf("All The Best Points (%d):\n%s", answer, strings.Join(MapSlice(bestPoints, (*Point).String), " "))
+		Stderrf("Best Points Map:\n%s", DrawAllPathPoints(input.Start, input.End, input.Maze, bestPoints))
+	}
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func FindSmallestPath(params *Params, start *Point, end *Point, maze [][]byte) int {
+func DrawAllPathPoints(start, end *Point, maze [][]byte, points []*Point) string {
+	grid := make([][]byte, len(maze))
+	for y := range grid {
+		grid[y] = make([]byte, len(maze[y]))
+		copy(grid[y], maze[y])
+	}
+	for _, p := range points {
+		grid[p.Y][p.X] = 'O'
+	}
+	colors := []*Point{start, end}
+	return CreateIndexedGridStringBz(grid, colors, points)
+}
+
+func FlattenPaths(paths []*Path) []*Point {
+	var rv []*Point
+	knownMap := make(map[int]map[int]bool)
+	isKnown := func(p *Point) bool {
+		return knownMap[p.Y] != nil && knownMap[p.Y][p.X]
+	}
+	addPoint := func(p *Point) {
+		if isKnown(p) {
+			return
+		}
+		if knownMap[p.Y] == nil {
+			knownMap[p.Y] = make(map[int]bool)
+		}
+		knownMap[p.Y][p.X] = true
+		rv = append(rv, p)
+	}
+
+	for _, path := range paths {
+		for _, point := range path.Points {
+			addPoint(point)
+		}
+	}
+
+	slices.SortFunc(rv, ComparePoints)
+
+	return rv
+}
+
+func ComparePoints(a, b *Point) int {
+	if a == b {
+		return 0
+	}
+	if b == nil {
+		return -1
+	}
+	if a == nil {
+		return 1
+	}
+	// First sort on X, smallest first.
+	if rv := CmpInts(a.X, b.X); rv != 0 {
+		return rv
+	}
+	// Then on Y, smallest first.
+	return CmpInts(a.Y, b.Y)
+}
+
+type Path struct {
+	Points []*Point
+	Steps  []byte
+	Cost   int
+}
+
+func (p *Path) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	var rv strings.Builder
+	rv.WriteString(fmt.Sprintf("(%d): ", p.Cost))
+	pc, sc := len(p.Points), len(p.Steps)
+	pi, si := 0, 0
+	for pi < pc || si < sc {
+		np := "(?,?)"
+		ns := "?"
+		if pi < pc {
+			np = p.Points[pi].String()
+		}
+		if si < sc {
+			ns = string(p.Steps[si])
+			if p.Steps[si] == Turn {
+				si++
+				if si < sc {
+					ns += string(p.Steps[si])
+				}
+			}
+		}
+		rv.WriteString(np)
+		rv.WriteString(ns)
+		pi++
+		si++
+	}
+	str := rv.String()
+	if str[len(str)-1] == '?' {
+		str = str[:len(str)-1]
+	}
+	return str
+}
+
+func (p *Path) Contains(p2 XY) bool {
+	return p != nil && slices.ContainsFunc(p.Points, func(p1 *Point) bool { return IsSameXY(p1, p2) })
+}
+
+func (p *Path) GetLastPoint() *Point {
+	if p == nil || len(p.Points) == 0 {
+		return nil
+	}
+	return p.Points[len(p.Points)-1]
+}
+
+func (p *Path) GetLastStep(def byte) byte {
+	if p == nil || len(p.Steps) == 0 {
+		return def
+	}
+	return p.Steps[len(p.Steps)-1]
+}
+
+func (p *Path) AddStep(nextDir byte) {
+	lastDir := p.GetLastStep(Right)
+	switch {
+	case lastDir == nextDir:
+		p.Cost += 1
+		p.Steps = append(p.Steps, nextDir)
+	case IsTurn(lastDir, nextDir):
+		p.Cost += 1001
+		p.Steps = append(p.Steps, Turn, nextDir)
+	default:
+		panic(fmt.Errorf("unexpected nextdir %c following %c", nextDir, lastDir))
+	}
+	lastPoint := p.GetLastPoint()
+	p.Points = append(p.Points, StepFromPoint(lastPoint, nextDir, 1))
+}
+
+func (p *Path) CopyAppend(nextDir byte) *Path {
+	rv := &Path{}
+	if p != nil {
+		rv.Points = make([]*Point, len(p.Points), len(p.Points)+1)
+		copy(rv.Points, p.Points)
+		rv.Steps = make([]byte, len(p.Steps), len(p.Steps)+2)
+		copy(rv.Steps, p.Steps)
+		rv.Cost = p.Cost
+	}
+	rv.AddStep(nextDir)
+	return rv
+}
+
+func FindAllCheapPaths(maxCost int, start, end *Point, grid [][]*Node[Cell], curPath *Path) []*Path {
+	cur := Get(grid, start)
+	if cur == nil {
+		return nil
+	}
+	if IsSameXY(start, end) {
+		Debugf("Found path: %s", curPath)
+		return []*Path{curPath}
+	}
+	if curPath == nil {
+		curPath = &Path{Points: []*Point{start}}
+	}
+
+	var nextDirs []byte
+	var nextCells []*Node[Cell]
+	for _, nextDir := range cur.GetNextDirs() {
+		nextCell := cur.GetNext(nextDir)
+		if !IsSameXY(cur, nextCell) && !curPath.Contains(nextCell) {
+			nextDirs = append(nextDirs, nextDir)
+			nextCells = append(nextCells, nextCell)
+		}
+	}
+
+	if len(nextDirs) == 0 {
+		return nil
+	}
+	if len(nextDirs) == 1 {
+		nextCell := nextCells[0]
+		curPath.AddStep(nextDirs[0])
+		if curPath.Cost > maxCost {
+			return nil
+		}
+		return FindAllCheapPaths(maxCost, nextCell.Point.Copy(), end, grid, curPath)
+	}
+
+	var rvs []*Path
+	for i, nextDir := range nextDirs {
+		nextCell := nextCells[i]
+		nextPath := curPath.CopyAppend(nextDir)
+		if nextPath.Cost > maxCost {
+			continue
+		}
+
+		goodPaths := FindAllCheapPaths(maxCost, nextCell.Point.Copy(), end, grid, nextPath)
+		rvs = append(rvs, goodPaths...)
+	}
+
+	return rvs
+}
+
+func PathToPoints(start XY, path []byte) []*Point {
+	var rv []*Point
+	cur := NewPoint(start.GetX(), start.GetY())
+	rv = append(rv, cur)
+	for _, dir := range path {
+		if dir == Turn {
+			continue
+		}
+		cur = cur.Move(dir)
+		rv = append(rv, cur)
+	}
+	return rv
+}
+
+func (p *Point) Move(dir byte) *Point {
+	if p == nil {
+		return nil
+	}
+	d, ok := DPoints[dir]
+	if !ok {
+		return p
+	}
+	return AddPoints(p, d)
+}
+
+func GetAllPoints(start XY, paths [][]byte) []*Point {
+	var rv []*Point
+	knownMap := make(map[int]map[int]bool)
+	isKnown := func(p *Point) bool {
+		return knownMap[p.Y] != nil && knownMap[p.Y][p.X]
+	}
+	addPoint := func(p *Point) {
+		if isKnown(p) {
+			return
+		}
+		if knownMap[p.Y] == nil {
+			knownMap[p.Y] = make(map[int]bool)
+		}
+		knownMap[p.Y][p.X] = true
+		rv = append(rv, p)
+	}
+
+	for _, path := range paths {
+		for _, point := range PathToPoints(start, path) {
+			addPoint(point)
+		}
+	}
+
+	return rv
+}
+
+func FindSmallestPath(start *Point, end *Point, maze [][]byte) (int, [][]*Node[Cell]) {
 	grid := make([][]*Node[Cell], len(maze))
+
 	var unchecked []*Node[Cell]
 	enqueue := func(cell *Node[Cell]) {
-		Debugf("Adding to queue: %s", cell)
+		// Debugf("Adding to queue: %s", cell)
 		if cell.Value.Queued {
 			return
 		}
@@ -72,10 +337,10 @@ func FindSmallestPath(params *Params, start *Point, end *Point, maze [][]byte) i
 	for len(unchecked) > 0 {
 		checked++
 		cur := dequeue()
-		Debugf("[%d/%d]: cur = %s", checked, totalOpen, cur)
+		// Debugf("[%d/%d]: cur = %s", checked, totalOpen, cur)
 
 		if cur.Value.Visited {
-			Debugf("  Already visited.")
+			// Debugf("  Already visited.")
 			continue
 		}
 		cur.Value.Visited = true
@@ -83,39 +348,41 @@ func FindSmallestPath(params *Params, start *Point, end *Point, maze [][]byte) i
 
 		for _, nextDir := range cur.GetNextDirs() {
 			nextCell := cur.GetNext(nextDir)
-			Debugf("  [%s] Checking = %s", DirLetters[nextDir], nextCell)
-			if nextCell.Value.Visited {
-				Debugf("      Already visited.")
-				continue
-			}
+			// Debugf("  [%s] Checking = %s", DirLetters[nextDir], nextCell)
 
 			nextCost := cur.Value.Cost + 1
 			var addedSteps []byte
 			switch {
 			case lastDir == nextDir:
-				Debugf("      %c then %c: Movement is straight.", lastDir, nextDir)
+				// Debugf("      %c then %c: Movement is straight.", lastDir, nextDir)
 				addedSteps = []byte{nextDir}
 			case IsTurn(lastDir, nextDir):
-				Debugf("      %c then %c: Movement is a turn.", lastDir, nextDir)
+				// Debugf("      %c then %c: Movement is a turn.", lastDir, nextDir)
 				nextCost += 1000
 				addedSteps = []byte{Turn, nextDir}
 			default:
-				Debugf("      %c then %c: Cannot make move.", lastDir, nextDir)
+				// Debugf("      %c then %c: Cannot make move.", lastDir, nextDir)
 				continue
 			}
-			if nextCost < nextCell.Value.Cost {
-				nextCell.Value.Cost = nextCost
-				nextCell.Value.PathTo = CopyAppend(cur.Value.PathTo, addedSteps...)
+			if nextCost > nextCell.Value.Cost {
+				continue
 			}
 
-			if nextCell.Value.IsEnd {
-				Debugf("      Found end at cost %s.", nextCell)
-				return nextCell.Value.Cost
+			nextPath := CopyAppend(cur.Value.PathTo, addedSteps...)
+			if nextCost < nextCell.Value.Cost {
+				nextCell.Value.Cost = nextCost
+				nextCell.Value.PathTo = nextPath
 			}
+
 			enqueue(nextCell)
 		}
 	}
-	return MAX_INT
+
+	rv := Get(grid, end)
+	if rv == nil {
+		return MAX_INT, grid
+	}
+	return rv.Value.Cost, grid
 }
 
 const Turn = byte('T')
@@ -157,6 +424,16 @@ func BStr(test bool, str string) string {
 	return " "
 }
 
+func CostString(node *Node[Cell]) string {
+	if node == nil {
+		return ""
+	}
+	if node.Value.Cost == MAX_INT {
+		return "-1"
+	}
+	return strconv.Itoa(node.Value.Cost)
+}
+
 // CompareNodeCells returns 0 if a and b are equivalent, -1 if a < b, 1 if a > b
 func CompareNodeCells(a, b *Node[Cell]) int {
 	if a == b {
@@ -192,6 +469,14 @@ func CmpInts(a, b int) int {
 
 func IsSameXY(a, b XY) bool {
 	return a != nil && b != nil && a.GetX() == b.GetX() && a.GetY() == b.GetY()
+}
+
+func IsSamePoint(a, b *Point) bool {
+	return IsSameXY(a, b)
+}
+
+func (p *Point) Equals(p2 *Point) bool {
+	return IsSameXY(p, p2)
 }
 
 const (
