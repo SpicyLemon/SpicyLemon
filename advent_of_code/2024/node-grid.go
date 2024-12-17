@@ -72,6 +72,10 @@ var (
 	DRight = NewPoint(1, 0)
 )
 
+const (
+	NilStr = "<nil>"
+)
+
 // GetUDLR gets the points that are up, down, left and right of the given one.
 func GetUDLR(p *Point) (*Point, *Point, *Point, *Point) {
 	return AddPoints(p, DUp), AddPoints(p, DDown), AddPoints(p, DLeft), AddPoints(p, DRight)
@@ -110,7 +114,7 @@ func NewNode[V any](x, y int, value V) *Node[V] {
 // String gets a string of this node that contains the point and value.
 func (n *Node[V]) String() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	return fmt.Sprintf("%s=%s", n.Point, GenericValueString(n.Value))
 }
@@ -121,7 +125,7 @@ func (n *Node[V]) String() string {
 // E.g the node in the upper right corner of the grid only has neighbors to the right and down, so it's " D R".
 func (n *Node[V]) FullString() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	dirs := Ternary(n.Up != nil, "U", " ") +
 		Ternary(n.Down != nil, "D", " ") +
@@ -133,7 +137,7 @@ func (n *Node[V]) FullString() string {
 // PointString returns the "(<x>,<y>)" for this node.
 func (n *Node[V]) PointString() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	return n.Point.String()
 }

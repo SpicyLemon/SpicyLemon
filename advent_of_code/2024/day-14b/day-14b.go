@@ -102,7 +102,9 @@ func GoThroughStates(robots []*Robot, cur, step, sMax int) {
 	stdin := bufio.NewReader(os.Stdin)
 	MoveRobots(robots, cur)
 	for cur <= sMax {
-		Stdoutf("After %d seconds:\n%sPress Enter to continue, ctrl+c to stop. You're looking for a portrait of a christmas tree.", cur, DrawGrid(robots, cur))
+		Stdoutf("After %d seconds:\n%s"+
+			"Press Enter to continue, ctrl+c to stop. You're looking for a portrait of a christmas tree.",
+			cur, DrawGrid(robots, cur))
 		_, _ = stdin.ReadString('\n')
 		cur += step
 		if cur <= sMax {

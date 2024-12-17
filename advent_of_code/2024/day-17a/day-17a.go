@@ -98,35 +98,42 @@ func (s *State) ComboOperand(operand int) int {
 		return s.C
 	}
 	Stderrf("State:\n%s", s)
-	panic(fmt.Errorf("Invalid combo operand %d", operand))
+	panic(fmt.Errorf("invalid combo operand %d", operand))
 }
 
 func DoADV(s *State, operand int) {
-	// The adv instruction (opcode 0) performs division. The numerator is the value in the A register. The denominator is found by raising 2 to the power of the instruction's combo operand. (So, an operand of 2 would divide A by 4 (2^2); an operand of 5 would divide A by 2^B.) The result of the division operation is truncated to an integer and then written to the A register.
+	// The adv instruction (opcode 0) performs division. The numerator is the value in the A register.
+	// The denominator is found by raising 2 to the power of the instruction's combo operand.
+	// (So, an operand of 2 would divide A by 4 (2^2); an operand of 5 would divide A by 2^B.)
+	// The result of the division operation is truncated to an integer and then written to the A register.
 	o := s.ComboOperand(operand)
 	d := 1
 	for i := 0; i < o; i++ {
 		d *= 2
 	}
-	s.A = s.A / d
+	s.A /= d
 	s.Cur += 2
 }
 
 func DoBXL(s *State, operand int) {
-	// The bxl instruction (opcode 1) calculates the bitwise XOR of register B and the instruction's literal operand, then stores the result in register B.
-	s.B = s.B ^ operand
+	// The bxl instruction (opcode 1) calculates the bitwise XOR of register B and the instruction's
+	// literal operand, then stores the result in register B.
+	s.B ^= operand
 	s.Cur += 2
 }
 
 func DoBST(s *State, operand int) {
-	// The bst instruction (opcode 2) calculates the value of its combo operand modulo 8 (thereby keeping only its lowest 3 bits), then writes that value to the B register.
+	// The bst instruction (opcode 2) calculates the value of its combo operand modulo 8 (thereby keeping
+	// only its lowest 3 bits), then writes that value to the B register.
 	o := s.ComboOperand(operand)
 	s.B = o % 8
 	s.Cur += 2
 }
 
 func DoJNZ(s *State, operand int) {
-	// The jnz instruction (opcode 3) does nothing if the A register is 0. However, if the A register is not zero, it jumps by setting the instruction pointer to the value of its literal operand; if this instruction jumps, the instruction pointer is not increased by 2 after this instruction.
+	// The jnz instruction (opcode 3) does nothing if the A register is 0. However, if the A register
+	// is not zero, it jumps by setting the instruction pointer to the value of its literal operand;
+	// if this instruction jumps, the instruction pointer is not increased by 2 after this instruction.
 	if s.A == 0 {
 		s.Cur += 2
 		return
@@ -135,20 +142,23 @@ func DoJNZ(s *State, operand int) {
 }
 
 func DoBXC(s *State, _ int) {
-	// The bxc instruction (opcode 4) calculates the bitwise XOR of register B and register C, then stores the result in register B. (For legacy reasons, this instruction reads an operand but ignores it.)
-	s.B = s.B ^ s.C
+	// The bxc instruction (opcode 4) calculates the bitwise XOR of register B and register C, then stores
+	// the result in register B. (For legacy reasons, this instruction reads an operand but ignores it.)
+	s.B ^= s.C
 	s.Cur += 2
 }
 
 func DoOUT(s *State, operand int) {
-	// The out instruction (opcode 5) calculates the value of its combo operand modulo 8, then outputs that value. (If a program outputs multiple values, they are separated by commas.)
+	// The out instruction (opcode 5) calculates the value of its combo operand modulo 8, then outputs that
+	// value. (If a program outputs multiple values, they are separated by commas.)
 	o := s.ComboOperand(operand)
 	s.Output = append(s.Output, o%8)
 	s.Cur += 2
 }
 
 func DoBDV(s *State, operand int) {
-	// The bdv instruction (opcode 6) works exactly like the adv instruction except that the result is stored in the B register. (The numerator is still read from the A register.)
+	// The bdv instruction (opcode 6) works exactly like the adv instruction except that the result is stored
+	// in the B register. (The numerator is still read from the A register.)
 	o := s.ComboOperand(operand)
 	d := 1
 	for i := 0; i < o; i++ {
@@ -159,7 +169,8 @@ func DoBDV(s *State, operand int) {
 }
 
 func DoCDV(s *State, operand int) {
-	// The cdv instruction (opcode 7) works exactly like the adv instruction except that the result is stored in the C register. (The numerator is still read from the A register.)
+	// The cdv instruction (opcode 7) works exactly like the adv instruction except that the result is stored
+	// in the C register. (The numerator is still read from the A register.)
 	o := s.ComboOperand(operand)
 	d := 1
 	for i := 0; i < o; i++ {
@@ -212,17 +223,6 @@ func CopySlice[S ~[]E, E any](s S) S {
 	return rv
 }
 
-const (
-	adv = 0
-	bxl = 1
-	bst = 2
-	jnz = 3
-	bxc = 4
-	out = 5
-	bdv = 6
-	cdv = 7
-)
-
 type Input struct {
 	A       int
 	B       int
@@ -250,8 +250,8 @@ func (i Input) String() string {
 func ParseInput(lines []string) (*Input, error) {
 	defer FuncEnding(FuncStarting())
 	if len(lines) != 5 {
-		Stderrf("Unknown input (%d):\n", len(lines), strings.Join(AddLineNumbers(lines, 0), "\n"))
-		return nil, fmt.Errorf("unkown input length: expected 5, found %d", len(lines))
+		Stderrf("Unknown input (%d):\n%s", len(lines), strings.Join(AddLineNumbers(lines, 0), "\n"))
+		return nil, fmt.Errorf("unknown input length: expected 5, found %d", len(lines))
 	}
 
 	errs := make([]error, 4)

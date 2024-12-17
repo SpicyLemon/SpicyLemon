@@ -226,7 +226,9 @@ func GoThroughStates3(params *Params, robots []*Robot, cur, step, sMax int) {
 	for cur <= sMax {
 		counts := CountBlocks(robots)
 		if params.Verbose {
-			Stdoutf("After %d seconds:\n%sBlock Counts: %d\nPress Enter to continue, ctrl+c to stop. You're looking for a portrait of a christmas tree.", cur, DrawGrid(robots, cur), counts)
+			Stdoutf("After %d seconds:\n%sBlock Counts: %d\n"+
+				"Press Enter to continue, ctrl+c to stop. You're looking for a portrait of a christmas tree.",
+				cur, DrawGrid(robots, cur), counts)
 			_, _ = stdin.ReadString('\n')
 		} else {
 			Stdoutf("After %d seconds: %d", cur, counts)
@@ -262,7 +264,9 @@ func GoThroughStates2(robots []*Robot, cur, step, sMax int) {
 	stdin := bufio.NewReader(os.Stdin)
 	MoveRobots(robots, cur)
 	for cur <= sMax {
-		Stdoutf("After %d seconds:\n%sPress Enter to continue, ctrl+c to stop. You're looking for a portrait of a christmas tree.", cur, DrawGrid(robots, cur))
+		Stdoutf("After %d seconds:\n%s"+
+			"Press Enter to continue, ctrl+c to stop. You're looking for a portrait of a christmas tree.",
+			cur, DrawGrid(robots, cur))
 		_, _ = stdin.ReadString('\n')
 		cur += step
 		if cur <= sMax {

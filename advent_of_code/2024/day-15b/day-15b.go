@@ -98,6 +98,8 @@ const (
 	Down  = byte('v')
 	Left  = byte('<')
 	Right = byte('>')
+
+	NilStr = "<nil>"
 )
 
 func MoveRobot(move byte, robot *Point, warehouse [][]*Node[byte]) (*Point, [][]*Node[byte]) {
@@ -129,7 +131,7 @@ func MoveRobot(move byte, robot *Point, warehouse [][]*Node[byte]) (*Point, [][]
 		Debugf("Next %s is a right box: %s %s", next, leftBox, rightBox)
 	}
 
-	if MoveBox(d, leftBox, rightBox, nextWarehouse) {
+	if MoveBox(d, leftBox, rightBox) {
 		Debugf("Box was moved. Moving robot too: %s + '%c'%s = %s", robot, move, d, floor)
 		return next, nextWarehouse
 	}
@@ -137,11 +139,11 @@ func MoveRobot(move byte, robot *Point, warehouse [][]*Node[byte]) (*Point, [][]
 	return robot, warehouse
 }
 
-func MoveBox(d *Point, leftBox, rightBox *Node[byte], warehouse [][]*Node[byte]) bool {
+func MoveBox(d *Point, leftBox, rightBox *Node[byte]) bool {
 	defer FuncEnding(FuncStarting())
 	Debugf("%s + %s %s", d, leftBox, rightBox)
 	if funcDepth > 50 {
-		panic(fmt.Sprintf("We've gone too deep captian."))
+		panic("We've gone too deep captian.")
 	}
 
 	if leftBox == nil || leftBox.Value != BoxLeft || rightBox == nil || rightBox.Value != BoxRight {
@@ -178,8 +180,8 @@ func MoveBox(d *Point, leftBox, rightBox *Node[byte], warehouse [][]*Node[byte])
 			Debugf("Floor %s to the left of %s %s is open.", leftNext, leftBox, rightBox)
 		case BoxRight:
 			Debugf("floor %s to the left of %s %s is another box, attempting to move it", leftNext, leftBox, rightBox)
-			if MoveBox(d, leftNext.Get(d), rightNext.Get(d), warehouse) {
-				Debugf("Successfullly moved it out of the way.")
+			if MoveBox(d, leftNext.Get(d), rightNext.Get(d)) {
+				Debugf("Successfully moved it out of the way.")
 			} else {
 				Debugf("Could not move it out of the way.")
 				return false
@@ -196,8 +198,8 @@ func MoveBox(d *Point, leftBox, rightBox *Node[byte], warehouse [][]*Node[byte])
 			Debugf("Floor %s to the right of %s %s is open.", rightNext, leftBox, rightBox)
 		case BoxLeft:
 			Debugf("floor %s to the right of %s %s is another box, attempting to move it", rightNext, leftBox, rightBox)
-			if MoveBox(d, leftNext.Get(d), rightNext.Get(d), warehouse) {
-				Debugf("Successfullly moved it out of the way.")
+			if MoveBox(d, leftNext.Get(d), rightNext.Get(d)) {
+				Debugf("Successfully moved it out of the way.")
 			} else {
 				Debugf("Could not move it out of the way.")
 				return false
@@ -221,7 +223,7 @@ func MoveBox(d *Point, leftBox, rightBox *Node[byte], warehouse [][]*Node[byte])
 
 	if !leftOK && !rightOK && leftNext.Value == BoxLeft && rightNext.Value == BoxRight {
 		Debugf("Attempting to move whole box %s %s.", leftNext, rightNext)
-		if MoveBox(d, leftNext, rightNext, warehouse) {
+		if MoveBox(d, leftNext, rightNext) {
 			Debugf("Successfully moved it out of the way.")
 			leftOK, rightOK = true, true
 		} else {
@@ -232,7 +234,7 @@ func MoveBox(d *Point, leftBox, rightBox *Node[byte], warehouse [][]*Node[byte])
 
 	if !leftOK && leftNext.Value == BoxRight {
 		Debugf("Attempting to move box on left side: %s %s", leftNext.Left, leftNext)
-		if MoveBox(d, leftNext.Left, leftNext, warehouse) {
+		if MoveBox(d, leftNext.Left, leftNext) {
 			Debugf("Successfully moved it out of the way.")
 			leftOK = true
 		} else {
@@ -242,7 +244,7 @@ func MoveBox(d *Point, leftBox, rightBox *Node[byte], warehouse [][]*Node[byte])
 	}
 	if !rightOK && rightNext.Value == BoxLeft {
 		Debugf("Attempting to move box on right side: %s %s", rightNext, rightNext.Right)
-		if MoveBox(d, rightNext, rightNext.Right, warehouse) {
+		if MoveBox(d, rightNext, rightNext.Right) {
 			Debugf("Successfully moved it out of the way.")
 			rightOK = true
 		} else {
@@ -252,8 +254,7 @@ func MoveBox(d *Point, leftBox, rightBox *Node[byte], warehouse [][]*Node[byte])
 	}
 
 	if leftOK && rightOK {
-		Debugf("Moving box right: %s=%c => %s=%c => %s=%c", leftBox, Open, rightBox, leftBox.Value, rightNext, rightBox.Value)
-		Debugf("Moving box %s: %s <=> %s  %s <=> %s", leftBox, leftNext, rightBox, rightNext)
+		Debugf("Moving box %s: %s <=> %s  %s <=> %s", d, leftBox, leftNext, rightBox, rightNext)
 		leftBox.Value, leftNext.Value = leftNext.Value, leftBox.Value
 		rightBox.Value, rightNext.Value = rightNext.Value, rightBox.Value
 		return true
@@ -279,7 +280,6 @@ func GetD(move byte) *Point {
 func CopyWarehouse(warehouse [][]*Node[byte]) [][]*Node[byte] {
 	rv, _ := MakeWarehouse(MapGrid(warehouse, (*Node[byte]).GetValue))
 	return rv
-
 }
 
 // MakeWarehouse creates the warehouse floor and extracts the robot.
@@ -452,7 +452,7 @@ func NewNode[V any](x, y int, value V) *Node[V] {
 
 func (n *Node[V]) String() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	return fmt.Sprintf("%s='%s'", n.Point, GenericValueString(n.Value))
 }
@@ -463,7 +463,7 @@ func (n *Node[V]) String() string {
 // E.g the node in the upper right corner of the grid only has neighbors to the right and down, so it's " D R".
 func (n *Node[V]) FullString() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	dirs := Ternary(n.Up != nil, "U", " ") +
 		Ternary(n.Down != nil, "D", " ") +
@@ -475,7 +475,7 @@ func (n *Node[V]) FullString() string {
 // PointString returns the "(<x>,<y>)" for this node.
 func (n *Node[V]) PointString() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	return n.Point.String()
 }

@@ -47,14 +47,14 @@ func Solve(params *Params) (string, error) {
 		var err error
 		minA, err = strconv.Atoi(params.Custom[0])
 		if err != nil {
-			return "", fmt.Errorf("invalid minA %q: %w", params.Custom[0])
+			return "", fmt.Errorf("invalid minA %q: %w", params.Custom[0], err)
 		}
 	}
 	if len(params.Custom) > 0 {
 		var err error
 		maxA, err = strconv.Atoi(params.Custom[1])
 		if err != nil {
-			return "", fmt.Errorf("invalid maxA %q: %w", params.Custom[1])
+			return "", fmt.Errorf("invalid maxA %q: %w", params.Custom[1], err)
 		}
 	}
 
@@ -89,7 +89,7 @@ func FindRemake(input *Input) int {
 		}
 		i += adds[a]
 		if i < 0 {
-			Stderrf("Overflow: %s", i)
+			Stderrf("Overflow: %d", i)
 			break
 		}
 		a = (a + 1) % 2
@@ -232,7 +232,7 @@ func (s *State) ComboOperand(operand int) int {
 		return s.C
 	}
 	Stderrf("State:\n%s", s)
-	panic(fmt.Errorf("Invalid combo operand %d", operand))
+	panic(fmt.Errorf("invalid combo operand %d", operand))
 }
 
 func DoADV(s *State, operand int) {
@@ -245,14 +245,14 @@ func DoADV(s *State, operand int) {
 	for i := 0; i < o; i++ {
 		d *= 2
 	}
-	s.A = s.A / d
+	s.A /= d
 	s.Cur += 2
 }
 
 func DoBXL(s *State, operand int) {
 	// The bxl instruction (opcode 1) calculates the bitwise XOR of register B and the instruction's
 	// literal operand, then stores the result in register B.
-	s.B = s.B ^ operand
+	s.B ^= operand
 	s.Cur += 2
 }
 
@@ -278,7 +278,7 @@ func DoJNZ(s *State, operand int) {
 func DoBXC(s *State, _ int) {
 	// The bxc instruction (opcode 4) calculates the bitwise XOR of register B and register C, then stores
 	// the result in register B. (For legacy reasons, this instruction reads an operand but ignores it.)
-	s.B = s.B ^ s.C
+	s.B ^= s.C
 	s.Cur += 2
 }
 
@@ -357,17 +357,6 @@ func CopySlice[S ~[]E, E any](s S) S {
 	return rv
 }
 
-const (
-	adv = 0
-	bxl = 1
-	bst = 2
-	jnz = 3
-	bxc = 4
-	out = 5
-	bdv = 6
-	cdv = 7
-)
-
 type Input struct {
 	A       int
 	B       int
@@ -395,8 +384,8 @@ func (i Input) String() string {
 func ParseInput(lines []string) (*Input, error) {
 	defer FuncEnding(FuncStarting())
 	if len(lines) != 5 {
-		Stderrf("Unknown input (%d):\n", len(lines), strings.Join(AddLineNumbers(lines, 0), "\n"))
-		return nil, fmt.Errorf("unkown input length: expected 5, found %d", len(lines))
+		Stderrf("Unknown input (%d):\n%s", len(lines), strings.Join(AddLineNumbers(lines, 0), "\n"))
+		return nil, fmt.Errorf("unknown input length: expected 5, found %d", len(lines))
 	}
 
 	errs := make([]error, 4)

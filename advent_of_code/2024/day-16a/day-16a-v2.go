@@ -40,7 +40,7 @@ func Solve(params *Params) (string, error) {
 }
 
 func PathToPoints(start XY, path []byte) []*Point {
-	var rv []*Point
+	rv := make([]*Point, 0, len(path)+1)
 	cur := NewPoint(start.GetX(), start.GetY())
 	rv = append(rv, cur)
 	Debugf("Start: %s", cur)
@@ -186,7 +186,9 @@ func NewCellNode(x, y int) *Node[Cell] {
 }
 
 func (c Cell) String() string {
-	return fmt.Sprintf("%d[%s%s%s](%d):%s", c.Cost, BStr(c.Visited, "V"), BStr(c.Queued, "Q"), BStr(c.IsEnd, "E"), len(c.PathTo), string(c.PathTo))
+	return fmt.Sprintf("%d[%s%s%s](%d):%s", c.Cost,
+		BStr(c.Visited, "V"), BStr(c.Queued, "Q"), BStr(c.IsEnd, "E"),
+		len(c.PathTo), string(c.PathTo))
 }
 
 func BStr(test bool, str string) string {
@@ -206,7 +208,7 @@ func CostString(node *Node[Cell]) string {
 	return strconv.Itoa(node.Value.Cost)
 }
 
-// CompareNodeCells returns 0 if a and b are equivalent, -1 if a < b, 1 if a > b
+// CompareNodeCells returns 0 if a and b are equivalent, -1 if a < b, 1 if a > b.
 func CompareNodeCells(a, b *Node[Cell]) int {
 	if a == b {
 		return 0
@@ -248,6 +250,8 @@ const (
 	Open  = byte('.')
 	Start = byte('S')
 	End   = byte('E')
+
+	NilStr = "<nil>"
 )
 
 type Input struct {
@@ -423,7 +427,7 @@ func NewNode[V any](x, y int, value V) *Node[V] {
 // String gets a string of this node that contains the point and value.
 func (n *Node[V]) String() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	return fmt.Sprintf("%s=%s", n.Point, GenericValueString(n.Value))
 }
@@ -434,7 +438,7 @@ func (n *Node[V]) String() string {
 // E.g the node in the upper right corner of the grid only has neighbors to the right and down, so it's " D R".
 func (n *Node[V]) FullString() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	dirs := MapSlice(Dirs, func(dir byte) string {
 		if n.Next[dir] != nil {
@@ -448,7 +452,7 @@ func (n *Node[V]) FullString() string {
 // PointString returns the "(<x>,<y>)" for this node.
 func (n *Node[V]) PointString() string {
 	if n == nil {
-		return "<nil>"
+		return NilStr
 	}
 	return n.Point.String()
 }
