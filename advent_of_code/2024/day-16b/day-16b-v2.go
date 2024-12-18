@@ -15,7 +15,7 @@ import (
 	"unicode/utf8"
 )
 
-const DEFAULT_COUNT = 73432
+const DEFAULT_COUNT = 0
 
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
@@ -26,17 +26,128 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
-	// TODO: Create a cell to put in nodes for a grid. It'll have the paths available in each direction.
-	//       Create a node grid with just nodes at the intersections, start, and end. Each will have the
-	//       paths to the next one and the node's Up, Down, etc. will follow those paths.
-	//       Then try to find paths from start to end that are at most the answer from part 1 (DEFAULT_COUNT).
-	//       Will need to add costs for turning on the intersections, which means it'll need to know which way
-	//       we're facing when we get to that intersection using the provided path.
-	//       To not back-track, will need to know the previous intersection to make sure that's not the end of
-	//       the path we're about to head down.
+	maze := CreateMaze(input.Start, input.End, input.Maze)
+	if params.Verbose {
+		var points []*Point
+		if input.Start != nil {
+			points = append(points, input.Start)
+		}
+		if input.End != nil {
+			points = append(points, input.End)
+		}
+		Stderrf("Maze:\n%s", CreateIndexedGridStringFunc(maze, CellNodeShortString, points, points))
+	}
+	// TODO: Try to find paths from start to end that are at most the answer from part 1 (DEFAULT_COUNT).
 	minCost := params.Count
 	answer := minCost
 	return fmt.Sprintf("%d", answer), nil
+}
+
+func CreateMaze(start, end *Point, maze [][]byte) [][]*Node[Cell] {
+	rv := make([][]*Node[Cell], len(maze))
+	var intersections []*Node[Cell]
+	for y := range maze {
+		rv[y] = make([]*Node[Cell], len(maze[y]))
+		for x, c := range maze[y] {
+			cur := NewPoint(x, y)
+			nextDirs := GetAdjacentOpenDirs(maze, cur)
+			if !IsSameXY(cur, start) && !IsSameXY(cur, end) && len(nextDirs) < 3 {
+				continue
+			}
+			cell := NewCellNode(x, y, c)
+			for _, dir := range nextDirs {
+				// TODO: Go in each direction, tracing a path to the next intersection and set the cell's Path and Next accordingly.
+				cell.Value.Path[dir] = nil
+				cell.Value.Next[dir] = nil
+			}
+			cell.Next = cell.Value.Next
+			rv[y][x] = cell
+			intersections = append(intersections, cell)
+		}
+	}
+	Debugf("There are %d intersections:\n%s", len(intersections), IntersectionsString(intersections))
+	return rv
+}
+
+func GetAdjacentOpenDirs(maze [][]byte, point *Point) []Direction {
+	if c, ok := GetB(maze, point); !ok || c != Open {
+		return nil
+	}
+	rv := make([]Direction, 0, 4)
+	for dir, space := range GetAdjacent(maze, point) {
+		if space == Open {
+			rv = append(rv, dir)
+		}
+	}
+	return rv
+}
+
+func IntersectionsString(nodes []*Node[Cell]) string {
+	parts := make([]string, len(nodes))
+	for i, node := range nodes {
+		parts[i] = fmt.Sprintf("(%d,%d)%d", node.Point.X, node.Point.Y, len(node.Value.Next))
+	}
+	return strings.Join(parts, " ")
+}
+
+func NewCellNode(x int, y int, space byte) *Node[Cell] {
+	if space == Wall {
+		return nil
+	}
+	return NewNode(x, y, *NewCell())
+}
+
+func CellNodeShortString(node *Node[Cell]) string {
+	if node == nil {
+		return ""
+	}
+	return strconv.Itoa(len(node.Value.Path))
+}
+
+// A Cell is a type to put in a Node in order to process and find paths.
+type Cell struct {
+	Visited bool
+	Queued  bool
+	Path    map[Direction]*Path
+	Next    map[Direction]*Node[Cell]
+	PathsTo []*Path
+}
+
+func NewCell() *Cell {
+	return &Cell{
+		Path: make(map[Direction]*Path),
+		Next: make(map[Direction]*Node[Cell]),
+	}
+}
+
+func (c Cell) String() string {
+	parts := make([]string, len(Dirs))
+	for i, dir := range Dirs {
+		parts[i] = string(dir)
+		path := c.Path[dir]
+		next := c.Next[dir]
+		if path == nil && next == nil {
+			parts[i] += "n/a"
+			continue
+		}
+		pathStr := "?<?>"
+		if path != nil {
+			pathStr = fmt.Sprintf("%d<%d>", len(path.Points)-1, path.Cost)
+		}
+		nextStr := "(?,?)"
+		if next != nil {
+			nextStr = next.String()
+		}
+		parts[i] += pathStr + nextStr
+	}
+	rv := fmt.Sprintf("[%s%s]{%s}(%d)", Ternary(c.Visited, "V", " "), Ternary(c.Queued, "Q", " "),
+		strings.Join(parts, ";"), len(c.PathsTo))
+	if debug {
+		rv += ":\n" + StringNumberJoin(c.PathsTo, 1, "\n")
+	} else {
+		rv += "(" + strings.Join(MapSlice(c.PathsTo, (*Path).GetCostString), ",") + ")"
+	}
+	return rv
 }
 
 // Path represents a series of steps between points.
@@ -46,13 +157,16 @@ func Solve(params *Params) (string, error) {
 // The Cost is how much it is to traverse the path starting at the first point facing in the same direction as the first step.
 // I.e. If you have to turn to start down the path, that is NOT included in the path's cost (since it's outside the path).
 type Path struct {
-	Points []*Point
-	Steps  []byte
-	Cost   int
+	Points    []*Point
+	PointsMap map[int]map[int]*Point
+	Steps     []Direction
+	Cost      int
 }
 
 func NewPath(start XY) *Path {
-	return &Path{Points: []*Point{NewPoint(start.GetX(), start.GetY())}}
+	rv := &Path{PointsMap: make(map[int]map[int]*Point)}
+	rv.addPoints(NewPoint(start.GetX(), start.GetY())) //nolint:errcheck // It's empty, so it can't give an error.
+	return rv
 }
 
 func (p *Path) String() string {
@@ -91,7 +205,8 @@ func (p *Path) String() string {
 }
 
 func (p *Path) Contains(p2 XY) bool {
-	return ContainsPoint(p.Points, p2)
+	y := p2.GetY()
+	return p != nil && p.PointsMap != nil && p.PointsMap[y] != nil && p.PointsMap[y][p2.GetX()] != nil
 }
 
 func (p *Path) GetFirstPoint() *Point {
@@ -102,15 +217,29 @@ func (p *Path) GetLastPoint() *Point {
 	return GetLast(p.Points, nil)
 }
 
-func (p *Path) GetFirstStep() byte {
+func (p *Path) GetFirstStep() Direction {
 	return GetFirst(p.Steps, UnknownDir)
 }
 
-func (p *Path) GetLastStep() byte {
+func (p *Path) GetLastStep() Direction {
 	return GetLast(p.Steps, UnknownDir)
 }
 
-func (p *Path) AddStep(nextDir byte) {
+func (p *Path) GetCost() int {
+	if p == nil {
+		return MAX_INT
+	}
+	return p.Cost
+}
+
+func (p *Path) GetCostString() string {
+	if p == nil {
+		return NilStr
+	}
+	return strconv.Itoa(p.Cost)
+}
+
+func (p *Path) AddStep(nextDir Direction) error {
 	lastDir := p.GetLastStep()
 	switch {
 	case lastDir == nextDir || lastDir == UnknownDir:
@@ -120,102 +249,129 @@ func (p *Path) AddStep(nextDir byte) {
 		p.Cost += 1001
 		p.Steps = append(p.Steps, Turn, nextDir)
 	default:
-		panic(fmt.Errorf("unexpected nextdir %c following %c", nextDir, lastDir))
+		return fmt.Errorf("unexpected next step %c following %c", nextDir, lastDir)
 	}
-	lastPoint := p.GetLastPoint()
-	p.Points = append(p.Points, StepFromPoint(lastPoint, nextDir, 1))
+	return p.addPoints(p.GetLastPoint().Move(nextDir))
 }
 
-func (p *Path) CopyAddStep(nextDir byte) *Path {
-	rv := &Path{}
-	if p != nil {
-		rv.Points = make([]*Point, len(p.Points), len(p.Points)+1)
-		copy(rv.Points, p.Points)
-		rv.Steps = make([]byte, len(p.Steps), len(p.Steps)+2)
-		copy(rv.Steps, p.Steps)
-		rv.Cost = p.Cost
+func (p *Path) addPoints(points ...*Point) error {
+	for _, point := range points {
+		if p.PointsMap != nil && p.PointsMap[point.Y] != nil && p.PointsMap[point.Y][point.X] != nil {
+			return fmt.Errorf("path already contains %s", point)
+		}
 	}
-	rv.AddStep(nextDir)
+
+	p.Points = append(p.Points, points...)
+	for _, point := range points {
+		if p.PointsMap == nil {
+			p.PointsMap = make(map[int]map[int]*Point)
+		}
+		if p.PointsMap[point.Y] == nil {
+			p.PointsMap[point.Y] = make(map[int]*Point)
+		}
+		p.PointsMap[point.Y][point.X] = point
+	}
+
+	return nil
+}
+
+func (p *Path) Copy() *Path {
+	if p == nil {
+		return nil
+	}
+	rv := &Path{
+		// Extra capacity in the expectation that we're about to add a point and step or two, and want to limit growth.
+		Points:    make([]*Point, len(p.Points), len(p.Points)+1),
+		PointsMap: make(map[int]map[int]*Point),
+		Steps:     make([]Direction, len(p.Steps), len(p.Steps)+2),
+		Cost:      p.Cost,
+	}
+
+	copy(rv.Points, p.Points)
+
+	for y := range p.PointsMap {
+		rv.PointsMap[y] = make(map[int]*Point)
+		for x, v := range p.PointsMap[y] {
+			rv.PointsMap[y][x] = v
+		}
+	}
+
+	copy(rv.Steps, p.Steps)
+
 	return rv
 }
 
-// ContainsPoint returns true if the provided point's coordinates match one in the provided list.
-func ContainsPoint[S ~[]E, E XY](pz S, p XY) bool {
-	// Hard code some smaller count cases for hopefully slightly better performance.
-	// Also, check the last first, then the first and alternate towards the middle.
-	count := len(pz)
-	switch count {
-	case 0:
-		return false
-	case 1:
-		return IsSameXY(pz[0], p)
-	case 2:
-		return IsSameXY(pz[1], p) || IsSameXY(pz[0], p)
-	case 3:
-		return IsSameXY(pz[2], p) || IsSameXY(pz[0], p) || IsSameXY(pz[1], p)
-	case 4:
-		return IsSameXY(pz[3], p) || IsSameXY(pz[0], p) || IsSameXY(pz[2], p) || IsSameXY(pz[1], p)
-	}
-
-	for i := 0; i < count/2; i++ {
-		if IsSameXY(pz[count-1-i], p) || IsSameXY(pz[i], p) {
-			return true
-		}
-	}
-	if count%2 != 0 {
-		return IsSameXY(pz[count/2], p)
-	}
-	return false
+func (p *Path) CopyAddStep(nextDir Direction) (*Path, error) {
+	rv := p.Copy()
+	err := rv.AddStep(nextDir)
+	return rv, err
 }
 
-// PathToPoints creates all the points that the path passes through when started at the provided point.
-func PathToPoints(start XY, path []byte) []*Point {
-	rv := make([]*Point, 0, len(path)+1)
-	cur := NewPoint(start.GetX(), start.GetY())
-	rv = append(rv, cur)
-	for _, dir := range path {
-		if dir == Turn {
-			continue
-		}
-		cur = cur.Move(dir)
-		rv = append(rv, cur)
+func (p *Path) Append(next *Path) error {
+	thisLastPoint := p.GetLastPoint()
+	nextFirstPoint := next.GetFirstPoint()
+	if !IsSameXY(thisLastPoint, nextFirstPoint) {
+		return fmt.Errorf("this path's last point %s is not equal to the next path's "+
+			"first point %s: cannot append path", thisLastPoint, nextFirstPoint)
 	}
-	return rv
+
+	thisLastStep := p.GetLastStep()
+	nextFirstStep := next.GetFirstStep()
+	isTurn := IsTurn(thisLastStep, nextFirstStep)
+	if !isTurn && thisLastStep != nextFirstStep && thisLastStep != UnknownDir && nextFirstStep != UnknownDir {
+		return fmt.Errorf("unexpected next step %c following %c: cannot append path", nextFirstStep, thisLastStep)
+	}
+
+	// if addPoints returns an error, it shouldn't have changed p at all.
+	err := p.addPoints(next.Points[1:]...)
+	if err != nil {
+		return fmt.Errorf("%w: cannot append path", err)
+	}
+	if isTurn {
+		p.Cost += 1000
+		p.Steps = append(p.Steps, Turn)
+	}
+	p.Cost += next.Cost
+	p.Steps = append(p.Steps, next.Steps...)
+	return nil
 }
 
-// GetAllPoints gets all points (deduplicated) involved in all of the paths when started at the provided point.
-func GetAllPoints(start XY, paths [][]byte) []*Point {
+func CombinePaths(path *Path, paths ...*Path) (*Path, error) {
+	rv := path.Copy()
+	for _, p := range paths {
+		err := rv.Append(p)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return rv, nil
+}
+
+func DedupPoints[S ~[]E, E XY](points []S) []*Point {
 	var rv []*Point
 	knownMap := make(map[int]map[int]bool)
-	isKnown := func(p *Point) bool {
-		return knownMap[p.Y] != nil && knownMap[p.Y][p.X]
-	}
-	addPoint := func(p *Point) {
-		if isKnown(p) {
-			return
-		}
-		if knownMap[p.Y] == nil {
-			knownMap[p.Y] = make(map[int]bool)
-		}
-		knownMap[p.Y][p.X] = true
-		rv = append(rv, p)
-	}
-
-	for _, path := range paths {
-		for _, point := range PathToPoints(start, path) {
-			addPoint(point)
+	for _, path := range points {
+		for _, p := range path {
+			x, y := p.GetXY()
+			if knownMap[y] != nil && knownMap[y][x] {
+				continue
+			}
+			if knownMap[y] == nil {
+				knownMap[y] = make(map[int]bool)
+			}
+			knownMap[y][x] = true
+			rv = append(rv, NewPoint(x, y))
 		}
 	}
-
 	return rv
 }
 
 // Move will return a new point 1 unit in the direction provided from this point.
-func (p *Point) Move(dir byte) *Point {
+func (p *Point) Move(dir Direction) *Point {
 	if p == nil {
 		return nil
 	}
-	d, ok := DPoints[dir]
+	d, ok := DDirs[dir]
 	if !ok {
 		panic(fmt.Errorf("cannot move %c from %s: unknown direction", dir, p))
 	}
@@ -238,22 +394,35 @@ func GetLast[S ~[]E, E any](vals S, def E) E {
 	return vals[len(vals)-1]
 }
 
-// CopyAppend will copy the provided base slice to a new one, then append the provided toAdd values, returning the new slice.
-func CopyAppend[S ~[]E, E any](base S, toAdd ...E) S {
-	rv := make(S, len(base)+len(toAdd))
-	copy(rv, base)
-	copy(rv[len(base):], toAdd)
-	return rv
-}
-
-// IsSameXY returns true if the two provided things have the same x and y coordinates.
-func IsSameXY(a, b XY) bool {
-	return a != nil && b != nil && a.GetX() == b.GetX() && a.GetY() == b.GetY()
-}
-
 // Equals returns true if the provided point equals this one.
 func (p *Point) Equals(p2 *Point) bool {
 	return IsSameXY(p, p2)
+}
+
+// MapGridXY creates a new map by running the provided mapper on the x,y values and each element of the provided grid.
+func MapGridXY[G ~[][]E, E any, R any](grid G, mapper func(int, int, E) R) [][]R {
+	if grid == nil {
+		return nil
+	}
+	rv := make([][]R, len(grid))
+	for y := range grid {
+		rv[y] = make([]R, len(grid[y]))
+		for x := range rv[y] {
+			rv[y][x] = mapper(x, y, grid[y][x])
+		}
+	}
+	return rv
+}
+
+// IsTurn returns true if cur and next are along different axes.
+func IsTurn(cur, next Direction) bool {
+	switch cur {
+	case Up, Down:
+		return next == Left || next == Right
+	case Left, Right:
+		return next == Up || next == Down
+	}
+	return false
 }
 
 const (
@@ -262,8 +431,8 @@ const (
 	Start = byte('S')
 	End   = byte('E')
 
-	Turn       = byte('T')
-	UnknownDir = byte('x')
+	Turn       = Direction('T')
+	UnknownDir = Direction('x')
 )
 
 type Input struct {
@@ -303,520 +472,37 @@ func ParseInput(lines []string) (*Input, error) {
 				rv.Maze[i][x] = Open
 			case End:
 				rv.End = NewPoint(x, i)
+				rv.Maze[i][x] = Open
 			}
 		}
 	}
 	return &rv, nil
 }
 
-// -----------------------------------------------------------------------------
-// -----------------------------  Node Grid Stuff  -----------------------------
-// -----------------------------------------------------------------------------
-
-// Key stuff:
-// AsNodeGrid[V any](vals [][]V) [][]*Node[V]
-// GroupByValue[V comparable](vals [][]*Node[V]) map[V][]*Node[V]
-// CreateByValueMapString[V cmp.Ordered](vals map[V][]*Node[V]) string
-// CreateEnhancedByValueMapString[K cmp.Ordered, V ~[]W, W XY, S ~[]E, E XY](vals map[K]V, colorPoints, highlightPoints S) string
-// PathString[S ~[]E, E XY](path S) string
-// EnhancedPathString[P ~[]Q, Q XY, S ~[]E, E XY](path P, colorPoints, highlightPoints S) string
-// MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R
-
-// AsNodeGrid creates a grid of nodes with the provide values, all the nodes are linked up with their neighbors.
-func AsNodeGrid[V any](vals [][]V) [][]*Node[V] {
-	rv := make([][]*Node[V], len(vals))
-	for y := range vals {
-		rv[y] = make([]*Node[V], len(vals[y]))
-		for x := range vals[y] {
-			rv[y][x] = NewNode(x, y, vals[y][x])
-		}
-	}
-
-	LinkNodeGrid(rv)
-	return rv
-}
-
-// LinkNodeGrid will link all the adjacent nodes in the provided grid.
-func LinkNodeGrid[V any](grid [][]*Node[V]) {
-	for y := range grid {
-		for x := range grid[y] {
-			curP := NewPoint(x, y)
-			cur := Get(grid, curP)
-			if cur == nil {
-				continue
-			}
-			cur.Next = GetAdjacent(grid, curP)
-		}
-	}
-}
-
-const (
-	Up    = byte('^')
-	Down  = byte('v')
-	Left  = byte('<')
-	Right = byte('>')
-
-	NilStr = "<nil>"
-)
-
-var (
-	Dirs         = []byte{Up, Down, Left, Right}
-	DirNames     = map[byte]string{Up: "Up", Down: "Down", Left: "Left", Right: "Right"}
-	DirLetters   = map[byte]string{Up: "U", Down: "D", Left: "L", Right: "R"}
-	OppositeDirs = map[byte]byte{Up: Down, Down: Up, Left: Right, Right: Left}
-
-	// DUp can be added to another point to get the point above it.
-	DUp = NewPoint(0, -1)
-	// DDown can be added to another point to get the point below it.
-	DDown = NewPoint(0, 1)
-	// DLeft can be added to another point to get the point to the left of it.
-	DLeft = NewPoint(-1, 0)
-	// DRight can be added to another point to get the point to the right of it.
-	DRight = NewPoint(1, 0)
-
-	DPoints = map[byte]*Point{Up: DUp, Down: DDown, Left: DLeft, Right: DRight}
-)
-
-// GetUDLR gets the points that are up, down, left, and right of the given one.
-func GetUDLR(p *Point) (*Point, *Point, *Point, *Point) {
-	return AddPoints(p, DUp), AddPoints(p, DDown), AddPoints(p, DLeft), AddPoints(p, DRight)
-}
-
-// GetAdjacent gets the nodes from the grid that are up, down, left, and right of the given point.
-func GetAdjacent[V any](grid [][]V, p *Point) map[byte]V {
-	u, d, l, r := GetUDLR(p)
-	rv := make(map[byte]V)
-	if n, ok := SafeGet(grid, u); ok {
-		rv[Up] = n
-	}
-	if n, ok := SafeGet(grid, d); ok {
-		rv[Down] = n
-	}
-	if n, ok := SafeGet(grid, l); ok {
-		rv[Left] = n
-	}
-	if n, ok := SafeGet(grid, r); ok {
-		rv[Right] = n
-	}
-	return rv
-}
-
-// StepFromPoint returns the point that is count spaces from start in the provided direction.
-func StepFromPoint(start XY, dir byte, count int) *Point {
-	x, y := start.GetXY()
-	d := DPoints[dir]
-	if d == nil {
-		return NewPoint(x, y)
-	}
-	return NewPoint(x+d.X*count, y+d.Y*count)
-}
-
-// IsIn returns true if the provided point exists in the provided grid.
-func IsIn[E any](grid [][]E, p XY) bool {
-	if p == nil {
-		return false
-	}
-	x, y := p.GetXY()
-	return y >= 0 && y < len(grid) && x >= 0 && x < len(grid[y])
-}
-
-// Get will safely get the element of the grid at the provided point.
-// If the point is outside the grid, the zero-value is returned.
-func Get[E any](grid [][]E, p XY) E {
-	rv, _ := SafeGet(grid, p)
-	return rv
-}
-
-// SafeGet will safely get the element of the grid at the provided point and true if that point exists (false if it doesn't).
-func SafeGet[E any](grid [][]E, p XY) (E, bool) {
-	if IsIn(grid, p) {
-		return grid[p.GetY()][p.GetX()], true
-	}
-	var rv E
-	return rv, false
-}
-
-// Node[V] has an x,y position, value, and knows its neighbors in a 2d grid.
-type Node[V any] struct {
-	Point
-	Value V
-	Next  map[byte]*Node[V]
-}
-
-// NewNode creates a new Node at the given point with the given value (and no neighbors).
-func NewNode[V any](x, y int, value V) *Node[V] {
-	return &Node[V]{Point: Point{X: x, Y: y}, Value: value, Next: make(map[byte]*Node[V])}
-}
-
-// String gets a string of this node that contains the point and value.
-func (n *Node[V]) String() string {
-	if n == nil {
-		return NilStr
-	}
-	return fmt.Sprintf("%s=%s", n.Point, GenericValueString(n.Value))
-}
-
-// FullString converts this node into a string with the format "(<x>,<y>)=<value>:[<neighbor flags>]".
-// If a node has all four neighbors, the <neighbor flags> will be "UDLR".
-// Any neighbor directions the node does NOT have are replaced with a space in that string.
-// E.g the node in the upper right corner of the grid only has neighbors to the right and down, so it's " D R".
-func (n *Node[V]) FullString() string {
-	if n == nil {
-		return NilStr
-	}
-	dirs := MapSlice(Dirs, func(dir byte) string {
-		if n.Next[dir] != nil {
-			return DirLetters[dir]
-		}
-		return " "
-	})
-	return fmt.Sprintf("%s=%s:[%s]", n.Point, GenericValueString(n.Value), strings.Join(dirs, ""))
-}
-
-// PointString returns the "(<x>,<y>)" for this node.
-func (n *Node[V]) PointString() string {
-	if n == nil {
-		return NilStr
-	}
-	return n.Point.String()
-}
-
-// GetUp is a nil-safe way to get the node up from this one.
-func (n *Node[V]) GetUp() *Node[V] {
-	if n == nil {
-		return nil
-	}
-	return n.Next[Up]
-}
-
-// GetDown is a nil-safe way to get the node down from this one.
-func (n *Node[V]) GetDown() *Node[V] {
-	if n == nil {
-		return nil
-	}
-	return n.Next[Down]
-}
-
-// GetLeft is a nil-safe way to get the node to the left of this one.
-func (n *Node[V]) GetLeft() *Node[V] {
-	if n == nil {
-		return nil
-	}
-	return n.Next[Left]
-}
-
-// GetRight is a nil-safe way to get the node to the right of this one.
-func (n *Node[V]) GetRight() *Node[V] {
-	if n == nil {
-		return nil
-	}
-	return n.Next[Right]
-}
-
-// GetNext gets the node in the direction provided.
-func (n *Node[V]) GetNext(dir byte) *Node[V] {
-	if n == nil {
-		return nil
-	}
-	return n.Next[dir]
-}
-
-// HasNext returns true if this node has a neighbor in the provided direction.
-func (n *Node[V]) HasNext(dir byte) bool {
-	return n != nil && n.Next[dir] != nil
-}
-
-// GetNextDirs() gets the directions available.
-func (n *Node[V]) GetNextDirs() []byte {
-	if n == nil {
-		return nil
-	}
-	rv := make([]byte, 0, len(Dirs))
-	for _, dir := range Dirs {
-		if n.Next[dir] != nil {
-			rv = append(rv, dir)
-		}
-	}
-	return rv
-}
-
-// Move gets the node reached when moving the provided direction the given number of nodes.
-func (n *Node[V]) Move(dir byte, count int) *Node[V] {
-	cur := n
-	for i := 0; i < count; i++ {
-		if cur == nil {
-			return nil
-		}
-		cur = cur.Next[dir]
-	}
-	return cur
-}
-
-// Go returns the node that is at this one plus the provided d.
-func (n *Node[V]) Go(d XY) *Node[V] {
-	if n == nil || d == nil {
-		return n
-	}
-
-	dx, dy := d.GetXY()
-	cur := n
-
-	if dy != 0 {
-		dir := Down
-		if dy < 0 {
-			dir = Up
-		}
-		cur = n.Move(dir, Abs(dy))
-	}
-
-	if dx != 0 {
-		dir := Right
-		if dx < 0 {
-			dir = Left
-		}
-		cur = n.Move(dir, Abs(dx))
-	}
-
-	return cur
-}
-
-// Follow returns the node reached when starting at the provide node and moving the directions.
-func Follow[V any, S ~[]E, E XY](start *Node[V], directions S) *Node[V] {
-	rv := start
-	for _, point := range directions {
-		rv = rv.Go(point)
-		if rv == nil {
-			return nil
-		}
-	}
-	return rv
-}
-
-// IsTurn returns true if cur and next are along different axes.
-func IsTurn(cur, next byte) bool {
-	switch cur {
-	case Up, Down:
-		return next == Left || next == Right
-	case Left, Right:
-		return next == Up || next == Down
-	}
-	return false
-}
-
-// IsBack returns true if cur and next are opposites.
-func IsBack(cur, next byte) bool {
-	return OppositeDirs[cur] == next
-}
-
-// Distance returns the taxicab distance between two points.
-func Distance(a, b XY) int {
-	ax, ay := a.GetXY()
-	bx, by := b.GetXY()
-	return Abs(ax-bx) + Abs(ay-by)
-}
-
-// -----------------------------------------------------------------------------
-// ---------------------------  By-Value Map Stuff  ----------------------------
-// -----------------------------------------------------------------------------
-
-// GroupByValue will create a map of value to nodes with that value.
-func GroupByValue[V comparable](vals [][]*Node[V]) map[V][]*Node[V] {
-	rv := make(map[V][]*Node[V])
-	for y := range vals {
-		for x := range vals[y] {
-			rv[vals[y][x].Value] = append(rv[vals[y][x].Value], vals[y][x])
-		}
-	}
-	return rv
-}
-
-// CreateByValueMapString creates a multi-line string, one line per key.
-func CreateByValueMapString[V cmp.Ordered](vals map[V][]*Node[V]) string {
-	keys := slices.Sorted(maps.Keys(vals))
-	keyStrs := ToEqualLengthStrings(keys)
-
-	lines := make([]string, len(keys))
-	for i, k := range keys {
-		lines[i] = fmt.Sprintf("[%s]: %s", keyStrs[i], PathString(vals[k]))
-	}
-	return strings.Join(lines, "\n") + "\n"
-}
-
-// CreateEnhancedByValueMapString creates a multi-line string, one line per key and colors and highlights the points as provided.
-func CreateEnhancedByValueMapString[K cmp.Ordered, V ~[]W, W XY, S ~[]E, E XY](vals map[K]V, colorPoints, highlightPoints S) string {
-	keys := slices.Sorted(maps.Keys(vals))
-	keyStrs := ToEqualLengthStrings(keys)
-
-	lines := make([]string, len(keys))
-	for i, k := range keys {
-		lines[i] = fmt.Sprintf("[%s]: %s", keyStrs[i], EnhancedPathString(vals[k], colorPoints, highlightPoints))
-	}
-	return strings.Join(lines, "\n") + "\n"
-}
-
-// ToEqualLengthStrings converts each val to a string using fmt.Sprintf("%v", val) and pads them to the same length.
-// Numbers are left-padded, everything else is right-padded.
-// The longest ones won't have any padding.
-func ToEqualLengthStrings[E any](vals []E) []string {
-	if vals == nil {
-		return nil
-	}
-	if len(vals) == 0 {
-		return []string{}
-	}
-	rv := make([]string, len(vals))
-	maxLen := 0
-	for i, val := range vals {
-		rv[i] = GenericValueString(val)
-		if len(rv[i]) > maxLen {
-			maxLen = len(rv[i])
-		}
-	}
-	padder := PadRight
-	switch any(vals[0]).(type) {
-	// Both byte and uint8 will match either of those. Same with rune and int32.
-	// There's no easy way to identify when its one or the other, though.
-	// And since I use byte and rune way more than uint8 or int32, we'll still pad the right side for those.
-	case int, int8, int16, int32, int64, uint, uint16, uint64:
-		padder = PadLeft
-	}
-	for i, str := range rv {
-		if len(str) < maxLen {
-			rv[i] = padder(rv[i], maxLen)
-		}
-	}
-	return rv
-}
-
-// PathString returns a one-line string containing all the points in the provided slice of XY. E.g. "{3}[0:(0,0);1:(0,1);2:(1,1)]".
-func PathString[S ~[]E, E XY](path S) string {
-	lines := MapSlice(path, PointString)
-	for i, line := range lines {
-		lines[i] = strconv.Itoa(i) + ":" + line
-	}
-	return fmt.Sprintf("{%d}[%s]", len(path), strings.Join(lines, ";"))
-}
-
-// EnhancedPathString creates a string of the provided path, coloring and/or highlighting points as provided.
-func EnhancedPathString[P ~[]Q, Q XY, S ~[]E, E XY](path P, colorPoints, highlightPoints S) string {
-	fmts := make([]int, len(path))
-	for i, point := range path {
-		if HasPoint(colorPoints, point) {
-			fmts[i] = 1
-		}
-		if HasPoint(highlightPoints, point) {
-			fmts[i] += 2
-		}
-	}
-
-	var rv strings.Builder
-	for i, point := range path {
-		if i != 0 {
-			rv.WriteByte(';')
-		}
-		cell := fmt.Sprintf("%d:(%d,%d)", i, point.GetX(), point.GetY())
-		switch fmts[i] {
-		case 0: // default look.
-			rv.WriteString(cell)
-		case 1: // color only.
-			rv.WriteString("\033[94m" + cell + "\033[0m") // Light-blue text.
-		case 2: // highlight only
-			rv.WriteString("\033[7m" + cell + "\033[0m") // Foreground<->Background Reversed.
-		case 3: // color and highlight
-			rv.WriteString("\033[94;7m" + cell + "\033[0m") // Light-blue background after fg<->bg reversed.
-		default: // Unknown, make it ugly.
-			rv.WriteString("\033[93;41m" + cell + "\033[0m") // Bright yellow text on a red background.
-		}
-	}
-
-	return fmt.Sprintf("{%d}[%s]", len(path), rv.String())
-}
-
-// HasPoints returns true if there's a point in path with the same (x,y) as the point provided.
-func HasPoint[S ~[]E, E XY](path S, point XY) bool {
-	x, y := point.GetXY()
-	for _, p := range path {
-		if x == p.GetX() && y == p.GetY() {
-			return true
-		}
-	}
-	return false
-}
-
-// -----------------------------------------------------------------------------
-// ---------------------------  New Generic Helpers  ---------------------------
-// -----------------------------------------------------------------------------
-
-// PointString returns the "(%d,%d)" string for the provided XY.
-func PointString[V XY](p V) string {
-	return fmt.Sprintf("(%d,%d)", p.GetX(), p.GetY())
-}
-
-// GenericValueString returns a string representation of the provided value that's a little better than just fmt.Sprintf("%v", value).
-// Specifically, byte and rune types are converted to their character instead of just their number value.
-func GenericValueString[T any](value T) string {
-	switch v := any(value).(type) {
-	case string:
-		return v
-	case byte, rune:
-		return fmt.Sprintf("%c", v)
-	case fmt.Stringer:
-		return v.String()
-	}
-	return fmt.Sprintf("%v", value)
-}
-
-// PadLeft will return a string with spaces added to the left of the provided one up to the provided length.
-func PadLeft(str string, length int) string {
-	if len(str) >= length {
-		return str
-	}
-	return strings.Repeat(" ", length-len(str)) + str
-}
-
-// PadRight will return a string with spaces added to the right of the provided one up to the provided length.
-func PadRight(str string, length int) string {
-	if len(str) >= length {
-		return str
-	}
-	return str + strings.Repeat(" ", length-len(str))
-}
-
-// MapGrid creates a new map by running the provided mapper on each element of the provided grid.
-func MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R {
-	if grid == nil {
-		return nil
-	}
-	rv := make([][]R, len(grid))
-	for y := range grid {
-		rv[y] = make([]R, len(grid[y]))
-		for x := range rv[y] {
-			rv[y][x] = mapper(grid[y][x])
-		}
-	}
-	return rv
-}
-
 // -------------------------------------------------------------------------------------------------
 // -------------------------------------  Some generic stuff  --------------------------------------
 // -------------------------------------------------------------------------------------------------
 
-const MIN_INT8 = int8(-128)
-const MAX_INT8 = int8(127)
-const MIN_INT16 = int16(-32_768)
-const MAX_INT16 = int16(32_767)
-const MIN_INT32 = int32(-2_147_483_648)
-const MAX_INT32 = int32(2_147_483_647)
-const MIN_INT64 = int64(-9_223_372_036_854_775_808)
-const MAX_INT64 = int64(9_223_372_036_854_775_807)
-const MIN_INT = -9_223_372_036_854_775_808
-const MAX_INT = 9_223_372_036_854_775_807
+const (
+	MIN_INT8  = int8(-128)
+	MAX_INT8  = int8(127)
+	MIN_INT16 = int16(-32_768)
+	MAX_INT16 = int16(32_767)
+	MIN_INT32 = int32(-2_147_483_648)
+	MAX_INT32 = int32(2_147_483_647)
+	MIN_INT64 = int64(-9_223_372_036_854_775_808)
+	MAX_INT64 = int64(9_223_372_036_854_775_807)
+	MIN_INT   = -9_223_372_036_854_775_808
+	MAX_INT   = 9_223_372_036_854_775_807
 
-const MAX_UINT8 = uint8(255)
-const MAX_UINT16 = uint16(65_535)
-const MAX_UINT32 = uint32(4_294_967_295)
-const MAX_UINT64 = uint64(18_446_744_073_709_551_615)
-const MAX_UINT = uint(18_446_744_073_709_551_615)
+	MAX_UINT8  = uint8(255)
+	MAX_UINT16 = uint16(65_535)
+	MAX_UINT32 = uint32(4_294_967_295)
+	MAX_UINT64 = uint64(18_446_744_073_709_551_615)
+	MAX_UINT   = uint(18_446_744_073_709_551_615)
+
+	NilStr = "<nil>"
+)
 
 // SplitParseInts splits a string on whitespace and converts each part into an int.
 // Uses strings.Fields(s) for the splitting and strconv.Atoi to parse it to an int.
@@ -850,6 +536,11 @@ func SplitParseIntsD(s, d string) ([]int, error) {
 		}
 	}
 	return rv, nil
+}
+
+// StringJoin maps the slice to strings and joins them.
+func StringJoin[S ~[]E, E fmt.Stringer](slice S, sep string) string {
+	return strings.Join(MapSlice(slice, E.String), sep)
 }
 
 // StringNumberJoin maps the slice to strings, numbers them, and joins them.
@@ -951,6 +642,43 @@ func MapSliceP[S ~[]E, E any, R any](slice S, mapper func(*E) R) []R {
 	return rv
 }
 
+// MakeZeroGrid creates a 2-d matrix with the given width and height, each entry having the zero value for the type.
+// Usage: grid := MakeZeroGrid[byte](10, 10)
+func MakeZeroGrid[V any](width, height int) [][]V {
+	rv := make([][]V, height)
+	for y := range rv {
+		rv[y] = make([]V, width)
+	}
+	return rv
+}
+
+// MakeGrid creates a new 2-d matrix with the given width and height, each entry having the provided value.
+func MakeGrid[V any](width, height int, value V) [][]V {
+	rv := make([][]V, height)
+	for y := range rv {
+		rv[y] = make([]V, width)
+		for x := range rv[y] {
+			rv[y][x] = value
+		}
+	}
+	return rv
+}
+
+// MapGrid creates a new map by running the provided mapper on each element of the provided grid.
+func MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R {
+	if grid == nil {
+		return nil
+	}
+	rv := make([][]R, len(grid))
+	for y := range grid {
+		rv[y] = make([]R, len(grid[y]))
+		for x := range rv[y] {
+			rv[y][x] = mapper(grid[y][x])
+		}
+	}
+	return rv
+}
+
 // Abs returns the absolute value of the provided number.
 func Abs[V Number](v V) V {
 	var zero V
@@ -958,6 +686,22 @@ func Abs[V Number](v V) V {
 		return zero - v
 	}
 	return v
+}
+
+// Ternary returns ifTrue if test == true, otherwise, returns ifFalse.
+func Ternary[E any](test bool, ifTrue, ifFalse E) E {
+	if test {
+		return ifTrue
+	}
+	return ifFalse
+}
+
+// CopyAppend returns a copy of s with the other provided entries appended.
+func CopyAppend[S ~[]E, E any](s S, es ...E) S {
+	rv := make(S, len(s)+len(es))
+	copy(rv, s)
+	copy(rv[len(s):], es)
+	return rv
 }
 
 // Alternates: ©®¬ÆæØøÞþ
@@ -1007,14 +751,15 @@ type Number interface {
 }
 
 // -----------------------------------------------------------------------------
-// -------------------------  CreateIndexedGridString  -------------------------
+// -------------------------------  Coordinates  -------------------------------
 // -----------------------------------------------------------------------------
 
-// CreateIndexedGridStringBz is for [][]byte
-// CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
-// CreateIndexedGridString is for [][]string
-// All of them have the signature (vals, color, highlight)
-// CreateIndexedGridStringFunc is for any other [][]; signature = (vals, converter, color, highlight)
+// XY is something that has an X and Y value.
+type XY interface {
+	GetX() int
+	GetY() int
+	GetXY() (int, int)
+}
 
 // A Point contains an X and Y value.
 type Point struct {
@@ -1047,15 +792,8 @@ func (p Point) GetXY() (int, int) {
 	return p.X, p.Y
 }
 
-// Copy returns a copy of this point.
-func (p *Point) Copy() *Point {
-	if p == nil {
-		return nil
-	}
-	return NewPoint(p.X, p.Y)
-}
-
 // AddPoints returns a new point that is the sum of the provided points.
+// See also: AddXYs, SumXYs.
 func AddPoints(points ...*Point) *Point {
 	rv := NewPoint(0, 0)
 	for _, p := range points {
@@ -1065,11 +803,475 @@ func AddPoints(points ...*Point) *Point {
 	return rv
 }
 
-// XY is something that has an X and Y value.
-type XY interface {
-	GetX() int
-	GetY() int
-	GetXY() (int, int)
+// AddXYs returns a new point that is the sum of the provided points.
+// See also: AddPoints, SumXYs.
+func AddXYs(points ...XY) *Point {
+	return SumXYs(points)
+}
+
+// SumXYs returns a new point that is the sum of the provided points.
+// See also: AddXYs, AddPoints.
+func SumXYs[S ~[]E, E XY](points S) *Point {
+	rv := NewPoint(0, 0)
+	for _, p := range points {
+		rv.X += p.GetX()
+		rv.Y += p.GetY()
+	}
+	return rv
+}
+
+// IsSameXY returns true if a and b have the same x and y.
+func IsSameXY(a, b XY) bool {
+	return a != nil && b != nil && a.GetX() == b.GetX() && a.GetY() == b.GetY()
+}
+
+// AsPoints converts a slice of something with an X and Y into a slice of points.
+func AsPoints[S ~[]E, E XY](vals S) []*Point {
+	rv := make([]*Point, len(vals))
+	for i, val := range vals {
+		rv[i] = NewPoint(val.GetX(), val.GetY())
+	}
+	return rv
+}
+
+// HasPoints returns true if there's a point in path with the same (x,y) as the point provided.
+func HasPoint[S ~[]E, E XY](path S, point XY) bool {
+	x, y := point.GetXY()
+	for _, p := range path {
+		if x == p.GetX() && y == p.GetY() {
+			return true
+		}
+	}
+	return false
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------  Node Grid Stuff  -----------------------------
+// -----------------------------------------------------------------------------
+
+// Key stuff: Node, Direction,
+// AsNodeGrid[V any](vals [][]V) [][]*Node[V]
+// GroupByValue[V comparable](vals [][]*Node[V]) map[V][]*Node[V]
+// CreateByValueMapString[V cmp.Ordered](vals map[V][]*Node[V]) string
+// CreateEnhancedByValueMapString[K cmp.Ordered, V ~[]W, W XY, S ~[]E, E XY](vals map[K]V, colorPoints, highlightPoints S) string
+
+// AsNodeGrid creates a grid of nodes with the provide values, all the nodes are linked up with their neighbors.
+func AsNodeGrid[V any](vals [][]V) [][]*Node[V] {
+	rv := make([][]*Node[V], len(vals))
+	for y := range vals {
+		rv[y] = make([]*Node[V], len(vals[y]))
+		for x := range vals[y] {
+			rv[y][x] = NewNode(x, y, vals[y][x])
+		}
+	}
+	LinkNodes(rv)
+	return rv
+}
+
+// LinkNodes creates all of the Next maps linking nodes to their neighbors.
+func LinkNodes[V any](grid [][]*Node[V]) {
+	for y := range grid {
+		for x := range grid[y] {
+			cur := grid[y][x]
+			if cur != nil {
+				cur.Next = GetAdjacent(grid, cur)
+			}
+		}
+	}
+}
+
+// -----------------------------------------------------------------------------
+// ----------------------------------  Node  -----------------------------------
+// -----------------------------------------------------------------------------
+
+// Node[V] has an x,y position, value, and knows its neighbors in a 2d grid.
+type Node[V any] struct {
+	Point
+	Value V
+	Next  map[Direction]*Node[V]
+}
+
+// NewNode creates a new Node at the given point with the given value (and no neighbors).
+func NewNode[V any](x, y int, value V) *Node[V] {
+	return &Node[V]{Point: Point{X: x, Y: y}, Value: value, Next: make(map[Direction]*Node[V])}
+}
+
+// String gets a string of this node.
+func (n *Node[V]) String() string {
+	if debug {
+		return n.FullString()
+	}
+	return n.ShortString()
+}
+
+// String gets a string of this node that contains the point and value.
+func (n *Node[V]) ShortString() string {
+	if n == nil {
+		return NilStr
+	}
+	return fmt.Sprintf("%s=%s", n.Point, GenericValueString(n.Value))
+}
+
+// FullString converts this node into a string with the format "(<x>,<y>)=<value>:[<neighbor flags>]".
+// If a node has all four neighbors, the <neighbor flags> will be "UDLR".
+// Any neighbor directions the node does NOT have are replaced with a space in that string.
+// E.g the node in the upper right corner of the grid only has neighbors to the right and down, so it's " D R".
+func (n *Node[V]) FullString() string {
+	if n == nil {
+		return NilStr
+	}
+	dirs := Ternary(n.Next[Up] != nil, "U", " ") +
+		Ternary(n.Next[Down] != nil, "D", " ") +
+		Ternary(n.Next[Right] != nil, "R", " ") +
+		Ternary(n.Next[Left] != nil, "L", " ")
+	return fmt.Sprintf("%s=%s:[%s]", n.Point, GenericValueString(n.Value), dirs)
+}
+
+// PointString returns the "(<x>,<y>)" for this node.
+func (n *Node[V]) PointString() string {
+	if n == nil {
+		return NilStr
+	}
+	return n.Point.String()
+}
+
+// GetValue is a nil-safe way to get this node's value.
+func (n *Node[V]) GetValue() V {
+	if n != nil {
+		return n.Value
+	}
+	var rv V
+	return rv
+}
+
+// GetUp is a nil-safe way to get the node up from this one.
+func (n *Node[V]) GetUp() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Next[Up]
+}
+
+// GetDown is a nil-safe way to get the node down from this one.
+func (n *Node[V]) GetDown() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Next[Down]
+}
+
+// GetLeft is a nil-safe way to get the node to the left of this one.
+func (n *Node[V]) GetLeft() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Next[Left]
+}
+
+// GetRight is a nil-safe way to get the node to the right of this one.
+func (n *Node[V]) GetRight() *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Next[Right]
+}
+
+// Go gets the node in the requested direction from this one.
+func (n *Node[V]) Go(dir Direction) *Node[V] {
+	if n == nil {
+		return nil
+	}
+	return n.Next[dir]
+}
+
+// CanGo returns true if you can go the given direction from this node.
+func (n *Node[V]) CanGo(dir Direction) bool {
+	return n != nil && n.Next[dir] != nil
+}
+
+// Unlink will go through all next nodes and make them not point at this node, then remove all next entries in this node.
+func (n *Node[V]) Unlink() {
+	if n == nil {
+		return
+	}
+	for dir, node := range n.Next {
+		if node != nil {
+			delete(node.Next, DirOpposites[dir])
+		}
+	}
+	n.Next = make(map[Direction]*Node[V])
+}
+
+// -----------------------------------------------------------------------------
+// -------------------------------  Directions  --------------------------------
+// -----------------------------------------------------------------------------
+
+// Direction is a typed byte used to indicate a direction of travel.
+type Direction byte
+
+const (
+	Up    = Direction('^')
+	Down  = Direction('v')
+	Left  = Direction('<')
+	Right = Direction('>')
+)
+
+var (
+	// Dirs are all of the directions available.
+	Dirs = []Direction{Up, Down, Left, Right}
+	// DirNames are a map of direction to a string naming it.
+	DirNames = map[Direction]string{
+		Up:    "Up",
+		Down:  "Down",
+		Left:  "Left",
+		Right: "Right",
+	}
+	// DirOpposites is a map of direction to the direction going the other way.
+	DirOpposites = map[Direction]Direction{
+		Up:    Down,
+		Down:  Up,
+		Left:  Right,
+		Right: Left,
+	}
+
+	DUp    = NewPoint(0, -1)
+	DDown  = NewPoint(0, 1)
+	DLeft  = NewPoint(-1, 0)
+	DRight = NewPoint(1, 0)
+
+	// DDirs is a map of direction to a Point that, when added to another Point, will move in that direction.
+	DDirs = map[Direction]*Point{
+		Up:    DUp,
+		Down:  DDown,
+		Left:  DLeft,
+		Right: DRight,
+	}
+)
+
+// GetAdjacentPoints gets the points that are adjacent to the given one.
+func GetAdjacentPoints(p *Point) map[Direction]*Point {
+	rv := make(map[Direction]*Point)
+	if p == nil {
+		return rv
+	}
+	for _, dir := range Dirs {
+		rv[dir] = AddPoints(p, DDirs[dir])
+	}
+	return rv
+}
+
+// GetAdjacent gets the elemnts adjacent to the provided point in the provided grid.
+func GetAdjacent[V any](grid [][]V, p XY) map[Direction]V {
+	rv := make(map[Direction]V)
+	if !IsIn(grid, p) {
+		return rv
+	}
+	for _, dir := range Dirs {
+		if v, ok := GetB(grid, AddXYs(p, DDirs[dir])); ok {
+			rv[dir] = v
+		}
+	}
+	return rv
+}
+
+// IsIn returns true if the provided point exists in the provided grid.
+func IsIn[E any](grid [][]E, p XY) bool {
+	if p == nil {
+		return false
+	}
+	x, y := p.GetXY()
+	return y >= 0 && y < len(grid) && x >= 0 && x < len(grid[y])
+}
+
+// Get will safely get the element of the grid at the provided point.
+// If the point is outside the grid, the zero-value is returned.
+func Get[E any](grid [][]E, p XY) E {
+	rv, _ := GetB(grid, p)
+	return rv
+}
+
+// GetB will safely get the element of the grid at the provided point and whether it is in the grid.
+// If the point is outside the grid, the zero-value and false is returned.
+func GetB[E any](grid [][]E, p XY) (E, bool) {
+	if IsIn(grid, p) {
+		return grid[p.GetY()][p.GetX()], true
+	}
+	var rv E
+	return rv, false
+}
+
+// -----------------------------------------------------------------------------
+// ---------------------------  By-Value Map Stuff  ----------------------------
+// -----------------------------------------------------------------------------
+
+// GroupByValue will create a map of value to nodes with that value.
+func GroupByValue[V comparable](vals [][]*Node[V]) map[V][]*Node[V] {
+	rv := make(map[V][]*Node[V])
+	for y := range vals {
+		for x := range vals[y] {
+			rv[vals[y][x].Value] = append(rv[vals[y][x].Value], vals[y][x])
+		}
+	}
+	return rv
+}
+
+// CreateByValueMapString creates a multi-line string, one line per key.
+func CreateByValueMapString[V cmp.Ordered](vals map[V][]*Node[V]) string {
+	keys := slices.Sorted(maps.Keys(vals))
+	keyStrs := ToEqualLengthStrings(keys)
+
+	lines := make([]string, len(keys))
+	for i, k := range keys {
+		lines[i] = fmt.Sprintf("[%s]: %s", keyStrs[i], PathString(vals[k]))
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// CreateEnhancedByValueMapString creates a multi-line string, one line per key and colors and highlights the points as provided.
+func CreateEnhancedByValueMapString[K cmp.Ordered, V ~[]W, W XY, S ~[]E, E XY](vals map[K]V, colorPoints, highlightPoints S) string {
+	keys := slices.Sorted(maps.Keys(vals))
+	keyStrs := ToEqualLengthStrings(keys)
+
+	lines := make([]string, len(keys))
+	for i, k := range keys {
+		lines[i] = fmt.Sprintf("[%s]: %s", keyStrs[i], EnhancedPathString(vals[k], colorPoints, highlightPoints))
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// -----------------------------------------------------------------------------
+// ---------------------------  New Generic Helpers  ---------------------------
+// -----------------------------------------------------------------------------
+
+// ToEqualLengthStrings converts each val to a string using fmt.Sprintf("%v", val) and pads them to the same length.
+// Numbers are left-padded, everything else is right-padded.
+// The longest ones won't have any padding.
+func ToEqualLengthStrings[E any](vals []E) []string {
+	if vals == nil {
+		return nil
+	}
+	if len(vals) == 0 {
+		return []string{}
+	}
+	rv := make([]string, len(vals))
+	maxLen := 0
+	for i, val := range vals {
+		rv[i] = GenericValueString(val)
+		if len(rv[i]) > maxLen {
+			maxLen = len(rv[i])
+		}
+	}
+	padder := PadRight
+	switch any(vals[0]).(type) {
+	// Both byte and uint8 will match either of those. Same with rune and int32.
+	// There's no easy way to identify when its one or the other, though.
+	// And since I use byte and rune way more than uint8 or int32, we'll still pad the right side for those.
+	case int, int8, int16, int32, int64, uint, uint16, uint64:
+		padder = PadLeft
+	}
+	for i, str := range rv {
+		if len(str) < maxLen {
+			rv[i] = padder(rv[i], maxLen)
+		}
+	}
+	return rv
+}
+
+// PadLeft will return a string with spaces added to the left of the provided one up to the provided length.
+func PadLeft(str string, length int) string {
+	if len(str) >= length {
+		return str
+	}
+	return strings.Repeat(" ", length-len(str)) + str
+}
+
+// PadRight will return a string with spaces added to the right of the provided one up to the provided length.
+func PadRight(str string, length int) string {
+	if len(str) >= length {
+		return str
+	}
+	return str + strings.Repeat(" ", length-len(str))
+}
+
+// GenericValueString returns a string representation of the provided value that's a little better than just fmt.Sprintf("%v", value).
+// Specifically, byte and rune types are converted to their character instead of just their number value.
+func GenericValueString[T any](value T) string {
+	switch v := any(value).(type) {
+	case string:
+		return v
+	case byte, rune:
+		return fmt.Sprintf("%c", v)
+	case fmt.Stringer:
+		return v.String()
+	}
+	return fmt.Sprintf("%v", value)
+}
+
+// -----------------------------------------------------------------------------
+// ------------------------------  String Makers  ------------------------------
+// -----------------------------------------------------------------------------
+
+// CreateIndexedGridStringBz is for [][]byte
+// CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
+// CreateIndexedGridString is for [][]string
+// All of them have the signature (vals, color, highlight)
+// CreateIndexedGridStringFunc is for any other [][]; signature = (vals, converter, color, highlight)
+// PointsString is simpler than PathString.
+// EnhancedPathString is a similar signature as CreateIndexedGridString.
+
+// PointString returns the "(%d,%d)" string for the provided XY.
+// The generic here might seem silly, but without it, its use in PointsString gives a syntax error.
+func PointString[V XY](p V) string {
+	return fmt.Sprintf("(%d,%d)", p.GetX(), p.GetY())
+}
+
+// PointsString creates a string of the provided points, e.g. "(0,0) (0,1) (1,1)".
+func PointsString[S ~[]E, E XY](points S) string {
+	return strings.Join(MapSlice(points, PointString), " ")
+}
+
+// PathString returns a one-line string containing all the points in the provided slice of XY. E.g. "{3}[0:(0,0);1:(0,1);2:(1,1)]".
+func PathString[S ~[]E, E XY](path S) string {
+	lines := MapSlice(path, PointString)
+	for i, line := range lines {
+		lines[i] = strconv.Itoa(i) + ":" + line
+	}
+	return fmt.Sprintf("{%d}[%s]", len(path), strings.Join(lines, ";"))
+}
+
+// EnhancedPathString creates a string of the provided path, coloring and/or highlighting points as provided.
+func EnhancedPathString[P ~[]Q, Q XY, S ~[]E, E XY](path P, colorPoints, highlightPoints S) string {
+	fmts := make([]int, len(path))
+	for i, point := range path {
+		if HasPoint(colorPoints, point) {
+			fmts[i] = 1
+		}
+		if HasPoint(highlightPoints, point) {
+			fmts[i] += 2
+		}
+	}
+
+	var rv strings.Builder
+	for i, point := range path {
+		if i != 0 {
+			rv.WriteByte(';')
+		}
+		cell := fmt.Sprintf("%d:(%d,%d)", i, point.GetX(), point.GetY())
+		switch fmts[i] {
+		case 0: // default look.
+			rv.WriteString(cell)
+		case 1: // color only.
+			rv.WriteString("\033[94m" + cell + "\033[0m") // Light-blue text.
+		case 2: // highlight only
+			rv.WriteString("\033[7m" + cell + "\033[0m") // Foreground<->Background Reversed.
+		case 3: // color and highlight
+			rv.WriteString("\033[94;7m" + cell + "\033[0m") // Light-blue background after fg<->bg reversed.
+		default: // Unknown, make it ugly.
+			rv.WriteString("\033[93;41m" + cell + "\033[0m") // Bright yellow text on a red background.
+		}
+	}
+
+	return fmt.Sprintf("{%d}[%s]", len(path), rv.String())
 }
 
 // CreateIndexedGridStringBz creates a string of the provided bytes matrix.
