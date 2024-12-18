@@ -12,21 +12,18 @@ import (
 )
 
 // If copying this stuff, you'll want to copy all the stuff between the BeginCopy and EndCopy comments.
-// Should get it all: getlines node-grid.go 18-419
+// Should get it all: getlines node-grid.go 18-375
 // BeginCopy
 
 // -----------------------------------------------------------------------------
 // -----------------------------  Node Grid Stuff  -----------------------------
 // -----------------------------------------------------------------------------
 
-// Key stuff:
+// Key stuff: Node, Direction,
 // AsNodeGrid[V any](vals [][]V) [][]*Node[V]
 // GroupByValue[V comparable](vals [][]*Node[V]) map[V][]*Node[V]
 // CreateByValueMapString[V cmp.Ordered](vals map[V][]*Node[V]) string
 // CreateEnhancedByValueMapString[K cmp.Ordered, V ~[]W, W XY, S ~[]E, E XY](vals map[K]V, colorPoints, highlightPoints S) string
-// PathString[S ~[]E, E XY](path S) string
-// EnhancedPathString[P ~[]Q, Q XY, S ~[]E, E XY](path P, colorPoints, highlightPoints S) string
-// MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R
 
 // AsNodeGrid creates a grid of nodes with the provide values, all the nodes are linked up with their neighbors.
 func AsNodeGrid[V any](vals [][]V) [][]*Node[V] {
@@ -37,82 +34,48 @@ func AsNodeGrid[V any](vals [][]V) [][]*Node[V] {
 			rv[y][x] = NewNode(x, y, vals[y][x])
 		}
 	}
-
-	for y := range vals {
-		for x := range vals[y] {
-			curP := NewPoint(x, y)
-			cur := Get(rv, curP)
-			u, d, l, r := GetUDLR(curP)
-			if n := Get(rv, u); n != nil {
-				cur.Up = n
-			}
-			if n := Get(rv, d); n != nil {
-				cur.Down = n
-			}
-			if n := Get(rv, l); n != nil {
-				cur.Left = n
-			}
-			if n := Get(rv, r); n != nil {
-				cur.Right = n
-			}
-		}
-	}
-
+	LinkNodes(rv)
 	return rv
 }
 
-var (
-	// DUp can be added to another point to get the point above it.
-	DUp = NewPoint(0, -1)
-	// DDown can be added to another point to get the point below it.
-	DDown = NewPoint(0, 1)
-	// DLeft can be added to another point to get the point to the left of it.
-	DLeft = NewPoint(-1, 0)
-	// DRight can be added to another point to get the point to the right of it.
-	DRight = NewPoint(1, 0)
-)
-
-const (
-	NilStr = "<nil>"
-)
-
-// GetUDLR gets the points that are up, down, left and right of the given one.
-func GetUDLR(p *Point) (*Point, *Point, *Point, *Point) {
-	return AddPoints(p, DUp), AddPoints(p, DDown), AddPoints(p, DLeft), AddPoints(p, DRight)
-}
-
-// IsIn returns true if the provided point exists in the provided grid.
-func IsIn[E any](grid [][]E, p *Point) bool {
-	return p != nil && p.Y >= 0 && p.Y < len(grid) && p.X >= 0 && p.X < len(grid[p.Y])
-}
-
-// Get will safely get the element of the grid at the provided point.
-// If the point is outside the grid, the zero-value is returned.
-func Get[E any](grid [][]E, p *Point) E {
-	if !IsIn(grid, p) {
-		var rv E
-		return rv
+// LinkNodes creates all of the Next maps linking nodes to their neighbors.
+func LinkNodes[V any](grid [][]*Node[V]) {
+	for y := range grid {
+		for x := range grid[y] {
+			cur := grid[y][x]
+			if cur != nil {
+				cur.Next = GetAdjacent(grid, cur)
+			}
+		}
 	}
-	return grid[p.Y][p.X]
 }
+
+// -----------------------------------------------------------------------------
+// ----------------------------------  Node  -----------------------------------
+// -----------------------------------------------------------------------------
 
 // Node[V] has an x,y position, value, and knows its neighbors in a 2d grid.
 type Node[V any] struct {
 	Point
 	Value V
-	Up    *Node[V]
-	Down  *Node[V]
-	Left  *Node[V]
-	Right *Node[V]
+	Next  map[Direction]*Node[V]
 }
 
 // NewNode creates a new Node at the given point with the given value (and no neighbors).
 func NewNode[V any](x, y int, value V) *Node[V] {
-	return &Node[V]{Point: Point{X: x, Y: y}, Value: value}
+	return &Node[V]{Point: Point{X: x, Y: y}, Value: value, Next: make(map[Direction]*Node[V])}
+}
+
+// String gets a string of this node.
+func (n *Node[V]) String() string {
+	if debug {
+		return n.FullString()
+	}
+	return n.ShortString()
 }
 
 // String gets a string of this node that contains the point and value.
-func (n *Node[V]) String() string {
+func (n *Node[V]) ShortString() string {
 	if n == nil {
 		return NilStr
 	}
@@ -127,10 +90,10 @@ func (n *Node[V]) FullString() string {
 	if n == nil {
 		return NilStr
 	}
-	dirs := Ternary(n.Up != nil, "U", " ") +
-		Ternary(n.Down != nil, "D", " ") +
-		Ternary(n.Right != nil, "R", " ") +
-		Ternary(n.Left != nil, "L", " ")
+	dirs := Ternary(n.Next[Up] != nil, "U", " ") +
+		Ternary(n.Next[Down] != nil, "D", " ") +
+		Ternary(n.Next[Right] != nil, "R", " ") +
+		Ternary(n.Next[Left] != nil, "L", " ")
 	return fmt.Sprintf("%s=%s:[%s]", n.Point, GenericValueString(n.Value), dirs)
 }
 
@@ -142,12 +105,21 @@ func (n *Node[V]) PointString() string {
 	return n.Point.String()
 }
 
+// GetValue is a nil-safe way to get this node's value.
+func (n *Node[V]) GetValue() V {
+	if n != nil {
+		return n.Value
+	}
+	var rv V
+	return rv
+}
+
 // GetUp is a nil-safe way to get the node up from this one.
 func (n *Node[V]) GetUp() *Node[V] {
 	if n == nil {
 		return nil
 	}
-	return n.Up
+	return n.Next[Up]
 }
 
 // GetDown is a nil-safe way to get the node down from this one.
@@ -155,7 +127,7 @@ func (n *Node[V]) GetDown() *Node[V] {
 	if n == nil {
 		return nil
 	}
-	return n.Down
+	return n.Next[Down]
 }
 
 // GetLeft is a nil-safe way to get the node to the left of this one.
@@ -163,7 +135,7 @@ func (n *Node[V]) GetLeft() *Node[V] {
 	if n == nil {
 		return nil
 	}
-	return n.Left
+	return n.Next[Left]
 }
 
 // GetRight is a nil-safe way to get the node to the right of this one.
@@ -171,67 +143,128 @@ func (n *Node[V]) GetRight() *Node[V] {
 	if n == nil {
 		return nil
 	}
-	return n.Right
+	return n.Next[Right]
 }
 
-// Get returns the node that is at this one plus the provided d.
-func (n *Node[V]) Get(d XY) *Node[V] {
+// Go gets the node in the requested direction from this one.
+func (n *Node[V]) Go(dir Direction) *Node[V] {
 	if n == nil {
 		return nil
 	}
-	if d == nil {
-		return n
-	}
-	dx, dy := d.GetXY()
-
-	cur := n
-	switch {
-	case dy > 0:
-		for y := 0; y < dy; y++ {
-			cur = cur.Down
-			if cur == nil {
-				return nil
-			}
-		}
-	case dy < 0:
-		for y := 0; y > dy; y-- {
-			cur = cur.Up
-			if cur == nil {
-				return nil
-			}
-		}
-	}
-
-	switch {
-	case dx > 0:
-		for x := 0; x < dx; x++ {
-			cur = cur.Right
-			if cur == nil {
-				return nil
-			}
-		}
-	case dx < 0:
-		for x := 0; x > dx; x-- {
-			cur = cur.Left
-			if cur == nil {
-				return nil
-			}
-		}
-	}
-
-	return cur
+	return n.Next[dir]
 }
 
-// Follow returns the node reached when starting at the provide node and moving the directions.
-func Follow[V any, S ~[]E, E XY](start *Node[V], directions S) *Node[V] {
-	rv := start
-	for _, point := range directions {
-		rv = rv.Get(point)
-		if rv == nil {
-			return nil
+// CanGo returns true if you can go the given direction from this node.
+func (n *Node[V]) CanGo(dir Direction) bool {
+	return n != nil && n.Next[dir] != nil
+}
+
+// Unlink will go through all next nodes and make them not point at this node, then remove all next entries in this node.
+func (n *Node[V]) Unlink() {
+	if n == nil {
+		return
+	}
+	for dir, node := range n.Next {
+		if node != nil {
+			delete(node.Next, DirOpposites[dir])
+		}
+	}
+	n.Next = make(map[Direction]*Node[V])
+}
+
+// -----------------------------------------------------------------------------
+// -------------------------------  Directions  --------------------------------
+// -----------------------------------------------------------------------------
+
+// Direction is a typed byte used to indicate a direction of travel.
+type Direction byte
+
+const (
+	Up    = Direction('^')
+	Down  = Direction('v')
+	Left  = Direction('<')
+	Right = Direction('>')
+)
+
+var (
+	// Dirs are all of the directions available.
+	Dirs = []Direction{Up, Down, Left, Right}
+	// DirNames are a map of direction to a string naming it.
+	DirNames = map[Direction]string{
+		Up:    "Up",
+		Down:  "Down",
+		Left:  "Left",
+		Right: "Right",
+	}
+	// DirOpposites is a map of direction to the direction going the other way.
+	DirOpposites = map[Direction]Direction{
+		Up:    Down,
+		Down:  Up,
+		Left:  Right,
+		Right: Left,
+	}
+
+	DUp    = NewPoint(0, -1)
+	DDown  = NewPoint(0, 1)
+	DLeft  = NewPoint(-1, 0)
+	DRight = NewPoint(1, 0)
+
+	// DDirs is a map of direction to a Point that, when added to another Point, will move in that direction.
+	DDirs = map[Direction]*Point{
+		Up:    DUp,
+		Down:  DDown,
+		Left:  DLeft,
+		Right: DRight,
+	}
+)
+
+// GetAdjacentPoints gets the points that are adjacent to the given one.
+func GetAdjacentPoints(p *Point) map[Direction]*Point {
+	rv := make(map[Direction]*Point)
+	if p == nil {
+		return rv
+	}
+	for _, dir := range Dirs {
+		rv[dir] = AddPoints(p, DDirs[dir])
+	}
+	return rv
+}
+
+// GetAdjacent gets the elemnts adjacent to the provided point in the provided grid.
+func GetAdjacent[V any](grid [][]V, p XY) map[Direction]V {
+	rv := make(map[Direction]V)
+	for _, dir := range Dirs {
+		if v, ok := GetB(grid, AddXYs(p, DDirs[dir])); ok {
+			rv[dir] = v
 		}
 	}
 	return rv
+}
+
+// IsIn returns true if the provided point exists in the provided grid.
+func IsIn[E any](grid [][]E, p XY) bool {
+	if p == nil {
+		return false
+	}
+	x, y := p.GetXY()
+	return y >= 0 && y < len(grid) && x >= 0 && x < len(grid[y])
+}
+
+// Get will safely get the element of the grid at the provided point.
+// If the point is outside the grid, the zero-value is returned.
+func Get[E any](grid [][]E, p XY) E {
+	rv, _ := GetB(grid, p)
+	return rv
+}
+
+// GetB will safely get the element of the grid at the provided point and whether it is in the grid.
+// If the point is outside the grid, the zero-value and false is returned.
+func GetB[E any](grid [][]E, p XY) (E, bool) {
+	if IsIn(grid, p) {
+		return grid[p.GetY()][p.GetX()], true
+	}
+	var rv E
+	return rv, false
 }
 
 // -----------------------------------------------------------------------------
@@ -273,6 +306,10 @@ func CreateEnhancedByValueMapString[K cmp.Ordered, V ~[]W, W XY, S ~[]E, E XY](v
 	return strings.Join(lines, "\n") + "\n"
 }
 
+// -----------------------------------------------------------------------------
+// ---------------------------  New Generic Helpers  ---------------------------
+// -----------------------------------------------------------------------------
+
 // ToEqualLengthStrings converts each val to a string using fmt.Sprintf("%v", val) and pads them to the same length.
 // Numbers are left-padded, everything else is right-padded.
 // The longest ones won't have any padding.
@@ -307,82 +344,6 @@ func ToEqualLengthStrings[E any](vals []E) []string {
 	return rv
 }
 
-// PathString returns a one-line string containing all the points in the provided slice of XY. E.g. "{3}[0:(0,0);1:(0,1);2:(1,1)]".
-func PathString[S ~[]E, E XY](path S) string {
-	lines := MapSlice(path, PointString)
-	for i, line := range lines {
-		lines[i] = strconv.Itoa(i) + ":" + line
-	}
-	return fmt.Sprintf("{%d}[%s]", len(path), strings.Join(lines, ";"))
-}
-
-// EnhancedPathString creates a string of the provided path, coloring and/or highlighting points as provided.
-func EnhancedPathString[P ~[]Q, Q XY, S ~[]E, E XY](path P, colorPoints, highlightPoints S) string {
-	fmts := make([]int, len(path))
-	for i, point := range path {
-		if HasPoint(colorPoints, point) {
-			fmts[i] = 1
-		}
-		if HasPoint(highlightPoints, point) {
-			fmts[i] += 2
-		}
-	}
-
-	var rv strings.Builder
-	for i, point := range path {
-		if i != 0 {
-			rv.WriteByte(';')
-		}
-		cell := fmt.Sprintf("%d:(%d,%d)", i, point.GetX(), point.GetY())
-		switch fmts[i] {
-		case 0: // default look.
-			rv.WriteString(cell)
-		case 1: // color only.
-			rv.WriteString("\033[94m" + cell + "\033[0m") // Light-blue text.
-		case 2: // highlight only
-			rv.WriteString("\033[7m" + cell + "\033[0m") // Foreground<->Background Reversed.
-		case 3: // color and highlight
-			rv.WriteString("\033[94;7m" + cell + "\033[0m") // Light-blue background after fg<->bg reversed.
-		default: // Unknown, make it ugly.
-			rv.WriteString("\033[93;41m" + cell + "\033[0m") // Bright yellow text on a red background.
-		}
-	}
-
-	return fmt.Sprintf("{%d}[%s]", len(path), rv.String())
-}
-
-// HasPoints returns true if there's a point in path with the same (x,y) as the point provided.
-func HasPoint[S ~[]E, E XY, P XY](path S, point P) bool {
-	x, y := point.GetXY()
-	for _, p := range path {
-		if x == p.GetX() && y == p.GetY() {
-			return true
-		}
-	}
-	return false
-}
-
-// -----------------------------------------------------------------------------
-// ---------------------------  New Generic Helpers  ---------------------------
-// -----------------------------------------------------------------------------
-
-// PointString returns the "(%d,%d)" string for the provided XY.
-func PointString[V XY](p V) string {
-	return fmt.Sprintf("(%d,%d)", p.GetX(), p.GetY())
-}
-
-// GenericValueString returns a string representation of the provided value that's a little better than just fmt.Sprintf("%v", value).
-// Specifically, byte and rune types are converted to their character instead of just their number value.
-func GenericValueString[T any](value T) string {
-	switch v := any(value).(type) {
-	case string:
-		return v
-	case byte, rune:
-		return fmt.Sprintf("%c", v)
-	}
-	return fmt.Sprintf("%v", value)
-}
-
 // PadLeft will return a string with spaces added to the left of the provided one up to the provided length.
 func PadLeft(str string, length int) string {
 	if len(str) >= length {
@@ -399,36 +360,31 @@ func PadRight(str string, length int) string {
 	return str + strings.Repeat(" ", length-len(str))
 }
 
-// Ternary returns ifTrue if test == true, otherwise, returns ifFalse.
-func Ternary[E any](test bool, ifTrue, ifFalse E) E {
-	if test {
-		return ifTrue
+// GenericValueString returns a string representation of the provided value that's a little better than just fmt.Sprintf("%v", value).
+// Specifically, byte and rune types are converted to their character instead of just their number value.
+func GenericValueString[T any](value T) string {
+	switch v := any(value).(type) {
+	case string:
+		return v
+	case byte, rune:
+		return fmt.Sprintf("%c", v)
+	case fmt.Stringer:
+		return v.String()
 	}
-	return ifFalse
-}
-
-// MapGrid creates a new map by running the provided mapper on each element of the provided grid.
-func MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R {
-	if grid == nil {
-		return nil
-	}
-	rv := make([][]R, len(grid))
-	for y := range grid {
-		rv[y] = make([]R, len(grid[y]))
-		for x := range rv[y] {
-			rv[y][x] = mapper(grid[y][x])
-		}
-	}
-	return rv
+	return fmt.Sprintf("%v", value)
 }
 
 // EndCopy
-// Should get it all: getlines node-grid.go 18-419
+// Should get it all: getlines node-grid.go 18-375
 // If copying this stuff, you'll want to copy all the stuff between the BeginCopy and EndCopy comments.
 
 // #############################################################################
 // #########################  Stuff From the Template  #########################
 // #############################################################################
+
+var debug = false
+
+const NilStr = "<nil>"
 
 // StringNumberJoinFunc maps the slice to strings using the provided stringer, numbers them, and joins them.
 func StringNumberJoinFunc[S ~[]E, E any](slice S, stringer func(E) string, startAt int, sep string) string {
@@ -468,6 +424,14 @@ func MapSlice[S ~[]E, E any, R any](slice S, mapper func(E) R) []R {
 		rv[i] = mapper(e)
 	}
 	return rv
+}
+
+// Ternary returns ifTrue if test == true, otherwise, returns ifFalse.
+func Ternary[E any](test bool, ifTrue, ifFalse E) E {
+	if test {
+		return ifTrue
+	}
+	return ifFalse
 }
 
 // ConversionRunes are some chars used to represent numbers for smaller output. See also: GetRune.
@@ -545,11 +509,60 @@ func AddPoints(points ...*Point) *Point {
 	return rv
 }
 
+// PointString returns the "(%d,%d)" string for the provided XY.
+// The generic here might seem silly, but without it, its use in PointsString gives a syntax error.
+func PointString[V XY](p V) string {
+	return fmt.Sprintf("(%d,%d)", p.GetX(), p.GetY())
+}
+
+// HasPoints returns true if there's a point in path with the same (x,y) as the point provided.
+func HasPoint[S ~[]E, E XY](path S, point XY) bool {
+	x, y := point.GetXY()
+	for _, p := range path {
+		if x == p.GetX() && y == p.GetY() {
+			return true
+		}
+	}
+	return false
+}
+
 // XY is something that has an X and Y value.
 type XY interface {
 	GetX() int
 	GetY() int
 	GetXY() (int, int)
+}
+
+// AddXYs returns a new point that is the sum of the provided points.
+// See also: AddPoints, SumXYs.
+func AddXYs(points ...XY) *Point {
+	return SumXYs(points)
+}
+
+// SumXYs returns a new point that is the sum of the provided points.
+// See also: AddXYs, AddPoints.
+func SumXYs[S ~[]E, E XY](points S) *Point {
+	rv := NewPoint(0, 0)
+	for _, p := range points {
+		rv.X += p.GetX()
+		rv.Y += p.GetY()
+	}
+	return rv
+}
+
+// MapGrid creates a new map by running the provided mapper on each element of the provided grid.
+func MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R {
+	if grid == nil {
+		return nil
+	}
+	rv := make([][]R, len(grid))
+	for y := range grid {
+		rv[y] = make([]R, len(grid[y]))
+		for x := range rv[y] {
+			rv[y][x] = mapper(grid[y][x])
+		}
+	}
+	return rv
 }
 
 // CreateIndexedGridStringBz creates a string of the provided bytes matrix.
@@ -722,6 +735,50 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 	}
 
 	return rv.String()
+}
+
+// PathString returns a one-line string containing all the points in the provided slice of XY. E.g. "{3}[0:(0,0);1:(0,1);2:(1,1)]".
+func PathString[S ~[]E, E XY](path S) string {
+	lines := MapSlice(path, PointString)
+	for i, line := range lines {
+		lines[i] = strconv.Itoa(i) + ":" + line
+	}
+	return fmt.Sprintf("{%d}[%s]", len(path), strings.Join(lines, ";"))
+}
+
+// EnhancedPathString creates a string of the provided path, coloring and/or highlighting points as provided.
+func EnhancedPathString[P ~[]Q, Q XY, S ~[]E, E XY](path P, colorPoints, highlightPoints S) string {
+	fmts := make([]int, len(path))
+	for i, point := range path {
+		if HasPoint(colorPoints, point) {
+			fmts[i] = 1
+		}
+		if HasPoint(highlightPoints, point) {
+			fmts[i] += 2
+		}
+	}
+
+	var rv strings.Builder
+	for i, point := range path {
+		if i != 0 {
+			rv.WriteByte(';')
+		}
+		cell := fmt.Sprintf("%d:(%d,%d)", i, point.GetX(), point.GetY())
+		switch fmts[i] {
+		case 0: // default look.
+			rv.WriteString(cell)
+		case 1: // color only.
+			rv.WriteString("\033[94m" + cell + "\033[0m") // Light-blue text.
+		case 2: // highlight only
+			rv.WriteString("\033[7m" + cell + "\033[0m") // Foreground<->Background Reversed.
+		case 3: // color and highlight
+			rv.WriteString("\033[94;7m" + cell + "\033[0m") // Light-blue background after fg<->bg reversed.
+		default: // Unknown, make it ugly.
+			rv.WriteString("\033[93;41m" + cell + "\033[0m") // Bright yellow text on a red background.
+		}
+	}
+
+	return fmt.Sprintf("{%d}[%s]", len(path), rv.String())
 }
 
 // #############################################################################

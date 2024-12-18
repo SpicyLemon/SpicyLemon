@@ -58,22 +58,26 @@ func ParseInput(lines []string) (*Input, error) {
 // -------------------------------------  Some generic stuff  --------------------------------------
 // -------------------------------------------------------------------------------------------------
 
-const MIN_INT8 = int8(-128)
-const MAX_INT8 = int8(127)
-const MIN_INT16 = int16(-32_768)
-const MAX_INT16 = int16(32_767)
-const MIN_INT32 = int32(-2_147_483_648)
-const MAX_INT32 = int32(2_147_483_647)
-const MIN_INT64 = int64(-9_223_372_036_854_775_808)
-const MAX_INT64 = int64(9_223_372_036_854_775_807)
-const MIN_INT = -9_223_372_036_854_775_808
-const MAX_INT = 9_223_372_036_854_775_807
+const (
+	MIN_INT8  = int8(-128)
+	MAX_INT8  = int8(127)
+	MIN_INT16 = int16(-32_768)
+	MAX_INT16 = int16(32_767)
+	MIN_INT32 = int32(-2_147_483_648)
+	MAX_INT32 = int32(2_147_483_647)
+	MIN_INT64 = int64(-9_223_372_036_854_775_808)
+	MAX_INT64 = int64(9_223_372_036_854_775_807)
+	MIN_INT   = -9_223_372_036_854_775_808
+	MAX_INT   = 9_223_372_036_854_775_807
 
-const MAX_UINT8 = uint8(255)
-const MAX_UINT16 = uint16(65_535)
-const MAX_UINT32 = uint32(4_294_967_295)
-const MAX_UINT64 = uint64(18_446_744_073_709_551_615)
-const MAX_UINT = uint(18_446_744_073_709_551_615)
+	MAX_UINT8  = uint8(255)
+	MAX_UINT16 = uint16(65_535)
+	MAX_UINT32 = uint32(4_294_967_295)
+	MAX_UINT64 = uint64(18_446_744_073_709_551_615)
+	MAX_UINT   = uint(18_446_744_073_709_551_615)
+
+	NilStr = "<nil>"
+)
 
 // SplitParseInts splits a string on whitespace and converts each part into an int.
 // Uses strings.Fields(s) for the splitting and strconv.Atoi to parse it to an int.
@@ -107,6 +111,11 @@ func SplitParseIntsD(s, d string) ([]int, error) {
 		}
 	}
 	return rv, nil
+}
+
+// StringJoin maps the slice to strings and joins them.
+func StringJoin[S ~[]E, E fmt.Stringer](slice S, sep string) string {
+	return strings.Join(MapSlice(slice, E.String), sep)
 }
 
 // StringNumberJoin maps the slice to strings, numbers them, and joins them.
@@ -208,6 +217,43 @@ func MapSliceP[S ~[]E, E any, R any](slice S, mapper func(*E) R) []R {
 	return rv
 }
 
+// MakeZeroGrid creates a 2-d matrix with the given width and height, each entry having the zero value for the type.
+// Usage: grid := MakeZeroGrid[byte](10, 10)
+func MakeZeroGrid[V any](width, height int) [][]V {
+	rv := make([][]V, height)
+	for y := range rv {
+		rv[y] = make([]V, width)
+	}
+	return rv
+}
+
+// MakeGrid creates a new 2-d matrix with the given width and height, each entry having the provided value.
+func MakeGrid[V any](width, height int, value V) [][]V {
+	rv := make([][]V, height)
+	for y := range rv {
+		rv[y] = make([]V, width)
+		for x := range rv[y] {
+			rv[y][x] = value
+		}
+	}
+	return rv
+}
+
+// MapGrid creates a new map by running the provided mapper on each element of the provided grid.
+func MapGrid[G ~[][]E, E any, R any](grid G, mapper func(E) R) [][]R {
+	if grid == nil {
+		return nil
+	}
+	rv := make([][]R, len(grid))
+	for y := range grid {
+		rv[y] = make([]R, len(grid[y]))
+		for x := range rv[y] {
+			rv[y][x] = mapper(grid[y][x])
+		}
+	}
+	return rv
+}
+
 // Abs returns the absolute value of the provided number.
 func Abs[V Number](v V) V {
 	var zero V
@@ -215,6 +261,22 @@ func Abs[V Number](v V) V {
 		return zero - v
 	}
 	return v
+}
+
+// Ternary returns ifTrue if test == true, otherwise, returns ifFalse.
+func Ternary[E any](test bool, ifTrue, ifFalse E) E {
+	if test {
+		return ifTrue
+	}
+	return ifFalse
+}
+
+// CopyAppend returns a copy of s with the other provided entries appended.
+func CopyAppend[S ~[]E, E any](s S, es ...E) S {
+	rv := make(S, len(s)+len(es))
+	copy(rv, s)
+	copy(rv[len(s):], es)
+	return rv
 }
 
 // Alternates: ©®¬ÆæØøÞþ
@@ -264,14 +326,15 @@ type Number interface {
 }
 
 // -----------------------------------------------------------------------------
-// -------------------------  CreateIndexedGridString  -------------------------
+// -------------------------------  Coordinates  -------------------------------
 // -----------------------------------------------------------------------------
 
-// CreateIndexedGridStringBz is for [][]byte
-// CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
-// CreateIndexedGridString is for [][]string
-// All of them have the signature (vals, color, highlight)
-// CreateIndexedGridStringFunc is for any other [][]; signature = (vals, converter, color, highlight)
+// XY is something that has an X and Y value.
+type XY interface {
+	GetX() int
+	GetY() int
+	GetXY() (int, int)
+}
 
 // A Point contains an X and Y value.
 type Point struct {
@@ -305,6 +368,7 @@ func (p Point) GetXY() (int, int) {
 }
 
 // AddPoints returns a new point that is the sum of the provided points.
+// See also: AddXYs, SumXYs.
 func AddPoints(points ...*Point) *Point {
 	rv := NewPoint(0, 0)
 	for _, p := range points {
@@ -314,11 +378,113 @@ func AddPoints(points ...*Point) *Point {
 	return rv
 }
 
-// XY is something that has an X and Y value.
-type XY interface {
-	GetX() int
-	GetY() int
-	GetXY() (int, int)
+// AddXYs returns a new point that is the sum of the provided points.
+// See also: AddPoints, SumXYs.
+func AddXYs(points ...XY) *Point {
+	return SumXYs(points)
+}
+
+// SumXYs returns a new point that is the sum of the provided points.
+// See also: AddXYs, AddPoints.
+func SumXYs[S ~[]E, E XY](points S) *Point {
+	rv := NewPoint(0, 0)
+	for _, p := range points {
+		rv.X += p.GetX()
+		rv.Y += p.GetY()
+	}
+	return rv
+}
+
+// IsSameXY returns true if a and b have the same x and y.
+func IsSameXY(a, b XY) bool {
+	return a.GetX() == b.GetX() && a.GetY() == b.GetY()
+}
+
+// AsPoints converts a slice of something with an X and Y into a slice of points.
+func AsPoints[S ~[]E, E XY](vals S) []*Point {
+	rv := make([]*Point, len(vals))
+	for i, val := range vals {
+		rv[i] = NewPoint(val.GetX(), val.GetY())
+	}
+	return rv
+}
+
+// HasPoints returns true if there's a point in path with the same (x,y) as the point provided.
+func HasPoint[S ~[]E, E XY](path S, point XY) bool {
+	x, y := point.GetXY()
+	for _, p := range path {
+		if x == p.GetX() && y == p.GetY() {
+			return true
+		}
+	}
+	return false
+}
+
+// -----------------------------------------------------------------------------
+// ------------------------------  String Makers  ------------------------------
+// -----------------------------------------------------------------------------
+
+// CreateIndexedGridStringBz is for [][]byte
+// CreateIndexedGridStringNums is for [][]int or [][]uint or [][]int16 etc.
+// CreateIndexedGridString is for [][]string
+// All of them have the signature (vals, color, highlight)
+// CreateIndexedGridStringFunc is for any other [][]; signature = (vals, converter, color, highlight)
+// PointsString is simpler than PathString.
+// EnhancedPathString is a similar signature as CreateIndexedGridString.
+
+// PointString returns the "(%d,%d)" string for the provided XY.
+// The generic here might seem silly, but without it, its use in PointsString gives a syntax error.
+func PointString[V XY](p V) string {
+	return fmt.Sprintf("(%d,%d)", p.GetX(), p.GetY())
+}
+
+// PointsString creates a string of the provided points, e.g. "(0,0) (0,1) (1,1)".
+func PointsString[S ~[]E, E XY](points S) string {
+	return strings.Join(MapSlice(points, PointString), " ")
+}
+
+// PathString returns a one-line string containing all the points in the provided slice of XY. E.g. "{3}[0:(0,0);1:(0,1);2:(1,1)]".
+func PathString[S ~[]E, E XY](path S) string {
+	lines := MapSlice(path, PointString)
+	for i, line := range lines {
+		lines[i] = strconv.Itoa(i) + ":" + line
+	}
+	return fmt.Sprintf("{%d}[%s]", len(path), strings.Join(lines, ";"))
+}
+
+// EnhancedPathString creates a string of the provided path, coloring and/or highlighting points as provided.
+func EnhancedPathString[P ~[]Q, Q XY, S ~[]E, E XY](path P, colorPoints, highlightPoints S) string {
+	fmts := make([]int, len(path))
+	for i, point := range path {
+		if HasPoint(colorPoints, point) {
+			fmts[i] = 1
+		}
+		if HasPoint(highlightPoints, point) {
+			fmts[i] += 2
+		}
+	}
+
+	var rv strings.Builder
+	for i, point := range path {
+		if i != 0 {
+			rv.WriteByte(';')
+		}
+		cell := fmt.Sprintf("%d:(%d,%d)", i, point.GetX(), point.GetY())
+		switch fmts[i] {
+		case 0: // default look.
+			rv.WriteString(cell)
+		case 1: // color only.
+			rv.WriteString("\033[94m" + cell + "\033[0m") // Light-blue text.
+		case 2: // highlight only
+			rv.WriteString("\033[7m" + cell + "\033[0m") // Foreground<->Background Reversed.
+		case 3: // color and highlight
+			rv.WriteString("\033[94;7m" + cell + "\033[0m") // Light-blue background after fg<->bg reversed.
+		default: // Unknown, make it ugly.
+			rv.WriteString("\033[93;41m" + cell + "\033[0m") // Bright yellow text on a red background.
+		}
+	}
+
+	return fmt.Sprintf("{%d}[%s]", len(path), rv.String())
 }
 
 // CreateIndexedGridStringBz creates a string of the provided bytes matrix.
