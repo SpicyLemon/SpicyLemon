@@ -26,68 +26,478 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	Debugf("Parsed Input:\n%s", input)
-	maze := CreateMaze(input.Start, input.End, input.Maze)
+
+	maze := CreateMaze(params, input.Maze)
+
 	if params.Verbose {
-		var points []*Point
-		if input.Start != nil {
-			points = append(points, input.Start)
-		}
-		if input.End != nil {
-			points = append(points, input.End)
-		}
-		Stderrf("Maze:\n%s", CreateIndexedGridStringFunc(maze, CellNodeShortString, points, points))
+		StderrMazeGridString(input, maze)
 	}
-	// TODO: Try to find paths from start to end that are at most the answer from part 1 (DEFAULT_COUNT).
-	minCost := params.Count
-	answer := minCost
+
+	maxCost := 73432 // My answer from part 1.
+	switch params.InputFile {
+	case DEFAULT_INPUT_FILE:
+		maxCost = 7036
+	case "example2.input":
+		maxCost = 11048
+	}
+	if params.Count > 0 {
+		maxCost = params.Count
+	}
+	params.Verbosef("Finding all paths that cost %d or less.", maxCost)
+
+	paths := FindPaths(params, input.Start, input.End, maxCost, maze)
+	if params.Verbose {
+		if !debug {
+			Stderrf("Paths (%d):\n%s", len(paths), StringNumberJoin(paths, 1, "\n"))
+		} else {
+			pathStrs := AddLineNumbers(MapSlice(paths, (*Path).String), 1)
+			for i, path := range paths {
+				turns := 0
+				for _, dir := range path.Steps {
+					if dir == Turn {
+						turns++
+					}
+				}
+				Debugf("%s = %d steps and %d turns:\n%s", pathStrs[i], len(path.Points)-1, turns,
+					SolutionGridString(input.Maze, maze, path.Points))
+			}
+		}
+	}
+
+	points := GetPointsOnPaths(paths)
+	if params.Verbose {
+		Stderrf("Good spots (%d):\n%s", len(points), SolutionGridString(input.Maze, maze, points))
+	}
+	answer := len(points)
 	return fmt.Sprintf("%d", answer), nil
 }
 
-func CreateMaze(start, end *Point, maze [][]byte) [][]*Node[Cell] {
+func NodeDetailsString(node *Node[Cell]) string {
+	// node.Point
+	// node.Next  map[Direction]*Node[V]
+	// node.Value.Path       map[Direction]*Path
+	// node.Value.Next       map[Direction]*Node[Cell]
+	// node.Value.Visited    bool
+	// node.Value.Queued     bool
+	// node.Value.Cost       int
+	// node.Value.MinCostOff int
+	// node.Value.PathsTo    []*Path
+	// node.Value.NewPathsTo []*Path
+
+	label := fmt.Sprintf("(%3d,%3d)[%s%s]", node.Point.X, node.Point.Y, Ternary(node.Queued, "Q", " "), Ternary(node.Visited, "V", " "))
+	labelLen := len(label)
+	costs := fmt.Sprintf("Cost=%d, MinCostOff=%d")
+
+	allDirs := make([]Direction, len(Dirs))
+	copy(allDirs, Dirs)
+	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Next))
+	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Value.Next))
+	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Value.Path))
+	for _, dir := range allDirs {
+		name := DirName[dir]
+		if len(name) == 0 {
+			name = fmt.Sprintf("Dir('%c')", dir)
+		}
+		name = LeftPad(name, labelLen)
+		// TODO: finish this and then call it using params.Custom stuff.
+		_ = name
+	}
+
+	// TODO: Put it all together.
+	_, _, _ = label, labelLen, costs
+
+}
+
+func ShortPathString(path *Path) string {
+	if path == nil {
+		return NilStr
+	}
+	if len(path.Points) == 0 {
+		return "<empty>"
+	}
+	if len(path.Points) == 1 {
+		return fmt.Sprintf("(1): %s", path.Points[0])
+	}
+	fp := path.GetFirstPoint()
+	lp := path.GetLastPoint()
+}
+
+func AppendDirIfNew(dirs []Direction, newDirs ...Direction) []Direction {
+	for _, dir := range newDirs {
+		if !slices.Contains(dirs, dir) {
+			dirs = append(dirs, dir)
+		}
+	}
+	return dirs
+}
+
+func DirKeys[V any](m map[Direction]V) []Direction {
+	rv := make([]Direction, 0, len(m))
+	for key := range m {
+		rv = append(rv, key)
+	}
+	return rv
+}
+
+func SolutionGridString(grid [][]byte, maze [][]*Node[Cell], points []*Point) string {
+	base := make([][]byte, len(grid))
+	for y := range grid {
+		base[y] = make([]byte, len(grid[y]))
+		copy(base[y], grid[y])
+	}
+
+	for _, point := range points {
+		if base[point.Y][point.X] != Start && base[point.Y][point.X] != End {
+			base[point.Y][point.X] = 'O'
+		}
+	}
+
+	var colors []*Point
+	for y := range maze {
+		for x := range maze[y] {
+			if maze[y][x] != nil {
+				colors = append(colors, NewPoint(x, y))
+			}
+		}
+	}
+
+	return CreateIndexedGridStringBz(base, colors, points)
+}
+
+func StderrMazeGridString(input *Input, maze [][]*Node[Cell]) {
+	var points []*Point
+	points = make([]*Point, 0, 2)
+	if input.Start != nil {
+		points = append(points, input.Start)
+	}
+	if input.End != nil {
+		points = append(points, input.End)
+	}
+	Stderrf("Maze:\n%s", CreateIndexedGridStringFunc(maze, CellNodeShortString, points, points))
+
+	if !debug || len(input.Maze) > 20 {
+		return
+	}
+
+	cellMap := MapGrid(maze, CellNodeDetailString)
+	for y := range maze {
+		for x, node := range maze[y] {
+			if node == nil {
+				continue
+			}
+			cur := NewPoint(x, y)
+			for dir, next := range node.Next {
+				toSet := AddPoints(DDirs[dir], cur)
+				if len(cellMap[toSet.Y][toSet.X]) != 0 {
+					cellMap[toSet.Y][toSet.X] = " ++++ "
+				} else {
+					cellMap[toSet.Y][toSet.X] = fmt.Sprintf("%2d,%2d", next.Point.X, next.Point.Y)
+				}
+			}
+		}
+	}
+	Stderrf("Maze Details:\n%s", CreateIndexedGridString(cellMap, points, points))
+}
+
+func GetPointsOnPaths(paths []*Path) []*Point {
+	var rv []*Point
+	known := make(map[int]map[int]bool)
+	for _, path := range paths {
+		for _, point := range path.Points {
+			if known[point.Y] != nil && known[point.Y][point.X] {
+				continue
+			}
+			if known[point.Y] == nil {
+				known[point.Y] = make(map[int]bool)
+			}
+			known[point.Y][point.X] = true
+			rv = append(rv, point)
+		}
+	}
+	return rv
+}
+
+func FindPaths(params *Params, start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
+	queue := make([]*Node[Cell], 0, len(maze)*2) // Will probably grow a bit, but at least I tried.
+	enqueue := func(node *Node[Cell]) {
+		switch {
+		// case node.Value.Visited:
+		//	Debugf("Not queuing already visited node: %s", node)
+		case node.Value.Queued:
+			Debugf("Already queued: %s", node)
+		case IsSameXY(node, end):
+			Debugf("Not queing end node: %s", node)
+		default:
+			Debugf("Adding to queue: %s", node)
+			node.Value.Queued = true
+			queue = append(queue, node)
+		}
+	}
+	dequeue := func() *Node[Cell] {
+		slices.SortFunc(queue, CompareCells)
+		rv := queue[len(queue)-1]
+		queue = queue[:len(queue)-1]
+		rv.Value.Queued = false
+		return rv
+	}
+
+	totalNodes := 0
+	for y := range maze {
+		for x := range maze[y] {
+			if maze[y][x] != nil {
+				totalNodes++
+			}
+		}
+	}
+
+	startNode := Get(maze, start)
+	endNode := Get(maze, end)
+	if startNode == nil || endNode == nil {
+		Stderrf("Start: %s = %s", start, startNode)
+		Stderrf("  End: %s = %s", end, endNode)
+		Stderrf("Cannot proceed.")
+		return nil
+	}
+	startNode.Value.PathsTo = []*Path{NewPath(start)}
+
+	params.Verbosef("Start: %s = %s", start, startNode)
+	params.Verbosef("  End: %s = %s", end, endNode)
+	params.Verbosef("Count: %d", totalNodes)
+
+	enqueue(Get(maze, start))
+	checked := 0
+	for len(queue) > 0 && checked < totalNodes*5 {
+		checked++
+		cur := dequeue()
+		params.Verbosef("[%d/%d]: cur = %s", checked, len(queue), cur)
+
+		var nextPaths []*Path
+		if cur.Value.Visited {
+			nextPaths = cur.Value.NewPathsTo
+		} else {
+			nextPaths = cur.Value.PathsTo
+		}
+
+		for i, path := range nextPaths {
+			if path.Cost > maxCost {
+				Debugf("[%d/%d]:[%d/%d]: Path already too long: %s", checked, len(queue), i+1, len(cur.Value.PathsTo), path)
+				continue
+			}
+			Debugf("[%d/%d]:[%d/%d]: Extending %s", checked, len(queue), i+1, len(cur.Value.PathsTo), path)
+
+			for dir, pathToNext := range cur.Value.Path {
+				nextPath, err := CombinePaths(path, pathToNext)
+				if err != nil {
+					Debugf("[%d/%d]:[%d/%d]'%c': Cannot combine path to %s: %v",
+						checked, len(queue), i+1, len(cur.Value.PathsTo), dir, cur.Value.Next[dir].Point, err)
+					continue
+				}
+				Debugf("[%d/%d]:[%d/%d]'%c': Added path %s",
+					checked, len(queue), i+1, len(cur.Value.PathsTo), dir, pathToNext)
+				Debugf("[%d/%d]:[%d/%d]'%c': New path to: %s",
+					checked, len(queue), i+1, len(cur.Value.PathsTo), dir, nextPath)
+
+				nextNode := cur.Value.Next[dir]
+
+				nextNode.Value.Cost = cur.Value.Cost + 1
+
+				minCostOff := nextPath.Cost + 1
+				if nextNode.Value.Next[dir] == nil {
+					minCostOff += 1000
+				}
+				if nextNode.Value.MinCostOff == 0 || minCostOff < nextNode.Value.MinCostOff {
+					nextNode.Value.MinCostOff = minCostOff
+				}
+
+				AppendPathIfNew(nextNode, nextPath)
+
+				Debugf("[%d/%d]:[%d/%d]'%c': Updated next node: %s", checked, len(queue), i+1, len(cur.Value.PathsTo), dir, nextNode)
+				enqueue(nextNode)
+			}
+		}
+
+		cur.Value.Visited = true
+		cur.Value.PathsTo = append(cur.Value.PathsTo, cur.Value.NewPathsTo...)
+		cur.Value.NewPathsTo = nil
+	}
+
+	rv := make([]*Path, 0, len(endNode.Value.PathsTo)+len(endNode.Value.NewPathsTo))
+	for _, path := range CopyAppend(endNode.Value.PathsTo, endNode.Value.NewPathsTo...) {
+		if path.Cost <= maxCost {
+			rv = append(rv, path)
+		}
+	}
+	return rv
+}
+
+func AppendPathIfNew(node *Node[Cell], newPath *Path) {
+	for _, path := range node.Value.PathsTo {
+		if PathsAreEqual(newPath, path) {
+			return
+		}
+	}
+	for _, path := range node.Value.NewPathsTo {
+		if PathsAreEqual(newPath, path) {
+			return
+		}
+	}
+	if node.Value.Visited {
+		node.Value.NewPathsTo = append(node.Value.NewPathsTo, newPath)
+	} else {
+		node.Value.PathsTo = append(node.Value.PathsTo, newPath)
+	}
+	Debugf("New path added to %s: %s", node, newPath)
+}
+
+func CompareCells(a, b *Node[Cell]) int {
+	if a == b {
+		return 0
+	}
+	if a == nil {
+		return 1
+	}
+	if b == nil {
+		return -1
+	}
+	if rv := CmpInts(a.Value.MinCostOff, b.Value.MinCostOff); rv != 0 {
+		return rv
+	}
+	if rv := CmpInts(a.Point.X, b.Point.X); rv != 0 {
+		return rv
+	}
+	return CmpInts(a.Point.Y, b.Point.Y) * -1
+}
+
+func CmpInts(a, b int) int {
+	if a == b {
+		return 0
+	}
+	if a < b {
+		return -1
+	}
+	return 1
+}
+
+func CreateMaze(params *Params, maze [][]byte) [][]*Node[Cell] {
 	rv := make([][]*Node[Cell], len(maze))
 	var intersections []*Node[Cell]
+
 	for y := range maze {
 		rv[y] = make([]*Node[Cell], len(maze[y]))
 		for x, c := range maze[y] {
 			cur := NewPoint(x, y)
-			nextDirs := GetAdjacentOpenDirs(maze, cur)
-			if !IsSameXY(cur, start) && !IsSameXY(cur, end) && len(nextDirs) < 3 {
+			nextDirs, keep := GetAdjacentOpenDirs(maze, cur)
+			if !keep {
 				continue
 			}
-			cell := NewCellNode(x, y, c)
+			node := NewCellNode(x, y, c)
 			for _, dir := range nextDirs {
-				// TODO: Go in each direction, tracing a path to the next intersection and set the cell's Path and Next accordingly.
-				cell.Value.Path[dir] = nil
-				cell.Value.Next[dir] = nil
+				// Set them to nil for now and we'll create them later, once we have all the intersections identified.
+				node.Value.Path[dir] = nil
+				node.Value.Next[dir] = nil
 			}
-			cell.Next = cell.Value.Next
-			rv[y][x] = cell
-			intersections = append(intersections, cell)
+			node.Next = node.Value.Next
+			rv[y][x] = node
+			intersections = append(intersections, node)
 		}
 	}
-	Debugf("There are %d intersections:\n%s", len(intersections), IntersectionsString(intersections))
+
+	for _, node := range intersections {
+		var rmDir []Direction
+		for dir := range node.Value.Next {
+			path, err := WalkPath(dir, maze, NewPath(node))
+			if err != nil || rv == nil {
+				rmDir = append(rmDir, dir)
+				continue
+			}
+			nextPoint := path.GetLastPoint()
+			if nextPoint == nil {
+				Stderrf("Path:\n%s", path)
+				panic(errors.New("empty path returned"))
+			}
+			next := Get(rv, nextPoint)
+			if next == nil {
+				Stderrf("Path:\n%s", path)
+				panic(errors.New("path did not end at an intersection"))
+			}
+			node.Value.Path[dir] = path
+			node.Value.Next[dir] = next
+		}
+		for _, key := range rmDir {
+			delete(node.Value.Path, key)
+			delete(node.Value.Next, key)
+		}
+		node.Next = node.Value.Next
+	}
+
+	params.Verbosef("There are %d intersections:\n%s", len(intersections), IntersectionsString(intersections))
 	return rv
 }
 
-func GetAdjacentOpenDirs(maze [][]byte, point *Point) []Direction {
-	if c, ok := GetB(maze, point); !ok || c != Open {
-		return nil
+func WalkPath(dir Direction, maze [][]byte, rv *Path) (*Path, error) {
+	err := rv.AddStep(dir)
+	if err != nil {
+		return nil, err
 	}
+	nexts, isStop := GetAdjacentOpenDirs(maze, rv.GetLastPoint())
+	if isStop {
+		return rv, nil
+	}
+
+	for _, next := range nexts {
+		rv2, err2 := WalkPath(next, maze, rv)
+		if err2 == nil {
+			// Success
+			return rv2, nil
+		}
+	}
+	return nil, errors.New("dead end")
+}
+
+// GetAdjacentOpenDirs returns the list of possible directions and whether this is an intersection.
+func GetAdjacentOpenDirs(maze [][]byte, point *Point) ([]Direction, bool) {
+	c, ok := GetB(maze, point)
+	if !ok || c == Wall {
+		return nil, false
+	}
+
 	rv := make([]Direction, 0, 4)
 	for dir, space := range GetAdjacent(maze, point) {
-		if space == Open {
+		if space != Wall {
 			rv = append(rv, dir)
 		}
 	}
-	return rv
+
+	return rv, len(rv) >= 3 || c == Start || c == End
 }
 
 func IntersectionsString(nodes []*Node[Cell]) string {
 	parts := make([]string, len(nodes))
 	for i, node := range nodes {
-		parts[i] = fmt.Sprintf("(%d,%d)%d", node.Point.X, node.Point.Y, len(node.Value.Next))
+		dirs := ""
+		for _, dir := range Dirs {
+			if node.Value.Next[dir] != nil {
+				dirs += string(dir)
+			}
+		}
+		parts[i] = fmt.Sprintf("(%d,%d)%d%s", node.Point.X, node.Point.Y, len(node.Value.Next), dirs)
 	}
-	return strings.Join(parts, " ")
+	parts = ToEqualLengthStrings(parts)
+
+	var lines []string
+	var nextLine []string
+	for i, part := range parts {
+		if i != 0 && i%10 == 0 {
+			lines = append(lines, strings.Join(nextLine, "  "))
+			nextLine = nil
+		}
+		nextLine = append(nextLine, part)
+	}
+	if len(nextLine) != 0 {
+		lines = append(lines, strings.Join(nextLine, "  "))
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func NewCellNode(x int, y int, space byte) *Node[Cell] {
@@ -104,13 +514,32 @@ func CellNodeShortString(node *Node[Cell]) string {
 	return strconv.Itoa(len(node.Value.Path))
 }
 
+func CellNodeDetailString(node *Node[Cell]) string {
+	if node == nil {
+		return ""
+	}
+	dirs := make([]string, 4)
+	for i, dir := range Dirs {
+		next := node.Next[dir]
+		if next == nil {
+			dirs[i] = " "
+			continue
+		}
+		dirs[i] = string(dir)
+	}
+	return "[" + strings.Join(dirs, "") + "]"
+}
+
 // A Cell is a type to put in a Node in order to process and find paths.
 type Cell struct {
-	Visited bool
-	Queued  bool
-	Path    map[Direction]*Path
-	Next    map[Direction]*Node[Cell]
-	PathsTo []*Path
+	Path       map[Direction]*Path
+	Next       map[Direction]*Node[Cell]
+	Visited    bool
+	Queued     bool
+	Cost       int
+	MinCostOff int
+	PathsTo    []*Path
+	NewPathsTo []*Path
 }
 
 func NewCell() *Cell {
@@ -136,18 +565,12 @@ func (c Cell) String() string {
 		}
 		nextStr := "(?,?)"
 		if next != nil {
-			nextStr = next.String()
+			nextStr = next.Point.String()
 		}
 		parts[i] += pathStr + nextStr
 	}
-	rv := fmt.Sprintf("[%s%s]{%s}(%d)", Ternary(c.Visited, "V", " "), Ternary(c.Queued, "Q", " "),
-		strings.Join(parts, ";"), len(c.PathsTo))
-	if debug {
-		rv += ":\n" + StringNumberJoin(c.PathsTo, 1, "\n")
-	} else {
-		rv += "(" + strings.Join(MapSlice(c.PathsTo, (*Path).GetCostString), ",") + ")"
-	}
-	return rv
+	return fmt.Sprintf("%d[%s%s]{%s}(%d)(%d)", c.MinCostOff, Ternary(c.Visited, "V", " "), Ternary(c.Queued, "Q", " "),
+		strings.Join(parts, ";"), len(c.PathsTo), len(c.NewPathsTo))
 }
 
 // Path represents a series of steps between points.
@@ -254,7 +677,9 @@ func (p *Path) AddStep(nextDir Direction) error {
 	return p.addPoints(p.GetLastPoint().Move(nextDir))
 }
 
+// addPoints is not what you're looking for. It adds a point, but NOT the direction or cost for it. Use AddStep.
 func (p *Path) addPoints(points ...*Point) error {
+	// Don't change the path unless we know it's okay to do so.
 	for _, point := range points {
 		if p.PointsMap != nil && p.PointsMap[point.Y] != nil && p.PointsMap[point.Y][point.X] != nil {
 			return fmt.Errorf("path already contains %s", point)
@@ -347,23 +772,53 @@ func CombinePaths(path *Path, paths ...*Path) (*Path, error) {
 	return rv, nil
 }
 
-func DedupPoints[S ~[]E, E XY](points []S) []*Point {
-	var rv []*Point
-	knownMap := make(map[int]map[int]bool)
-	for _, path := range points {
-		for _, p := range path {
-			x, y := p.GetXY()
-			if knownMap[y] != nil && knownMap[y][x] {
-				continue
-			}
-			if knownMap[y] == nil {
-				knownMap[y] = make(map[int]bool)
-			}
-			knownMap[y][x] = true
-			rv = append(rv, NewPoint(x, y))
+func PathsAreEqual(a, b *Path) bool {
+	if a == b {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+
+	if len(a.Points) != len(b.Points) || len(a.PointsMap) != len(b.PointsMap) || len(a.Steps) != len(b.Steps) || a.Cost != b.Cost {
+		return false
+	}
+
+	for i := range a.Points {
+		if !IsSameXY(a.Points[i], b.Points[i]) {
+			return false
 		}
 	}
-	return rv
+
+	for y, aMap := range a.PointsMap {
+		bMap := b.PointsMap[y]
+		if aMap == nil && bMap == nil {
+			continue
+		}
+		if aMap == nil || bMap == nil {
+			return false
+		}
+		for x, aPoint := range aMap {
+			bPoint := bMap[x]
+			if aPoint == nil && bPoint == nil {
+				continue
+			}
+			if aPoint == nil || bPoint == nil {
+				return false
+			}
+			if !IsSameXY(aPoint, bPoint) {
+				return false
+			}
+		}
+	}
+
+	for i := range a.Steps {
+		if a.Steps[i] != b.Steps[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Move will return a new point 1 unit in the direction provided from this point.
@@ -419,7 +874,7 @@ func IsTurn(cur, next Direction) bool {
 	switch cur {
 	case Up, Down:
 		return next == Left || next == Right
-	case Left, Right:
+	case Left, Right, UnknownDir:
 		return next == Up || next == Down
 	}
 	return false
@@ -469,10 +924,8 @@ func ParseInput(lines []string) (*Input, error) {
 			switch b {
 			case Start:
 				rv.Start = NewPoint(x, i)
-				rv.Maze[i][x] = Open
 			case End:
 				rv.End = NewPoint(x, i)
-				rv.Maze[i][x] = Open
 			}
 		}
 	}
