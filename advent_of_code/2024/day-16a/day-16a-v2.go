@@ -33,10 +33,31 @@ func Solve(params *Params) (string, error) {
 		if end != nil {
 			params.Verbosef("End Cell: %s", end)
 			path = PathToPoints(input.Start, end.Value.PathTo)
-			params.Verbosef("Cost Grid:\n%s", CreateIndexedGridStringFunc(grid, CostString, path, path))
+			if len(grid) <= 20 {
+				params.Verbosef("Cost Grid:\n%s", CreateIndexedGridStringFunc(grid, CostString, path, path))
+			} else {
+				params.Verbosef("Path:\n%s", CreateIndexedGridStringBz(MakePathGrid(input.Maze, path), []*Point{input.Start, input.End}, path))
+				params.Verbosef("Points (%d):\n%s", len(path), PathToPointsString(input.Start, end.Value.PathTo))
+			}
 		}
 	}
 	return fmt.Sprintf("%d", answer), nil
+}
+
+func MakePathGrid(grid [][]byte, points []*Point) [][]byte {
+	rv := make([][]byte, len(grid))
+	for y := range grid {
+		rv[y] = make([]byte, len(grid[y]))
+		copy(rv[y], grid[y])
+	}
+	for _, point := range points {
+		if rv[point.Y][point.X] == Wall {
+			rv[point.Y][point.X] = 'X'
+		} else {
+			rv[point.Y][point.X] = 'O'
+		}
+	}
+	return rv
 }
 
 func PathToPoints(start XY, path []byte) []*Point {
@@ -54,6 +75,21 @@ func PathToPoints(start XY, path []byte) []*Point {
 		Debugf("Move %s to %s", DirNames[dir], cur)
 	}
 	return rv
+}
+
+func PathToPointsString(start XY, path []byte) string {
+	var rv strings.Builder
+	cur := NewPoint(start.GetX(), start.GetY())
+	rv.WriteString(cur.String())
+	for _, dir := range path {
+		rv.WriteByte(dir)
+		if dir == Turn {
+			continue
+		}
+		cur = cur.Move(dir)
+		rv.WriteString(cur.String())
+	}
+	return rv.String()
 }
 
 func (p *Point) Move(dir byte) *Point {
