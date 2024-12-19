@@ -651,8 +651,6 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 
 // Params contains anything that might be provided via command-line arguments.
 type Params struct {
-	// Verbose is a flag indicating some extra output is desired.
-	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
@@ -669,11 +667,10 @@ type Params struct {
 
 // String creates a multi-line string representing this Params.
 func (p Params) String() string {
-	defer FuncEnding(FuncStarting())
 	nameFmt := "%10s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", debug),
-		fmt.Sprintf(nameFmt+"%t", "Verbose", p.Verbose),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", verbose),
 		fmt.Sprintf(nameFmt+"%d", "Errors", len(p.Errors)),
 		fmt.Sprintf(nameFmt+"%d", "Count", p.Count),
 		fmt.Sprintf(nameFmt+"%s", "Input File", p.InputFile),
@@ -736,7 +733,7 @@ func GetParams(args []string) *Params {
 			// Not using Stdoutf() here because the extra formatting is annoying with help text.
 			fmt.Println(strings.Join(lines, "\n"))
 			rv.HelpPrinted = true
-		case HasPrefixFold(args[i], "--debug"):
+		case HasOneOfPrefixesFold(args[i], "--debug", "-vv"):
 			Debugf("Debug option found: [%s], args left: %q.", args[i], args[i:])
 			var extraI int
 			oldDebug := debug
@@ -754,7 +751,7 @@ func GetParams(args []string) *Params {
 		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
 			Debugf("Verbose option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
-			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
+			verbose, extraI, err = ParseFlagBool(args[i:])
 			i += extraI
 			rv.AppendError(err)
 			verboseGiven = true
@@ -793,7 +790,7 @@ func GetParams(args []string) *Params {
 		rv.InputFile = DEFAULT_INPUT_FILE
 	}
 	if !verboseGiven {
-		rv.Verbose = debug
+		verbose = debug
 	}
 	if !countGiven {
 		rv.Count = DEFAULT_COUNT
@@ -828,13 +825,6 @@ func (p Params) GetError() error {
 			errs = append(errs, fmt.Errorf("  %d: %w", i+1, err))
 		}
 		return errors.Join(errs...)
-	}
-}
-
-// Verbosef outputs to Stderr if the verbose flag was provided. Does nothing otherwise.
-func (p Params) Verbosef(format string, a ...interface{}) {
-	if p.Verbose {
-		StderrAsf(GetFuncName(1), format, a...)
 	}
 }
 
@@ -1297,7 +1287,7 @@ func DebugAsf(funcName, format string, a ...interface{}) {
 
 // DebugAlwaysf is like Stderrf if the debug flag is set; otherwise it's like Stdoutf.
 func DebugAlwaysf(format string, a ...interface{}) {
-	if debug {
+	if debug || verbose {
 		StderrAsf(GetFuncName(1), format, a...)
 	} else {
 		StdoutAsf(GetFuncName(1), format, a...)
@@ -1306,10 +1296,17 @@ func DebugAlwaysf(format string, a ...interface{}) {
 
 // DebugAlwaysAsf is like StderrAsf if the debug flag is set; otherwise it's like StdoutAsf.
 func DebugAlwaysAsf(funcName, format string, a ...interface{}) {
-	if debug {
+	if debug || verbose {
 		StderrAsf(funcName, format, a...)
 	} else {
 		StdoutAsf(funcName, format, a...)
+	}
+}
+
+// Verbosef outputs to Stderr if the verbose flag was provided. Does nothing otherwise.
+func Verbosef(format string, a ...interface{}) {
+	if verbose {
+		StderrAsf(GetFuncName(1), format, a...)
 	}
 }
 
@@ -1317,8 +1314,12 @@ func DebugAlwaysAsf(funcName, format string, a ...interface{}) {
 // --------------------------------  Primary Program Running Parts  --------------------------------
 // -------------------------------------------------------------------------------------------------
 
-// debug is a flag for whether or not debug messages should be displayed.
-var debug bool
+var (
+	// debug is a flag for whether or not debug messages should be displayed.
+	debug bool
+	// verbose is a flag for whether or not verbose messages should be displayed.
+	verbose bool
+)
 
 // startTime is the time when the program started.
 var startTime time.Time
