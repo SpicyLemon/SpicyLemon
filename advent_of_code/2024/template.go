@@ -1315,9 +1315,9 @@ func Verbosef(format string, a ...interface{}) {
 // -------------------------------------------------------------------------------------------------
 
 var (
-	// debug is a flag for whether or not debug messages should be displayed.
+	// Debug is a flag for whether or not debug messages should be displayed.
 	debug bool
-	// verbose is a flag for whether or not verbose messages should be displayed.
+	// Verbose is a flag for whether or not verbose messages should be displayed.
 	verbose bool
 )
 
