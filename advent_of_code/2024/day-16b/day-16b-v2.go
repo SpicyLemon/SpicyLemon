@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strconv"
@@ -16,6 +17,12 @@ import (
 )
 
 const DEFAULT_COUNT = 0
+
+// Flag specifics:
+// --count <maxCost>   -> The default is based on the name of the input file to match what's known.
+// --lines <point>     -> provide any number of points to output extra details about those points.
+// --lines (x,y)-(x,y) -> Define a window of the grid to show after linking things up.
+// --lines stop        -> Stop the program after wiring up the initial maze and outputting point details.
 
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
@@ -27,49 +34,255 @@ func Solve(params *Params) (string, error) {
 	}
 	Debugf("Parsed Input:\n%s", input)
 
-	maze := CreateMaze(params, input.Maze)
+	// Some extra params parsing.
+	poi, windows, stopEarly, err := ParseCustom(params)
+	_ = windows
+	if err != nil {
+		return "", err
+	}
+	maxCost := GetMaxCost(params)
+	Debugf("Max Cost: %d", maxCost)
 
-	if params.Verbose {
-		StderrMazeGridString(input, maze)
+	// Create the wired-up maze.
+	maze := CreateMaze(input.Maze)
+	if verbose {
+		PrintMaze(input, maze)
+	}
+	PrintPointsOfInterest(poi, maze)
+	PrintWindowedMazes(windows, input, maze)
+	if stopEarly {
+		return "Stopping early due to custom option.", nil
 	}
 
-	maxCost := 73432 // My answer from part 1.
-	switch params.InputFile {
-	case DEFAULT_INPUT_FILE:
-		maxCost = 7036
-	case "example2.input":
-		maxCost = 11048
-	}
-	if params.Count > 0 {
-		maxCost = params.Count
-	}
-	params.Verbosef("Finding all paths that cost %d or less.", maxCost)
+	// Find all the paths.
+	paths := FindPaths(input.Start, input.End, maxCost, maze)
+	PrintPathInfo(paths, input.Maze, maze)
 
-	paths := FindPaths(params, input.Start, input.End, maxCost, maze)
-	if params.Verbose {
-		if !debug {
-			Stderrf("Paths (%d):\n%s", len(paths), StringNumberJoin(paths, 1, "\n"))
-		} else {
-			pathStrs := AddLineNumbers(MapSlice(paths, (*Path).String), 1)
-			for i, path := range paths {
-				turns := 0
-				for _, dir := range path.Steps {
-					if dir == Turn {
-						turns++
-					}
-				}
-				Debugf("%s = %d steps and %d turns:\n%s", pathStrs[i], len(path.Points)-1, turns,
-					SolutionGridString(input.Maze, maze, path.Points))
-			}
-		}
-	}
-
+	// Get all the deduplicated points on good paths.
 	points := GetPointsOnPaths(paths)
-	if params.Verbose {
+	if verbose {
 		Stderrf("Good spots (%d):\n%s", len(points), SolutionGridString(input.Maze, maze, points))
 	}
 	answer := len(points)
 	return fmt.Sprintf("%d", answer), nil
+}
+
+func GetMaxCost(params *Params) int {
+	if params != nil && params.Count > 0 {
+		return params.Count
+	}
+	switch params.InputFile {
+	case DEFAULT_INPUT_FILE:
+		return 7036
+	case "example2.input":
+		return 11048
+	}
+	return 73432 // My answer from part 1.
+}
+
+type Window struct {
+	Min *Point
+	Max *Point
+}
+
+func (w *Window) String() string {
+	if w == nil {
+		return NilStr
+	}
+	return fmt.Sprintf("%s-%s", w.Min, w.Max)
+}
+
+var windowRx = regexp.MustCompile(`^\((\d+), ?(\d+)\)-\((\d+), ?(\d+)\)$`)
+
+func ParseWindow(line string) (*Window, error) {
+	parts := windowRx.FindStringSubmatch(line)
+	if len(parts) != 5 {
+		return nil, nil
+	}
+	var err error
+	coords := make([]int, 4)
+	for i, part := range parts[1:] {
+		coords[i], err = strconv.Atoi(part)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s number %q from window %q: %w", Ith(i), part, line)
+		}
+	}
+	return &Window{
+		Min: NewPoint(min(coords[0], coords[2]), min(coords[1], coords[3])),
+		Max: NewPoint(max(coords[0], coords[2]), max(coords[1], coords[3])),
+	}, nil
+}
+
+func (w *Window) Validate() (err error) {
+	if w == nil {
+		return nil
+	}
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("%w: invalid window")
+		}
+	}()
+
+	if w.Min == nil {
+		return errors.New("min cannot be nil")
+	}
+	if w.Max == nil {
+		return errors.New("max cannot be nil")
+	}
+	if w.Min.X < 0 {
+		return fmt.Errorf("min X value %d cannot be negative", w.Min.X)
+	}
+	if w.Min.Y < 0 {
+		return fmt.Errorf("min Y value %d cannot be negative", w.Min.Y)
+	}
+	if w.Min.X > w.Max.X {
+		return fmt.Errorf("min X %d cannot be greater than max X %d", w.Min.X, w.Max.X)
+	}
+	if w.Min.Y > w.Max.Y {
+		return fmt.Errorf("min Y %d cannot be greater than max Y %d", w.Min.Y, w.Max.Y)
+	}
+	return nil
+}
+
+func (w *Window) Contains(point XY) bool {
+	if w == nil || point == nil || w.Min == nil || w.Max == nil {
+		return false
+	}
+	x, y := point.GetXY()
+	return w.Min.X <= x && w.Min.Y <= y && w.Max.X >= x && w.Max.Y >= y
+}
+
+func ApplyWindowToGrid[V any](window *Window, vals [][]V) ([][]V, error) {
+	if window == nil {
+		return nil, errors.New("window cannot be nil")
+	}
+	if err := window.Validate(); err != nil {
+		return nil, err
+	}
+
+	if window.Min.Y > len(vals) {
+		return nil, fmt.Errorf("window min Y %d is greater than the height %d of the vals provided", window.Max.Y, len(vals))
+	}
+	if window.Max.Y > len(vals) {
+		return nil, fmt.Errorf("window max Y %d is greater than the height %d of the vals provided", window.Max.Y, len(vals))
+	}
+
+	width := 0
+	for _, row := range vals {
+		if len(row) > width {
+			width = len(row)
+		}
+	}
+	if window.Min.X > width {
+		return nil, fmt.Errorf("window min X %d is greater than the width %d of the vals provided", window.Max.Y, width)
+	}
+	if window.Max.X > width {
+		return nil, fmt.Errorf("window max X %d is greater than the width %d of the vals provided", window.Max.Y, width)
+	}
+
+	rv := make([][]V, window.Max.Y-window.Min.Y+1)
+	for y := window.Min.Y; y <= window.Max.Y; y++ {
+		cy := y - window.Min.Y
+		rv[cy] = make([]V, window.Max.X-window.Min.X+1)
+		for x := window.Min.X; x <= window.Max.X && x < len(vals[y]); x++ {
+			rv[cy][x-window.Min.X] = vals[y][x]
+		}
+	}
+
+	return rv, nil
+}
+
+func ApplyWindowToPoints[S ~[]E, E XY](window *Window, points S) ([]*Point, error) {
+	if window == nil {
+		return nil, errors.New("window cannot be nil")
+	}
+	if err := window.Validate(); err != nil {
+		return nil, err
+	}
+
+	shifter := NewPoint(window.Min.X*-1, window.Min.Y*-1)
+	var rv []*Point
+	for _, point := range points {
+		if window.Contains(point) {
+			rv = append(rv, AddXYs(point, shifter))
+		}
+	}
+	return rv, nil
+}
+
+// ParseCustom returns all the points and windows from the custom lines and whether the program should stop early.
+func ParseCustom(params *Params) ([]*Point, []*Window, bool, error) {
+	if params == nil || len(params.Custom) == 0 {
+		return nil, nil, false, nil
+	}
+
+	var poi []*Point
+	var windows []*Window
+	for i, line := range params.Custom {
+		if line == "stop" {
+			return poi, windows, true, nil
+		}
+
+		win, err := ParseWindow(line)
+		if err != nil {
+			return nil, nil, false, err
+		}
+		if win != nil {
+			windows = append(windows, win)
+			continue
+		}
+
+		point, err := ParsePoint(line)
+		if err != nil {
+			return nil, nil, false, fmt.Errorf("invalid point[%d] option: %w", i, err)
+		}
+		poi = append(poi, point)
+	}
+	return poi, windows, false, nil
+}
+
+func PrintPointsOfInterest(points []*Point, maze [][]*Node[Cell]) {
+	for _, point := range points {
+		node, ok := GetB(maze, point)
+		if !ok {
+			Stderrf("Provided point %s is not in the maze of size %d x %d.", point, len(maze), len(maze[0]))
+			continue
+		}
+		if node == nil {
+			Stderrf("Provided point %s is not an intersection.", point)
+			continue
+		}
+		Stderrf("%s", NodeDetailsString(node))
+	}
+}
+
+func PrintWindowedMazes(windwos []*Window, input *Input, maze [][]*Node[Cell]) {
+	// TODO: Write this: CreateWindowedIndexedGridString
+}
+
+func PrintPathInfo(paths []*Path, base [][]byte, maze [][]*Node[Cell]) {
+	if !verbose && !debug {
+		return
+	}
+	Stderrf("Found %d paths.", len(paths))
+	if !debug || len(paths) >= 20 {
+		Stderrf("Paths (%d):\n%s", len(paths), StringProgressJoin(paths))
+		return
+	}
+
+	iFmt := DigitFormatForMax(len(paths))
+	iMax := fmt.Sprintf(iFmt, len(paths))
+	for i, path := range paths {
+		turns := 0
+		for _, dir := range path.Steps {
+			if dir == Turn {
+				turns++
+			}
+		}
+		Stderrf("["+iFmt+"/%s]: (%d) = %d turns and %d steps:\n%s\n%s", i+1, iMax, path.Cost, turns, len(path.Points)-1,
+			path.MuxedString(),
+			SolutionGridString(base, maze, path.Points))
+	}
 }
 
 func NodeDetailsString(node *Node[Cell]) string {
@@ -84,42 +297,33 @@ func NodeDetailsString(node *Node[Cell]) string {
 	// node.Value.PathsTo    []*Path
 	// node.Value.NewPathsTo []*Path
 
-	label := fmt.Sprintf("(%3d,%3d)[%s%s]", node.Point.X, node.Point.Y, Ternary(node.Queued, "Q", " "), Ternary(node.Visited, "V", " "))
+	label := fmt.Sprintf("(%3d,%3d)[%s%s]", node.Point.X, node.Point.Y, Ternary(node.Value.Queued, "Q", " "), Ternary(node.Value.Visited, "V", " "))
 	labelLen := len(label)
 	costs := fmt.Sprintf("Cost=%d, MinCostOff=%d")
 
 	allDirs := make([]Direction, len(Dirs))
 	copy(allDirs, Dirs)
-	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Next))
-	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Value.Next))
-	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Value.Path))
+	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Next)...)
+	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Value.Next)...)
+	allDirs = AppendDirIfNew(allDirs, DirKeys(node.Value.Path)...)
 	for _, dir := range allDirs {
-		name := DirName[dir]
+		name := DirNames[dir]
 		if len(name) == 0 {
 			name = fmt.Sprintf("Dir('%c')", dir)
 		}
-		name = LeftPad(name, labelLen)
+		name = PadLeft(name, labelLen)
 		// TODO: finish this and then call it using params.Custom stuff.
 		_ = name
 	}
 
 	// TODO: Put it all together.
 	_, _, _ = label, labelLen, costs
-
+	return "TODO"
 }
 
+// TODO: Delete this once I make use of path.AsMoveString()
 func ShortPathString(path *Path) string {
-	if path == nil {
-		return NilStr
-	}
-	if len(path.Points) == 0 {
-		return "<empty>"
-	}
-	if len(path.Points) == 1 {
-		return fmt.Sprintf("(1): %s", path.Points[0])
-	}
-	fp := path.GetFirstPoint()
-	lp := path.GetLastPoint()
+	return path.AsMoveString()
 }
 
 func AppendDirIfNew(dirs []Direction, newDirs ...Direction) []Direction {
@@ -140,17 +344,7 @@ func DirKeys[V any](m map[Direction]V) []Direction {
 }
 
 func SolutionGridString(grid [][]byte, maze [][]*Node[Cell], points []*Point) string {
-	base := make([][]byte, len(grid))
-	for y := range grid {
-		base[y] = make([]byte, len(grid[y]))
-		copy(base[y], grid[y])
-	}
-
-	for _, point := range points {
-		if base[point.Y][point.X] != Start && base[point.Y][point.X] != End {
-			base[point.Y][point.X] = 'O'
-		}
-	}
+	base := CopyGrid(grid)
 
 	var colors []*Point
 	for y := range maze {
@@ -160,43 +354,196 @@ func SolutionGridString(grid [][]byte, maze [][]*Node[Cell], points []*Point) st
 			}
 		}
 	}
+	base = SetPoints(colors, '+', base)
+	base = SetPoints(points, 'O', base)
 
 	return CreateIndexedGridStringBz(base, colors, points)
 }
 
-func StderrMazeGridString(input *Input, maze [][]*Node[Cell]) {
-	var points []*Point
-	points = make([]*Point, 0, 2)
+func CopyGrid(grid [][]byte) [][]byte {
+	rv := make([][]byte, len(grid))
+	for y := range grid {
+		rv[y] = make([]byte, len(grid[y]))
+		copy(rv[y], grid[y])
+	}
+	return rv
+}
+
+func SetPoints[S ~[]E, E XY](points S, char byte, grid [][]byte) [][]byte {
+	for _, p := range points {
+		x, y := p.GetXY()
+		if IsIn(grid, p) && grid[y][x] != Start && grid[y][x] != End {
+			grid[y][x] = char
+		}
+	}
+	return grid
+}
+
+var (
+	BadChar = byte('~')
+
+	ReallyBad     = "~x~X~~X~x~"
+	WallStr       = "##########"
+	UpStr         = "    ^^    "
+	DownStr       = "    vv    "
+	LeftStr       = " <===     "
+	RightStr      = "     ===> "
+	UpDown        = "    ||    "
+	LeftRight     = " <======> "
+	UpRight       = "    ^^==> "
+	DownRight     = "    vv==> "
+	UpLeft        = " <==^^    "
+	DownLeft      = " <==vv    "
+	UpDownRight   = "    ||==> "
+	UpDownLeft    = " <==||    "
+	UpLeftRight   = " <==^^==> "
+	DownLeftRight = " <==vv==> "
+	AllDir        = " <==||==> "
+
+	DirCells = map[string]string{
+		// "^":    UpStr,
+		// "v":    DownStr,
+		// "<":    LeftStr,
+		// ">":    RightStr,
+		"^v":   UpDown,
+		"^<":   UpLeft,
+		"^>":   UpRight,
+		"v<":   DownLeft,
+		"v>":   DownRight,
+		"<>":   LeftRight,
+		"^v<":  UpDownLeft,
+		"^v>":  UpDownRight,
+		"^<>":  UpLeftRight,
+		"v<>":  DownLeftRight,
+		"^v<>": AllDir,
+	}
+)
+
+func CleanCell(cur string) (string, bool) {
+	if len(cur) <= 10 || strings.Contains(cur, string(BadChar)) {
+		return cur, true
+	}
+
+	var key string
+	for _, dir := range Dirs {
+		if strings.Contains(cur, string(dir)) {
+			key += string(dir)
+		}
+	}
+
+	rv, ok := DirCells[key]
+	if !ok {
+		return AsBadCell(cur), false
+	}
+	return rv, true
+}
+
+func AsBadCell(cur string) string {
+	if len(cur) == 0 {
+		return ReallyBad
+	}
+	m := Ternary(len(cur) < 9, 2, 3)
+	var rv strings.Builder
+	for i, b := range []byte(cur) {
+		rv.WriteByte(Ternary(i%m == 1, BadChar, b))
+	}
+	return rv.String()
+}
+
+var muxWallRx = regexp.MustCompile(`[^^v<>0-9]`)
+
+func PrintMaze(input *Input, maze [][]*Node[Cell]) {
+	colors := make([]*Point, 0, 2)
 	if input.Start != nil {
-		points = append(points, input.Start)
+		colors = append(colors, input.Start)
 	}
 	if input.End != nil {
-		points = append(points, input.End)
+		colors = append(colors, input.End)
 	}
-	Stderrf("Maze:\n%s", CreateIndexedGridStringFunc(maze, CellNodeShortString, points, points))
+	highs := CopyAppend(colors)
+	cellMap := MapGrid(maze, CellNodeShortString)
+	base := input.Maze // Just used for reference, so no need to copy it.
+	for y := range base {
+		for x, space := range base[y] {
+			if space == Wall {
+				cur := cellMap[y][x]
+				if len(cur) == 0 {
+					cellMap[y][x] = string(Wall)
+				} else {
+					highs = append(highs, NewPoint(x, y))
+				}
+			}
+		}
+	}
+	Stderrf("Maze:\n%s", CreateIndexedGridString(cellMap, colors, highs))
 
 	if !debug || len(input.Maze) > 20 {
 		return
 	}
 
-	cellMap := MapGrid(maze, CellNodeDetailString)
+	// Start over, wider, with just the walls.
+	cellMap = MapGrid(base, MorphWall)
+
+	// Add the intersection points.
+	var intersections []*Node[Cell]
 	for y := range maze {
 		for x, node := range maze[y] {
 			if node == nil {
 				continue
 			}
-			cur := NewPoint(x, y)
-			for dir, next := range node.Next {
-				toSet := AddPoints(DDirs[dir], cur)
-				if len(cellMap[toSet.Y][toSet.X]) != 0 {
-					cellMap[toSet.Y][toSet.X] = " ++++ "
-				} else {
-					cellMap[toSet.Y][toSet.X] = fmt.Sprintf("%2d,%2d", next.Point.X, next.Point.Y)
-				}
+
+			intersections = append(intersections, node)
+			cellVal := CellNodeDirString(node)
+			if cellMap[y][x] == "" {
+				cellMap[y][x] = cellVal
+			} else {
+				// Can only be a wall right now.
+				cellMap[y][x] = muxWallRx.ReplaceAllString(cellVal, string(Wall))
 			}
 		}
 	}
-	Stderrf("Maze Details:\n%s", CreateIndexedGridString(cellMap, points, points))
+
+	// Now, set the cells next to the intersections.
+	for _, node := range intersections {
+		for dir, next := range node.Next {
+			x, y := node.Point.Move(dir).GetXY()
+			newVal := fmt.Sprintf("%c(%3d,%3d)", dir, next.Point.X, next.Point.Y)
+			curVal := cellMap[y][x]
+			if len(curVal) == 0 {
+				cellMap[y][x] = newVal
+				continue
+			}
+			if len(curVal) == 10 && strings.Contains(curVal, "(") {
+				// Path cell next to at least one more intersection.
+				// Append this dir to it and we'll clean that up once we've marked all the nexts.
+				cellMap[y][x] += string(dir)
+				continue
+			}
+			Stderrf("cannot combine cell into at (%d,%d): is %q, also %q", x, y, cellMap[y][x], newVal)
+			cellMap[y][x] = ReallyBad
+			highs = append(highs, NewPoint(x, y))
+		}
+	}
+
+	// And lastly, combine the path cells that are next to two or more intersections.
+	var ok bool
+	for y := range cellMap {
+		for x := range cellMap {
+			cellMap[y][x], ok = CleanCell(cellMap[y][x])
+			if !ok {
+				highs = append(highs, NewPoint(x, y))
+			}
+		}
+	}
+
+	Stderrf("Maze Intersection Details:\n%s", CreateIndexedGridString(cellMap, colors, highs))
+}
+
+func MorphWall(b byte) string {
+	if b == Wall {
+		return strings.Repeat("#", 10)
+	}
+	return ""
 }
 
 func GetPointsOnPaths(paths []*Path) []*Point {
@@ -217,7 +564,8 @@ func GetPointsOnPaths(paths []*Path) []*Point {
 	return rv
 }
 
-func FindPaths(params *Params, start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
+func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
+	Verbosef("Finding all paths that cost %d or less.", maxCost)
 	queue := make([]*Node[Cell], 0, len(maze)*2) // Will probably grow a bit, but at least I tried.
 	enqueue := func(node *Node[Cell]) {
 		switch {
@@ -260,16 +608,16 @@ func FindPaths(params *Params, start, end *Point, maxCost int, maze [][]*Node[Ce
 	}
 	startNode.Value.PathsTo = []*Path{NewPath(start)}
 
-	params.Verbosef("Start: %s = %s", start, startNode)
-	params.Verbosef("  End: %s = %s", end, endNode)
-	params.Verbosef("Count: %d", totalNodes)
+	Verbosef("Start: %s = %s", start, startNode)
+	Verbosef("  End: %s = %s", end, endNode)
+	Verbosef("Count: %d", totalNodes)
 
 	enqueue(Get(maze, start))
 	checked := 0
 	for len(queue) > 0 && checked < totalNodes*5 {
 		checked++
 		cur := dequeue()
-		params.Verbosef("[%d/%d]: cur = %s", checked, len(queue), cur)
+		Verbosef("[%d/%d]: cur = %s", checked, len(queue), cur)
 
 		var nextPaths []*Path
 		if cur.Value.Visited {
@@ -378,15 +726,15 @@ func CmpInts(a, b int) int {
 	return 1
 }
 
-func CreateMaze(params *Params, maze [][]byte) [][]*Node[Cell] {
-	rv := make([][]*Node[Cell], len(maze))
+func CreateMaze(grid [][]byte) [][]*Node[Cell] {
+	rv := make([][]*Node[Cell], len(grid))
 	var intersections []*Node[Cell]
 
-	for y := range maze {
-		rv[y] = make([]*Node[Cell], len(maze[y]))
-		for x, c := range maze[y] {
+	for y := range grid {
+		rv[y] = make([]*Node[Cell], len(grid[y]))
+		for x, c := range grid[y] {
 			cur := NewPoint(x, y)
-			nextDirs, keep := GetAdjacentOpenDirs(maze, cur)
+			nextDirs, keep := GetAdjacentOpenDirs(grid, cur)
 			if !keep {
 				continue
 			}
@@ -405,7 +753,7 @@ func CreateMaze(params *Params, maze [][]byte) [][]*Node[Cell] {
 	for _, node := range intersections {
 		var rmDir []Direction
 		for dir := range node.Value.Next {
-			path, err := WalkPath(dir, maze, NewPath(node))
+			path, err := WalkPath(dir, grid, NewPath(node))
 			if err != nil || rv == nil {
 				rmDir = append(rmDir, dir)
 				continue
@@ -430,22 +778,22 @@ func CreateMaze(params *Params, maze [][]byte) [][]*Node[Cell] {
 		node.Next = node.Value.Next
 	}
 
-	params.Verbosef("There are %d intersections:\n%s", len(intersections), IntersectionsString(intersections))
+	Verbosef("There are %d intersections:\n%s", len(intersections), IntersectionsString(intersections))
 	return rv
 }
 
-func WalkPath(dir Direction, maze [][]byte, rv *Path) (*Path, error) {
+func WalkPath(dir Direction, grid [][]byte, rv *Path) (*Path, error) {
 	err := rv.AddStep(dir)
 	if err != nil {
 		return nil, err
 	}
-	nexts, isStop := GetAdjacentOpenDirs(maze, rv.GetLastPoint())
+	nexts, isStop := GetAdjacentOpenDirs(grid, rv.GetLastPoint())
 	if isStop {
 		return rv, nil
 	}
 
 	for _, next := range nexts {
-		rv2, err2 := WalkPath(next, maze, rv)
+		rv2, err2 := WalkPath(next, grid, rv)
 		if err2 == nil {
 			// Success
 			return rv2, nil
@@ -455,14 +803,14 @@ func WalkPath(dir Direction, maze [][]byte, rv *Path) (*Path, error) {
 }
 
 // GetAdjacentOpenDirs returns the list of possible directions and whether this is an intersection.
-func GetAdjacentOpenDirs(maze [][]byte, point *Point) ([]Direction, bool) {
-	c, ok := GetB(maze, point)
+func GetAdjacentOpenDirs(grid [][]byte, point *Point) ([]Direction, bool) {
+	c, ok := GetB(grid, point)
 	if !ok || c == Wall {
 		return nil, false
 	}
 
 	rv := make([]Direction, 0, 4)
-	for dir, space := range GetAdjacent(maze, point) {
+	for dir, space := range GetAdjacent(grid, point) {
 		if space != Wall {
 			rv = append(rv, dir)
 		}
@@ -514,20 +862,15 @@ func CellNodeShortString(node *Node[Cell]) string {
 	return strconv.Itoa(len(node.Value.Path))
 }
 
-func CellNodeDetailString(node *Node[Cell]) string {
+func CellNodeDirString(node *Node[Cell]) string {
 	if node == nil {
 		return ""
 	}
 	dirs := make([]string, 4)
 	for i, dir := range Dirs {
-		next := node.Next[dir]
-		if next == nil {
-			dirs[i] = " "
-			continue
-		}
-		dirs[i] = string(dir)
+		dirs[i] = Ternary(node.Next[dir] != nil, string(dir), " ")
 	}
-	return "[" + strings.Join(dirs, "") + "]"
+	return "  [" + strings.Join(dirs, "") + "]  "
 }
 
 // A Cell is a type to put in a Node in order to process and find paths.
@@ -596,10 +939,18 @@ func (p *Path) String() string {
 	if p == nil {
 		return NilStr
 	}
+	return fmt.Sprintf("(%d): %s", p.Cost, p.MuxedString())
+}
+
+func (p *Path) MuxedString() string {
+	if p == nil {
+		return NilStr
+	}
+
 	var rv strings.Builder
-	rv.WriteString(fmt.Sprintf("(%d): ", p.Cost))
-	pc, sc := len(p.Points), len(p.Steps)
-	pi, si := 0, 0
+	pc, sc := len(p.Points), len(p.Steps) // "Point Count" and "Step Count"
+	pi, si := 0, 0                        // "Point Index" and "Step Index"
+
 	for pi < pc || si < sc {
 		np := "(?,?)"
 		ns := "?"
@@ -622,7 +973,7 @@ func (p *Path) String() string {
 	}
 	str := rv.String()
 	if str[len(str)-1] == '?' {
-		str = str[:len(str)-1]
+		return str[:len(str)-1]
 	}
 	return str
 }
@@ -646,6 +997,78 @@ func (p *Path) GetFirstStep() Direction {
 
 func (p *Path) GetLastStep() Direction {
 	return GetLast(p.Steps, UnknownDir)
+}
+
+var unknownPoint = "(?,?)"
+
+func (p *Path) GetFirstMove() string {
+	if p == nil {
+		return "n/a"
+	}
+
+	var step string
+	if len(p.Steps) > 0 {
+		step = string(p.Steps[0])
+	}
+	if step == string(Turn) && len(p.Steps) > 1 {
+		step += string(p.Steps[1])
+	}
+
+	switch {
+	case len(p.Points) == 0:
+		if len(step) == 0 {
+			return "<empty>"
+		}
+		return unknownPoint + step + unknownPoint
+	case len(p.Points) == 1:
+		lp := p.Points[0].String()
+		if len(step) > 0 {
+			return lp + step + unknownPoint
+		}
+		return lp
+	}
+
+	if len(step) == 0 {
+		step = "?"
+	}
+	return p.Points[0].String() + step + p.Points[1].String()
+}
+
+func (p *Path) GetLastMove() string {
+	if p == nil {
+		return "n/a"
+	}
+
+	var step string
+	if len(p.Steps) > 1 && p.Steps[len(p.Steps)-2] == Turn {
+		step = string(Turn)
+	}
+	if len(p.Steps) > 0 {
+		step += string(p.Steps[len(p.Steps)-1])
+	}
+
+	switch {
+	case len(p.Points) == 0:
+		if len(step) == 0 {
+			return "<empty>"
+		}
+		return unknownPoint + step + unknownPoint
+	case len(p.Points) == 1:
+		rp := p.Points[len(p.Points)-1].String()
+		if len(step) > 0 {
+			return unknownPoint + step + rp
+		}
+		return rp
+	}
+
+	if len(step) == 0 {
+		step = "?"
+	}
+	return p.Points[len(p.Points)-2].String() + step + p.Points[len(p.Points)-1].String()
+}
+
+func (p *Path) AsMoveString() string {
+	return fmt.Sprintf("%s...%s...%s", p.GetFirstMove(), p.GetCostString(), p.GetLastMove())
 }
 
 func (p *Path) GetCost() int {
@@ -878,6 +1301,63 @@ func IsTurn(cur, next Direction) bool {
 		return next == Up || next == Down
 	}
 	return false
+}
+
+func ParsePoint(line string) (*Point, error) {
+	str := line
+	if strings.HasPrefix(line, "(") && strings.HasSuffix(line, ")") {
+		str = line[1 : len(line)-1]
+	}
+
+	parts := strings.Split(str, ",")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("unknown number of parts (%d) in %q: expected 2: cannot parse as point", len(parts), line)
+	}
+
+	x, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+	if err != nil {
+		return nil, fmt.Errorf("invalid x value %q in %q: %w", parts[0], line, err)
+	}
+
+	y, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+	if err != nil {
+		return nil, fmt.Errorf("invalid y value %q in %q: %w", parts[1], line, err)
+	}
+
+	return NewPoint(x, y), nil
+}
+
+// AddProgressNumbers adds progress numbers to each string in the format of "[i/max]: <string>" where i starts at 1.
+func AddProgressNumbers(lines []string) []string {
+	if len(lines) == 0 {
+		return []string{}
+	}
+	iMax := len(lines)
+	iFmt := DigitFormatForMax(iMax)
+	lineFmt := "[" + iFmt + "/" + iFmt + "]: %s"
+	rv := make([]string, len(lines))
+	for i, line := range lines {
+		rv[i] = fmt.Sprintf(lineFmt, i+1, iMax, line)
+	}
+	return rv
+}
+
+func StringProgressJoin[S ~[]E, E fmt.Stringer](vals S) string {
+	return strings.Join(AddProgressNumbers(MapSlice(vals, E.String)), "\n")
+}
+
+func Ith(i int) string {
+	sfx := "th"
+	iStr := strconv.Itoa(i)
+	switch {
+	case strings.HasSuffix(iStr, "1") && !strings.HasSuffix(iStr, "11"):
+		sfx = "st"
+	case strings.HasSuffix(iStr, "2") && !strings.HasSuffix(iStr, "12"):
+		sfx = "nd"
+	case strings.HasSuffix(iStr, "3") && !strings.HasSuffix(iStr, "13"):
+		sfx = "rd"
+	}
+	return iStr + sfx
 }
 
 const (
@@ -1501,6 +1981,10 @@ var (
 	}
 )
 
+func IsDir(dir Direction) bool {
+	return slices.Contains(Dirs, dir)
+}
+
 // GetAdjacentPoints gets the points that are adjacent to the given one.
 func GetAdjacentPoints(p *Point) map[Direction]*Point {
 	rv := make(map[Direction]*Point)
@@ -1770,6 +2254,29 @@ func CreateIndexedGridStringFunc[M ~[][]G, G any, S ~[]E, E XY](vals M, converte
 // CreateIndexedGridString creates a string of the provided strings matrix.
 // The result will have row and column indexes and the desired cells will be colored and/or highlighted.
 func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S) string {
+	return CreateIndexedGridStringAtOffset(vals, colorPoints, highlightPoints, nil)
+}
+
+// CreateWindowedIndexedGridString will creagte a string of a window of the provided vals.
+func CreateWindowedIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S, window *Window) string {
+	subVals, err := ApplyWindowToGrid(window, vals)
+	if err != nil {
+		panic(err.Error())
+	}
+	colors, err := ApplyWindowToPoints(window, colorPoints)
+	if err != nil {
+		panic(err.Error())
+	}
+	highs, err := ApplyWindowToPoints(window, highlightPoints)
+	if err != nil {
+		panic(err.Error())
+	}
+	return CreateIndexedGridStringAtOffset(subVals, colors, highs, window.Min)
+}
+
+// CreateIndexedGridStringAtOffset creates a string of the provided strings matrix.
+// The result will have row and column indexes shifted by the provided offset and the desired cells will be colored and/or highlighted.
+func CreateIndexedGridStringAtOffset[S ~[]E, E XY](vals [][]string, colorPoints S, highlightPoints S, offset *Point) string {
 	// Get the height. If it's zero, there's nothing to return.
 	height := len(vals)
 	if height == 0 {
@@ -1794,8 +2301,13 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 		cellLen++
 	}
 
+	x0, y0 := 0, 0
+	if offset != nil {
+		x0, y0 = offset.GetXY()
+	}
+
 	// Define the format that each line will start with and for each cell.
-	leadFmt := fmt.Sprintf("%%%dd:", len(fmt.Sprintf("%d", height)))
+	leadFmt := fmt.Sprintf("%%%dd:", len(fmt.Sprintf("%d", height+y0)))
 	blankLead := strings.Repeat(" ", len(fmt.Sprintf(leadFmt, 0)))
 	cellFmt := fmt.Sprintf("%%%ds", cellLen)
 
@@ -1803,17 +2315,17 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 	if width == 0 {
 		lines := make([]string, len(vals))
 		for y := range vals {
-			lines[y] = fmt.Sprintf(leadFmt, y)
+			lines[y] = fmt.Sprintf(leadFmt, y+y0)
 		}
 		return strings.Join(lines, "\n")
 	}
 
 	// Create the index numbers across the top.
-	dCount := len(fmt.Sprintf("%d", width-1))
-	dLen := width * cellLen
+	dCount := len(fmt.Sprintf("%d", width-1+x0))
+	dLen := (width + x0) * cellLen
 	digits := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"}
 	topIndexLines := make([]string, dCount+1)
-	topIndexLines[dCount] = strings.Repeat("-", dLen)
+	topIndexLines[dCount] = strings.Repeat("-", width*cellLen)
 	rep := 1
 	for l := 1; l <= dCount; l++ {
 		first := " "
@@ -1832,7 +2344,7 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 
 		rep *= 10
 		line := first + strings.Repeat(sb.String(), 1+width/rep)
-		topIndexLines[dCount-l] = line[:dLen]
+		topIndexLines[dCount-l] = line[x0*cellLen : dLen]
 	}
 
 	// Create a matrix indicating desired text formats.
@@ -1859,7 +2371,7 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 
 	// Add all the line numbers, and cells (with the desired coloring/marking).
 	for y, r := range vals {
-		rv.WriteString(fmt.Sprintf(leadFmt, y))
+		rv.WriteString(fmt.Sprintf(leadFmt, y+y0))
 		for x := 0; x < width; x++ {
 			v := ""
 			if x < len(r) {
@@ -1891,8 +2403,6 @@ func CreateIndexedGridString[S ~[]E, E XY](vals [][]string, colorPoints S, highl
 
 // Params contains anything that might be provided via command-line arguments.
 type Params struct {
-	// Verbose is a flag indicating some extra output is desired.
-	Verbose bool
 	// HelpPrinted is whether or not the help message was printed.
 	HelpPrinted bool
 	// Errors is a list of errors encountered while parsing the arguments.
@@ -1913,7 +2423,7 @@ func (p Params) String() string {
 	nameFmt := "%10s: "
 	lines := []string{
 		fmt.Sprintf(nameFmt+"%t", "Debug", debug),
-		fmt.Sprintf(nameFmt+"%t", "Verbose", p.Verbose),
+		fmt.Sprintf(nameFmt+"%t", "Verbose", verbose),
 		fmt.Sprintf(nameFmt+"%d", "Errors", len(p.Errors)),
 		fmt.Sprintf(nameFmt+"%d", "Count", p.Count),
 		fmt.Sprintf(nameFmt+"%s", "Input File", p.InputFile),
@@ -1976,7 +2486,7 @@ func GetParams(args []string) *Params {
 			// Not using Stdoutf() here because the extra formatting is annoying with help text.
 			fmt.Println(strings.Join(lines, "\n"))
 			rv.HelpPrinted = true
-		case HasPrefixFold(args[i], "--debug"):
+		case HasOneOfPrefixesFold(args[i], "--debug", "-vv"):
 			Debugf("Debug option found: [%s], args left: %q.", args[i], args[i:])
 			var extraI int
 			oldDebug := debug
@@ -1994,7 +2504,7 @@ func GetParams(args []string) *Params {
 		case HasOneOfPrefixesFold(args[i], "--verbose", "-v"):
 			Debugf("Verbose option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
-			rv.Verbose, extraI, err = ParseFlagBool(args[i:])
+			verbose, extraI, err = ParseFlagBool(args[i:])
 			i += extraI
 			rv.AppendError(err)
 			verboseGiven = true
@@ -2033,7 +2543,7 @@ func GetParams(args []string) *Params {
 		rv.InputFile = DEFAULT_INPUT_FILE
 	}
 	if !verboseGiven {
-		rv.Verbose = debug
+		verbose = debug
 	}
 	if !countGiven {
 		rv.Count = DEFAULT_COUNT
@@ -2068,13 +2578,6 @@ func (p Params) GetError() error {
 			errs = append(errs, fmt.Errorf("  %d: %w", i+1, err))
 		}
 		return errors.Join(errs...)
-	}
-}
-
-// Verbosef outputs to Stderr if the verbose flag was provided. Does nothing otherwise.
-func (p Params) Verbosef(format string, a ...interface{}) {
-	if p.Verbose {
-		StderrAsf(GetFuncName(1), format, a...)
 	}
 }
 
@@ -2537,7 +3040,7 @@ func DebugAsf(funcName, format string, a ...interface{}) {
 
 // DebugAlwaysf is like Stderrf if the debug flag is set; otherwise it's like Stdoutf.
 func DebugAlwaysf(format string, a ...interface{}) {
-	if debug {
+	if debug || verbose {
 		StderrAsf(GetFuncName(1), format, a...)
 	} else {
 		StdoutAsf(GetFuncName(1), format, a...)
@@ -2546,10 +3049,17 @@ func DebugAlwaysf(format string, a ...interface{}) {
 
 // DebugAlwaysAsf is like StderrAsf if the debug flag is set; otherwise it's like StdoutAsf.
 func DebugAlwaysAsf(funcName, format string, a ...interface{}) {
-	if debug {
+	if debug || verbose {
 		StderrAsf(funcName, format, a...)
 	} else {
 		StdoutAsf(funcName, format, a...)
+	}
+}
+
+// Verbosef outputs to Stderr if the verbose flag was provided. Does nothing otherwise.
+func Verbosef(format string, a ...interface{}) {
+	if verbose {
+		StderrAsf(GetFuncName(1), format, a...)
 	}
 }
 
@@ -2557,8 +3067,12 @@ func DebugAlwaysAsf(funcName, format string, a ...interface{}) {
 // --------------------------------  Primary Program Running Parts  --------------------------------
 // -------------------------------------------------------------------------------------------------
 
-// debug is a flag for whether or not debug messages should be displayed.
-var debug bool
+var (
+	// debug is a flag for whether or not debug messages should be displayed.
+	debug bool
+	// verbose is a flag for whether or not verbose messages should be displayed.
+	verbose bool
+)
 
 // startTime is the time when the program started.
 var startTime time.Time
