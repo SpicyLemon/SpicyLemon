@@ -36,7 +36,8 @@ func Solve(params *Params) (string, error) {
 			if len(grid) <= 20 {
 				params.Verbosef("Cost Grid:\n%s", CreateIndexedGridStringFunc(grid, CostString, path, path))
 			} else {
-				params.Verbosef("Path:\n%s", CreateIndexedGridStringBz(MakePathGrid(input.Maze, path), []*Point{input.Start, input.End}, path))
+				pathGrid := MakePathGrid(input.Maze, path)
+				params.Verbosef("Path:\n%s", CreateIndexedGridStringBz(pathGrid, []*Point{input.Start, input.End}, path))
 				params.Verbosef("Points (%d):\n%s", len(path), PathToPointsString(input.Start, end.Value.PathTo))
 			}
 		}
