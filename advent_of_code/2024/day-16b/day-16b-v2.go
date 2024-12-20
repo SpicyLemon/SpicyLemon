@@ -104,7 +104,7 @@ func ParseWindow(line string) (*Window, error) {
 	for i, part := range parts[1:] {
 		coords[i], err = strconv.Atoi(part)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %s number %q from window %q: %w", Ith(i), part, line)
+			return nil, fmt.Errorf("invalid %s number %q from window %q: %w", Ith(i), part, line, err)
 		}
 	}
 	return &Window{
@@ -119,7 +119,7 @@ func (w *Window) Validate() (err error) {
 	}
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("%w: invalid window")
+			err = fmt.Errorf("%w: invalid window", err)
 		}
 	}()
 
@@ -216,8 +216,8 @@ func ParseCustom(params *Params) ([]*Point, []*Window, bool, error) {
 		return nil, nil, false, nil
 	}
 
-	var poi []*Point
-	var windows []*Window
+	var poi []*Point      //nolint:prealloc // There's no decent size to pre-allocate this to.
+	var windows []*Window //nolint:prealloc // There's no decent size to pre-allocate this to.
 	for i, line := range params.Custom {
 		if line == "stop" {
 			return poi, windows, true, nil
@@ -256,8 +256,9 @@ func PrintPointsOfInterest(points []*Point, maze [][]*Node[Cell]) {
 	}
 }
 
-func PrintWindowedMazes(windwos []*Window, input *Input, maze [][]*Node[Cell]) {
+func PrintWindowedMazes(windows []*Window, input *Input, maze [][]*Node[Cell]) {
 	// TODO: Write this: CreateWindowedIndexedGridString
+	_, _, _ = windows, input, maze
 }
 
 func PrintPathInfo(paths []*Path, base [][]byte, maze [][]*Node[Cell]) {
@@ -297,9 +298,10 @@ func NodeDetailsString(node *Node[Cell]) string {
 	// node.Value.PathsTo    []*Path
 	// node.Value.NewPathsTo []*Path
 
-	label := fmt.Sprintf("(%3d,%3d)[%s%s]", node.Point.X, node.Point.Y, Ternary(node.Value.Queued, "Q", " "), Ternary(node.Value.Visited, "V", " "))
+	label := fmt.Sprintf("(%3d,%3d)[%s%s]", node.Point.X, node.Point.Y,
+		Ternary(node.Value.Queued, "Q", " "), Ternary(node.Value.Visited, "V", " "))
 	labelLen := len(label)
-	costs := fmt.Sprintf("Cost=%d, MinCostOff=%d")
+	costs := fmt.Sprintf("Cost=%d, MinCostOff=%d", node.Value.Cost, node.Value.MinCostOff)
 
 	allDirs := make([]Direction, len(Dirs))
 	copy(allDirs, Dirs)
@@ -321,7 +323,7 @@ func NodeDetailsString(node *Node[Cell]) string {
 	return "TODO"
 }
 
-// TODO: Delete this once I make use of path.AsMoveString()
+// TODO: Delete this once I make use of path.AsMoveString().
 func ShortPathString(path *Path) string {
 	return path.AsMoveString()
 }
@@ -833,11 +835,11 @@ func IntersectionsString(nodes []*Node[Cell]) string {
 	parts = ToEqualLengthStrings(parts)
 
 	var lines []string
-	var nextLine []string
+	nextLine := make([]string, 0, 10)
 	for i, part := range parts {
 		if i != 0 && i%10 == 0 {
 			lines = append(lines, strings.Join(nextLine, "  "))
-			nextLine = nil
+			nextLine = make([]string, 0, 10)
 		}
 		nextLine = append(nextLine, part)
 	}
@@ -899,7 +901,7 @@ func (c Cell) String() string {
 		path := c.Path[dir]
 		next := c.Next[dir]
 		if path == nil && next == nil {
-			parts[i] += "n/a"
+			parts[i] += na
 			continue
 		}
 		pathStr := "?<?>"
@@ -999,11 +1001,14 @@ func (p *Path) GetLastStep() Direction {
 	return GetLast(p.Steps, UnknownDir)
 }
 
-var unknownPoint = "(?,?)"
+var (
+	unknownPoint = "(?,?)"
+	na           = "n/a"
+)
 
 func (p *Path) GetFirstMove() string {
 	if p == nil {
-		return "n/a"
+		return na
 	}
 
 	var step string
@@ -1036,7 +1041,7 @@ func (p *Path) GetFirstMove() string {
 
 func (p *Path) GetLastMove() string {
 	if p == nil {
-		return "n/a"
+		return na
 	}
 
 	var step string
@@ -3068,9 +3073,9 @@ func Verbosef(format string, a ...interface{}) {
 // -------------------------------------------------------------------------------------------------
 
 var (
-	// debug is a flag for whether or not debug messages should be displayed.
+	// Debug is a flag for whether or not debug messages should be displayed.
 	debug bool
-	// verbose is a flag for whether or not verbose messages should be displayed.
+	// Verbose is a flag for whether or not verbose messages should be displayed.
 	verbose bool
 )
 
