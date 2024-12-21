@@ -18,6 +18,9 @@ import (
 
 const DEFAULT_COUNT = 0
 
+// Sorry about this file. There's some really good stuff in here, but I'm too tired of this problem to curate it right now.
+// The windowed grid stuff is pretty slick though.
+
 // Flag specifics:
 // --count <maxCost>   -> The default is based on the name of the input file to match what's known.
 // --lines <point>     -> provide any number of points to output extra details about those points.
@@ -69,9 +72,6 @@ func Solve(params *Params) (string, error) {
 	// PrintPointsOfInterest(poi, maze)
 
 	nodes = SimplifyIntersections(nodes, maze)
-	//if err := SafeSimplifyIntersections(nodes, maze, input, windows); err != nil {
-	//	return "", err
-	//}
 	Verbosef("There are %d intersections after simplification:\n%s", len(nodes), IntersectionsString(nodes))
 	if verbose || len(windows) > 0 {
 		Stderrf(" vvv  After simplification.  vvv")
@@ -99,7 +99,7 @@ func Solve(params *Params) (string, error) {
 	if verbose {
 		Stderrf("Good spots (%d):\n%s", len(points), SolutionGridString(input.Maze, maze, points))
 	}
-	if verbose || len(windows) > 0 {
+	if debug || len(windows) > 0 {
 		PrintMaze(input, maze, windows)
 	}
 	answer := len(points)
@@ -319,8 +319,8 @@ func ParseCustom(params *Params) ([]*Point, []*Window, bool, error) {
 		return nil, nil, false, nil
 	}
 
-	var poi []*Point      //nolint:prealloc // There's no decent size to pre-allocate this to.
-	var windows []*Window //nolint:prealloc // There's no decent size to pre-allocate this to.
+	var poi []*Point
+	var windows []*Window
 	for i, line := range params.Custom {
 		if line == "stop" {
 			return poi, windows, true, nil
@@ -524,8 +524,20 @@ func (p *Path) Validate() error {
 		return fmt.Errorf("path point count (%d) != point map count (%d)", len(p.Points), pmapCount)
 	}
 
+	for i := 1; i < len(p.Points); i++ {
+		d := TaxiDist(p.Points[i-1], p.Points[i])
+		if d != 1 {
+			return fmt.Errorf("consecutive points not adjacent: points[%d] = %s, points[%d] = %s, distance = %d",
+				i-1, p.Points[i-1], i, p.Points[i], d)
+		}
+	}
+
 	// I just wanted to keep this simple because of how many times it'll run. The above should be good enough.
 	return nil
+}
+
+func TaxiDist(a, b *Point) int {
+	return Abs(a.X-b.X) + Abs(a.Y-b.Y)
 }
 
 func ValidatePath(path *Path, grid [][]byte) error {
@@ -597,7 +609,8 @@ func ValidatePath(path *Path, grid [][]byte) error {
 			return fmt.Errorf("point %s is in path.Points but not path.PointsMap", point)
 		}
 		if !IsSameXY(point, path.PointsMap[point.Y][point.X]) {
-			return fmt.Errorf("point from path.PointsMap[%d][%d] is %s, expected %s", point.Y, point.X, path.PointsMap[point.Y][point.X], point)
+			return fmt.Errorf("point from path.PointsMap[%d][%d] is %s, expected %s",
+				point.Y, point.X, path.PointsMap[point.Y][point.X], point)
 		}
 	}
 
@@ -648,7 +661,8 @@ func ValidatePath(path *Path, grid [][]byte) error {
 			return fmt.Errorf("cannot take step from %s to %s: %w", path.Points[i], path.Points[i+1], err)
 		}
 		if newDir != justDirs[i] {
-			return fmt.Errorf("points [%d %d] = %s %c %s but the steps indicate a %c here", i, i+1, path.Points[i], newDir, path.Points[i+1], justDirs[i])
+			return fmt.Errorf("points [%d %d] = %s %c %s but the steps indicate a %c here",
+				i, i+1, path.Points[i], newDir, path.Points[i+1], justDirs[i])
 		}
 	}
 
@@ -854,6 +868,7 @@ func AsBadCell(cur string) string {
 var muxWallRx = regexp.MustCompile(`[^^v<>0-9]`)
 
 func PrintMaze(input *Input, maze [][]*Node[Cell], windows []*Window) {
+	// Output the grid with the start and end marked.
 	colors := make([]*Point, 0, 2)
 	if input.Start != nil {
 		colors = append(colors, input.Start)
@@ -864,24 +879,42 @@ func PrintMaze(input *Input, maze [][]*Node[Cell], windows []*Window) {
 	highs := CopyAppend(colors)
 	cellMap := MapGrid(maze, CellNodeShortString)
 	base := input.Maze // Just used for reference, so no need to copy it.
+	walls, opens, unknowns := 0, 0, 0
+	width, height := 0, len(base)
 	for y := range base {
+		width = max(width, len(base[y]))
 		for x, space := range base[y] {
-			if space == Wall {
+			switch space {
+			case Wall:
+				walls++
 				cur := cellMap[y][x]
 				if len(cur) == 0 {
 					cellMap[y][x] = string(Wall)
 				} else {
 					highs = append(highs, NewPoint(x, y))
 				}
+			case Open, Start, End:
+				opens++
+			default:
+				unknowns++
+				highs = append(highs, NewPoint(x, y))
 			}
 		}
 	}
+
 	Stderrf("Maze:\n%s", CreateIndexedGridString(cellMap, colors, highs))
+	uk := ""
+	if unknowns > 0 {
+		uk = fmt.Sprintf(" + %d unknowns", unknowns)
+	}
+	Stderrf("Maze is %d x %d = %d total cells = %d walls + %d open%s", width, height, width*height, walls, opens, uk)
 
 	// Continue only if we're in debug or the maze has less than 20 lines and there aren't any windows to print.
 	if len(windows) == 0 && (!debug || len(input.Maze) > 20) {
 		return
 	}
+
+	// Output an intersection map (or maps if there are windows).
 
 	// Start over. We're gonna make it bigger.
 	cellMap = MapGrid(base, MorphWall)
@@ -905,7 +938,7 @@ func PrintMaze(input *Input, maze [][]*Node[Cell], windows []*Window) {
 		}
 	}
 
-	// Now, set the cells next to the intersections.
+	// Set the cells next to the intersections to indicate where a path gos from an intersection.
 	for _, node := range intersections {
 		colors = append(colors, &node.Point)
 		for dir, next := range node.Next {
@@ -1000,7 +1033,9 @@ func GetPointsOnPaths(paths []*Path) []*Point {
 }
 
 func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
+	defer FuncEndingAlways(FuncStartingAlways())
 	Verbosef("Finding all paths that cost %d or less.", maxCost)
+
 	queue := make([]*Node[Cell], 0, len(maze)*2) // Will probably grow a bit, but at least I tried.
 	enqueue := func(node *Node[Cell]) {
 		switch {
@@ -1019,7 +1054,7 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 		}
 	}
 	dequeue := func() *Node[Cell] {
-		slices.SortFunc(queue, CompareCells)
+		slices.SortFunc(queue, CompareCellsRev)
 		rv := queue[len(queue)-1]
 		queue = queue[:len(queue)-1]
 		rv.Value.Queued = false
@@ -1054,72 +1089,102 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 	for len(queue) > 0 {
 		checked++
 		cur := dequeue()
-		Verbosef("[%d/%d]: cur = %s x%d", checked, len(queue), cur, len(cur.Value.Path))
+		Verbosef("[%d|%d]: cur = %s x%d", checked, len(queue), cur, len(cur.Value.Path))
+		if cur.Value.Visited {
+			Debugf("  Already visisted, skipping.")
+			continue
+		}
 
 		if cur.Value.MinCostOff > maxCost {
 			Debugf("node too expensive, skipping")
+			continue
 		}
-		for i, path := range cur.Value.NewPathsTo {
-			if path.Cost > maxCost {
-				Debugf("[%d/%d]:[%d/%d]: Path already too long: %s", checked, len(queue), i+1, len(cur.Value.PathsTo), path)
+
+		nextPaths := cur.Value.NewPathsTo
+		cur.Value.Visited = true
+		cur.Value.PathsTo = append(cur.Value.PathsTo, cur.Value.NewPathsTo...)
+		cur.Value.NewPathsTo = nil
+
+		for _, dir := range Dirs {
+			pathToNext := cur.Value.Path[dir]
+			if pathToNext == nil {
 				continue
 			}
-			Debugf("[%d/%d]:[%d/%d]: Extending %s", checked, len(queue), i+1, len(cur.Value.PathsTo), path)
+			nextNode := cur.Value.Next[dir]
+			Debugf("[%d|%d%c]: Next: %s", checked, len(queue), dir, nextNode)
 
-			for _, dir := range Dirs {
-				pathToNext := cur.Value.Path[dir]
-				if pathToNext == nil {
+			var queueNext bool
+			for i, path := range nextPaths {
+				if path.Cost > maxCost {
+					Debugf("[%d|%d%c|%d/%d]: Path already too long: %s", checked, len(queue), dir, i+1, len(cur.Value.PathsTo), path)
 					continue
 				}
+				Debugf("[%d|%d%c|%d/%d]: Extending: %s", checked, len(queue), dir, i+1, len(cur.Value.PathsTo), path)
+
 				nextPath, err := CombinePaths(path, pathToNext)
 				if err != nil {
-					Debugf("[%d/%d]:[%d/%d]'%c': Cannot combine path to %s: %v",
-						checked, len(queue), i+1, len(cur.Value.PathsTo), dir, cur.Value.Next[dir].Point, err)
+					Debugf("[%d|%d%c|%d/%d]: Cannot combine paths: %v", checked, len(queue), dir, i+1, len(cur.Value.PathsTo), err)
 					continue
 				}
-				Debugf("[%d/%d]:[%d/%d]'%c': Added path %s",
-					checked, len(queue), i+1, len(cur.Value.PathsTo), dir, pathToNext)
-				Debugf("[%d/%d]:[%d/%d]'%c': New path to: %s",
-					checked, len(queue), i+1, len(cur.Value.PathsTo), dir, nextPath)
+				Debugf("[%d|%d%c|%d/%d]: Combined path: %s", checked, len(queue), dir, i+1, len(cur.Value.PathsTo), nextPath)
 
-				if err := nextPath.Validate(); err != nil {
-					panic(fmt.Errorf("next path is not valid: %v", err))
+				if err = nextPath.Validate(); err != nil {
+					panic(fmt.Errorf("[%d|%d%c|%d/%d]: Combined path is invalid: %w",
+						checked, len(queue), dir, i+1, len(cur.Value.PathsTo), err))
 				}
 				if nextPath.Cost > maxCost {
-					Debugf("[%d/%d]:[%d/%d]'%c': next path cost (%d) > max cost (%d): skipping",
-						checked, len(queue), i+1, len(cur.Value.PathsTo), nextPath.Cost, maxCost)
+					Debugf("[%d|%d%c|%d/%d]: Combined path too long: %d",
+						checked, len(queue), dir, i+1, len(cur.Value.PathsTo), nextPath.Cost)
 					continue
 				}
 				if !IsSameXY(nextPath.GetFirstPoint(), start) {
-					panic(fmt.Errorf("next path does not start at the start %s", start))
+					if !debug { // if debug, this was printed earlier.
+						Stderrf("[%d|%d%c|%d/%d]: Combined path: %s", checked, len(queue), dir, i+1, len(cur.Value.PathsTo), nextPath)
+					}
+					panic(fmt.Errorf("next path start is not maze start %s", start))
 				}
 
-				nextNode := cur.Value.Next[dir]
-				nextCost := nextPath.Cost
-				if nextNode.Value.Cost == 0 || nextCost < nextNode.Value.Cost {
-					nextNode.Value.Cost = nextCost
+				// Trying 1500 here. Not sure if that's gonna be okay, but we'll see.
+				// Picked it as one turn and pretty much any number of forwards.
+				if nextNode.Value.Cost > 0 && nextPath.Cost > nextNode.Value.Cost+1500 {
+					Debugf("[%d|%d%c|%d/%d]: Combined path cost (%d) > 1500 + next cost (%d)",
+						checked, len(queue), dir, i+1, len(cur.Value.PathsTo), nextPath.Cost, nextNode.Value.Cost)
+					continue
 				}
 
-				minCostOff := nextCost
+				var updated bool
+				if nextNode.Value.Cost == 0 || nextPath.Cost < nextNode.Value.Cost {
+					nextNode.Value.Cost = nextPath.Cost
+					updated = true
+				}
+				minCostOff := nextPath.Cost
 				if nextNode.Value.Next[dir] == nil {
 					minCostOff += 1000
 				}
 				if nextNode.Value.MinCostOff == 0 || minCostOff < nextNode.Value.MinCostOff {
 					nextNode.Value.MinCostOff = minCostOff
+					updated = true
 				}
 
-				added := AppendPathIfNew(nextNode, nextPath)
+				updated = AppendPathIfNew(nextNode, nextPath) || updated
 
-				Debugf("[%d/%d]:[%d/%d]'%c': Updated next node: %s", checked, len(queue), i+1, len(cur.Value.PathsTo), dir, nextNode)
-				if added {
-					enqueue(nextNode)
+				if !updated {
+					Debugf("[%d|%d%c|%d/%d]: Next node unchanged.", checked, len(queue), dir, i+1, len(cur.Value.PathsTo))
+					continue
 				}
+
+				if nextNode.Value.Visited {
+					Debugf("[%d|%d%c|%d/%d]: Unvisiting next node.", checked, len(queue), dir, i+1, len(cur.Value.PathsTo))
+					nextNode.Value.Visited = false
+				}
+				Debugf("[%d|%d%c|%d/%d]: Updated next node: %s", checked, len(queue), dir, i+1, len(cur.Value.PathsTo), nextNode)
+				queueNext = true
+			}
+
+			if queueNext {
+				enqueue(nextNode)
 			}
 		}
-
-		cur.Value.Visited = true
-		cur.Value.PathsTo = append(cur.Value.PathsTo, cur.Value.NewPathsTo...)
-		cur.Value.NewPathsTo = nil
 
 		if checked > totalNodes*50 {
 			Verbosef("Stopping after %d to prevent a runnaway.", checked)
@@ -1152,6 +1217,10 @@ func AppendPathIfNew(node *Node[Cell], newPath *Path) bool {
 	return true
 }
 
+func CompareCellsRev(a, b *Node[Cell]) int {
+	return CompareCells(a, b) * -1
+}
+
 func CompareCells(a, b *Node[Cell]) int {
 	if a == b {
 		return 0
@@ -1163,7 +1232,7 @@ func CompareCells(a, b *Node[Cell]) int {
 		return -1
 	}
 	if rv := CmpInts(a.Value.MinCostOff, b.Value.MinCostOff); rv != 0 {
-		return rv * -1
+		return rv
 	}
 	if rv := CmpInts(a.Point.X, b.Point.X); rv != 0 {
 		return rv
@@ -1463,7 +1532,8 @@ func WalkPath(dir Direction, grid [][]byte, rv *Path, poi []*Point) (*Path, erro
 	isPoi := HasPoint(poi, orig)
 	if isPoi {
 		window := NewCenteredWindow(orig, 5).LimitedBy(NewWindowAroundGrid(grid))
-		Stderrf("At %s (moving %c):\nPath: %s\n%s", orig, dir, rv, CreateWindowedIndexedGridString(MapGrid(grid, ByteToString), rv.Points, []*Point{orig}, window))
+		Stderrf("At %s (moving %c):\nPath: %s\n%s", orig, dir, rv,
+			CreateWindowedIndexedGridString(MapGrid(grid, ByteToString), rv.Points, []*Point{orig}, window))
 	}
 
 	err := rv.AddStep(dir)
@@ -1501,7 +1571,10 @@ func WalkPath(dir Direction, grid [][]byte, rv *Path, poi []*Point) (*Path, erro
 	}
 
 	StderrIff(isPoi, "Found dead end trying to %c from %s", dir, orig)
-	rv.Pop()
+	_, _, _, err = rv.Pop()
+	if err != nil {
+		panic(fmt.Errorf("error popping dead end off path: %w", err))
+	}
 	return nil, errors.New("dead end")
 }
 
@@ -1616,7 +1689,6 @@ func (c Cell) String() string {
 		path := c.Path[dir]
 		next := c.Next[dir]
 		if path == nil && next == nil {
-			parts[i] += "" //"x<x>(x,x)"
 			continue
 		}
 		pathStr := "?,?"
