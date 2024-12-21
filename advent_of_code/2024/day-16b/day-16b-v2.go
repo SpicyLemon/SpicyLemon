@@ -36,28 +36,56 @@ func Solve(params *Params) (string, error) {
 
 	// Some extra params parsing.
 	poi, windows, stopEarly, err := ParseCustom(params)
-	_ = windows
 	if err != nil {
 		return "", err
 	}
 	maxCost := GetMaxCost(params)
-	Debugf("Max Cost: %d", maxCost)
+	if verbose {
+		Stderrf("Max Cost: %d", maxCost)
+		Stderrf("Points of Interest (%d): %s", len(poi), PointsString(poi))
+		Stderrf("Windows (%d): %s", len(windows), windows)
+		if stopEarly {
+			Stderrf("Stopping after maze setup and simplification.")
+		} else {
+			Stderrf("Running program to completion.")
+		}
+	}
 
 	// Create the wired-up maze.
-	maze, nodes := CreateMaze(input.Maze)
+	maze, nodes := CreateMaze(input.Maze, poi)
 	if verbose || len(windows) > 0 {
+		Stderrf(" vvv  Before simplification.  vvv")
 		PrintMaze(input, maze, windows)
+		Stderrf(" ^^^  Before simplification.  ^^^")
 	}
+
 	Verbosef("Validating initial maze.")
-	if err := ValidateMaze(maze); err != nil {
+	if err := ValidateMaze(maze, input.Maze); err != nil {
+		Stderrf("Initial maze is NOT valid.\n%v", err)
 		return "", err
 	}
 	Verbosef("Initial maze is valid.")
-	PrintPointsOfInterest(poi, maze)
-	SimplifyIntersections(nodes, maze)
+
+	// PrintPointsOfInterest(poi, maze)
+
+	nodes = SimplifyIntersections(nodes, maze)
+	//if err := SafeSimplifyIntersections(nodes, maze, input, windows); err != nil {
+	//	return "", err
+	//}
+	Verbosef("There are %d intersections after simplification:\n%s", len(nodes), IntersectionsString(nodes))
 	if verbose || len(windows) > 0 {
+		Stderrf(" vvv  After simplification.  vvv")
 		PrintMaze(input, maze, windows)
+		Stderrf(" ^^^  After simplification.  ^^^")
 	}
+
+	Verbosef("Validating simplfied maze.")
+	if err := ValidateMaze(maze, input.Maze); err != nil {
+		Stderrf("Simplified Maze is NOT valid.\n%v", err)
+		return "", err
+	}
+	Verbosef("Simplified maze is valid.")
+
 	if stopEarly {
 		return "Stopping early due to custom option.", nil
 	}
@@ -78,6 +106,18 @@ func Solve(params *Params) (string, error) {
 	return fmt.Sprintf("%d", answer), nil
 }
 
+func SafeSimplifyIntersections(nodes []*Node[Cell], maze [][]*Node[Cell], input *Input, windows []*Window) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			Stderrf("PANIC: %v\n", r)
+			PrintMaze(input, maze, windows)
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+	SimplifyIntersections(nodes, maze)
+	return nil
+}
+
 func GetMaxCost(params *Params) int {
 	if params != nil && params.Count > 0 {
 		return params.Count
@@ -96,11 +136,51 @@ type Window struct {
 	Max *Point
 }
 
+func NewWindow(x1, y1, x2, y2 int) *Window {
+	return &Window{
+		Min: NewPoint(min(x1, x2), min(y1, y2)),
+		Max: NewPoint(max(x1, x2), max(y1, y2)),
+	}
+}
+
+func NewCenteredWindow(center XY, radius int) *Window {
+	return &Window{
+		Min: NewPoint(center.GetX()-radius, center.GetY()-radius),
+		Max: NewPoint(center.GetX()+radius, center.GetY()+radius),
+	}
+}
+
+func NewWindowAroundGrid[V any](grid [][]V) *Window {
+	width := 0
+	for y := range grid {
+		if len(grid[y]) > width {
+			width = len(grid[y])
+		}
+	}
+	return NewWindow(0, 0, width, len(grid))
+}
+
 func (w *Window) String() string {
 	if w == nil {
 		return NilStr
 	}
 	return fmt.Sprintf("%s-%s", w.Min, w.Max)
+}
+
+func (w *Window) LimitedBy(v *Window) *Window {
+	if w == nil {
+		return nil
+	}
+	if v == nil {
+		return w
+	}
+	if w.Min.X >= v.Min.X && w.Max.X <= v.Max.X && w.Min.Y >= v.Min.Y && w.Max.Y <= v.Max.Y {
+		return w
+	}
+	return &Window{
+		Min: NewPoint(max(w.Min.X, v.Min.X), max(w.Min.Y, v.Min.Y)),
+		Max: NewPoint(min(w.Max.X, v.Max.X), min(w.Max.Y, v.Max.Y)),
+	}
 }
 
 var windowRx = regexp.MustCompile(`^\((\d+), ?(\d+)\)-\((\d+), ?(\d+)\)$`)
@@ -118,10 +198,7 @@ func ParseWindow(line string) (*Window, error) {
 			return nil, fmt.Errorf("invalid %s number %q from window %q: %w", Ith(i), part, line, err)
 		}
 	}
-	return &Window{
-		Min: NewPoint(min(coords[0], coords[2]), min(coords[1], coords[3])),
-		Max: NewPoint(max(coords[0], coords[2]), max(coords[1], coords[3])),
-	}, nil
+	return NewWindow(coords[0], coords[1], coords[2], coords[3]), nil
 }
 
 func (w *Window) Validate() (err error) {
@@ -172,10 +249,10 @@ func ApplyWindowToGrid[V any](window *Window, vals [][]V) ([][]V, error) {
 	}
 
 	if window.Min.Y > len(vals) {
-		return nil, fmt.Errorf("window min Y %d is greater than the height %d of the vals provided", window.Max.Y, len(vals))
+		return nil, fmt.Errorf("window min.Y %d is greater than the height %d of the vals provided", window.Min.Y, len(vals))
 	}
 	if window.Max.Y > len(vals) {
-		return nil, fmt.Errorf("window max Y %d is greater than the height %d of the vals provided", window.Max.Y, len(vals))
+		return nil, fmt.Errorf("window max.Y %d is greater than the height %d of the vals provided", window.Max.Y, len(vals))
 	}
 
 	width := 0
@@ -185,10 +262,10 @@ func ApplyWindowToGrid[V any](window *Window, vals [][]V) ([][]V, error) {
 		}
 	}
 	if window.Min.X > width {
-		return nil, fmt.Errorf("window min X %d is greater than the width %d of the vals provided", window.Max.Y, width)
+		return nil, fmt.Errorf("window min.X %d is greater than the width %d of the vals provided", window.Min.X, width)
 	}
 	if window.Max.X > width {
-		return nil, fmt.Errorf("window max X %d is greater than the width %d of the vals provided", window.Max.Y, width)
+		return nil, fmt.Errorf("window max.X %d is greater than the width %d of the vals provided", window.Max.X, width)
 	}
 
 	rv := make([][]V, window.Max.Y-window.Min.Y+1)
@@ -221,6 +298,21 @@ func ApplyWindowToPoints[S ~[]E, E XY](window *Window, points S) ([]*Point, erro
 	return rv, nil
 }
 
+var nonCoordCharsRx = regexp.MustCompile(`[^,\d()]`)
+
+func ParsePointsLine(line string) ([]*Point, error) {
+	parts := strings.Fields(nonCoordCharsRx.ReplaceAllString(line, " "))
+	rv := make([]*Point, len(parts))
+	var err error
+	for i, part := range parts {
+		rv[i], err = ParsePoint(part)
+		if err != nil {
+			return nil, fmt.Errorf("invalid point %d %q from %q: %w", i+1, part, line, err)
+		}
+	}
+	return rv, nil
+}
+
 // ParseCustom returns all the points and windows from the custom lines and whether the program should stop early.
 func ParseCustom(params *Params) ([]*Point, []*Window, bool, error) {
 	if params == nil || len(params.Custom) == 0 {
@@ -243,11 +335,11 @@ func ParseCustom(params *Params) ([]*Point, []*Window, bool, error) {
 			continue
 		}
 
-		point, err := ParsePoint(line)
+		points, err := ParsePointsLine(line)
 		if err != nil {
 			return nil, nil, false, fmt.Errorf("invalid point[%d] option: %w", i, err)
 		}
-		poi = append(poi, point)
+		poi = append(poi, points...)
 	}
 	return poi, windows, false, nil
 }
@@ -297,7 +389,8 @@ func PrintPathInfo(paths []*Path, base [][]byte, maze [][]*Node[Cell]) {
 	}
 }
 
-func ValidateMaze(maze [][]*Node[Cell]) error {
+func ValidateMaze(maze [][]*Node[Cell], grid [][]byte) error {
+	var start, end *Node[Cell]
 	for y := range maze {
 		for x, node := range maze[y] {
 			if node == nil {
@@ -306,15 +399,33 @@ func ValidateMaze(maze [][]*Node[Cell]) error {
 			if node.Point.X != x || node.Point.Y != y {
 				return fmt.Errorf("node at (%d,%d) has the wrong coordinates %s", x, y, node.Point)
 			}
-			if err := ValidateCellNode(node); err != nil {
+			if err := ValidateCellNode(node, grid); err != nil {
 				return fmt.Errorf("invalid node at (%d, %d): %w", x, y, err)
 			}
+			if node.Value.IsStart {
+				if start != nil {
+					return fmt.Errorf("second start node found: %s and %s", start, node)
+				}
+				start = node
+			}
+			if node.Value.IsEnd {
+				if start != nil {
+					return fmt.Errorf("second end node found: %s and %s", end, node)
+				}
+				end = node
+			}
 		}
+	}
+	if start == nil {
+		return errors.New("no start node found")
+	}
+	if end == nil {
+		return errors.New("no end node found")
 	}
 	return nil
 }
 
-func ValidateCellNode(node *Node[Cell]) error {
+func ValidateCellNode(node *Node[Cell], grid [][]byte) error {
 	// node.Point
 	if node.Point.X < 0 || node.Point.Y < 0 {
 		return fmt.Errorf("invalid point %s", node.Point)
@@ -337,7 +448,8 @@ func ValidateCellNode(node *Node[Cell]) error {
 		next := node.Next[dir]
 		vNext := node.Value.Next[dir]
 		path := node.Value.Path[dir]
-		nils := CountIfNil(next) + CountIfNil(vNext) + CountIfNil(path)
+		// nils := CountIfNil(next) + CountIfNil(vNext) + CountIfNil(path)
+		nils := CountNils(next, vNext, path)
 		if nils != 0 && nils != 3 {
 			return fmt.Errorf("unsynchronized direction %c: should all be nil or not nil together: "+
 				"node.Next=%s, node.Value.Next=%s, path=%s", dir, Ternary(next == nil, NilStr, "not nil"),
@@ -361,6 +473,10 @@ func ValidateCellNode(node *Node[Cell]) error {
 		if !IsSameXY(lastPoint, next) {
 			return fmt.Errorf("path at %c has wrong destination %s, should be %s", dir, lastPoint, next.Point)
 		}
+
+		if err := ValidatePath(path, grid); err != nil {
+			return fmt.Errorf("path %c from %s is invalid: %w", dir, node, err)
+		}
 	}
 
 	// Don't care about these (yet).
@@ -371,6 +487,153 @@ func ValidateCellNode(node *Node[Cell]) error {
 	// node.Value.PathsTo    []*Path
 	// node.Value.NewPathsTo []*Path
 	return nil
+}
+
+func CountNils(vals ...interface{}) int {
+	rv := 0
+	for _, val := range vals {
+		if val == nil {
+			rv++
+		}
+	}
+	return rv
+}
+
+func ValidatePath(path *Path, grid [][]byte) error {
+	if path == nil {
+		return nil
+	}
+
+	if len(path.Points) == 0 {
+		return errors.New("path must have at least one point")
+	}
+	if len(path.Points) != 1 && len(path.Steps) == 0 {
+		return fmt.Errorf("path with more than 1 points (%d) must have steps", len(path.Points))
+	}
+	if len(path.Points) == 1 && len(path.Steps) != 0 {
+		return errors.New("path with only 1 point must not have steps")
+	}
+
+	turns, forwards := 0, 0
+	var unknowns []Direction
+	for _, step := range path.Steps {
+		switch step {
+		case Up, Down, Left, Right:
+			forwards++
+		case Turn:
+			turns++
+		default:
+			unknowns = append(unknowns, step)
+		}
+	}
+	if len(unknowns) != 0 {
+		return fmt.Errorf("path has %d unknown steps: %q", len(unknowns), unknowns)
+	}
+	if turns != path.Turns {
+		Stderrf("path: %s", path)
+		return fmt.Errorf("turn count mismatch: path has %d, steps have %d", path.Turns, turns)
+	}
+	if forwards != path.Forwards {
+		return fmt.Errorf("forwards count mismatch: path has %d, steps have %d", path.Forwards, forwards)
+	}
+	expCost := turns*1000 + forwards
+	if expCost != path.Cost {
+		return fmt.Errorf("cost mismatch: path has %d, steps add up to %d", path.Cost, expCost)
+	}
+
+	mappedPoints := 0
+	for y, xmap := range path.PointsMap {
+		for x, point := range xmap {
+			if point == nil {
+				return fmt.Errorf("nil point in the map at (%d,%d)", x, y)
+			}
+			mappedPoints++
+		}
+	}
+	if len(path.Points) != mappedPoints {
+		return fmt.Errorf("there are %d points in the slice and %d in the map, should be equal", len(path.Points), mappedPoints)
+	}
+
+	for i, point := range path.Points {
+		space, ok := GetB(grid, point)
+		if !ok {
+			return fmt.Errorf("path.Points[%d] = %s is outside the grid", i, point)
+		}
+		if space != Open && space != Start && space != End {
+			Debugf("path: %s", path)
+			return fmt.Errorf("path.Points[%d] = %s is '%c', expected Open='%c'", i, point, space, Open)
+		}
+
+		if path.PointsMap[point.Y] == nil || path.PointsMap[point.Y][point.X] == nil {
+			return fmt.Errorf("point %s is in path.Points but not path.PointsMap", point)
+		}
+		if !IsSameXY(point, path.PointsMap[point.Y][point.X]) {
+			return fmt.Errorf("point from path.PointsMap[%d][%d] is %s, expected %s", point.Y, point.X, path.PointsMap[point.Y][point.X], point)
+		}
+	}
+
+	justDirs := make([]Direction, 0, len(path.Steps))
+	if len(path.Steps) > 0 {
+		prev := path.GetFirstStep()
+		if prev == Turn {
+			return errors.New("path first step cannot be a turn")
+		}
+		if path.GetLastStep() == Turn {
+			return errors.New("path last step cannot be a turn")
+		}
+
+		justDirs = append(justDirs, prev)
+		for i := 1; i < len(path.Steps); i++ {
+			cur := path.Steps[i]
+			switch {
+			case cur == Turn:
+				// We know the final step is not a turn, so this is safe.
+				next := path.Steps[i+1]
+				switch prev {
+				case Turn:
+					return fmt.Errorf("steps [%d %d] = [%c %c]: cannot have two turns in a row", i-1, i, prev, cur)
+				case DirOpposites[next]:
+					return fmt.Errorf("steps [%d %d %d] = [%c %c %c]: cannot turn around", i-1, i, i+1, prev, cur, next)
+				case next:
+					return fmt.Errorf("steps [%d %d %d] = [%c %c %c]: direction must change", i-1, i, i+1, prev, cur, next)
+				}
+			case cur == prev || prev == Turn:
+				// Okay. Do nothing.
+			default:
+				return fmt.Errorf("steps [%d %d] = [%c %c]: cannot change direction without a turn", i-1, i, prev, cur)
+			}
+
+			if cur != Turn {
+				justDirs = append(justDirs, cur)
+			}
+			prev = cur
+		}
+	}
+
+	if len(path.Points) != len(justDirs)+1 {
+		return fmt.Errorf("there are %d points and %d non-turn steps: expected one more point than steps", len(path.Points), len(justDirs))
+	}
+	for i := 0; i < len(path.Points)-1; i++ {
+		newDir, err := GetStep(path.Points[i], path.Points[i+1])
+		if err != nil {
+			return fmt.Errorf("cannot take step from %s to %s: %w", path.Points[i], path.Points[i+1], err)
+		}
+		if newDir != justDirs[i] {
+			return fmt.Errorf("points [%d %d] = %s %c %s but the steps indicate a %c here", i, i+1, path.Points[i], newDir, path.Points[i+1], justDirs[i])
+		}
+	}
+
+	return nil
+}
+
+func GetStep(from, to *Point) (Direction, error) {
+	d := NewPoint(to.X-from.X, to.Y-from.Y)
+	for dir, dd := range DDirs {
+		if IsSameXY(d, dd) {
+			return dir, nil
+		}
+	}
+	return UnknownDir, fmt.Errorf("from %s to %s is %s which is not a unit direction", from, to, d)
 }
 
 func CountIfNil[E any](v *E) int {
@@ -869,7 +1132,7 @@ func CmpInts(a, b int) int {
 	return 1
 }
 
-func CreateMaze(grid [][]byte) ([][]*Node[Cell], []*Node[Cell]) {
+func CreateMaze(grid [][]byte, poi []*Point) ([][]*Node[Cell], []*Node[Cell]) {
 	rv := make([][]*Node[Cell], len(grid))
 	var intersections []*Node[Cell]
 
@@ -883,6 +1146,12 @@ func CreateMaze(grid [][]byte) ([][]*Node[Cell], []*Node[Cell]) {
 				continue
 			}
 			node := NewCellNode(x, y, c)
+			switch c {
+			case Start:
+				node.Value.IsStart = true
+			case End:
+				node.Value.IsEnd = true
+			}
 			for _, dir := range nextDirs {
 				// Set them to nil for now and we'll create them later, once we have all the intersections identified.
 				// Not using SetNext here because these nil values indicate which paths to walk later.
@@ -900,7 +1169,7 @@ func CreateMaze(grid [][]byte) ([][]*Node[Cell], []*Node[Cell]) {
 	for _, node := range intersections {
 		var rmDir []Direction
 		for dir := range node.Value.Next {
-			path, err := WalkPath(dir, grid, NewPath(node))
+			path, err := WalkPath(dir, grid, NewPath(node), poi)
 			if err != nil || rv == nil {
 				rmDir = append(rmDir, dir)
 				continue
@@ -935,6 +1204,7 @@ func SimplifyIntersections(intersections []*Node[Cell], maze [][]*Node[Cell]) []
 		var rmDir []Direction
 		for dir, next := range node.Value.Next {
 			if Get(maze, next) == nil {
+				Debugf("Node %s next %c = %s is no longer in the maze", node, dir, next)
 				rmDir = append(rmDir, dir)
 			}
 		}
@@ -956,26 +1226,68 @@ func SimplifyIntersections(intersections []*Node[Cell], maze [][]*Node[Cell]) []
 				if next2 == nil || !IsSameXY(next1, next2) {
 					continue
 				}
+				if next1 != next2 {
+					Stderrf("Next1: %s", next1)
+					Stderrf("Next2: %s", next2)
+					panic(fmt.Errorf("next1 %p and next2 %p are at the same point but are different nodes", next1, next2))
+				}
+
 				path1, path2 := node.Value.Path[dir1], node.Value.Path[dir2]
-				toRm := Ternary(path1.Cost <= path2.Cost, dir2, dir1)
-				delete(node.Value.Path, toRm)
-				SetNext(node, toRm, nil)
+				if path1.Cost == path2.Cost {
+					continue
+				}
+
+				Debugf("Node %s has two paths to %s:\n1: %c %s\n2: %c %s", node, next1, dir1, path1, dir2, path2)
+
+				var pathToRm *Path
+				var dirToRm Direction
+				if path1.Cost > path2.Cost {
+					pathToRm = path1
+					dirToRm = dir1
+					Debugf("Path1 (%d) > path2 (%d). Deleting path1 %c:\n%s", path1.Cost, path2.Cost, dirToRm, pathToRm)
+				} else {
+					pathToRm = path2
+					dirToRm = dir2
+					Debugf("Path1 (%d) < path2 (%d). Deleting path2 %c:\n%s", path1.Cost, path2.Cost, dirToRm, pathToRm)
+				}
+
+				stepIntoNext := pathToRm.GetLastStep()
+				stepOutOfNext := DirOpposites[stepIntoNext]
+				if next1.Value.Path[stepOutOfNext] == nil {
+					Stderrf("Since it steps %c onto the last point, the return would start with %c", stepIntoNext, stepOutOfNext)
+					Stderrf("Next:\n%s", next1.FullString())
+					panic(fmt.Errorf("no return path %c from %s to delete", stepOutOfNext, next1))
+				}
+				delete(next1.Value.Path, stepOutOfNext)
+				SetNext(next1, stepOutOfNext, nil)
+				delete(node.Value.Path, dirToRm)
+				SetNext(node, dirToRm, nil)
+				Debugf("Updated  cur: %s", node)
+				Debugf("Updated next: %s", next1)
 			}
 		}
 
 		// If there's 3+ directions left, we keep this intersection and check the next.
 		if len(node.Value.Next) >= 3 {
+			Debugf("Node %s has %d nexts, keeping it.", node, len(node.Value.Next))
+			rv = append(rv, node)
+			continue
+		}
+		// If it's a start or end node, we keep it too.
+		if node.Value.IsStart || node.Value.IsEnd {
+			Debugf("Node %s is a key node, keeping it.", node)
 			rv = append(rv, node)
 			continue
 		}
 
 		// If there's zero or one directions left, we can just delete the node.
 		if len(node.Value.Next) <= 1 {
+			Debugf("Node %s only has %d path, deleting it.", node, len(node.Value.Next))
 			for _, next := range node.Value.Next {
 				for dir, nextNext := range next.Next {
 					if IsSameXY(node, nextNext) {
-						delete(nextNext.Value.Path, dir)
-						SetNext(nextNext, dir, nil)
+						delete(next.Value.Path, dir)
+						SetNext(next, dir, nil)
 					}
 				}
 			}
@@ -983,14 +1295,15 @@ func SimplifyIntersections(intersections []*Node[Cell], maze [][]*Node[Cell]) []
 			continue
 		}
 
-		// There's exactly 2 paths. We can combine them into one and link up the two ends (and delete this intersection).
+		// THere's exactly 2 paths. Get them so that we can work with them.
 		var path1, path2 *Path
 		var next1, next2 *Node[Cell]
+		var dir1, dir2 Direction
 		for _, dir := range Dirs {
 			next := node.Value.Next[dir]
 			path := node.Value.Path[dir]
 			if (next == nil && path != nil) || (next != nil && path == nil) {
-				panic(fmt.Errorf("node %s stepping %c has invalid setup: next and path no in sync", node, dir))
+				panic(fmt.Errorf("node %s stepping %c has invalid setup: next and path not in sync", node, dir))
 			}
 			if next == nil {
 				continue
@@ -999,45 +1312,63 @@ func SimplifyIntersections(intersections []*Node[Cell], maze [][]*Node[Cell]) []
 			case next1 == nil:
 				next1 = next
 				path1 = path
+				dir1 = dir
 			case next2 == nil:
 				next2 = next
 				path2 = path
+				dir2 = dir
 			default:
 				panic(fmt.Errorf("node %s has at least 3 nexts (%d) but is expected to only have two", node, len(node.Value.Path)))
 			}
 		}
 
-		for dir, next1Next := range next1.Value.Next {
-			if IsSameXY(node, next1Next) {
-				SetNext(next1Next, dir, next2)
-				// TODO: Fix the panic here. The path is nil so Append panics.
-				// The maze is valid before calling SimplifyIntersections, so something in here isn't tracking things right.
-				err := next1Next.Value.Path[dir].Append(path2)
-				if err != nil {
-					Stderrf("  node: %s", node)
-					Stderrf("next 1: %s\n%s", next1, path1)
-					Stderrf("next 1 next: %s\n%s", next1Next, next1Next.Value.Path[dir])
-					Stderrf("next 2: %s\n%s", next2, path2)
-					panic(fmt.Errorf("failed to link paths from next 1 %s to cur %s to next 2 %s: %w", next1, node, next2, err))
-				}
-				break
-			}
+		if IsSameXY(next1, next2) {
+			// If they're the same point, the paths must be equal (checked earlier), so we leave them alone.
+			continue
 		}
 
-		for dir, next2Next := range next2.Value.Next {
-			if IsSameXY(node, next2Next) {
-				SetNext(next2Next, dir, next1)
-				err := next2Next.Value.Path[dir].Append(path1)
-				if err != nil {
-					Stderrf("  node: %s", node)
-					Stderrf("next 2: %s\n%s", next2, path2)
-					Stderrf("next 2 next: %s\n%s", next2Next, next2Next.Value.Path[dir])
-					Stderrf("next 1: %s\n%s", next1, path1)
-					panic(fmt.Errorf("failed to link paths from next 2 %s to cur %s to next 1 %s: %w", next2, node, next1, err))
-				}
-				break
-			}
+		// There's exactly 2 paths. We can combine them into one and link up the two ends (and delete this intersection).
+		Debugf("Node %s has %d paths, linking neighbors and deleting this node.", node, len(node.Value.Next))
+		Debugf("  Path1: %c %s", dir1, path1)
+		Debugf("  Next1: %s", next1)
+		Debugf("  Path2: %c %s", dir2, path2)
+		Debugf("  Next2: %s", next2)
+
+		// Link next1 to next2.
+		path1Last := path1.GetLastStep()
+		next1NextDir := DirOpposites[path1Last]
+		Debugf("  Path1 steps %c onto next1. So, from next1, step %c to head back.", path1Last, next1NextDir)
+		if next1.Value.Path[next1NextDir] == nil {
+			panic(fmt.Errorf("next1 does not have a path for %c", next1NextDir))
 		}
+		Debugf("  From next1 to cur: %c %s", next1NextDir, next1.Value.Path[next1NextDir])
+		Debugf("  From cur to next2: %c %s", dir2, path2)
+		if err := next1.Value.Path[next1NextDir].Append(path2); err != nil {
+			Stderrf("next1: %s", next1)
+			Stderrf("next2: %s", next2)
+			panic(fmt.Errorf("failed to link paths from next1 through cur %s to next2: %w", node.Point, err))
+		}
+		SetNext(next1, next1NextDir, next2)
+		Debugf("  Updated next1: %s", next1)
+		Debugf("  goes to next2: %c %s", next1NextDir, next1.Value.Path[next1NextDir])
+
+		// Link next2 to next1.
+		path2Last := path2.GetLastStep()
+		next2NextDir := DirOpposites[path2Last]
+		Debugf("  Path2 steps %c onto next 2. So, from next2, step %c to head back.", path2Last, next2NextDir)
+		if next2.Value.Path[next2NextDir] == nil {
+			panic(fmt.Errorf("next2 does not have a path for %c", next2NextDir))
+		}
+		Debugf("  From next2 to cur: %c %s", next2NextDir, next2.Value.Path[next2NextDir])
+		Debugf("  From cur to next1: %c %s", dir1, path1)
+		if err := next2.Value.Path[next2NextDir].Append(path1); err != nil {
+			Stderrf("next2: %s", next2)
+			Stderrf("next1: %s", next1)
+			panic(fmt.Errorf("failed to link paths from next2 through cur %s to next1: %w", node.Point, err))
+		}
+		SetNext(next2, next2NextDir, next1)
+		Debugf("  Updated next2: %s", next2)
+		Debugf("  goes to next1: %c %s", next2NextDir, next2.Value.Path[next2NextDir])
 
 		node.Next = nil
 		node.Value.Next = nil
@@ -1048,9 +1379,11 @@ func SimplifyIntersections(intersections []*Node[Cell], maze [][]*Node[Cell]) []
 	}
 
 	if len(rv) == len(intersections) {
+		Debugf("Nothing left to simlify.")
 		return intersections
 	}
 
+	Debugf("Attempting simplification again.")
 	return SimplifyIntersections(rv, maze)
 }
 
@@ -1076,24 +1409,61 @@ func ClearCellNode(node *Node[Cell]) {
 	node.Value.NewPathsTo = nil
 }
 
-func WalkPath(dir Direction, grid [][]byte, rv *Path) (*Path, error) {
+func WalkPath(dir Direction, grid [][]byte, rv *Path, poi []*Point) (*Path, error) {
+	orig := rv.GetLastPoint()
+	isPoi := HasPoint(poi, orig)
+	if isPoi {
+		window := NewCenteredWindow(orig, 5).LimitedBy(NewWindowAroundGrid(grid))
+		Stderrf("At %s (moving %c):\nPath: %s\n%s", orig, dir, rv, CreateWindowedIndexedGridString(MapGrid(grid, ByteToString), rv.Points, []*Point{orig}, window))
+	}
+
 	err := rv.AddStep(dir)
 	if err != nil {
+		StderrIff(isPoi, "Cannot take step: %v.", err)
 		return nil, err
 	}
-	nexts, isStop := GetAdjacentOpenDirs(grid, rv.GetLastPoint())
+
+	cur := rv.GetLastPoint()
+	space, ok := GetB(grid, cur)
+	StderrIff(isPoi, "Step taken to %s = %c ok=%t", cur, space, ok)
+	if !ok || space == Wall {
+		StderrIff(isPoi, "Next point %s = %c = invalid space.", cur, space)
+		return nil, fmt.Errorf("cannot go %c from %s because %s is not a valid space %c", dir, orig, cur, space)
+	}
+	nexts, isStop := GetAdjacentOpenDirs(grid, cur)
+	StderrIff(isPoi, "Nexts: %s, IsStop: %t", nexts, isStop)
 	if isStop {
 		return rv, nil
 	}
 
 	for _, next := range nexts {
-		rv2, err2 := WalkPath(next, grid, rv)
+		if DirOpposites[next] == rv.GetLastStep() {
+			StderrIff(isPoi, "Skipping %c because it is backwards.", next)
+			continue
+		}
+		StderrIff(isPoi, "Attempting to walk %c from %s", next, cur)
+		rv2, err2 := WalkPath(next, grid, rv, poi)
 		if err2 == nil {
 			// Success
+			StderrIff(isPoi, "Found path: %s", rv)
 			return rv2, nil
 		}
+		StderrIff(isPoi, "Could not walk %c from %s: %v", next, cur, err2)
 	}
+
+	StderrIff(isPoi, "Found dead end trying to %c from %s", dir, orig)
+	rv.Pop()
 	return nil, errors.New("dead end")
+}
+
+func StderrIff(test bool, fmt string, args ...interface{}) {
+	if test {
+		Stderrf(fmt, args...)
+	}
+}
+
+func ByteToString(b byte) string {
+	return string(b)
 }
 
 // GetAdjacentOpenDirs returns the list of possible directions and whether this is an intersection.
@@ -1173,6 +1543,8 @@ func CellNodeDirString(node *Node[Cell]) string {
 type Cell struct {
 	Path       map[Direction]*Path
 	Next       map[Direction]*Node[Cell]
+	IsStart    bool
+	IsEnd      bool
 	Visited    bool
 	Queued     bool
 	Cost       int
@@ -1195,12 +1567,12 @@ func (c Cell) String() string {
 		path := c.Path[dir]
 		next := c.Next[dir]
 		if path == nil && next == nil {
-			parts[i] += na
+			parts[i] += "" //"x<x>(x,x)"
 			continue
 		}
-		pathStr := "?<?>"
+		pathStr := "?,?"
 		if path != nil {
-			pathStr = fmt.Sprintf("%d<%d>", len(path.Points)-1, path.Cost)
+			pathStr = fmt.Sprintf("%d,%d", len(path.Points)-1, path.Cost)
 		}
 		nextStr := "(?,?)"
 		if next != nil {
@@ -1209,7 +1581,7 @@ func (c Cell) String() string {
 		parts[i] += pathStr + nextStr
 	}
 	return fmt.Sprintf("%d[%s%s]{%s}(%d)(%d)", c.MinCostOff, Ternary(c.Visited, "V", " "), Ternary(c.Queued, "Q", " "),
-		strings.Join(parts, ";"), len(c.PathsTo), len(c.NewPathsTo))
+		strings.Join(parts, "|"), len(c.PathsTo), len(c.NewPathsTo))
 }
 
 // Path represents a series of steps between points.
@@ -1223,6 +1595,8 @@ type Path struct {
 	PointsMap map[int]map[int]*Point
 	Steps     []Direction
 	Cost      int
+	Turns     int
+	Forwards  int
 }
 
 func NewPath(start XY) *Path {
@@ -1392,10 +1766,12 @@ func (p *Path) AddStep(nextDir Direction) error {
 		p.Steps = append(p.Steps, nextDir)
 	case IsTurn(lastDir, nextDir):
 		p.Cost += 1001
+		p.Turns++
 		p.Steps = append(p.Steps, Turn, nextDir)
 	default:
 		return fmt.Errorf("unexpected next step %c following %c", nextDir, lastDir)
 	}
+	p.Forwards++
 	return p.addPoints(p.GetLastPoint().Move(nextDir))
 }
 
@@ -1420,6 +1796,47 @@ func (p *Path) addPoints(points ...*Point) error {
 	}
 
 	return nil
+}
+
+// Returns the last point, the last sep taken to get there, whether a turn was involved, and an error if you can't pop from this path.
+func (p *Path) Pop() (*Point, Direction, bool, error) {
+	if p == nil {
+		return nil, UnknownDir, false, errors.New("cannot pop from nil path")
+	}
+	if len(p.Points) == 0 {
+		return nil, UnknownDir, false, errors.New("cannot pop from path with no points")
+	}
+	if len(p.Steps) == 0 {
+		return nil, UnknownDir, false, errors.New("cannot pop from path with no steps")
+	}
+	last1 := p.Steps[len(p.Steps)-1]
+	if !slices.Contains(Dirs, last1) {
+		return nil, UnknownDir, false, fmt.Errorf("cannot pop from path due to unexpected last step %c, expected one of %c", last1, Dirs)
+	}
+
+	stepsToRm := 1
+	if len(p.Steps) > 1 && p.Steps[len(p.Steps)-2] == Turn {
+		stepsToRm++
+	}
+
+	if stepsToRm == len(p.Steps) {
+		p.Steps = nil
+	} else {
+		p.Steps = p.Steps[:len(p.Steps)-stepsToRm]
+	}
+
+	point := p.Points[len(p.Points)-1]
+	if len(p.Points) == 1 {
+		p.Points = nil
+	} else {
+		p.Points = p.Points[:len(p.Points)-1]
+	}
+	delete(p.PointsMap[point.Y], point.X)
+	if len(p.PointsMap[point.Y]) == 0 {
+		delete(p.PointsMap, point.Y)
+	}
+
+	return point, last1, stepsToRm > 1, nil
 }
 
 func (p *Path) Copy() *Path {
@@ -1476,9 +1893,12 @@ func (p *Path) Append(next *Path) error {
 	}
 	if isTurn {
 		p.Cost += 1000
+		p.Turns++
 		p.Steps = append(p.Steps, Turn)
 	}
 	p.Cost += next.Cost
+	p.Forwards += next.Forwards
+	p.Turns += next.Turns
 	p.Steps = append(p.Steps, next.Steps...)
 	return nil
 }
@@ -2066,7 +2486,7 @@ func AsPoints[S ~[]E, E XY](vals S) []*Point {
 	return rv
 }
 
-// HasPoints returns true if there's a point in path with the same (x,y) as the point provided.
+// HasPoint returns true if there's a point in path with the same (x,y) as the point provided.
 func HasPoint[S ~[]E, E XY](path S, point XY) bool {
 	x, y := point.GetXY()
 	for _, p := range path {
@@ -2296,7 +2716,7 @@ func GetAdjacentPoints(p *Point) map[Direction]*Point {
 	return rv
 }
 
-// GetAdjacent gets the elemnts adjacent to the provided point in the provided grid.
+// GetAdjacent gets the elements adjacent to the provided point in the provided grid.
 func GetAdjacent[V any](grid [][]V, p XY) map[Direction]V {
 	rv := make(map[Direction]V)
 	if !IsIn(grid, p) {
@@ -2620,8 +3040,10 @@ func CreateIndexedGridStringAtOffset[S ~[]E, E XY](vals [][]string, colorPoints 
 	}
 
 	// Create the index numbers across the top.
+	// Debugf("width = %d  x0 = %d  cellLen = %d", width, x0, cellLen)
 	dCount := len(fmt.Sprintf("%d", width-1+x0))
 	dLen := (width + x0) * cellLen
+	// Debugf("dCount = %d  dLen = %d", dCount, dLen)
 	digits := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"}
 	topIndexLines := make([]string, dCount+1)
 	topIndexLines[dCount] = strings.Repeat("-", width*cellLen)
@@ -2642,7 +3064,9 @@ func CreateIndexedGridStringAtOffset[S ~[]E, E XY](vals [][]string, colorPoints 
 		}
 
 		rep *= 10
-		line := first + strings.Repeat(sb.String(), 1+width/rep)
+		line := first + strings.Repeat(sb.String(), 1+(width+x0)/rep)
+		// Debugf("[%d]: line (%d): %q", dCount-l, len(line), line)
+		// Debugf("keeping [ %d : %d ]", x0*cellLen, dLen)
 		topIndexLines[dCount-l] = line[x0*cellLen : dLen]
 	}
 
