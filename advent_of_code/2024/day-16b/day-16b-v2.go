@@ -1012,34 +1012,31 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 		Stderrf("Cannot proceed.")
 		return nil
 	}
-	startNode.Value.PathsTo = []*Path{NewPath(start)}
+	startNode.Value.NewPathsTo = []*Path{NewPath(start)}
 
 	Verbosef("Start: %s = %s", start, startNode)
 	Verbosef("  End: %s = %s", end, endNode)
 	Verbosef("Count: %d", totalNodes)
 
-	enqueue(Get(maze, start))
+	enqueue(startNode)
 	checked := 0
-	for len(queue) > 0 && checked < totalNodes*5 {
+	for len(queue) > 0 {
 		checked++
 		cur := dequeue()
-		Verbosef("[%d/%d]: cur = %s", checked, len(queue), cur)
+		Verbosef("[%d/%d]: cur = %s  (%d)(%d)x%d", checked, len(queue), cur, len(cur.Value.PathsTo), len(cur.Value.NewPathsTo), len(cur.Value.Path))
 
-		var nextPaths []*Path
-		if cur.Value.Visited {
-			nextPaths = cur.Value.NewPathsTo
-		} else {
-			nextPaths = cur.Value.PathsTo
-		}
-
-		for i, path := range nextPaths {
+		for i, path := range cur.Value.NewPathsTo {
 			if path.Cost > maxCost {
 				Debugf("[%d/%d]:[%d/%d]: Path already too long: %s", checked, len(queue), i+1, len(cur.Value.PathsTo), path)
 				continue
 			}
 			Debugf("[%d/%d]:[%d/%d]: Extending %s", checked, len(queue), i+1, len(cur.Value.PathsTo), path)
 
-			for dir, pathToNext := range cur.Value.Path {
+			for _, dir := range Dirs {
+				pathToNext := cur.Value.Path[dir]
+				if pathToNext == nil {
+					continue
+				}
 				nextPath, err := CombinePaths(path, pathToNext)
 				if err != nil {
 					Debugf("[%d/%d]:[%d/%d]'%c': Cannot combine path to %s: %v",
@@ -1052,10 +1049,12 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 					checked, len(queue), i+1, len(cur.Value.PathsTo), dir, nextPath)
 
 				nextNode := cur.Value.Next[dir]
+				nextCost := nextPath.Cost
+				if nextNode.Value.Cost == 0 || nextCost < nextNode.Value.Cost {
+					nextNode.Value.Cost = nextCost
+				}
 
-				nextNode.Value.Cost = cur.Value.Cost + 1
-
-				minCostOff := nextPath.Cost + 1
+				minCostOff := nextCost
 				if nextNode.Value.Next[dir] == nil {
 					minCostOff += 1000
 				}
@@ -1063,16 +1062,23 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 					nextNode.Value.MinCostOff = minCostOff
 				}
 
-				AppendPathIfNew(nextNode, nextPath)
+				added := AppendPathIfNew(nextNode, nextPath)
 
 				Debugf("[%d/%d]:[%d/%d]'%c': Updated next node: %s", checked, len(queue), i+1, len(cur.Value.PathsTo), dir, nextNode)
-				enqueue(nextNode)
+				if added {
+					enqueue(nextNode)
+				}
 			}
 		}
 
 		cur.Value.Visited = true
 		cur.Value.PathsTo = append(cur.Value.PathsTo, cur.Value.NewPathsTo...)
 		cur.Value.NewPathsTo = nil
+
+		if checked > totalNodes*50 {
+			Verbosef("Stopping after %d to prevent a runnaway.", checked)
+			break
+		}
 	}
 
 	rv := make([]*Path, 0, len(endNode.Value.PathsTo)+len(endNode.Value.NewPathsTo))
@@ -1084,23 +1090,20 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 	return rv
 }
 
-func AppendPathIfNew(node *Node[Cell], newPath *Path) {
+func AppendPathIfNew(node *Node[Cell], newPath *Path) bool {
 	for _, path := range node.Value.PathsTo {
 		if PathsAreEqual(newPath, path) {
-			return
+			return false
 		}
 	}
 	for _, path := range node.Value.NewPathsTo {
 		if PathsAreEqual(newPath, path) {
-			return
+			return false
 		}
 	}
-	if node.Value.Visited {
-		node.Value.NewPathsTo = append(node.Value.NewPathsTo, newPath)
-	} else {
-		node.Value.PathsTo = append(node.Value.PathsTo, newPath)
-	}
+	node.Value.NewPathsTo = append(node.Value.NewPathsTo, newPath)
 	Debugf("New path added to %s: %s", node, newPath)
+	return true
 }
 
 func CompareCells(a, b *Node[Cell]) int {
@@ -1114,7 +1117,7 @@ func CompareCells(a, b *Node[Cell]) int {
 		return -1
 	}
 	if rv := CmpInts(a.Value.MinCostOff, b.Value.MinCostOff); rv != 0 {
-		return rv
+		return rv * -1
 	}
 	if rv := CmpInts(a.Point.X, b.Point.X); rv != 0 {
 		return rv
