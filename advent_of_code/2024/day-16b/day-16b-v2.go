@@ -499,6 +499,35 @@ func CountNils(vals ...interface{}) int {
 	return rv
 }
 
+func (p *Path) Validate() error {
+	if p == nil {
+		return nil
+	}
+
+	if p.Cost != p.Turns*1000+p.Forwards {
+		return fmt.Errorf("path cost (%d) != turns (%d) * 1000 + forards (%d)", p.Cost, p.Turns, p.Forwards)
+	}
+
+	if len(p.Steps) != p.Forwards+p.Turns {
+		return fmt.Errorf("path step count (%d) != turns (%d) + forwards (%d)", len(p.Steps), p.Forwards, p.Turns)
+	}
+
+	if len(p.Points) != p.Forwards+1 {
+		return fmt.Errorf("path point count (%d) != forwards (%d) + 1", len(p.Points), p.Forwards)
+	}
+
+	pmapCount := 0
+	for _, xmap := range p.PointsMap {
+		pmapCount += len(xmap)
+	}
+	if len(p.Points) != pmapCount {
+		return fmt.Errorf("path point count (%d) != point map count (%d)", len(p.Points), pmapCount)
+	}
+
+	// I just wanted to keep this simple because of how many times it'll run. The above should be good enough.
+	return nil
+}
+
 func ValidatePath(path *Path, grid [][]byte) error {
 	if path == nil {
 		return nil
@@ -981,6 +1010,8 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 			Debugf("Already queued: %s", node)
 		case IsSameXY(node, end):
 			Debugf("Not queing end node: %s", node)
+		case node.Value.Cost > maxCost:
+			Debugf("Not queing because cost (%d) > max (%d)", node.Value.Cost, maxCost)
 		default:
 			Debugf("Adding to queue: %s", node)
 			node.Value.Queued = true
@@ -1023,8 +1054,11 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 	for len(queue) > 0 {
 		checked++
 		cur := dequeue()
-		Verbosef("[%d/%d]: cur = %s  (%d)(%d)x%d", checked, len(queue), cur, len(cur.Value.PathsTo), len(cur.Value.NewPathsTo), len(cur.Value.Path))
+		Verbosef("[%d/%d]: cur = %s x%d", checked, len(queue), cur, len(cur.Value.Path))
 
+		if cur.Value.MinCostOff > maxCost {
+			Debugf("node too expensive, skipping")
+		}
 		for i, path := range cur.Value.NewPathsTo {
 			if path.Cost > maxCost {
 				Debugf("[%d/%d]:[%d/%d]: Path already too long: %s", checked, len(queue), i+1, len(cur.Value.PathsTo), path)
@@ -1047,6 +1081,18 @@ func FindPaths(start, end *Point, maxCost int, maze [][]*Node[Cell]) []*Path {
 					checked, len(queue), i+1, len(cur.Value.PathsTo), dir, pathToNext)
 				Debugf("[%d/%d]:[%d/%d]'%c': New path to: %s",
 					checked, len(queue), i+1, len(cur.Value.PathsTo), dir, nextPath)
+
+				if err := nextPath.Validate(); err != nil {
+					panic(fmt.Errorf("next path is not valid: %v", err))
+				}
+				if nextPath.Cost > maxCost {
+					Debugf("[%d/%d]:[%d/%d]'%c': next path cost (%d) > max cost (%d): skipping",
+						checked, len(queue), i+1, len(cur.Value.PathsTo), nextPath.Cost, maxCost)
+					continue
+				}
+				if !IsSameXY(nextPath.GetFirstPoint(), start) {
+					panic(fmt.Errorf("next path does not start at the start %s", start))
+				}
 
 				nextNode := cur.Value.Next[dir]
 				nextCost := nextPath.Cost
@@ -1846,12 +1892,15 @@ func (p *Path) Copy() *Path {
 	if p == nil {
 		return nil
 	}
+
 	rv := &Path{
 		// Extra capacity in the expectation that we're about to add a point and step or two, and want to limit growth.
 		Points:    make([]*Point, len(p.Points), len(p.Points)+1),
 		PointsMap: make(map[int]map[int]*Point),
 		Steps:     make([]Direction, len(p.Steps), len(p.Steps)+2),
 		Cost:      p.Cost,
+		Turns:     p.Turns,
+		Forwards:  p.Forwards,
 	}
 
 	copy(rv.Points, p.Points)
@@ -1924,46 +1973,7 @@ func PathsAreEqual(a, b *Path) bool {
 	if a == nil || b == nil {
 		return false
 	}
-
-	if len(a.Points) != len(b.Points) || len(a.PointsMap) != len(b.PointsMap) || len(a.Steps) != len(b.Steps) || a.Cost != b.Cost {
-		return false
-	}
-
-	for i := range a.Points {
-		if !IsSameXY(a.Points[i], b.Points[i]) {
-			return false
-		}
-	}
-
-	for y, aMap := range a.PointsMap {
-		bMap := b.PointsMap[y]
-		if aMap == nil && bMap == nil {
-			continue
-		}
-		if aMap == nil || bMap == nil {
-			return false
-		}
-		for x, aPoint := range aMap {
-			bPoint := bMap[x]
-			if aPoint == nil && bPoint == nil {
-				continue
-			}
-			if aPoint == nil || bPoint == nil {
-				return false
-			}
-			if !IsSameXY(aPoint, bPoint) {
-				return false
-			}
-		}
-	}
-
-	for i := range a.Steps {
-		if a.Steps[i] != b.Steps[i] {
-			return false
-		}
-	}
-
-	return true
+	return string(a.Steps) == string(b.Steps)
 }
 
 // Move will return a new point 1 unit in the direction provided from this point.
