@@ -43,7 +43,11 @@ func Solve(params *Params) (string, error) {
 		v1 := len(result)
 		v2 := code.Value
 		a := v1 * v2
-		Verbosef("%s: %d = %d * %d: %s", string(code.Keys), a, v1, v2, result)
+		if len(result) > 100 {
+			Verbosef("%s: %d = %d * %d: %s...", string(code.Keys), a, v1, v2, result[:100])
+		} else {
+			Verbosef("%s: %d = %d * %d: %s", string(code.Keys), a, v1, v2, result)
+		}
 		answer += a
 	}
 
@@ -637,11 +641,22 @@ func ExpandDirSequence(cur byte, seq Sequence) Sequence {
 		return known[curKey][seqKey]
 	}
 
-	rv := make(Sequence, 0, len(seq)*2)
-	for _, step := range seq {
-		next := DirPadPaths[cur][step][0]
-		rv = append(rv, next...)
-		cur = step
+	var rv Sequence
+	switch strings.Count(string(seq), "A") {
+	case 0, 1:
+		rv = make(Sequence, 0, len(seq)*2)
+		for _, step := range seq {
+			next := DirPadPaths[cur][step][0]
+			rv = append(rv, next...)
+			cur = step
+		}
+	default:
+		parts := strings.SplitAfter(string(seq), "A")
+		for _, part := range parts {
+			next := ExpandDirSequence(cur, Sequence(part))
+			rv = append(rv, next...)
+			cur = A
+		}
 	}
 
 	if known[curKey] == nil {
