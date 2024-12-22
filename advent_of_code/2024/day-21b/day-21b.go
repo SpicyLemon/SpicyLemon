@@ -230,7 +230,7 @@ var (
 		{Empty, '0', A},
 	}
 
-	// Populated with InitStuff()
+	// Populated with InitStuff().
 	NumPadButtons []byte
 	NumPadPoints  map[byte]*Point
 	NumPadPaths   map[byte]map[byte][]Sequence
@@ -242,53 +242,53 @@ var (
 	}
 
 	DirPadNexts = map[byte]map[byte]byte{
-		Up:    map[byte]byte{Right: A, Down: Down},
-		A:     map[byte]byte{Left: Up, Down: Right},
-		Left:  map[byte]byte{Right: Down},
-		Down:  map[byte]byte{Left: Left, Up: Up, Right: Right},
-		Right: map[byte]byte{Up: A, Left: Down},
+		Up:    {Right: A, Down: Down},
+		A:     {Left: Up, Down: Right},
+		Left:  {Right: Down},
+		Down:  {Left: Left, Up: Up, Right: Right},
+		Right: {Up: A, Left: Down},
 	}
 
 	// Hard coding this one because it's small enough and I'm tired.
 	DirPadPaths = map[byte]map[byte][]Sequence{
-		Up: map[byte][]Sequence{
-			Up:    []Sequence{{A}},
-			A:     []Sequence{{Right, A}},
-			Left:  []Sequence{{Down, Left, A}},
-			Down:  []Sequence{{Down, A}},
-			Right: []Sequence{{Right, Down, A}, {Down, Right, A}},
+		Up: {
+			Up:    {{A}},
+			A:     {{Right, A}},
+			Left:  {{Down, Left, A}},
+			Down:  {{Down, A}},
+			Right: {{Right, Down, A}, {Down, Right, A}},
 		},
-		A: map[byte][]Sequence{
-			Up:    []Sequence{{Left, A}},
-			A:     []Sequence{{A}},
-			Left:  []Sequence{{Down, Left, Left, A}}, // {Left, Down, Left, A} is never better.
-			Down:  []Sequence{{Left, Down, A}, {Down, Left, A}},
-			Right: []Sequence{{Down, A}},
+		A: {
+			Up:    {{Left, A}},
+			A:     {{A}},
+			Left:  {{Down, Left, Left, A}}, // {Left, Down, Left, A} is never better.
+			Down:  {{Left, Down, A}, {Down, Left, A}},
+			Right: {{Down, A}},
 		},
-		Left: map[byte][]Sequence{
-			Up:    []Sequence{{Right, Up, A}},
-			A:     []Sequence{{Right, Right, Up, A}}, // {Right, Up, Right, A is never better.
-			Left:  []Sequence{{A}},
-			Down:  []Sequence{{Right, A}},
-			Right: []Sequence{{Right, Right, A}},
+		Left: {
+			Up:    {{Right, Up, A}},
+			A:     {{Right, Right, Up, A}}, // {Right, Up, Right, A is never better.
+			Left:  {{A}},
+			Down:  {{Right, A}},
+			Right: {{Right, Right, A}},
 		},
-		Down: map[byte][]Sequence{
-			Up:    []Sequence{{Up, A}},
-			A:     []Sequence{{Up, Right, A}, {Right, Up, A}},
-			Left:  []Sequence{{Left, A}},
-			Down:  []Sequence{{A}},
-			Right: []Sequence{{Right, A}},
+		Down: {
+			Up:    {{Up, A}},
+			A:     {{Up, Right, A}, {Right, Up, A}},
+			Left:  {{Left, A}},
+			Down:  {{A}},
+			Right: {{Right, A}},
 		},
-		Right: map[byte][]Sequence{
-			Up:    []Sequence{{Up, Left, A}, {Left, Up, A}},
-			A:     []Sequence{{Up, A}},
-			Left:  []Sequence{{Left, Left, A}},
-			Down:  []Sequence{{Left, A}},
-			Right: []Sequence{{A}},
+		Right: {
+			Up:    {{Up, Left, A}, {Left, Up, A}},
+			A:     {{Up, A}},
+			Left:  {{Left, Left, A}},
+			Down:  {{Left, A}},
+			Right: {{A}},
 		},
 	}
 
-	// Populated with InitStuff()
+	// Populated with InitStuff().
 	DirPadButtons []byte
 	DirPadPoints  map[byte]*Point
 )
@@ -358,7 +358,7 @@ func (k *Keypad) String() string {
 	buttons := strings.Join(MapSlice(k.Buttons, GetButtonName), " ")
 	points := PointMapString(k.Points)
 	var paths []string
-	var nexts []string
+	nexts := make([]string, 0, len(k.Buttons))
 	for _, from := range k.Buttons {
 		for _, to := range k.Buttons {
 			seqs := k.Paths[from][to]
@@ -382,7 +382,8 @@ func (k *Keypad) String() string {
 		sb.WriteByte('}')
 		nexts = append(nexts, sb.String())
 	}
-	return fmt.Sprintf("%s\nLayout:\n%sButtons: %s\nPoints: %s\nPaths:\n%s\nNexts:\n%s", k.Name, layout, buttons, points, strings.Join(paths, "\n"), strings.Join(nexts, "\n"))
+	return fmt.Sprintf("%s\nLayout:\n%sButtons: %s\nPoints: %s\nPaths:\n%s\nNexts:\n%s",
+		k.Name, layout, buttons, points, strings.Join(paths, "\n"), strings.Join(nexts, "\n"))
 }
 
 const (
@@ -611,10 +612,6 @@ func ReduceSequences(seqs []Sequence) []Sequence {
 			}
 		}
 
-		if debug {
-			// Stderrf("%c histogram:\n%s", dir, HistMapString(hist))
-			// Stderrf("Keeping only; %s", hist[best][0])
-		}
 		rv = append(rv, hist[best][0])
 	}
 	return rv
@@ -712,7 +709,7 @@ func ParseCode(line string) (*Code, error) {
 	}
 	vals, err := SplitParseIntsD(digits, "")
 	if err != nil {
-		return nil, fmt.Errorf("could not parse %q into individual digits: %v", digits, err)
+		return nil, fmt.Errorf("could not parse %q into individual digits: %w", digits, err)
 	}
 	return &Code{Keys: []byte(line), Digits: vals, Value: val}, nil
 }
