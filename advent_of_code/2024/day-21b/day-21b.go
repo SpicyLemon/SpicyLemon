@@ -32,6 +32,25 @@ func Solve(params *Params) (string, error) {
 		Stderrf("%s", DirPad)
 	}
 
+	answer := 0
+	switch params.Option {
+	case 1:
+		answer = GetAnswerOrig(params, input)
+	case 2:
+		answer = GetAnswerV2Wrong(params, input)
+	case 3:
+		answer = GetAnswerV3(params, input)
+	case 0, 4:
+		// Spoiler, there's a ton of crap that isn't used in here.
+		answer = GetAnswerV4(params, input)
+	default:
+		return "", fmt.Errorf("invalid option %d", params.Option)
+	}
+
+	return fmt.Sprintf("%d", answer), nil
+}
+
+func GetAnswerOrig(params *Params, input *Input) int {
 	topBot := NewRobot("Bottom", NumPad, nil)
 	for i := 0; i < params.Count; i++ {
 		topBot = NewRobot(fmt.Sprintf("Bot %d", i+1), DirPad, topBot)
@@ -50,8 +69,239 @@ func Solve(params *Params) (string, error) {
 		}
 		answer += a
 	}
+	return answer
+}
 
-	return fmt.Sprintf("%d", answer), nil
+func GetAnswerV2Wrong(params *Params, input *Input) int {
+	answer := 0
+	for _, code := range input.Codes {
+		cur := A
+		var iniSeq Sequence
+		for _, toPush := range code.Keys {
+			next := NumPad.Paths[cur][toPush]
+			iniSeq = append(iniSeq, next[0]...)
+			cur = toPush
+		}
+		seq := NewSeq2(iniSeq)
+		if debug {
+			Stderrf("%s: Initial sequence: (%d) %s = (%d) %s", string(code.Keys), len(iniSeq), iniSeq, seq.Length(), seq)
+		}
+		for i := 1; i <= params.Count; i++ {
+			seq = ExpandDirSeq2(seq)
+			if debug {
+				Stderrf("%s: %d bots up: (%d) %s", string(code.Keys), i, seq.Length(), seq)
+			}
+		}
+		val := seq.Length()
+		Verbosef("%s: %d = %s", string(code.Keys), val, seq)
+		answer += seq.Length()
+	}
+	return answer
+}
+
+func GetAnswerV3(params *Params, input *Input) int {
+	rv := 0
+	for _, code := range input.Codes {
+		cost := CalcCost(code.Keys, params.Count)
+		val := cost * code.Value
+		Verbosef("%s: %d = %d * %d", string(code.Keys), val, cost, code.Value)
+		rv += val
+	}
+	return rv
+}
+
+func GetAnswerV4(params *Params, input *Input) int {
+	rv := 0
+	for _, code := range input.Codes {
+		cost := RecursivePathFinder(code.Keys, params.Count)
+		val := cost * code.Value
+		Verbosef("%s: %d = %d * %d", string(code.Keys), val, cost, code.Value)
+		rv += val
+	}
+	return rv
+}
+
+func RecursivePathFinder(code []byte, robots int) int {
+	paths := FindPaths(code, NumPadPaths)
+	Debugf("Starting paths: %v", paths)
+	best := MAX_INT
+	for _, path := range paths {
+		cur := A
+		cost := 0
+		for _, next := range path {
+			cost += PathAtRobot(cur, next, robots)
+			cur = next
+		}
+		if cost < best {
+			best = cost
+		}
+	}
+	return best
+}
+
+func FindPaths(code []byte, paths map[byte]map[byte][]Sequence) []Sequence {
+	var rv []Sequence
+	cur := A
+	for _, step := range code {
+		nexts := paths[cur][step]
+		Debugf("paths from %c to %c: (%d) %q", cur, step, len(nexts), nexts)
+		if len(rv) == 0 {
+			rv = nexts
+		} else {
+			rv = CrossJoinSeqs(rv, nexts)
+		}
+		Debugf("rv: %q", rv)
+		cur = step
+	}
+	return rv
+}
+
+var parMemo = make(map[string]int)
+
+func parMemoKey(cur, next byte, robots int) string {
+	return fmt.Sprintf("%c %c %d", cur, next, robots)
+}
+
+func PathAtRobot(cur, next byte, robots int) int {
+	memoKey := parMemoKey(cur, next, robots)
+	if rv, ok := parMemo[memoKey]; ok {
+		return rv
+	}
+	if robots < 1 {
+		return 1
+	}
+
+	rv := MAX_INT
+	paths := DirPadPaths[cur][next]
+	switch robots {
+	case 0:
+		return 1
+	case 1:
+		rv = len(GetShortest(paths))
+	default:
+		for _, path := range paths {
+			cur = A
+			cost := 0
+			for _, step := range path {
+				cost += PathAtRobot(cur, step, robots-1)
+				cur = step
+			}
+			if cost < rv {
+				rv = cost
+			}
+		}
+	}
+
+	parMemo[memoKey] = rv
+	return rv
+}
+
+func CrossJoin[S ~[]V, V any](lists ...S) []S {
+	if len(lists) <= 1 {
+		return lists
+	}
+	l1 := lists[0]
+	l2s := lists[1:]
+	var rv []S
+	for _, e1 := range l1 {
+		subLists := CrossJoin(l2s...)
+		for _, list := range subLists {
+			rv = append(rv, append(S{e1}, list...))
+		}
+	}
+	return rv
+}
+
+func CalcCost(code []byte, depth int) int {
+	var doorPaths []Sequence
+	cur := A
+	for _, step := range code {
+		nexts := NumPad.Paths[cur][step]
+		if len(doorPaths) == 0 {
+			doorPaths = nexts
+		} else {
+			doorPaths = CrossJoinSeqs(doorPaths, nexts)
+		}
+	}
+
+	costs := make([]int, len(doorPaths))
+	best := MAX_INT
+	for i, path := range doorPaths {
+		cur = A
+		for _, step := range path {
+			costs[i] += GetCost(cur, step, depth)
+		}
+		if costs[i] < best {
+			best = costs[i]
+		}
+	}
+	return best
+}
+
+func CrossJoinSeqs(seqs1 []Sequence, seqs2 []Sequence) []Sequence {
+	var rv []Sequence
+	for _, s1 := range seqs1 {
+		for _, s2 := range seqs2 {
+			newSeq := make(Sequence, len(s1)+len(s2))
+			copy(newSeq, s1)
+			copy(newSeq[len(s1):], s2)
+			rv = append(rv, newSeq)
+		}
+	}
+	return rv
+}
+
+var knownCosts = make(map[string]int)
+
+func costKey(prev, key byte, depth int) string {
+	return fmt.Sprintf("%c %c %d", key, prev, depth)
+}
+
+// Get the cost of pressing key on the robot at the given depth when we're currently over the prev button.
+func GetCost(prev, key byte, depth int) int {
+	memKey := costKey(prev, key, depth)
+	if rv, ok := knownCosts[memKey]; ok {
+		return rv
+	}
+
+	paths := DirPadPaths[prev][key]
+	rv := MAX_INT
+	if depth == 1 {
+		rv = len(GetShortest(paths))
+	} else {
+		for _, path := range paths {
+			cur := A
+			val := 0
+			for _, step := range path {
+				val += GetCost(cur, step, depth-1)
+				cur = step
+			}
+			if val < rv {
+				rv = val
+			}
+		}
+	}
+
+	knownCosts[memKey] = rv
+	return rv
+}
+
+func GetShortest(seqs []Sequence) Sequence {
+	switch len(seqs) {
+	case 0:
+		return nil
+	case 1:
+		return seqs[0]
+	case 2:
+		return Ternary(len(seqs[0]) <= len(seqs[1]), seqs[0], seqs[1])
+	}
+	rv := seqs[0]
+	for _, seq := range seqs {
+		if len(seq) < len(rv) {
+			rv = seq
+		}
+	}
+	return rv
 }
 
 func EnterSequence(robot *Robot, seq Sequence) string {
@@ -652,6 +902,7 @@ func ExpandDirSequence(cur byte, seq Sequence) Sequence {
 		}
 	default:
 		parts := strings.SplitAfter(string(seq), "A")
+		Debugf("%c: Recursively expanding %s", curKey, seq)
 		for _, part := range parts {
 			next := ExpandDirSequence(cur, Sequence(part))
 			rv = append(rv, next...)
@@ -663,6 +914,54 @@ func ExpandDirSequence(cur byte, seq Sequence) Sequence {
 		known[curKey] = make(map[string]Sequence)
 	}
 	known[curKey][seqKey] = rv
+	Debugf("Memoized known[%c][%s] = %s", curKey, seqKey, rv)
+	return rv
+}
+
+type Seq2 map[string]int
+
+func NewSeq2(seq Sequence) Seq2 {
+	rv := make(Seq2)
+	for _, part := range strings.SplitAfter(string(seq), "A") {
+		if len(part) != 0 {
+			rv[part]++
+		}
+	}
+	return rv
+}
+
+func (s Seq2) String() string {
+	if s == nil {
+		return NilStr
+	}
+	if len(s) == 0 {
+		return "<empty>"
+	}
+	parts := make([]string, 0, len(s))
+	for _, key := range slices.Sorted(maps.Keys(s)) {
+		parts = append(parts, fmt.Sprintf("'%s'=%d", key, s[key]))
+	}
+	return strings.Join(parts, ",")
+}
+
+func (s Seq2) Length() int {
+	rv := 0
+	for k, v := range s {
+		rv += len(k) * v
+	}
+	return rv
+}
+
+func ExpandDirSeq2(seq Seq2) Seq2 {
+	rv := make(Seq2)
+	for k, v := range seq {
+		next := ExpandDirSequence(A, Sequence(k))
+		for _, part := range strings.SplitAfter(string(next), "A") {
+			if len(part) > 0 {
+				rv[part] += v
+			}
+		}
+	}
 	return rv
 }
 
@@ -1406,6 +1705,8 @@ type Params struct {
 	Errors []error
 	// Count is just a generic int that can be provided.
 	Count int
+	// Option is another generic int that can be provided.
+	Option int
 	// InputFile is the file that contains the puzzle data to solve.
 	InputFile string
 	// Input is the contents of the input file split on newlines.
@@ -1422,6 +1723,7 @@ func (p Params) String() string {
 		fmt.Sprintf(nameFmt+"%t", "Verbose", verbose),
 		fmt.Sprintf(nameFmt+"%d", "Errors", len(p.Errors)),
 		fmt.Sprintf(nameFmt+"%d", "Count", p.Count),
+		fmt.Sprintf(nameFmt+"%d", "Option", p.Option),
 		fmt.Sprintf(nameFmt+"%s", "Input File", p.InputFile),
 		fmt.Sprintf(nameFmt+"%d lines", "Input", len(p.Input)),
 		fmt.Sprintf(nameFmt+"%d lines", "Custom", len(p.Custom)),
@@ -1517,6 +1819,12 @@ func GetParams(args []string) *Params {
 			i += extraI
 			rv.AppendError(err)
 			countGiven = true
+		case HasOneOfPrefixesFold(args[i], "--option", "--opt", "-o"):
+			Debugf("Option option found: [%s], args after: %q.", args[i], args[i:])
+			var extraI int
+			rv.Option, extraI, err = ParseFlagInt(args[i:])
+			i += extraI
+			rv.AppendError(err)
 		case HasOneOfPrefixesFold(args[i], "--line", "--lines", "-l", "--custom", "--val"):
 			Debugf("Custom option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
