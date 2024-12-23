@@ -725,6 +725,7 @@ func GetParams(args []string) *Params {
 				"  Providing these multiple times will overwrite the previously provided value.",
 				"  --input|-i <input file>  An option to define the input file.",
 				"  --count|-n <number>      Defines a count.",
+				"  --option|-o <number>     Defines an option value.",
 				"",
 				"Repeatable Options:",
 				"  Providing these multiple times will add to previously provided values.",

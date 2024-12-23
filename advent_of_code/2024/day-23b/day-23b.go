@@ -27,7 +27,7 @@ func Solve(params *Params) (string, error) {
 	Debugf("Parsed Input:\n%s", input)
 	comps, compMap := BuildNetwork(input.Connections)
 	if verbose {
-		Verbosef("Computers (%d) (from %d connections):\n%s", len(comps), len(input.Connections), StringNumberJoin(comps, 1, "\n"))
+		Verbosef("Computers (%d) (from %d connections):", len(comps), len(input.Connections))
 	}
 
 	if len(params.Custom) > 0 {
@@ -76,7 +76,7 @@ func Solve(params *Params) (string, error) {
 			answer = result
 		}
 	}
-	return fmt.Sprintf("%s", answer), nil
+	return answer, nil
 }
 
 func CombineAllClusters(clusters []CompMap, comps []*Computer) map[string]CompMap {
@@ -167,7 +167,6 @@ func (m CompMap) AddComputer(comp *Computer) CompMap {
 	}
 	for name := range m {
 		if comp.Connections[name] == nil {
-
 			return nil
 		}
 	}

@@ -45,7 +45,7 @@ func Solve(params *Params) (string, error) {
 			answer = result
 		}
 	}
-	return fmt.Sprintf("%s", answer), nil
+	return answer, nil
 }
 
 func BuildLargestCluster(comp1 *Computer, comps []*Computer) CompMap {
