@@ -27,6 +27,9 @@ func Solve(params *Params) (string, error) {
 	Debugf("Parsed Input:\n%s", input)
 	comps, _ := BuildNetwork(input.Connections)
 	Verbosef("Network built: %d Computers with %d connections.", len(comps), len(input.Connections))
+	if debug {
+		Stderrf("Computers (%d):\n%s", len(comps), StringNumberJoin(comps, 1, "\n"))
+	}
 
 	var answer string
 	clusters := make(map[string]CompMap) // The key is the solution string for the cluster.
@@ -46,7 +49,7 @@ func Solve(params *Params) (string, error) {
 				answer = result
 			}
 		}
-		Verbosef("[%3d/%3d|%2d]: %s => %s", i, len(comps), len(clusters), comp, newCluster)
+		Verbosef("[%3d/%3d|%2d]: %s => %s", i+1, len(comps), len(clusters), comp, newCluster)
 	}
 
 	return answer, nil
