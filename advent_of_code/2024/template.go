@@ -657,6 +657,8 @@ type Params struct {
 	Errors []error
 	// Count is just a generic int that can be provided.
 	Count int
+	// Option is another generic int that can be provided.
+	Option int
 	// InputFile is the file that contains the puzzle data to solve.
 	InputFile string
 	// Input is the contents of the input file split on newlines.
@@ -673,6 +675,7 @@ func (p Params) String() string {
 		fmt.Sprintf(nameFmt+"%t", "Verbose", verbose),
 		fmt.Sprintf(nameFmt+"%d", "Errors", len(p.Errors)),
 		fmt.Sprintf(nameFmt+"%d", "Count", p.Count),
+		fmt.Sprintf(nameFmt+"%d", "Option", p.Option),
 		fmt.Sprintf(nameFmt+"%s", "Input File", p.InputFile),
 		fmt.Sprintf(nameFmt+"%d lines", "Input", len(p.Input)),
 		fmt.Sprintf(nameFmt+"%d lines", "Custom", len(p.Custom)),
@@ -768,6 +771,12 @@ func GetParams(args []string) *Params {
 			i += extraI
 			rv.AppendError(err)
 			countGiven = true
+		case HasOneOfPrefixesFold(args[i], "--option", "--opt", "-o"):
+			Debugf("Option option found: [%s], args after: %q.", args[i], args[i:])
+			var extraI int
+			rv.Option, extraI, err = ParseFlagInt(args[i:])
+			i += extraI
+			rv.AppendError(err)
 		case HasOneOfPrefixesFold(args[i], "--line", "--lines", "-l", "--custom", "--val"):
 			Debugf("Custom option found: [%s], args after: %q.", args[i], args[i:])
 			var extraI int
