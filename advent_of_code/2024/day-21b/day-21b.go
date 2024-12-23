@@ -17,6 +17,17 @@ import (
 
 const DEFAULT_COUNT = 25
 
+// Here's a better way to have thought about this problem.
+// I am looking at an image of the bottom robot's camera, pointed at the number pad.
+// I can also see the robots pointer, that is used to push the button.
+// I also have the top robot in front of me, so I can type in the directions.
+// I don't need to have any knowledge of middle robots. I just pretend that I'm typing
+// the directions into the robot with the pointer.
+// When I push the button on a robot, it checks if it's got a next. If not, the thing reacts at a cost of 1.
+// Otherwise, it checks its memory for how to move from its current position, to the position of the next direction key needed.
+// If so, it returns that (or at least its cost). If not, it asks the next robot to tell it how to do that; record it, and return it.
+// The chunks here are a set of up/down/left/right ending with an A (that set can be empty).
+
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
 func Solve(params *Params) (string, error) {
