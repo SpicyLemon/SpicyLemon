@@ -144,7 +144,11 @@ func TrySolve(params *Params, input *Input) (string, error) {
 
 	// Find all OR gates that do not output to an XOR R and AND R.
 	var badOROutGates []*Gate
+	xCount := len(circuit.WiresX)
 	for _, gate := range circuit.GatesOR {
+		if gate.Out.Is(Z, xCount) && gate.In1.Source.In1.Number == xCount-1 {
+			continue
+		}
 		if len(gate.Out.Dests) != 2 || !gate.Out.Dests[0].Is(XOR, Right) || !gate.Out.Dests[1].Is(AND, Right) {
 			badOROutGates = append(badOROutGates, gate)
 			Debugf("Found bad OR gate: %s. Out %s should go to XOR R and AND R.", gate, gate.Out)
@@ -195,6 +199,8 @@ func TrySolve(params *Params, input *Input) (string, error) {
 			badOutWires = append(badOutWires, gate.Out)
 		}
 	}
+	badOutWireNames := MapSlice(badOutWires, (*Wire).GetName)
+	slices.Sort(badOutWireNames)
 
 	var badInWires []*Wire
 	known = make(map[string]bool)
@@ -213,7 +219,7 @@ func TrySolve(params *Params, input *Input) (string, error) {
 		PrintList("All wires going into bad gates", badInWires)
 		Stderrf("%s", strings.Join(MapSlice(badInWires, (*Wire).GetName), ","))
 		PrintList("All wires coming out of bad gates", badOutWires)
-		Stderrf("%s", strings.Join(MapSlice(badOutWires, (*Wire).GetName), ","))
+		Stderrf("%s", strings.Join(badOutWireNames, ","))
 	}
 
 	commonBadWires := WiresIntersection(badInWires, badOutWires)
@@ -273,9 +279,11 @@ func TrySolve(params *Params, input *Input) (string, error) {
 	}
 	_, _ = problemGates, problemWires
 
-	// TODO: Output the problem stuff and also the stuff still not numbered.
+	// Slept on it and when I got back, I realized that I had solved it earlier with the names of the bad output wires.
+	// I didn't see it because I was erroneously marking the very last z45 wire as bad, making there be 9 bad.
+	// So I fixed that and decided not to clean up anything else.
 
-	return "TODO", nil
+	return strings.Join(badOutWireNames, ","), nil
 }
 
 type Problem[E any] struct {
@@ -334,6 +342,9 @@ func CombineSlices[E any](lists ...[]E) []E {
 
 // PrintList outputs (to Stderr) the provided vals. The count is appended to the end of the lead in the format "<lead> (<count>)".
 func PrintList[S ~[]E, E fmt.Stringer](lead string, vals S) {
+	if !debug {
+		return
+	}
 	if len(vals) == 0 {
 		StderrAsf(GetFuncName(1), "%s (0).", lead)
 	} else {
