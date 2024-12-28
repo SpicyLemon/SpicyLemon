@@ -36,7 +36,9 @@ func Solve(params *Params) (string, error) {
 		return RunExpected(params, input)
 	case 3:
 		return Manual(params, input)
-	case 0, 4:
+	case 4:
+		return TrySolveV1(params, input)
+	case 0, 5:
 		return TrySolve(params, input)
 	default:
 		return "", fmt.Errorf("unknown option %d", params.Option)
@@ -44,6 +46,667 @@ func Solve(params *Params) (string, error) {
 }
 
 func TrySolve(params *Params, input *Input) (string, error) {
+	circuit, err := NewCircuit(input.Gates)
+	if err != nil {
+		return "", fmt.Errorf("could not create circuit from the input gates: %w", err)
+	}
+
+	Debugf("Validating all x and y wires.")
+	if err = ValidateAllXYWires(circuit.WiresX, circuit.WiresY); err != nil {
+		return "", err
+	}
+	Debugf("Done validating all x and y wires.")
+
+	Debugf("Validating all gates are fully wired.")
+	if err = ValidateAllGatesInOutNotNil(circuit.Gates); err != nil {
+		return "", err
+	}
+
+	// Find all the z wires that do not come from an XOR R gate.
+	var badZWires []*Wire
+	for _, wire := range circuit.WiresZ {
+		if wire.Number == 0 && wire.Source.IsNum(XOR, Left, 0) {
+			continue
+		}
+		if wire.Source == nil || !wire.Source.Is(XOR, Right) {
+			badZWires = append(badZWires, wire)
+			Debugf("Found bad Z wire: %s. Source %s should be XOR R", wire, wire.Source)
+		}
+	}
+
+	// Find all XOR L gates that do not go to both an XOR R and AND R.
+	var badXORLOutGates []*Gate
+	for _, gate := range circuit.GatesXORL {
+		if gate.Number == 0 && gate.Out.Is(Z, 0) {
+			continue
+		}
+		if len(gate.Out.Dests) != 2 || !gate.Out.Dests[0].Is(XOR, Right) || !gate.Out.Dests[1].Is(AND, Right) {
+			badXORLOutGates = append(badXORLOutGates, gate)
+			Debugf("Found bad XOR L gate: %s. Out %s should go to XOR R and AND R.", gate, gate.Out)
+		}
+	}
+
+	// Find all AND L gates that do not go to an OR.
+	var badANDLOutGates []*Gate
+	for _, gate := range circuit.GatesANDL {
+		if gate.Number == 0 && len(gate.Out.Dests) == 2 && gate.Out.Dests[0].Is(XOR, Right) && gate.Out.Dests[1].Is(AND, Right) {
+			continue
+		}
+		if len(gate.Out.Dests) != 1 || gate.Out.Dests[0].Op != OR {
+			badANDLOutGates = append(badANDLOutGates, gate)
+			Debugf("Found bad AND L gate: %s. Out %s should go to OR.", gate, gate.Out)
+		}
+	}
+
+	// Find all XOR R gates that do not go to a Z.
+	var badXORROutGates []*Gate
+	for _, gate := range circuit.GatesXORR {
+		if gate.Out.Type != Z {
+			badXORROutGates = append(badXORROutGates, gate)
+			Debugf("Found bad XOR R gate: %s. Out %s should be Z.", gate, gate.Out)
+		}
+	}
+
+	// Find all XOR R gates that do not come from an XOR L or OR.
+	var badXORRInGates []*Gate
+	for _, gate := range circuit.GatesXORR {
+		if gate.In1.Source.Is(XOR, Left) && gate.In2.Source.Is(OR, Right) {
+			continue
+		}
+		if gate.In2.Source.Is(XOR, Left) && gate.In1.Source.Is(OR, Right) {
+			continue
+		}
+		badXORRInGates = append(badXORRInGates, gate)
+		Debugf("Found bad XOR R gate: %s. In1 %s and In2 %s should come from XOR L and OR (in either order).", gate, gate.In1, gate.In2)
+	}
+
+	// Find all AND R gates that do not go to just an OR.
+	var badANDROutGates []*Gate
+	for _, gate := range circuit.GatesANDR {
+		if len(gate.Out.Dests) != 1 || !gate.Out.Dests[0].Is(OR, Right) {
+			badANDROutGates = append(badANDROutGates, gate)
+			Debugf("Found bad AND R gate: %s. Out %s should go only to OR.", gate, gate.Out)
+		}
+	}
+
+	// Find all AND R gates that do not come from an XOR L and OR.
+	var badANDRInGates []*Gate
+	for _, gate := range circuit.GatesANDR {
+		if gate.In1.Source.Is(XOR, Left) && gate.In2.Source.Is(OR, Right) {
+			continue
+		}
+		if gate.In2.Source.Is(XOR, Left) && gate.In1.Source.Is(OR, Right) {
+			continue
+		}
+		badANDRInGates = append(badANDRInGates, gate)
+		Debugf("Found bad AND R gate: %s. In1 %s and In2 %s should come from XOR L and OR (in either order).", gate, gate.In1, gate.In2)
+	}
+
+	// Find all OR gates that do not output to an XOR R and AND R.
+	var badOROutGates []*Gate
+	for _, gate := range circuit.GatesOR {
+		if len(gate.Out.Dests) != 2 || !gate.Out.Dests[0].Is(XOR, Right) || !gate.Out.Dests[1].Is(AND, Right) {
+			badOROutGates = append(badOROutGates, gate)
+			Debugf("Found bad OR gate: %s. Out %s should go to XOR R and AND R.", gate, gate.Out)
+		}
+	}
+
+	// Find all OR gates that do not come from an AND L and AND R.
+	var badORInGates []*Gate
+	for _, gate := range circuit.GatesOR {
+		if gate.In1.Source.Is(AND, Left) && gate.In2.Source.Is(AND, Right) {
+			continue
+		}
+		if gate.In2.Source.Is(AND, Left) && gate.In1.Source.Is(AND, Right) {
+			continue
+		}
+		badORInGates = append(badORInGates, gate)
+		Debugf("Found bad OR gate: %s. In1 %s and In2 %s should come from AND L and AND R (in either order).", gate, gate.In1, gate.In2)
+	}
+
+	// Make some groupings.
+	badOutGates := CombineSlices(badXORLOutGates, badANDLOutGates, badXORROutGates, badANDROutGates, badOROutGates)
+	slices.SortFunc(badOutGates, CompareGates)
+	badInGates := CombineSlices(badXORRInGates, badANDRInGates, badORInGates)
+	slices.SortFunc(badInGates, CompareGates)
+
+	if debug {
+		PrintList("Bad z wires", badZWires)
+		Stderrf("--------------------")
+		PrintList("XOR L gates with invalid Out", badXORLOutGates)
+		PrintList("AND L gates with invalid Out", badANDLOutGates)
+		PrintList("XOR R gates with invalid Out", badXORROutGates)
+		PrintList("AND R gates with invalid Out", badANDROutGates)
+		PrintList("OR gates with invalid Out", badOROutGates)
+		PrintList("XOR R gates with invalid Ins", badXORRInGates)
+		PrintList("AND R gates with invalid Ins", badANDRInGates)
+		PrintList("OR gates with invalid Ins", badORInGates)
+		Stderrf("--------------------")
+		PrintList("All gates with bad Ins", badInGates)
+		PrintList("All gates with bad Outs", badOutGates)
+	}
+
+	// Identify all of the output wires coming out of bad out gates
+	var badOutWires []*Wire
+	known := make(map[string]bool)
+	for _, gate := range badOutGates {
+		if !known[gate.Out.Name] {
+			known[gate.Out.Name] = true
+			badOutWires = append(badOutWires, gate.Out)
+		}
+	}
+
+	var badInWires []*Wire
+	known = make(map[string]bool)
+	for _, gate := range badInGates {
+		if !known[gate.In1.Name] {
+			known[gate.In1.Name] = true
+			badInWires = append(badInWires, gate.In1)
+		}
+		if !known[gate.In2.Name] {
+			known[gate.In2.Name] = true
+			badInWires = append(badInWires, gate.In2)
+		}
+	}
+
+	if debug {
+		PrintList("All wires going into bad gates", badInWires)
+		Stderrf("%s", strings.Join(MapSlice(badInWires, (*Wire).GetName), ","))
+		PrintList("All wires coming out of bad gates", badOutWires)
+		Stderrf("%s", strings.Join(MapSlice(badOutWires, (*Wire).GetName), ","))
+	}
+
+	commonBadWires := WiresIntersection(badInWires, badOutWires)
+	allBadWires := WiresUnion(badInWires, badOutWires)
+
+	if debug {
+		PrintList("Wires between bad gates", commonBadWires)
+		Stderrf("%s", strings.Join(MapSlice(commonBadWires, (*Wire).GetName), ","))
+		PrintList("Wires touching bad gates", allBadWires)
+		Stderrf("%s", strings.Join(MapSlice(allBadWires, (*Wire).GetName), ","))
+	}
+
+	// Attempt to number as many gates and wires as possible.
+	var gatesToNumber []*Gate
+	for _, gate := range circuit.Gates {
+		if gate.Number < 0 {
+			gatesToNumber = append(gatesToNumber, gate)
+		}
+	}
+	wiresToNumber := circuit.WiresMid
+	var problemGates []*Problem[*Gate]
+	var problemWires []*Problem[*Wire]
+
+	keepGoing := len(gatesToNumber) > 0 || len(wiresToNumber) > 0
+	for keepGoing {
+		keepGoing = false
+		gatesToRedo := make([]*Gate, 0, len(gatesToNumber))
+		wiresToRedo := make([]*Wire, 0, len(wiresToNumber))
+		for _, gate := range gatesToNumber {
+			ok, err := gate.TryToNumber()
+			switch {
+			case err != nil:
+				problemGates = append(problemGates, NewProblem(gate, err))
+			case ok:
+				keepGoing = true
+			default:
+				gatesToRedo = append(gatesToRedo, gate)
+			}
+		}
+
+		for _, wire := range wiresToNumber {
+			ok, err := wire.TryToNumber()
+			switch {
+			case err != nil:
+				problemWires = append(problemWires, NewProblem(wire, err))
+			case ok:
+				keepGoing = true
+			default:
+				wiresToRedo = append(wiresToRedo, wire)
+			}
+		}
+		gatesToNumber = gatesToRedo
+		wiresToNumber = wiresToRedo
+		if len(gatesToNumber) > 0 && len(wiresToNumber) > 0 {
+			break
+		}
+	}
+	_, _ = problemGates, problemWires
+
+	// TODO: Output the problem stuff and also the stuff still not numbered.
+
+	return "TODO", nil
+}
+
+type Problem[E any] struct {
+	Value  E
+	Reason error
+}
+
+func NewProblem[E any](value E, reason error) *Problem[E] {
+	return &Problem[E]{
+		Value:  value,
+		Reason: reason,
+	}
+}
+
+func (p *Problem[E]) Error() string {
+	if p == nil {
+		return NilStr
+	}
+	return fmt.Sprintf("%s: %v", p.Value, p.Reason)
+}
+
+func WiresIntersection(a, b []*Wire) []*Wire {
+	var rv []*Wire
+	for _, wire1 := range a {
+		for _, wire2 := range b {
+			if cmp := CompareWires(wire1, wire2); cmp == 0 {
+				rv = append(rv, wire1)
+				break
+			}
+		}
+	}
+	slices.SortFunc(rv, CompareWires)
+	return rv
+}
+
+func WiresUnion(a, b []*Wire) []*Wire {
+	seen := make(map[string]bool)
+	rv := make([]*Wire, 0, len(a)+len(b))
+	for _, wire := range CombineSlices(a, b) {
+		if !seen[wire.Name] {
+			seen[wire.Name] = true
+			rv = append(rv, wire)
+		}
+	}
+	slices.SortFunc(rv, CompareWires)
+	return rv
+}
+
+func CombineSlices[E any](lists ...[]E) []E {
+	var rv []E
+	for _, list := range lists {
+		rv = append(rv, list...)
+	}
+	return rv
+}
+
+// PrintList outputs (to Stderr) the provided vals. The count is appended to the end of the lead in the format "<lead> (<count>)".
+func PrintList[S ~[]E, E fmt.Stringer](lead string, vals S) {
+	if len(vals) == 0 {
+		StderrAsf(GetFuncName(1), "%s (0).", lead)
+	} else {
+		StderrAsf(GetFuncName(1), "%s (%d):\n%s", lead, len(vals), StringNumberJoin(vals, 1, "\n"))
+	}
+}
+
+func ValidateAllGatesInOutNotNil(gates []*Gate) error {
+	for i, gate := range gates {
+		if gate == nil {
+			return fmt.Errorf("gates[%d] cannot be nil", i)
+		}
+		if gate.In1 == nil {
+			return fmt.Errorf("gates[%d]: %s .In1 cannot be nil", i, gate)
+		}
+		if gate.In2 == nil {
+			return fmt.Errorf("gates[%d]: %s .In2 cannot be nil", i, gate)
+		}
+		if gate.Out == nil {
+			return fmt.Errorf("gates[%d]: %s .Out cannot be nil", i, gate)
+		}
+	}
+	return nil
+}
+
+type Circuit struct {
+	Gates     []*Gate
+	GatesXORL []*Gate
+	GatesXORR []*Gate
+	GatesANDL []*Gate
+	GatesANDR []*Gate
+	GatesOR   []*Gate
+
+	WireMap  map[string]*Wire
+	Wires    []*Wire
+	WiresX   []*Wire
+	WiresY   []*Wire
+	WiresZ   []*Wire
+	WiresMid []*Wire
+
+	X    int64
+	XBin string
+
+	Y    int64
+	YBin string
+
+	ExpZ    int64
+	ExpZBin string
+
+	Z    int64
+	ZBin string
+
+	Swaps map[string]string
+}
+
+// NewCircuit creates a new Circuit from the provided gates, creating the wires and connecting all the gates.
+func NewCircuit(gates []*Gate) (*Circuit, error) {
+	rv := &Circuit{
+		WireMap: make(map[string]*Wire),
+	}
+
+	// Copy the gates so we don't mess up other stuff that might be using them.
+	gates = MapSlice(gates, (*Gate).FreshCopy)
+
+	// Create all the wires, and link them up with the gates.
+	for _, gate := range gates {
+		if rv.WireMap[gate.In1Name] == nil {
+			rv.WireMap[gate.In1Name] = NewWire(gate.In1Name)
+		}
+		if rv.WireMap[gate.In2Name] == nil {
+			rv.WireMap[gate.In2Name] = NewWire(gate.In2Name)
+		}
+		if rv.WireMap[gate.OutName] == nil {
+			rv.WireMap[gate.OutName] = NewWire(gate.OutName)
+		}
+
+		// Set the wires of this gate.
+		gate.In1 = rv.WireMap[gate.In1Name]
+		gate.In2 = rv.WireMap[gate.In2Name]
+		gate.Out = rv.WireMap[gate.OutName]
+
+		// Associate the wires with this gate.
+		if gate.Out.Source != nil {
+			return nil, fmt.Errorf("could not wire up %s: wire out already has a source, %s", gate, gate.Out.Source)
+		}
+		gate.In1.Dests = append(gate.In1.Dests, gate)
+		gate.In2.Dests = append(gate.In2.Dests, gate)
+		gate.Out.Source = gate
+
+		// Set the gate type and if it's a left, set the number too (since those must be correct).
+		gate.Type = Ternary(gate.In1.IsXY() && gate.In2.IsXY(), Left, Right)
+		if gate.Type == Left {
+			if gate.In1.Number != gate.In2.Number {
+				return nil, fmt.Errorf("could wire up left gate %s: the two wires have different numbers", gate)
+			}
+			gate.Number = gate.In1.Number
+		}
+
+		// Add the gate to the appropriate return slices.
+		rv.Gates = append(rv.Gates, gate)
+		switch gate.Op {
+		case XOR:
+			if gate.Type == Left {
+				rv.GatesXORL = append(rv.GatesXORL, gate)
+			} else {
+				rv.GatesXORR = append(rv.GatesXORR, gate)
+			}
+		case AND:
+			if gate.Type == Left {
+				rv.GatesANDL = append(rv.GatesANDL, gate)
+			} else {
+				rv.GatesANDR = append(rv.GatesANDR, gate)
+			}
+		case OR:
+			rv.GatesOR = append(rv.GatesOR, gate)
+		default:
+			return nil, fmt.Errorf("unhandled gate operation %q in %s", gate.Op, gate)
+		}
+	}
+	slices.SortFunc(rv.Gates, CompareGates)
+	slices.SortFunc(rv.GatesXORL, CompareGates)
+	slices.SortFunc(rv.GatesXORR, CompareGates)
+	slices.SortFunc(rv.GatesANDL, CompareGates)
+	slices.SortFunc(rv.GatesANDR, CompareGates)
+	slices.SortFunc(rv.GatesOR, CompareGates)
+
+	// Categorize the wires and sort their Dests (ordered as XOR, AND, OR, should have at most one of each, but we'll check that later).
+	for name, wire := range rv.WireMap {
+		SortDests(wire)
+		rv.Wires = append(rv.Wires, wire)
+		switch name[0] {
+		case 'x':
+			rv.WiresX = append(rv.WiresX, wire)
+		case 'y':
+			rv.WiresY = append(rv.WiresY, wire)
+		case 'z':
+			rv.WiresZ = append(rv.WiresZ, wire)
+		default:
+			rv.WiresMid = append(rv.WiresMid, wire)
+		}
+	}
+	slices.SortFunc(rv.Wires, CompareWires)
+	slices.SortFunc(rv.WiresX, CompareWires)
+	slices.SortFunc(rv.WiresY, CompareWires)
+	slices.SortFunc(rv.WiresZ, CompareWires)
+	slices.SortFunc(rv.WiresMid, CompareWires)
+
+	rv.XBin = strings.Repeat("0", len(rv.WiresX))
+	rv.YBin = strings.Repeat("0", len(rv.WiresY))
+	rv.ExpZBin = strings.Repeat("0", len(rv.WiresZ))
+
+	return rv, nil
+}
+
+// WithX updates this circuit's X registers with the provided numeric value and returns itself
+func (c *Circuit) WithX(val int64) *Circuit {
+	c.X = val
+	c.XBin = ZeroPad(strconv.FormatInt(val, 2), len(c.WiresX))
+	return c.UpdateExpZ()
+}
+
+// WithXBin updates this circuit's X registers with the provided binary value and returns itself.
+func (c *Circuit) WithXBin(val string) *Circuit {
+	if len(val) > len(c.WiresX) {
+		panic(fmt.Errorf("cannot set x registers to %q: length %d exceeds the number of x registers %d", val, len(val), len(c.WiresY)))
+	}
+	var err error
+	c.X, err = strconv.ParseInt(val, 2, 64)
+	if err != nil {
+		panic(fmt.Errorf("could not convert binary string %q to number for x registers: %w", val, err))
+	}
+	c.XBin = ZeroPad(val, len(c.WiresX))
+	return c.UpdateExpZ()
+}
+
+// WithY updates this circuit's Y registers with the provided numeric value and returns itself
+func (c *Circuit) WithY(val int64) *Circuit {
+	c.Y = val
+	c.YBin = ZeroPad(strconv.FormatInt(val, 2), len(c.WiresY))
+	return c.UpdateExpZ()
+}
+
+// WithYBin updates this circuit's Y registers with the provided binary value and returns itself.
+func (c *Circuit) WithYBin(val string) *Circuit {
+	if len(val) > len(c.WiresY) {
+		panic(fmt.Errorf("cannot set y registers to %q: length %d exceeds the number of y registers %d", val, len(val), len(c.WiresY)))
+	}
+	var err error
+	c.Y, err = strconv.ParseInt(val, 2, 64)
+	if err != nil {
+		panic(fmt.Errorf("could not convert binary string %q to number for y registers: %w", val, err))
+	}
+	c.YBin = ZeroPad(val, len(c.WiresY))
+	return c.UpdateExpZ()
+}
+
+func (c *Circuit) UpdateExpZ() *Circuit {
+	c.ExpZ = c.X + c.Y
+	c.ExpZBin = ZeroPad(strconv.FormatInt(c.ExpZ, 2), len(c.WiresZ))
+	return c
+}
+
+func (c *Circuit) RunWithValues(x, y int64) error {
+	return c.WithX(x).WithY(y).Run()
+}
+
+func (c *Circuit) RunWithBinaryValues(x, y string) error {
+	return c.WithXBin(x).WithYBin(y).Run()
+}
+
+func (c *Circuit) Run() error {
+	// Unset all the gates.
+	for _, gate := range c.Gates {
+		gate.Value = ""
+	}
+	// Unset all the wire values.
+	for _, wire := range c.Wires {
+		wire.Value = ""
+	}
+	// Set the x and y values
+	for _, wire := range c.WiresX {
+		wire.Value = string(c.XBin[wire.Number])
+	}
+	for _, wire := range c.WiresY {
+		wire.Value = string(c.YBin[wire.Number])
+	}
+
+	// Unset the Z stuff to prevent confusion if there are errors.
+	c.ZBin = ""
+	c.Z = 0
+
+	// Propagate all the signales through the gates to the z wires.
+	err := PropagateSignals(c.Gates, c.WiresZ)
+	if err != nil {
+		return err
+	}
+
+	// Update the Z info.
+	c.ZBin = strings.Join(MapSlice(c.WiresZ, (*Wire).GetValue), "")
+	c.Z, err = strconv.ParseInt(c.ZBin, 2, 64)
+	if err != nil {
+		return fmt.Errorf("could not convert z binary %q to int: %w", c.ZBin, err)
+	}
+
+	if debug {
+		Stderrf("circuit result:\n%s", c.ResultString())
+	}
+	return nil
+}
+
+func (c *Circuit) ResultString() string {
+	result := &Result{
+		X:       c.X,
+		XBin:    c.XBin,
+		XWires:  c.WiresX,
+		Y:       c.Y,
+		YBin:    c.YBin,
+		YWires:  c.WiresY,
+		ExpZ:    c.ExpZ,
+		ExpZBin: c.ExpZBin,
+		Z:       c.Z,
+		ZBin:    c.ZBin,
+		ZWires:  c.WiresZ,
+	}
+	return result.String()
+}
+
+// Replicate creates a new circuit with the same gate layout as this one, but copies of all the gates and wires, and all the values zerod out.
+func (c *Circuit) Replicate() (*Circuit, error) {
+	if c == nil {
+		return nil, errors.New("cannot replicate nil circuit")
+	}
+
+	rv, err := NewCircuit(c.Gates)
+	if err != nil {
+		return nil, fmt.Errorf("could not replicate circuit: %w", err)
+	}
+
+	if c.X != 0 {
+		rv = rv.WithX(c.X)
+	}
+	if c.Y != 0 {
+		rv = rv.WithY(c.Y)
+	}
+
+	return rv, nil
+}
+
+func (c *Circuit) SwapSources(wire1, wire2 *Wire) error {
+	return c.SwapOuts(wire1.Source, wire2.Source)
+}
+
+func (c *Circuit) SwapOuts(gate1, gate2 *Gate) error {
+	if err := c.validateCanSwap(gate1.OutName, gate2.OutName); err != nil {
+		return err
+	}
+	gate1.OutName, gate2.OutName = gate2.OutName, gate1.OutName
+	gate1.Out, gate2.Out = gate2.Out, gate1.Out
+	gate1.Out.Source = gate1
+	gate2.Out.Source = gate2
+	if c.Swaps[gate1.OutName] == gate2.OutName {
+		delete(c.Swaps, gate1.OutName)
+	} else {
+		c.Swaps[gate1.OutName] = gate2.OutName
+	}
+	if c.Swaps[gate2.OutName] == gate1.OutName {
+		delete(c.Swaps, gate2.OutName)
+	} else {
+		c.Swaps[gate2.OutName] = gate1.OutName
+	}
+	return nil
+}
+
+func (c *Circuit) validateCanSwap(name1, name2 string) error {
+	// If neither have been swapped, it's okay to swap them now.
+	if len(c.Swaps[name1]) == 0 && len(c.Swaps[name2]) == 0 {
+		return nil
+	}
+	// If they've been previousl swapped with eachouther, it's also okay to swap them (again, back).
+	if c.Swaps[name1] == name2 && c.Swaps[name2] == name1 {
+		return nil
+	}
+	if len(c.Swaps[name2]) == 0 {
+		// Only name1 was previously swapped.
+		return fmt.Errorf("cannot swap %s with %s: %s has already been swapped with %s", name1, name2, name1, c.Swaps[name1])
+	}
+	if len(c.Swaps[name1]) == 0 {
+		// Only name2 was previously swapped.
+		return fmt.Errorf("cannot swap %s with %s: %s has already been swapped with %s", name1, name2, name2, c.Swaps[name2])
+	}
+	// Both name1 and name2 were previously swapped with others.
+	return fmt.Errorf("cannot swap %s with %s: %s already swappeed with %s and %s with %s", name1, name2, name1, c.Swaps[name1], name2, c.Swaps[name2])
+}
+
+func (c *Circuit) GetSwaps() []string {
+	seen := make(map[string]bool)
+	rv := make([]string, 0, len(c.Swaps)/2)
+	for name1, name2 := range c.Swaps {
+		str := SwapStr(name1, name2)
+		if !seen[str] {
+			seen[str] = true
+			rv = append(rv, str)
+		}
+	}
+	slices.Sort(rv)
+	return rv
+}
+
+func (c *Circuit) GetAnswer() string {
+	seen := make(map[string]bool)
+	rv := make([]string, 0, len(c.Swaps))
+	for name1, name2 := range c.Swaps {
+		if !seen[name1] {
+			seen[name1] = true
+			rv = append(rv, name1)
+		}
+		if !seen[name2] {
+			seen[name2] = true
+			rv = append(rv, name2)
+		}
+	}
+	slices.Sort(rv)
+	return strings.Join(rv, ",")
+}
+
+func SwapStr(a, b string) string {
+	if a < b {
+		return a + "-" + b
+	}
+	return b + "-" + a
+}
+
+func TrySolveV1(params *Params, input *Input) (string, error) {
 	expWireMap, expGatesAll, err := CreateExpectedCircuit(input.Wires)
 	if err != nil {
 		return "", fmt.Errorf("could not create expected circuit: %w", err)
@@ -109,11 +772,20 @@ func TrySolve(params *Params, input *Input) (string, error) {
 		// 2 types of AND gates:
 		// X and y in, mid out to or.
 		// Mids in, mid out to or.
+		// x and y in, mid out to an xor and and, only for 00.
 		if len(gate.Out.Dests) == 1 && gate.Out.Dests[0].Op == OR {
 			if gate.In1.IsXY() && gate.In2.IsXY() && gate.Out.IsMid() {
 				continue
 			}
 			if gate.In1.IsMid() && gate.In2.IsMid() && gate.Out.IsMid() {
+				continue
+			}
+		}
+		if len(gate.Out.Dests) == 2 && gate.In1.Number == 0 {
+			if gate.Out.Dests[0].Op == AND && gate.Out.Dests[1].Op == XOR {
+				continue
+			}
+			if gate.Out.Dests[0].Op == XOR && gate.Out.Dests[1].Op == AND {
 				continue
 			}
 		}
@@ -135,15 +807,29 @@ func TrySolve(params *Params, input *Input) (string, error) {
 		Debugf("Found bad  or gate: %s | %c %c %c", gate, gate.In1.Type, gate.In2.Type, gate.Out.Type)
 		badGates = append(badGates, gate)
 	}
+	slices.SortFunc(badGates, func(a, b *Gate) int {
+		if a == b {
+			return 0
+		}
+		if a == nil {
+			return 1
+		}
+		if b == nil {
+			return -1
+		}
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	Stderrf("Bad Gates (%d):\n%s", len(badGates), StringNumberJoin(badGates, 1, "\n"))
 	_ = expGates
 
+	// finds 51 bad gates, but isn't very helpful (yet).
 	rv := MapSlice(badGates, (*Gate).GetOutName)
 	slices.Sort(rv)
 	return strings.Join(rv, ","), nil
 }
 
+// ValidateAllXYWires checks that all x and y wires go to the same XOR and AND gates.
 func ValidateAllXYWires(xs, ys []*Wire) error {
 	if len(xs) != len(ys) {
 		return fmt.Errorf("number of x wires (%d) does not equal number of y wires (%d)", len(xs), len(ys))
@@ -158,7 +844,7 @@ func ValidateAllXYWires(xs, ys []*Wire) error {
 }
 
 func ValidateXYWires(x, y *Wire) error {
-	Debugf("Validating %s and %s", x, y)
+	Debugf("Validating  %s  with  %s", x, y)
 	if err := ValidateXYWire(x); err != nil {
 		return err
 	}
@@ -213,6 +899,7 @@ type SortedGates struct {
 }
 
 func SortGates(gates []*Gate) *SortedGates {
+	slices.SortFunc(gates, CompareGates)
 	rv := &SortedGates{}
 	for _, gate := range gates {
 		switch gate.Op {
@@ -223,7 +910,7 @@ func SortGates(gates []*Gate) *SortedGates {
 		case OR:
 			rv.OR = append(rv.OR, gate)
 		default:
-			panic(fmt.Errorf("gate %s has unknown op %q", gate, gate.Op))
+			panic(fmt.Errorf("cannot sort gate %s with op %q: unknown op", gate, gate.Op))
 		}
 	}
 	return rv
@@ -574,7 +1261,7 @@ func RunCircuit(wireMap map[string]*Wire, gates []*Gate, swaps map[string]string
 		if wire2 == nil {
 			return nil, fmt.Errorf("wire2 %q does not exist to swap", w2Name)
 		}
-		SwapWires(wire1, wire2)
+		SwapSources(wire1, wire2)
 	}
 
 	PropagateSignals(gates, zWires)
@@ -632,13 +1319,13 @@ func SwapOuts(gate1, gate2 *Gate) {
 	gate2.Out.Source = gate2
 }
 
-func SwapWires(wire1, wire2 *Wire) {
+func SwapSources(wire1, wire2 *Wire) {
 	wire1.Source, wire2.Source = wire2.Source, wire1.Source
 	wire1.Source.Out = wire1
 	wire2.Source.Out = wire2
 }
 
-func PropagateSignals(gates []*Gate, keyWires []*Wire) {
+func PropagateSignals(gates []*Gate, keyWires []*Wire) error {
 	for !AllHaveValue(keyWires) {
 		redoGates := make([]*Gate, 0, len(gates))
 		for _, gate := range gates {
@@ -647,10 +1334,11 @@ func PropagateSignals(gates []*Gate, keyWires []*Wire) {
 			}
 		}
 		if len(gates) == len(redoGates) {
-			panic(errors.New("could not propagate any signals"))
+			return errors.New("could not propagate any signals")
 		}
 		gates = redoGates
 	}
+	return nil
 }
 
 func AllHaveValue(wires []*Wire) bool {
@@ -730,6 +1418,10 @@ const (
 	Mid = WireType('~')
 )
 
+func (t WireType) String() string {
+	return string(t)
+}
+
 var WireTypeOrder = map[WireType]int{X: 1, Y: 2, Mid: 3, Z: 4}
 
 func CompareWireTypes(a, b WireType) int {
@@ -780,6 +1472,7 @@ func NewWire(name string) *Wire {
 		}
 	default:
 		rv.Type = Mid
+		rv.Number = -1
 	}
 	return rv
 }
@@ -790,20 +1483,39 @@ func (w *Wire) WithValue(value string) *Wire {
 }
 
 func (w *Wire) String() string {
+	parts := []string{
+		fmt.Sprintf("%s(%2d)=%s", w.Name, w.Number, w.Value),
+	}
+
+	if w.Source != nil {
+		parts = append(parts, ": ", w.SourceString())
+	}
+
+	if len(w.Dests) > 0 {
+		if len(parts) == 1 {
+			parts = append(parts, ": ", w.Name)
+		}
+		parts = append(parts, w.DestsString()[3:])
+	}
+	return strings.Join(parts, "")
+}
+
+func (w *Wire) SourceString() string {
+	if w.Source == nil {
+		return w.Name
+	}
+	return fmt.Sprintf("%s ==>  %s", w.Source.StringWithoutOut(), w.Name)
+}
+
+func (w *Wire) DestsString() string {
+	if len(w.Dests) == 0 {
+		return w.Name
+	}
 	dests := make([]string, len(w.Dests))
 	for i, gate := range w.Dests {
-		other := Ternary(gate.In1Name != w.Name, gate.In1Name, gate.In2Name)
-		dests[i] = fmt.Sprintf("%3s %s => %s", gate.Op, other, gate.OutName)
+		dests[i] = gate.StringWithoutIn(w.Name)
 	}
-	destStr := ""
-	if len(dests) > 0 {
-		destStr = " => " + strings.Join(dests, " | ")
-	}
-	srcStr := w.Value
-	if w.Source != nil {
-		srcStr = w.Source.String()
-	}
-	return fmt.Sprintf("%s(%d)=%s: %s%s", w.Name, w.Number, w.Value, srcStr, destStr)
+	return fmt.Sprintf("%s  ==> %s", w.Name, strings.Join(dests, " | "))
 }
 
 func (w *Wire) GetValue() string {
@@ -821,6 +1533,14 @@ func (w *Wire) FreshCopy() *Wire {
 	return NewWire(w.Name).WithValue(w.Value)
 }
 
+func (w *Wire) Is(t WireType, num int) bool {
+	return w.Type == t && w.Number == num
+}
+
+func (w *Wire) IsXYNum(num int) bool {
+	return w.IsXY() && w.Number == num
+}
+
 func (w *Wire) IsXY() bool {
 	return w.Type == X || w.Type == Y
 }
@@ -831,6 +1551,14 @@ func (w *Wire) IsZ() bool {
 
 func (w *Wire) IsMid() bool {
 	return w.Type == Mid
+}
+
+func (w *Wire) TryToNumber() (bool, error) {
+	if w.Number >= 0 {
+		return true, nil
+	}
+	// TODO: Finish this. Ugh
+	return false, nil
 }
 
 func ParseWire(line string) (*Wire, error) {
@@ -909,30 +1637,228 @@ func CompareOps(a, b Op) int {
 	return strings.Compare(string(a), string(b))
 }
 
+type GateType string
+
+const (
+	Left  = GateType("L") // The XOR and AND gates that take in the x and y wires.
+	Right = GateType("R") // The other XOR and AND gates (XOR outputs the z value), and all the OR gates.
+)
+
+func CompareGateTypes(a, b GateType) int {
+	if a == b {
+		return 0
+	}
+	if len(a) == 0 {
+		return 1
+	}
+	if len(b) == 0 {
+		return -1
+	}
+	// Assuming they can only ever be Left or Right, and we want Left "L" first, this works just fine.
+	return strings.Compare(string(a), string(b))
+}
+
 type Gate struct {
 	Name    string
 	In1Name string
 	Op      Op
 	In2Name string
 	OutName string
-	In1     *Wire
-	In2     *Wire
-	Out     *Wire
-	Value   string
+
+	In1   *Wire
+	In2   *Wire
+	Out   *Wire
+	Value string
+
+	Type   GateType
+	Number int
+
+	NumberIn1 int
+	NumberIn2 int
+	NumberOut int
+}
+
+func (g *Gate) TryToNumber() (bool, error) {
+	if g.Number >= 0 {
+		return true, nil
+	}
+
+	in1 := g.In1.Number
+	in2 := g.In2.Number
+	out := g.Out.Number
+	if in1 == -1 && in2 == -1 && out == -1 {
+		return false, nil
+	}
+
+	switch g.Op {
+	case XOR, AND:
+		switch g.Type {
+		case Left:
+			// It's given that in1 and in2 are x and y of the same number. We trust that completely and can even set the output wire.
+			if out >= 0 && out != in1 {
+				return false, fmt.Errorf("%s %s ins have number %d but out %s has number %d", g.Op, g.Type, in1, g.Out.Name, out)
+			}
+			g.Number = in1
+			return true, nil
+		case Right:
+			// If the connected gates aren't right, we return an error.
+			in1IsXOR := g.In1.Source.Is(XOR, Left)
+			in2IsXOR := g.In2.Source.Is(XOR, Left)
+			if !in1IsXOR && !in2IsXOR {
+				return false, fmt.Errorf("%s %s ins are neither XOR L", g.Op, g.Type)
+			}
+			if !in1IsXOR && !in2IsXOR {
+				return false, fmt.Errorf("%s %s ins are both XOR L", g.Op, g.Type)
+			}
+			inXOR, inOR := g.In1, g.In2
+			if in2IsXOR {
+				inXOR, inOR = g.In2, g.In1
+			}
+			if !inOR.Source.Is(OR, Right) {
+				return false, fmt.Errorf("%s %s second in is not OR", g.Op, g.Type)
+			}
+
+			// In1 and in2 should be sequential, the larger being this gate's potentional number.
+			// The output should have that same number. Only return an error on a discrepency.
+			ins := -1
+			if inOR.Number >= -1 && inXOR.Number >= -1 {
+				if inOR.Number+1 != inXOR.Number {
+					return false, fmt.Errorf("%s %s in OR number %d + 1 should equal in XOR number %d", g.Op, g.Type, inOR.Number, inXOR.Number)
+				}
+				ins = max(inOR.Number, inXOR.Number)
+			}
+			if ins < 0 && out < 0 {
+				return false, nil
+			}
+			if ins >= 0 && out >= 0 && ins != out {
+				return false, fmt.Errorf("%s %s ins have number %d but out %s has number %s", g.Op, g.Type, ins, g.Out.Name, out)
+			}
+			if ins >= 0 {
+				g.Number = ins
+				return true, nil
+			}
+		default:
+			panic(fmt.Errorf("gate %s has unknown type %s", g, g.Type))
+		}
+	case OR:
+		// In1 and In2 should be AND L and AND R with the same number.
+		// Output should go to a wire one larger.
+		if g.In1.Source.Op != AND || g.In2.Source.Op != AND {
+			return false, fmt.Errorf("%s ins are not both ANDs", g.Op)
+		}
+		if !(g.In1.Source.Type == Right && g.In2.Source.Type == Left) && !(g.In2.Source.Type == Right && g.In1.Source.Type == Left) {
+			return false, fmt.Errorf("%s ins are not L and R", g.Op)
+		}
+		ins := -1
+		if in1 >= 0 && in2 >= 0 {
+			if in1 != in2 {
+				return false, fmt.Errorf("%s ins have unequal numbers %d and %d", g.Op, in1, in2)
+			}
+			ins = in1
+		}
+		if out >= 0 && in1 >= 0 && out != in1+1 {
+			return false, fmt.Errorf("%s ins number %d + 1 should equal out %s number %d", g.Op, ins, g.Out.Name, out)
+		}
+		if ins >= 0 {
+			g.Number = ins
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func CompareGates(a, b *Gate) int {
+	if a == b {
+		return 0
+	}
+	if a == nil {
+		return 1
+	}
+	if b == nil {
+		return -1
+	}
+	// Sort by op first (XOR, then AND, then OR).
+	if rv := CompareOps(a.Op, b.Op); rv != 0 {
+		return rv
+	}
+	// Sort by gate type next (Left then Right).
+	if rv := CompareGateTypes(a.Type, b.Type); rv != 0 {
+		return rv
+	}
+	// Sort by number next.
+	if a.Number < b.Number {
+		return -1
+	}
+	if a.Number > b.Number {
+		return 1
+	}
+	// Fall back to sorting on the name. This isn't great because sometimes the gate is x00 AND y00 => abc, sometimes y00 AND x00 => abc.
+	// But at least it's something deterministic.
+	return strings.Compare(a.Name, b.Name)
 }
 
 func (g *Gate) String() string {
-	return fmt.Sprintf("%s %3s %s %q => %s", g.In1Name, g.Op, g.In2Name, g.Value, g.OutName)
+	in1 := g.In1Name
+	if g.In1 != nil {
+		in1 = fmt.Sprintf("(%s)", g.In1.SourceString())
+	}
+	in2 := g.In2Name
+	if g.In2 != nil {
+		in2 = fmt.Sprintf("(%s)", g.In2.SourceString())
+	}
+	if g.In1Name > g.In2Name {
+		in1, in2 = in2, in1
+	}
+	out := g.OutName
+	if g.Out != nil {
+		out = g.Out.DestsString()
+	}
+	return fmt.Sprintf("%s %3s %s %s => %s", in1, g.Op, g.Type, in2, out)
+}
+
+func (g *Gate) StringWithoutOut() string {
+	ins := []string{g.In1.Name, g.In2.Name}
+	slices.Sort(ins)
+	return fmt.Sprintf("%s %3s %s %s", ins[0], g.Op, g.Type, ins[1])
+}
+
+func (g *Gate) StringWithoutIn(hideName string) string {
+	other := g.GetOther(hideName)
+	if other == nil {
+		return g.String()
+	}
+	return fmt.Sprintf("%3s %s %s", g.Op, g.Type, other.Name)
+}
+
+func (g *Gate) WithZeroNumbers() *Gate {
+	if g == nil {
+		return nil
+	}
+	g.Number = -1
+	g.NumberIn1 = -1
+	g.NumberIn2 = -1
+	g.NumberOut = -1
+	return g
+}
+
+func (g *Gate) SetInNumber(name string, num int) {
+	switch name {
+	case g.In1Name:
+		g.NumberIn1 = num
+	case g.In2Name:
+		g.NumberIn2 = num
+	}
 }
 
 func (g *Gate) FreshCopy() *Gate {
-	return &Gate{
+	rv := &Gate{
 		Name:    g.Name,
 		In1Name: g.In1Name,
 		Op:      g.Op,
 		In2Name: g.In2Name,
 		OutName: g.OutName,
 	}
+	return rv.WithZeroNumbers()
 }
 
 func (g *Gate) Propagate() bool {
@@ -965,8 +1891,47 @@ func (g *Gate) GetOther(name string) *Wire {
 	return nil
 }
 
+func (g *Gate) GetX() *Wire {
+	if g.In1 != nil && g.In1.Type == X {
+		return g.In1
+	}
+	if g.In2 != nil && g.In2.Type == X {
+		return g.In2
+	}
+	return nil
+}
+
+func (g *Gate) GetY() *Wire {
+	if g.In1 != nil && g.In1.Type == Y {
+		return g.In1
+	}
+	if g.In2 != nil && g.In2.Type == Y {
+		return g.In2
+	}
+	return nil
+}
+
 func (g *Gate) GetOutName() string {
 	return g.OutName
+}
+
+// GetLabel returns a string with the format "<op><type><number>", e.g. "XORL01".
+func (g *Gate) GetLabel() string {
+	return fmt.Sprintf("%s %3s %s %q => %s", g.In1Name, g.Op, g.In2Name, g.Value, g.OutName)
+	gType := Ternary(len(g.Type) > 0, string(g.Type), "?")
+	gNum := "??"
+	if g.Number >= 0 {
+		gNum = strconv.Itoa(g.Number)
+	}
+	return fmt.Sprintf("%s%s%02d", g.Op, gType, gNum)
+}
+
+func (g *Gate) Is(op Op, t GateType) bool {
+	return g.Op == op && (g.Type == t || op == OR)
+}
+
+func (g *Gate) IsNum(op Op, t GateType, num int) bool {
+	return g.Is(op, t) && g.Number == num
 }
 
 func ParseGate(line string) (*Gate, error) {
@@ -980,7 +1945,8 @@ func ParseGate(line string) (*Gate, error) {
 	if len(parts[0]) == 0 || len(parts[2]) == 0 || len(parts[4]) == 0 {
 		return nil, fmt.Errorf("invalid gate line %q: empty wire", line)
 	}
-	return &Gate{Name: line, In1Name: parts[0], Op: Op(parts[1]), In2Name: parts[2], OutName: parts[4]}, nil
+	rv := &Gate{Name: line, In1Name: parts[0], Op: Op(parts[1]), In2Name: parts[2], OutName: parts[4]}
+	return rv.WithZeroNumbers(), nil
 }
 
 type Input struct {
@@ -1041,6 +2007,15 @@ func PadLeft(str string, length int) string {
 		return str
 	}
 	return strings.Repeat(" ", length-len(str)) + str
+}
+
+// ZeroPad pads the provided value string with zeros on the left until its the provided length.
+// If the value is already at or more than the length, the value is returned as provided.
+func ZeroPad(val string, length int) string {
+	if len(val) >= length {
+		return val
+	}
+	return strings.Repeat("0", length-len(val)) + val
 }
 
 // -------------------------------------------------------------------------------------------------
