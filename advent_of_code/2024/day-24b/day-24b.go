@@ -24,25 +24,300 @@ func Solve(params *Params) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if params.InputFile == DEFAULT_INPUT_FILE {
+		return "", errors.New("This solution cannot run on the example.")
+	}
+
 	Debugf("Parsed Input:\n%s", input)
 	switch params.Option {
 	case 1:
+		Stdoutf("Option %d: Running exploration. ", params.Option)
 		answer, err := Explore(params, input)
 		if len(answer) == 0 && err == nil {
 			answer = "Stopped after exploration."
 		}
 		return answer, err
 	case 2:
+		Stdoutf("Option %d: Running expected.", params.Option)
 		return RunExpected(params, input)
 	case 3:
+		Stdoutf("Option %d: Attempting manual fix (does not work).", params.Option)
 		return Manual(params, input)
 	case 4:
+		Stdoutf("Option %d: Running TrySolveV1 (does not work).", params.Option)
 		return TrySolveV1(params, input)
-	case 0, 5:
+	case 5:
+		Stdoutf("Option %d: Running TrySolve (works, but does more than needed).", params.Option)
 		return TrySolve(params, input)
+	case 6:
+		Stdoutf("Option %d: Running checks on the expected circuit.", params.Option)
+		return CheckExpected(params, input)
+	case 0, 7:
+		Stdoutf("Option %d: Identifying fix.", params.Option)
+		return TryFix(params, input)
 	default:
 		return "", fmt.Errorf("unknown option %d", params.Option)
 	}
+}
+
+func TryFix(params *Params, input *Input) (string, error) {
+	circuit, err := NewCircuit(input.Gates)
+	if err != nil {
+		return "", fmt.Errorf("could not create circuit from the input gates: %w", err)
+	}
+
+	// Find all XOR L gates that do not go to both an XOR R and AND R.
+	var badXORLOutGates []*Gate
+	for _, gate := range circuit.GatesXORL {
+		if gate.Number == 0 && gate.Out.Is(Z, 0) {
+			continue
+		}
+		if len(gate.Out.Dests) != 2 || !gate.Out.Dests[0].Is(XOR, Right) || !gate.Out.Dests[1].Is(AND, Right) {
+			badXORLOutGates = append(badXORLOutGates, gate)
+			Debugf("Found bad XOR L gate: %s. Out %s should go to XOR R and AND R.", gate, gate.Out)
+		}
+	}
+
+	// Find all AND L gates that do not go to an OR.
+	var badANDLOutGates []*Gate
+	for _, gate := range circuit.GatesANDL {
+		if gate.Number == 0 && len(gate.Out.Dests) == 2 && gate.Out.Dests[0].Is(XOR, Right) && gate.Out.Dests[1].Is(AND, Right) {
+			continue
+		}
+		if len(gate.Out.Dests) != 1 || gate.Out.Dests[0].Op != OR {
+			badANDLOutGates = append(badANDLOutGates, gate)
+			Debugf("Found bad AND L gate: %s. Out %s should go to OR.", gate, gate.Out)
+		}
+	}
+
+	// Find all XOR R gates that do not go to a Z.
+	var badXORROutGates []*Gate
+	for _, gate := range circuit.GatesXORR {
+		if gate.Out.Type != Z {
+			badXORROutGates = append(badXORROutGates, gate)
+			Debugf("Found bad XOR R gate: %s. Out %s should be Z.", gate, gate.Out)
+		}
+	}
+
+	// Find all AND R gates that do not go to just an OR.
+	var badANDROutGates []*Gate
+	for _, gate := range circuit.GatesANDR {
+		if len(gate.Out.Dests) != 1 || !gate.Out.Dests[0].Is(OR, Right) {
+			badANDROutGates = append(badANDROutGates, gate)
+			Debugf("Found bad AND R gate: %s. Out %s should go only to OR.", gate, gate.Out)
+		}
+	}
+
+	// Find all OR gates that do not output to an XOR R and AND R.
+	var badOROutGates []*Gate
+	xCount := len(circuit.WiresX)
+	for _, gate := range circuit.GatesOR {
+		if gate.Out.Is(Z, xCount) && gate.In1.Source.In1.Number == xCount-1 {
+			continue
+		}
+		if len(gate.Out.Dests) != 2 || !gate.Out.Dests[0].Is(XOR, Right) || !gate.Out.Dests[1].Is(AND, Right) {
+			badOROutGates = append(badOROutGates, gate)
+			Debugf("Found bad OR gate: %s. Out %s should go to XOR R and AND R.", gate, gate.Out)
+		}
+	}
+
+	// Put them all together.
+	badOutGates := CombineSlices(badXORLOutGates, badANDLOutGates, badXORROutGates, badANDROutGates, badOROutGates)
+	slices.SortFunc(badOutGates, CompareGates)
+	if verbose {
+		PrintList("Gates with bad out wires", badOutGates)
+	}
+
+	// Identify all of the output wires coming out of bad out gates
+	var badOutWires []*Wire
+	known := make(map[string]bool)
+	for _, gate := range badOutGates {
+		if !known[gate.Out.Name] {
+			known[gate.Out.Name] = true
+			badOutWires = append(badOutWires, gate.Out)
+		}
+	}
+	badOutWireNames := MapSlice(badOutWires, (*Wire).GetName)
+	slices.Sort(badOutWireNames)
+	Verbosef("Bad out wires (%d): %s", len(badOutWireNames), badOutWireNames)
+
+	rv := TryPairs(nil, badOutWireNames, func(pairs []*Pair) bool {
+		err := SwapAndCheck(pairs, circuit)
+		return err != nil
+	})
+
+	if len(rv) != 4 {
+		return "", fmt.Errorf("could not find correct swaps among %q", badOutWires)
+	}
+
+	Stdoutf("Correct swaps: %s", strings.Join(MapSlice(rv, (*Pair).String), " "))
+
+	return strings.Join(badOutWireNames, ","), nil
+}
+
+func TryPairs(current []*Pair, available []string, runner func(pairs []*Pair) bool) []*Pair {
+	switch len(available) {
+	case 0, 1:
+		if runner(current) {
+			return current
+		}
+		return nil
+	case 2:
+		return TryPairs(CopyAppend(current, NewPair(available[0], available[1])), nil, runner)
+	}
+
+	next1 := available[0]
+	available = available[1:]
+	for i := 0; i < len(available); i++ {
+		next2, nextAvailable := Extract(available, i)
+		next := CopyAppend(current, NewPair(next1, next2[0]))
+		if rv := TryPairs(next, nextAvailable, runner); len(rv) > 0 {
+			return rv
+		}
+	}
+	return nil
+}
+
+func SwapAndCheck(swaps []*Pair, base *Circuit) error {
+	circuit, err := base.Replicate()
+	if err != nil {
+		return fmt.Errorf("could not replicate circuit: %w", err)
+	}
+	for _, pair := range swaps {
+		circuit.SwapWireSources(pair.A, pair.B)
+	}
+
+	return CheckCircuit(circuit)
+}
+
+func CheckExpected(params *Params, input *Input) (string, error) {
+	_, gates, err := CreateExpectedCircuit(input.Wires)
+	if err != nil {
+		return "", fmt.Errorf("could not create expected gates: %w", err)
+	}
+	circuit, err := NewCircuit(gates)
+	if err != nil {
+		return "", fmt.Errorf("could not create expected circuit: %w", err)
+	}
+
+	err = CheckCircuit(circuit)
+	if err != nil {
+		return "", err
+	}
+	return "Expected circuit passes all tests.", nil
+}
+
+func CheckCircuit(circuit *Circuit) error {
+	numsToTry := []int64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1000, 55555, 654321, 81726354, 16557351571215, 18627020517616, 22581612011213, 26442822698403, 35184372088831}
+
+	var errs []error
+	for i := 0; i < len(numsToTry); i++ {
+		for j := 0; j < len(numsToTry); j++ {
+			x, y := numsToTry[i], numsToTry[j]
+			err := circuit.RunWithValues(x, y)
+			if err != nil {
+				return fmt.Errorf("invalid %d + %d: %w", x, y)
+			}
+			if circuit.Z != circuit.ExpZ {
+				errs = append(errs, fmt.Errorf("incorrect: %d + %d: expected %d, actual %d", x, y, circuit.ExpZ, circuit.Z))
+				switch {
+				case debug:
+					// RunWithValues already printed the details.
+					Stderrf("TEST FAILED (above)")
+				case verbose:
+					// Output the failed result
+					Stderrf("TEST FAILED: %d + %d:\n", x, y, circuit.ResultString())
+				default:
+					// Not doing extra output, so we can just stop at the first failure.
+					return errs[0]
+				}
+			} else {
+				Verbosef("Test passed: %d + %d = %d", x, y, circuit.Z)
+			}
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+// Extract returns two slices, the first is all of the vals at the given indexes, the second is the rest of the vals.
+func Extract[E any](vals []E, indexes ...int) ([]E, []E) {
+	if len(indexes) == 0 {
+		return nil, vals
+	}
+	low, high := GetMinMax(indexes)
+	if low < 0 {
+		panic(fmt.Errorf("cannot extract negative index %d from slice of length %d", low, len(vals)))
+	}
+	if high < 0 {
+		panic(fmt.Errorf("cannot extract index %d from slice of length %d", high, len(vals)))
+	}
+	if dups := GetDups(indexes); len(dups) > 0 {
+		panic(fmt.Errorf("cannot extract duplicate indexes %d from slice", dups))
+	}
+
+	keep := make(map[int]bool)
+	for _, i := range indexes {
+		keep[i] = true
+	}
+
+	haves := make([]E, 0, len(indexes))
+	haveNots := make([]E, 0, len(vals)-len(indexes))
+	for i, val := range vals {
+		if keep[i] {
+			haves = append(haves, val)
+		} else {
+			haveNots = append(haveNots, val)
+		}
+	}
+	return haves, haveNots
+}
+
+func GetMinMax(vals []int) (int, int) {
+	switch len(vals) {
+	case 0:
+		return MIN_INT, MAX_INT
+	case 1:
+		return vals[0], vals[0]
+	}
+	return slices.Min(vals), slices.Max(vals)
+	// return min(vals...), max(vals...)
+	// return min(vals[0], vals[1:]...), max(vals[0], vals[1:]...)
+}
+
+func GetDups(vals []int) []int {
+	var rv []int
+	seen := make(map[int]bool)
+	for _, val := range vals {
+		if !seen[val] {
+			seen[val] = true
+			continue
+		}
+		if !slices.Contains(rv, val) {
+			rv = append(rv, val)
+		}
+	}
+	return rv
+}
+
+type Pair struct {
+	A, B string
+}
+
+func NewPair(a, b string) *Pair {
+	return &Pair{A: a, B: b}
+}
+
+func (p *Pair) GetA() string {
+	return p.A
+}
+
+func (p *Pair) GetB() string {
+	return p.B
+}
+
+func (p *Pair) String() string {
+	return fmt.Sprintf("[%s-%s]", p.A, p.B)
 }
 
 func TrySolve(params *Params, input *Input) (string, error) {
@@ -342,9 +617,6 @@ func CombineSlices[E any](lists ...[]E) []E {
 
 // PrintList outputs (to Stderr) the provided vals. The count is appended to the end of the lead in the format "<lead> (<count>)".
 func PrintList[S ~[]E, E fmt.Stringer](lead string, vals S) {
-	if !debug {
-		return
-	}
 	if len(vals) == 0 {
 		StderrAsf(GetFuncName(1), "%s (0).", lead)
 	} else {
@@ -404,6 +676,7 @@ type Circuit struct {
 func NewCircuit(gates []*Gate) (*Circuit, error) {
 	rv := &Circuit{
 		WireMap: make(map[string]*Wire),
+		Swaps:   make(map[string]string),
 	}
 
 	// Copy the gates so we don't mess up other stuff that might be using them.
@@ -566,10 +839,10 @@ func (c *Circuit) Run() error {
 	}
 	// Set the x and y values
 	for _, wire := range c.WiresX {
-		wire.Value = string(c.XBin[wire.Number])
+		wire.Value = string(c.XBin[len(c.XBin)-wire.Number-1])
 	}
 	for _, wire := range c.WiresY {
-		wire.Value = string(c.YBin[wire.Number])
+		wire.Value = string(c.YBin[len(c.YBin)-wire.Number-1])
 	}
 
 	// Unset the Z stuff to prevent confusion if there are errors.
@@ -631,6 +904,18 @@ func (c *Circuit) Replicate() (*Circuit, error) {
 	}
 
 	return rv, nil
+}
+
+func (c *Circuit) SwapWireSources(name1, name2 string) error {
+	wire1 := c.WireMap[name1]
+	if wire1 == nil {
+		return fmt.Errorf("wire 1 %q does not exist", name1)
+	}
+	wire2 := c.WireMap[name2]
+	if wire2 == nil {
+		return fmt.Errorf("wire 2 %q does not exist", name2)
+	}
+	return c.SwapOuts(wire1.Source, wire2.Source)
 }
 
 func (c *Circuit) SwapSources(wire1, wire2 *Wire) error {
@@ -1090,7 +1375,7 @@ func CreateExpectedGateStrings() []string {
 	return rv
 }
 
-func CreateExpectedCircuit(wires []*Wire) (map[string]*Wire, []*Gate, error) {
+func CreateExpectedGates() ([]*Gate, error) {
 	gateStrs := CreateExpectedGateStrings()
 
 	gates := make([]*Gate, len(gateStrs))
@@ -1098,8 +1383,17 @@ func CreateExpectedCircuit(wires []*Wire) (map[string]*Wire, []*Gate, error) {
 	for i, gateStr := range gateStrs {
 		gates[i], err = ParseGate(gateStr)
 		if err != nil {
-			return nil, nil, err
+			return nil, fmt.Errorf("gate [%d]: %w", i, err)
 		}
+	}
+
+	return gates, nil
+}
+
+func CreateExpectedCircuit(wires []*Wire) (map[string]*Wire, []*Gate, error) {
+	gates, err := CreateExpectedGates()
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return BuildCircuit(wires, gates)
