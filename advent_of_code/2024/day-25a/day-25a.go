@@ -38,7 +38,6 @@ func Solve(params *Params) (string, error) {
 }
 
 func FasterSolve(input *Input) int {
-
 	locksBySum := SumHist(input.Locks)
 	keysBySum := SumHist(input.Keys)
 

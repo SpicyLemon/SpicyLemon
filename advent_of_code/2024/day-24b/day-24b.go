@@ -16,6 +16,52 @@ import (
 
 const DEFAULT_COUNT = 0
 
+// Problem analysis:
+// We know that its supposed to be a chain of full adders.
+// Each full adder has 5 gates: 2 XOR, 2 AND, 1 OR.
+// I've divided the XORs and ANDs into Left and Right.
+// The left XOR and AND both get their inputs from the x and y wires (and its verified that x and y have the same number).
+// The left XOR outputs to the right XOR and the right AND
+// The left AND outputs to the right XOR and the OR.
+// the right XOR outputs to the z of the same number.
+// The right AND outputs to the OR.
+// The OR gets its input from both the ANDs and outputs to the right XOR and AND of the next number.
+// Special cases:
+// The 0 bits don't a full adder since there's no carry yet.
+// So there's an XOR gate that has x00 and y00 as inputs, and z00 as the ouptut.
+// And there's an AND gate that has x00 and y00 as inputs, and outputs to the right AND and XOR of the 01.
+// The very last OR outputs to z45 instead of more gates.
+//
+// To solve this, here's what I did:
+// 1. Build the circuit as described by the gate lines.
+// 2. Identify which type of gate each one is (Op + left/right)
+// 3. For each type, identify the gates that do not output to the expected types of next gates.
+// 4. The output wires of the gates with the wrong output are the answer to the puzzle.
+//
+// In one of the running options, I run some checks that made sure that all x and y pairs are inputs to the same ANDs and XORs
+// I used this to identify the "Left" XORs and ANDs, all other gates were labeled "Right".
+//
+// Bonus: I took it one step further to identify the actual swaps to make and to check the circuit using those swaps.
+// 5. Start Iterating through all pair combinations.
+// 6. Make the swaps as paired.
+// 7. Check the circuit by running different values through it.
+// 8. If the circuit passes, we can stop.
+//
+// The puzzle tells us there are 8 wires to swap.
+// The total number of pairs you can make is 105 = 7 * 5 * 3.
+// Build the pairs recursively using TryPairs(current []*Pair, available []string, runner func(pairs []*Pair) bool) []*Pair.
+// 1. Pair the first entry of available with each remaining entry, add that pair to current and recurse.
+// 2. Once there are fewer than 2 available, run the runner with the current pairs.
+// 3. If the runner passes, return the current pair and chain that return out of the recursive function.
+// * The runner I provided applies the pairs as wire swaps in the circuit, then runs the checker, returning true if it works right.
+//
+// We start with 8 available entries.
+// The first element will have 7 different entries to pair with, and leave 6 other entries.
+// The first element of the others will have 5 different entries to pair with, and leave 4 more entries.
+// The first element of the 4 more will have 3 different entries to pair with, and leave 2 more entries.
+// 2 entries can only be paird one way.
+// So there are 7 * 5 * 3 * 1 = 105 different pairs to try, which is very doable.
+
 // Solve is the main entry point to finding a solution.
 // The string it returns should be (or include) the answer.
 func Solve(params *Params) (string, error) {
@@ -25,7 +71,7 @@ func Solve(params *Params) (string, error) {
 		return "", err
 	}
 	if params.InputFile == DEFAULT_INPUT_FILE {
-		return "", errors.New("This solution cannot run on the example.")
+		return "", errors.New("this solution cannot run on the example")
 	}
 
 	Debugf("Parsed Input:\n%s", input)
@@ -60,7 +106,7 @@ func Solve(params *Params) (string, error) {
 	}
 }
 
-func TryFix(params *Params, input *Input) (string, error) {
+func TryFix(_ *Params, input *Input) (string, error) {
 	circuit, err := NewCircuit(input.Gates)
 	if err != nil {
 		return "", fmt.Errorf("could not create circuit from the input gates: %w", err)
@@ -184,13 +230,16 @@ func SwapAndCheck(swaps []*Pair, base *Circuit) error {
 		return fmt.Errorf("could not replicate circuit: %w", err)
 	}
 	for _, pair := range swaps {
-		circuit.SwapWireSources(pair.A, pair.B)
+		err = circuit.SwapWireSources(pair.A, pair.B)
+		if err != nil {
+			return fmt.Errorf("could not swap %s: %w", pair, err)
+		}
 	}
 
 	return CheckCircuit(circuit)
 }
 
-func CheckExpected(params *Params, input *Input) (string, error) {
+func CheckExpected(_ *Params, input *Input) (string, error) {
 	_, gates, err := CreateExpectedCircuit(input.Wires)
 	if err != nil {
 		return "", fmt.Errorf("could not create expected gates: %w", err)
@@ -208,7 +257,8 @@ func CheckExpected(params *Params, input *Input) (string, error) {
 }
 
 func CheckCircuit(circuit *Circuit) error {
-	numsToTry := []int64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1000, 55555, 654321, 81726354, 16557351571215, 18627020517616, 22581612011213, 26442822698403, 35184372088831}
+	numsToTry := []int64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1000, 55555, 654321, 81726354,
+		16557351571215, 18627020517616, 22581612011213, 26442822698403, 35184372088831}
 
 	var errs []error
 	for i := 0; i < len(numsToTry); i++ {
@@ -216,7 +266,7 @@ func CheckCircuit(circuit *Circuit) error {
 			x, y := numsToTry[i], numsToTry[j]
 			err := circuit.RunWithValues(x, y)
 			if err != nil {
-				return fmt.Errorf("invalid %d + %d: %w", x, y)
+				return fmt.Errorf("invalid %d + %d: %w", x, y, err)
 			}
 			if circuit.Z != circuit.ExpZ {
 				errs = append(errs, fmt.Errorf("incorrect: %d + %d: expected %d, actual %d", x, y, circuit.ExpZ, circuit.Z))
@@ -226,7 +276,7 @@ func CheckCircuit(circuit *Circuit) error {
 					Stderrf("TEST FAILED (above)")
 				case verbose:
 					// Output the failed result
-					Stderrf("TEST FAILED: %d + %d:\n", x, y, circuit.ResultString())
+					Stderrf("TEST FAILED: %d + %d:\n%s", x, y, circuit.ResultString())
 				default:
 					// Not doing extra output, so we can just stop at the first failure.
 					return errs[0]
@@ -320,7 +370,7 @@ func (p *Pair) String() string {
 	return fmt.Sprintf("[%s-%s]", p.A, p.B)
 }
 
-func TrySolve(params *Params, input *Input) (string, error) {
+func TrySolve(_ *Params, input *Input) (string, error) {
 	circuit, err := NewCircuit(input.Gates)
 	if err != nil {
 		return "", fmt.Errorf("could not create circuit from the input gates: %w", err)
@@ -383,7 +433,7 @@ func TrySolve(params *Params, input *Input) (string, error) {
 	}
 
 	// Find all XOR R gates that do not come from an XOR L or OR.
-	var badXORRInGates []*Gate
+	var badXORRInGates []*Gate //nolint:prealloc // No clue how many of these there will be, stupid linter.
 	for _, gate := range circuit.GatesXORR {
 		if gate.In1.Source.Is(XOR, Left) && gate.In2.Source.Is(OR, Right) {
 			continue
@@ -405,7 +455,7 @@ func TrySolve(params *Params, input *Input) (string, error) {
 	}
 
 	// Find all AND R gates that do not come from an XOR L and OR.
-	var badANDRInGates []*Gate
+	var badANDRInGates []*Gate //nolint:prealloc // No clue how many of these there will be, stupid linter.
 	for _, gate := range circuit.GatesANDR {
 		if gate.In1.Source.Is(XOR, Left) && gate.In2.Source.Is(OR, Right) {
 			continue
@@ -431,7 +481,7 @@ func TrySolve(params *Params, input *Input) (string, error) {
 	}
 
 	// Find all OR gates that do not come from an AND L and AND R.
-	var badORInGates []*Gate
+	var badORInGates []*Gate //nolint:prealloc // No clue how many of these there will be, stupid linter.
 	for _, gate := range circuit.GatesOR {
 		if gate.In1.Source.Is(AND, Left) && gate.In2.Source.Is(AND, Right) {
 			continue
@@ -561,12 +611,12 @@ func TrySolve(params *Params, input *Input) (string, error) {
 	return strings.Join(badOutWireNames, ","), nil
 }
 
-type Problem[E any] struct {
+type Problem[E fmt.Stringer] struct { //nolint:errname // Not really using this for an error type.
 	Value  E
 	Reason error
 }
 
-func NewProblem[E any](value E, reason error) *Problem[E] {
+func NewProblem[E fmt.Stringer](value E, reason error) *Problem[E] {
 	return &Problem[E]{
 		Value:  value,
 		Reason: reason,
@@ -772,7 +822,7 @@ func NewCircuit(gates []*Gate) (*Circuit, error) {
 	return rv, nil
 }
 
-// WithX updates this circuit's X registers with the provided numeric value and returns itself
+// WithX updates this circuit's X registers with the provided numeric value and returns itself.
 func (c *Circuit) WithX(val int64) *Circuit {
 	c.X = val
 	c.XBin = ZeroPad(strconv.FormatInt(val, 2), len(c.WiresX))
@@ -793,7 +843,7 @@ func (c *Circuit) WithXBin(val string) *Circuit {
 	return c.UpdateExpZ()
 }
 
-// WithY updates this circuit's Y registers with the provided numeric value and returns itself
+// WithY updates this circuit's Y registers with the provided numeric value and returns itself.
 func (c *Circuit) WithY(val int64) *Circuit {
 	c.Y = val
 	c.YBin = ZeroPad(strconv.FormatInt(val, 2), len(c.WiresY))
@@ -885,7 +935,8 @@ func (c *Circuit) ResultString() string {
 	return result.String()
 }
 
-// Replicate creates a new circuit with the same gate layout as this one, but copies of all the gates and wires, and all the values zerod out.
+// Replicate creates a new circuit with the same gate layout as this one,
+// but copies of all the gates and wires, and all the values zerod out.
 func (c *Circuit) Replicate() (*Circuit, error) {
 	if c == nil {
 		return nil, errors.New("cannot replicate nil circuit")
@@ -961,7 +1012,8 @@ func (c *Circuit) validateCanSwap(name1, name2 string) error {
 		return fmt.Errorf("cannot swap %s with %s: %s has already been swapped with %s", name1, name2, name2, c.Swaps[name2])
 	}
 	// Both name1 and name2 were previously swapped with others.
-	return fmt.Errorf("cannot swap %s with %s: %s already swappeed with %s and %s with %s", name1, name2, name1, c.Swaps[name1], name2, c.Swaps[name2])
+	return fmt.Errorf("cannot swap %s with %s: %s already swappeed with %s and %s with %s",
+		name1, name2, name1, c.Swaps[name1], name2, c.Swaps[name2])
 }
 
 func (c *Circuit) GetSwaps() []string {
@@ -1002,7 +1054,7 @@ func SwapStr(a, b string) string {
 	return b + "-" + a
 }
 
-func TrySolveV1(params *Params, input *Input) (string, error) {
+func TrySolveV1(_ *Params, input *Input) (string, error) {
 	expWireMap, expGatesAll, err := CreateExpectedCircuit(input.Wires)
 	if err != nil {
 		return "", fmt.Errorf("could not create expected circuit: %w", err)
@@ -1040,7 +1092,7 @@ func TrySolveV1(params *Params, input *Input) (string, error) {
 		}
 	}
 
-	var badGates []*Gate
+	var badGates []*Gate //nolint:prealloc // No clue how many of these there will be, stupid linter.
 	for _, gate := range actGates.XOR {
 		// 3 types of XOR gate:
 		// X and y in, mid out to xor, and.
@@ -1272,7 +1324,7 @@ func Manual(params *Params, input *Input) (string, error) {
 		}
 	}
 
-	return "", nil
+	return "nothing to report", nil
 }
 
 func RunExpected(params *Params, input *Input) (string, error) {
@@ -1345,7 +1397,7 @@ func Explore(params *Params, input *Input) (string, error) {
 		}
 	}
 
-	return "", nil
+	return "nothing worth reporting", nil
 }
 
 func CreateExpectedGateStrings() []string {
@@ -1569,7 +1621,10 @@ func RunCircuit(wireMap map[string]*Wire, gates []*Gate, swaps map[string]string
 		SwapSources(wire1, wire2)
 	}
 
-	PropagateSignals(gates, zWires)
+	err := PropagateSignals(gates, zWires)
+	if err != nil {
+		return nil, fmt.Errorf("could not propagate signals: %w", err)
+	}
 	if debug {
 		Stderrf("x wires (%d):\n%s", len(xWires), StringNumberJoin(xWires, 1, "\n"))
 		Stderrf("y wires (%d):\n%s", len(yWires), StringNumberJoin(yWires, 1, "\n"))
@@ -1858,7 +1913,7 @@ func (w *Wire) IsMid() bool {
 	return w.Type == Mid
 }
 
-func (w *Wire) TryToNumber() (bool, error) {
+func (w *Wire) TryToNumber() (bool, error) { //nolint:unparam // Func unfinished, will return an error eventually.
 	if w.Number >= 0 {
 		return true, nil
 	}
@@ -2028,7 +2083,8 @@ func (g *Gate) TryToNumber() (bool, error) {
 			ins := -1
 			if inOR.Number >= -1 && inXOR.Number >= -1 {
 				if inOR.Number+1 != inXOR.Number {
-					return false, fmt.Errorf("%s %s in OR number %d + 1 should equal in XOR number %d", g.Op, g.Type, inOR.Number, inXOR.Number)
+					return false, fmt.Errorf("%s %s in OR number %d + 1 should equal in XOR number %d",
+						g.Op, g.Type, inOR.Number, inXOR.Number)
 				}
 				ins = max(inOR.Number, inXOR.Number)
 			}
@@ -2036,7 +2092,7 @@ func (g *Gate) TryToNumber() (bool, error) {
 				return false, nil
 			}
 			if ins >= 0 && out >= 0 && ins != out {
-				return false, fmt.Errorf("%s %s ins have number %d but out %s has number %s", g.Op, g.Type, ins, g.Out.Name, out)
+				return false, fmt.Errorf("%s %s ins have number %d but out %s has number %d", g.Op, g.Type, ins, g.Out.Name, out)
 			}
 			if ins >= 0 {
 				g.Number = ins
@@ -2222,13 +2278,12 @@ func (g *Gate) GetOutName() string {
 
 // GetLabel returns a string with the format "<op><type><number>", e.g. "XORL01".
 func (g *Gate) GetLabel() string {
-	return fmt.Sprintf("%s %3s %s %q => %s", g.In1Name, g.Op, g.In2Name, g.Value, g.OutName)
 	gType := Ternary(len(g.Type) > 0, string(g.Type), "?")
 	gNum := "??"
 	if g.Number >= 0 {
-		gNum = strconv.Itoa(g.Number)
+		gNum = fmt.Sprintf("%02d", g.Number)
 	}
-	return fmt.Sprintf("%s%s%02d", g.Op, gType, gNum)
+	return fmt.Sprintf("%s%s%s", g.Op, gType, gNum)
 }
 
 func (g *Gate) Is(op Op, t GateType) bool {
