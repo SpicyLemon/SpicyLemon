@@ -27,7 +27,7 @@ func TestGetArgs(t *testing.T) {
 	tests := []struct {
 		name       string
 		argsIn     []string
-		expArgs    []string
+		expArgs    []string // TODO: Change this to a calcArgs.
 		expBool    bool
 		expErr     string
 		expInPrint []string
@@ -70,6 +70,7 @@ func TestGetArgs(t *testing.T) {
 			argsIn:  []string{"23m", "x", "-v", "44"},
 			expArgs: []string{"23m", "x", "44"},
 		},
+		// TODO: Add cases with a -p.
 	}
 
 	for _, tc := range tests {
@@ -79,7 +80,7 @@ func TestGetArgs(t *testing.T) {
 			Verbose = false
 
 			var w bytes.Buffer
-			var actArgs []string
+			var actArgs *CalcArgs
 			var actBool bool
 			var err error
 			testFunc := func() {
@@ -88,7 +89,7 @@ func TestGetArgs(t *testing.T) {
 			require.NotPanics(t, testFunc, "getArgs(%q, w)", tc.argsIn)
 			printed := w.String()
 			AssertEqualError(t, tc.expErr, err, "getArgs(%q, w) error", tc.argsIn)
-			assert.Equal(t, tc.expArgs, actArgs, "getArgs(%q, w) args", tc.argsIn)
+			assert.Equal(t, tc.expArgs, actArgs.All, "getArgs(%q, w) args", tc.argsIn)
 			assert.Equal(t, tc.expBool, actBool, "getArgs(%q, w) bool", tc.argsIn)
 			for i, exp := range tc.expInPrint {
 				assert.Contains(t, printed, exp, "[%d]: Printed text should have %q", i, exp)
@@ -475,6 +476,8 @@ func TestProcessFlags(t *testing.T) {
 			expOutFmt: "02 Jan 06",
 			expPO:     []*NamedFormat{MakeNamedFormat("User", "02 Jan 06 15:04:05 -0700")},
 		},
+
+		// TODO: Add some cases with a -p and --pipe.
 	}
 
 	for _, tc := range tests {
@@ -514,7 +517,7 @@ func TestCombineArgs(t *testing.T) {
 	tests := []struct {
 		name   string
 		argsIn []string
-		exp    []string
+		exp    []string // TODO: change this to a calcArgs.
 	}{
 		{
 			name:   "nil",
@@ -546,95 +549,30 @@ func TestCombineArgs(t *testing.T) {
 			argsIn: []string{"1", "2", "3", "+", "4", "5", "+"},
 			exp:    []string{"1 2 3", "+", "4 5", "+"},
 		},
+		// TODO: Add test cases with the -p flag.
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var act []string
+			var act *CalcArgs
 			testFunc := func() {
 				act = CombineArgs(tc.argsIn)
 			}
 			require.NotPanics(t, testFunc, "combineArgs(%q)", tc.argsIn)
-			assert.Equal(t, tc.exp, act, "combineArgs(%q) result", tc.argsIn)
+			assert.Equal(t, tc.exp, act.All, "combineArgs(%q) result", tc.argsIn)
 		})
 	}
 }
 
-func TestGetNextValueArg(t *testing.T) {
-	tests := []struct {
-		name   string
-		args   []string
-		expStr string
-		expInt int
-	}{
-		{
-			name:   "nil args",
-			args:   nil,
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "empty args",
-			args:   []string{},
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "one arg: is op",
-			args:   []string{"+"},
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "one arg: not op",
-			args:   []string{"3"},
-			expStr: "3",
-			expInt: 1,
-		},
-		{
-			name:   "two args: first is op",
-			args:   []string{"+", "3"},
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "two args: second is op",
-			args:   []string{"3", "+"},
-			expStr: "3",
-			expInt: 1,
-		},
-		{
-			name:   "two args: no ops",
-			args:   []string{"3", "8"},
-			expStr: "3 8",
-			expInt: 2,
-		},
-		{
-			name:   "four args, no op",
-			args:   []string{"one", "two", "three", "fourteen"},
-			expStr: "one two three fourteen",
-			expInt: 4,
-		},
-	}
+// TODO: TestIsPipeInd(t *testing.T)
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var actStr string
-			var actInt int
-			testFunc := func() {
-				actStr, actInt = GetNextValueArg(tc.args)
-			}
-			require.NotPanics(t, testFunc, "getNextValueArg(%q)", tc.args)
-			assert.Equal(t, tc.expStr, actStr, "getNextValueArg(%q) string", tc.args)
-			assert.Equal(t, tc.expInt, actInt, "getNextValueArg(%q) int", tc.args)
-		})
-	}
-}
+// TODO: TestIsCharDev(t *testing.T)
 
 func TestMainE(t *testing.T) {
 	tests := []struct {
-		name        string
-		argsIn      []string
+		name   string
+		argsIn []string
+		// TODO: Add pipe stuff.
 		expErr      string
 		expResult   string
 		expInStdout []string
@@ -713,7 +651,7 @@ func TestMainE(t *testing.T) {
 			var stdoutB bytes.Buffer
 			var err error
 			testFunc := func() {
-				err = MainE(tc.argsIn, &stdoutB)
+				err = MainE(tc.argsIn, &stdoutB, nil)
 			}
 			require.NotPanics(t, testFunc, "mainE(%q, w)", tc.argsIn)
 			stdout := stdoutB.String()

@@ -1,16 +1,12 @@
 package main
 
+import "io"
+
 // This file exposes some private stuff so for the purpose of unit tests.
 
 var (
-	// GetArgs is a test-only exposure of getArgs.
-	GetArgs = getArgs
 	// ProcessFlags is a test-only exposure of processFlags.
 	ProcessFlags = processFlags
-	// CombineArgs is a test-only exposure of combineArgs.
-	CombineArgs = combineArgs
-	// GetNextValueArg is a test-only exposure of getNextValueArg.
-	GetNextValueArg = getNextValueArg
 	// MainE is a test-only exposure of mainE.
 	MainE = mainE
 
@@ -26,3 +22,17 @@ var (
 	// SetInputFormatByValue is a test-only exposure of setInputFormatByValue
 	SetInputFormatByValue = setInputFormatByValue
 )
+
+// CalcArgs is a test-only exposure of the calcArgs type.
+type CalcArgs = calcArgs
+
+// GetArgs is a test-only exposure of getArgs.
+func GetArgs(argsIn []string, stdout io.Writer) (*CalcArgs, bool, error) {
+	rv, ok, err := getArgs(argsIn, stdout)
+	return rv, ok, err
+}
+
+// CombineArgs is a test-only exposure of combineArgs.
+func CombineArgs(argsIn []string) *CalcArgs {
+	return combineArgs(argsIn)
+}
