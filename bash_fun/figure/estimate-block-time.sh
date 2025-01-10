@@ -489,14 +489,19 @@ else
     exit 2
 fi
 
+if command -v date-math > /dev/null 2>&1; then
+    dt_past=" = T+$( date-math --input-format 'Mon 2006-01-02 15:04:05 -0700 (MST)' "$current_time_disp" - "$old_time_disp" )"
+    dt_desired=" = T-$( date-math --input-format 'Mon 2006-01-02 15:04:05 -0700 (MST)' "$desired_time_disp" - "$current_time_disp" )"
+fi
+
 #########################
 # Do the output dance!
 
 [[ -n "$pio_home" ]] && printf 'PIO Home: %s\n' "$pio_home"
 [[ -n "$chain_id" ]] && printf 'Chain-Id: %s\n' "$chain_id"
-[[ -n "$old_time_disp" ]] && printf '   Past: %s Height: %s\n' "$old_time_disp" "$old_height"
+[[ -n "$old_time_disp" ]] && printf '   Past: %s Height: %s%s\n' "$old_time_disp" "$old_height" "$dt_past"
 printf 'Current: %s Height: %s\n' "$current_time_disp" "$current_height"
-printf 'Desired: %s Height: %s\n' "$desired_time_disp" "$desired_height"
+printf 'Desired: %s Height: %s%s\n' "$desired_time_disp" "$desired_height" "$dt_desired"
 printf 'Elapsed: %s ms = %s blocks (at %s ms/block%s).\n' "$ms_diff" "$block_diff" "$ms_per_block" "$blocks_back_disp"
 
 
