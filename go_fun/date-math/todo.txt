@@ -3,14 +3,3 @@ TODO:
   Basically, if an arg is a whole number, and `ApplyCalculation` gives an "operation not defined", try it again as the other type.
 * Add a flag that allows durations to be output as total seconds or total minutes (probably truncated).
   Either that or make something else that converts a duration string into total seconds or minutes or whatever.
-* Allow for stuff to be piped in.
-  The way I'm picturing this is that each equation is one line.
-  No formula = read from stdin for the equations (if open).
-  In a formula, allow for "-p" or "--pipe" or "--stdin".
-    The formula will be evaluated to that flag.
-    Then, until there's no more lines to read:
-    1. Read the next line.
-    2. Place the line in the formula where the flag was and finish the calculation.
-  Should be able to handle this flag when expecting either an op or value.
-  Should be able to be at the start, middle, or end of a formula.
-  If no args are provided, check for an open stdin. If open, treat it the same as if only the flag were provided, otherwise output help.

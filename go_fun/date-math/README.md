@@ -101,6 +101,12 @@ There are a few flags that can also be provided:
         --output-name or --output-format are used.
   --formats
         Same as providing just "formats"; outputs info on all named formats.
+  --pipe|-p
+        Read formula args from stdin and run the calculation for each line.
+        Each line is inserted in place of the --pipe or -p flag among any other
+        formula args that are provided. This allows for piping in values, ops,
+        partial formulas, or full formulas. This flag can be omitted if there
+        are no other formula args to provide.
   --verbose|-v
         Print debugging information to stderr.
         Can also be enabled by setting the VERBOSE env var.
