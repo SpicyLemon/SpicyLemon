@@ -251,21 +251,14 @@ func isPipeInd(arg string) bool {
 	return EqualFoldOneOf(arg, "-p", "--pipe")
 }
 
-// isCharDev returns true if the provided file is a character device.
-// This essentially returns true if there's stuff being piped in.
-func isCharDev(stdin *os.File) bool {
-	stat, err := stdin.Stat()
-	return err == nil && (stat.Mode()&os.ModeCharDevice) == 0
-}
-
 // mainE actually runs this program, printing to the provided writer (e.g. os.Stdout) or returning an error as appropriate.
-func mainE(argsIn []string, stdout io.Writer, stdin *os.File) error {
+func mainE(argsIn []string, stdout io.Writer, stdin io.Reader) error {
 	if len(argsIn) == 0 {
-		if isCharDev(stdin) {
-			// If stdin is a character device, and no other args were provided, we use that.
+		if stdin != nil {
+			// If we have an stdin, and no other args were provided, we get everything from the pipe.
 			argsIn = []string{"--pipe"}
 		} else {
-			// If stdin is NOT a character device and no args were provided, print help.
+			// If don't have stdin, and no args were provided, print help.
 			argsIn = []string{"--help"}
 		}
 	}
@@ -316,13 +309,24 @@ func mainE(argsIn []string, stdout io.Writer, stdin *os.File) error {
 	return nil
 }
 
+// isCharDev returns true if the provided file is a character device.
+// This essentially returns true if there's stuff being piped in.
+func isCharDev(stdin *os.File) bool {
+	stat, err := stdin.Stat()
+	return err == nil && (stat.Mode()&os.ModeCharDevice) == 0
+}
+
 // main is the program's entry point.
 func main() {
 	if val, ok := os.LookupEnv("VERBOSE"); ok {
 		Verbose, _ = strconv.ParseBool(val)
 		verbosef("verbose environment variable detected")
 	}
-	if err := mainE(os.Args[1:], os.Stdout, os.Stdin); err != nil {
+	var stdin io.Reader
+	if isCharDev(os.Stdin) {
+		stdin = os.Stdin
+	}
+	if err := mainE(os.Args[1:], os.Stdout, stdin); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
