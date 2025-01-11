@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -772,10 +773,12 @@ func TestIsPipeInd(t *testing.T) {
 // TODO: func TestIsCharDev(t *testing.T)
 
 func TestMainE(t *testing.T) {
+	_, pipeArgErr := ParseDTVal("--pipe")
+
 	tests := []struct {
-		name   string
-		argsIn []string
-		// TODO: Add pipe stuff.
+		name        string
+		argsIn      []string
+		stdin       string
 		expErr      string
 		expResult   string
 		expInStdout []string
@@ -832,6 +835,30 @@ func TestMainE(t *testing.T) {
 			},
 			expResult: "2002-05-08 04:20:59.4 +0000",
 		},
+		{
+			name:      "no args, two formulas piped in",
+			argsIn:    nil,
+			stdin:     "15m - 5s\n15m + 5s",
+			expResult: "14m55s\n15m5s",
+		},
+		{
+			name:   "piped in partial formulas",
+			argsIn: []string{"2002-05-08", "4:20:00", "-0000", "-p", "+", "5s"},
+			stdin: strings.Join([]string{
+				"+ 15s",
+				"- 2002-05-08 1:15:03 -0000 x 2",
+			}, "\n"),
+			expResult: strings.Join([]string{
+				"2002-05-08 04:20:20 +0000",
+				"6h9m59s",
+			}, "\n"),
+		},
+		{
+			name:   "two pipe args",
+			argsIn: []string{"5m", "+", "--pipe", "-", "--pipe"},
+			stdin:  "10s\n11s",
+			expErr: pipeArgErr.Error(),
+		},
 	}
 
 	for _, tc := range tests {
@@ -851,10 +878,17 @@ func TestMainE(t *testing.T) {
 			}()
 			os.Stderr = stderrW
 
+			var stdin io.Reader
+			if len(tc.stdin) > 0 {
+				var stdinB bytes.Buffer
+				stdinB.WriteString(tc.stdin)
+				stdin = &stdinB
+			}
+
 			var stdoutB bytes.Buffer
 			var err error
 			testFunc := func() {
-				err = MainE(tc.argsIn, &stdoutB, nil)
+				err = MainE(tc.argsIn, &stdoutB, stdin)
 			}
 			require.NotPanics(t, testFunc, "mainE(%q, w)", tc.argsIn)
 			stdout := stdoutB.String()
