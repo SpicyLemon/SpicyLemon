@@ -27,7 +27,7 @@ func TestGetArgs(t *testing.T) {
 	tests := []struct {
 		name       string
 		argsIn     []string
-		expArgs    []string // TODO: Change this to a calcArgs.
+		expArgs    *CalcArgs
 		expBool    bool
 		expErr     string
 		expInPrint []string
@@ -63,14 +63,48 @@ func TestGetArgs(t *testing.T) {
 		{
 			name:    "formula with args to combine",
 			argsIn:  []string{"2006-04-12", "17:04:55", "-", "2006-04-12", "17:03:12"},
-			expArgs: []string{"2006-04-12 17:04:55", "-", "2006-04-12 17:03:12"},
+			expArgs: &CalcArgs{All: []string{"2006-04-12 17:04:55", "-", "2006-04-12 17:03:12"}},
 		},
 		{
 			name:    "flag in the middle of formula",
 			argsIn:  []string{"23m", "x", "-v", "44"},
-			expArgs: []string{"23m", "x", "44"},
+			expArgs: &CalcArgs{All: []string{"23m", "x", "44"}},
 		},
-		// TODO: Add cases with a -p.
+		{
+			name:    "just --pipe",
+			argsIn:  []string{"--pipe"},
+			expArgs: &CalcArgs{All: []string{"--pipe"}, HavePipe: true},
+		},
+		{
+			name:   "formula with --pipe at start",
+			argsIn: []string{"--pipe", "+", "15m"},
+			expArgs: &CalcArgs{
+				All:      []string{"--pipe", "+", "15m"},
+				HavePipe: true,
+				PrePipe:  nil,
+				PostPipe: []string{"+", "15m"},
+			},
+		},
+		{
+			name:   "formula with --pipe at end",
+			argsIn: []string{"15m", "+", "--pipe"},
+			expArgs: &CalcArgs{
+				All:      []string{"15m", "+", "--pipe"},
+				HavePipe: true,
+				PrePipe:  []string{"15m", "+"},
+				PostPipe: nil,
+			},
+		},
+		{
+			name:   "formula with -p in middle",
+			argsIn: []string{"15m", "+", "--pipe", "44"},
+			expArgs: &CalcArgs{
+				All:      []string{"15m", "+", "--pipe", "44"},
+				HavePipe: true,
+				PrePipe:  []string{"15m", "+"},
+				PostPipe: []string{"44"},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -78,6 +112,10 @@ func TestGetArgs(t *testing.T) {
 			defer ResetGlobalsFn()()
 			defer SuppressStderrFn()()
 			Verbose = false
+
+			if tc.expArgs == nil {
+				tc.expArgs = &CalcArgs{}
+			}
 
 			var w bytes.Buffer
 			var actArgs *CalcArgs
@@ -89,7 +127,7 @@ func TestGetArgs(t *testing.T) {
 			require.NotPanics(t, testFunc, "getArgs(%q, w)", tc.argsIn)
 			printed := w.String()
 			AssertEqualError(t, tc.expErr, err, "getArgs(%q, w) error", tc.argsIn)
-			assert.Equal(t, tc.expArgs, actArgs.All, "getArgs(%q, w) args", tc.argsIn)
+			assert.Equal(t, tc.expArgs, actArgs, "getArgs(%q, w) args", tc.argsIn)
 			assert.Equal(t, tc.expBool, actBool, "getArgs(%q, w) bool", tc.argsIn)
 			for i, exp := range tc.expInPrint {
 				assert.Contains(t, printed, exp, "[%d]: Printed text should have %q", i, exp)
@@ -477,7 +515,38 @@ func TestProcessFlags(t *testing.T) {
 			expPO:     []*NamedFormat{MakeNamedFormat("User", "02 Jan 06 15:04:05 -0700")},
 		},
 
-		// TODO: Add some cases with a -p and --pipe.
+		{
+			name:    "just --pipe",
+			argsIn:  []string{"--pipe"},
+			expArgs: []string{"--pipe"},
+		},
+		{
+			name:    "just -p",
+			argsIn:  []string{"-p"},
+			expArgs: []string{"-p"},
+		},
+		{
+			name:    "arg --pipe arg",
+			argsIn:  []string{"arg1", "--pipe", "arg2"},
+			expArgs: []string{"arg1", "--pipe", "arg2"},
+		},
+		{
+			name:    "arg -p arg",
+			argsIn:  []string{"arg1", "-p", "arg2"},
+			expArgs: []string{"arg1", "-p", "arg2"},
+		},
+		{
+			name:    "-v -p",
+			argsIn:  []string{"-v", "-p"},
+			expArgs: []string{"-p"},
+			expV:    true,
+		},
+		{
+			name:    "-p -v",
+			argsIn:  []string{"-p", "-v"},
+			expArgs: []string{"-p"},
+			expV:    true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -517,7 +586,7 @@ func TestCombineArgs(t *testing.T) {
 	tests := []struct {
 		name   string
 		argsIn []string
-		exp    []string // TODO: change this to a calcArgs.
+		exp    *CalcArgs
 	}{
 		{
 			name:   "nil",
@@ -532,41 +601,175 @@ func TestCombineArgs(t *testing.T) {
 		{
 			name:   "one arg: op",
 			argsIn: []string{"+"},
-			exp:    []string{"+"},
+			exp:    &CalcArgs{All: []string{"+"}},
 		},
 		{
 			name:   "arg op arg op arg",
 			argsIn: []string{"1", "+", "2", "+", "3"},
-			exp:    []string{"1", "+", "2", "+", "3"},
+			exp:    &CalcArgs{All: []string{"1", "+", "2", "+", "3"}},
 		},
 		{
 			name:   "three args, op, two more",
 			argsIn: []string{"1", "2", "3", "+", "4", "5"},
-			exp:    []string{"1 2 3", "+", "4 5"},
+			exp:    &CalcArgs{All: []string{"1 2 3", "+", "4 5"}},
 		},
 		{
 			name:   "three args, op, two more, op",
 			argsIn: []string{"1", "2", "3", "+", "4", "5", "+"},
-			exp:    []string{"1 2 3", "+", "4 5", "+"},
+			exp:    &CalcArgs{All: []string{"1 2 3", "+", "4 5", "+"}},
 		},
-		// TODO: Add test cases with the -p flag.
+
+		{
+			name:   "just pipe",
+			argsIn: []string{"--pipe"},
+			exp:    &CalcArgs{All: []string{"--pipe"}, HavePipe: true},
+		},
+		{
+			name:   "arg pipe",
+			argsIn: []string{"1", "2", "-p"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2"},
+				PostPipe: nil,
+			},
+		},
+		{
+			name:   "arg op pipe",
+			argsIn: []string{"1", "2", "+", "-p"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "+", "-p"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "+"},
+				PostPipe: nil,
+			},
+		},
+		{
+			name:   "pipe arg",
+			argsIn: []string{"--pipe", "1", "2"},
+			exp: &CalcArgs{
+				All:      []string{"--pipe", "1 2"},
+				HavePipe: true,
+				PrePipe:  nil,
+				PostPipe: []string{"1 2"},
+			},
+		},
+		{
+			name:   "pipe op arg",
+			argsIn: []string{"--pipe", "+", "1", "2"},
+			exp: &CalcArgs{
+				All:      []string{"--pipe", "+", "1 2"},
+				HavePipe: true,
+				PrePipe:  nil,
+				PostPipe: []string{"+", "1 2"},
+			},
+		},
+		{
+			name:   "arg pipe arg",
+			argsIn: []string{"1", "2", "-p", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2"},
+				PostPipe: []string{"3 4"},
+			},
+		},
+		{
+			name:   "arg pipe op arg",
+			argsIn: []string{"1", "2", "-p", "+", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p", "+", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2"},
+				PostPipe: []string{"+", "3 4"},
+			},
+		},
+		{
+			name:   "arg op pipe arg",
+			argsIn: []string{"1", "2", "+", "-p", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "+", "-p", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "+"},
+				PostPipe: []string{"3 4"},
+			},
+		},
+		{
+			name:   "arg op pipe op arg",
+			argsIn: []string{"1", "2", "+", "-p", "x", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "+", "-p", "x", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "+"},
+				PostPipe: []string{"x", "3 4"},
+			},
+		},
+		{
+			name:   "arg pipe arg pipe arg",
+			argsIn: []string{"1", "2", "-p", "3", "4", "-p", "5", "6"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p", "3 4", "-p", "5 6"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "-p", "3 4"},
+				PostPipe: []string{"5 6"},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.exp == nil {
+				tc.exp = &CalcArgs{}
+			}
+
 			var act *CalcArgs
 			testFunc := func() {
 				act = CombineArgs(tc.argsIn)
 			}
 			require.NotPanics(t, testFunc, "combineArgs(%q)", tc.argsIn)
-			assert.Equal(t, tc.exp, act.All, "combineArgs(%q) result", tc.argsIn)
+			assert.Equal(t, tc.exp, act, "combineArgs(%q) result", tc.argsIn)
 		})
 	}
 }
 
-// TODO: TestIsPipeInd(t *testing.T)
+func TestIsPipeInd(t *testing.T) {
+	tests := []struct {
+		arg string
+		exp bool
+	}{
+		{arg: "", exp: false},
+		{arg: "-p", exp: true},
+		{arg: "-P", exp: true},
+		{arg: "--pipe", exp: true},
+		{arg: "--PIPE", exp: true},
+		{arg: "--Pipe", exp: true},
+		{arg: "--pope", exp: false},
+		{arg: "pipe", exp: false},
+		{arg: "p", exp: false},
+		{arg: "15m", exp: false},
+		{arg: "74", exp: false},
+		{arg: "2025-01-10", exp: false},
+		{arg: "16:30:15", exp: false},
+		{arg: "2025-01-10 16:30:15", exp: false},
+	}
 
-// TODO: TestIsCharDev(t *testing.T)
+	for _, tc := range tests {
+		name := tc.arg
+		if len(name) == 0 {
+			name = "empty"
+		}
+		t.Run(name, func(t *testing.T) {
+			var act bool
+			testFunc := func() {
+				act = IsPipeInd(tc.arg)
+			}
+			require.NotPanics(t, testFunc, "IsPipeInd(%q)", tc.arg)
+			assert.Equal(t, tc.exp, act, "IsPipeInd(%q) result", tc.arg)
+		})
+	}
+}
+
+// TODO: func TestIsCharDev(t *testing.T)
 
 func TestMainE(t *testing.T) {
 	tests := []struct {

@@ -216,12 +216,12 @@ func combineArgs(argsIn []string) *calcArgs {
 
 	pipeAt := -1
 	lastWasVal := false
-	for i, arg := range argsIn {
+	for _, arg := range argsIn {
 		switch {
 		case isPipeInd(arg):
 			rv.HavePipe = true
 			rv.All = append(rv.All, arg)
-			pipeAt = i
+			pipeAt = len(rv.All) - 1
 			lastWasVal = false
 		case IsOp(arg):
 			rv.All = append(rv.All, arg)

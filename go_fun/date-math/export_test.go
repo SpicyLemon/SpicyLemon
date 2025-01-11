@@ -7,6 +7,8 @@ import "io"
 var (
 	// ProcessFlags is a test-only exposure of processFlags.
 	ProcessFlags = processFlags
+	// IsPipeInd is a test-only exposure of isPipeInd.
+	IsPipeInd = isPipeInd
 	// MainE is a test-only exposure of mainE.
 	MainE = mainE
 
