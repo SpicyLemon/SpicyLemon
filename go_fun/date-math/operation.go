@@ -11,7 +11,7 @@ type Operation string
 const (
 	OpAdd Operation = "+"
 	OpSub Operation = "-"
-	OpMul Operation = "x"
+	OpMul Operation = "x" // Not * because lots of shells expand that.
 	OpDiv Operation = "/"
 )
 
