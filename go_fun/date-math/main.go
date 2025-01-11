@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -93,6 +94,12 @@ There are a few flags that can also be provided:
         --output-name or --output-format are used.
   --formats
         Same as providing just "formats"; outputs info on all named formats.
+  --pipe|-p
+        Read formula args from stdin and run the calculation for each line.
+        Each line is inserted in place of the --pipe or -p flag among any other
+        formula args that are provided. This allows for piping in values, ops,
+        partial formulas, or full formulas. This flag can be omitted if there
+        are no other formula args to provide.
   --verbose|-v
         Print debugging information to stderr.
         Can also be enabled by setting the VERBOSE env var.
@@ -100,12 +107,24 @@ There are a few flags that can also be provided:
         Output this message.`)
 }
 
+// calcArgs contains the formula args and info for handling piped in input.
+type calcArgs struct {
+	// All calculation args with values combined into a single arg.
+	All []string
+	// HavePipe indicates whether there's a pipe indicator in the All slice.
+	HavePipe bool
+	// PrePipe is stuff in All that is before the pipe indicator (empty if no pipe indicator).
+	PrePipe []string
+	// PostPipe is stuff in All that is after the pipe indicator (empty if no pipe indicator).
+	PostPipe []string
+}
+
 // getArgs handles flags and options and returns the combined formula args and whether to stop early.
 // If help or formats are requested, this will print that to the provided writer (e.g. os.Stdout).
-func getArgs(argsIn []string, stdout io.Writer) ([]string, bool, error) {
+func getArgs(argsIn []string, stdout io.Writer) (*calcArgs, bool, error) {
 	fArgs, stop, err := processFlags(argsIn, stdout)
 	if stop || err != nil {
-		return nil, stop, err
+		return &calcArgs{}, stop, err
 	}
 	verbosef(" formula args: %q", fArgs)
 	return combineArgs(fArgs), false, nil
@@ -189,49 +208,62 @@ func processFlags(argsIn []string, stdout io.Writer) ([]string, bool, error) {
 
 // combineArgs processes a slice of strings and returns a new slice that is alternating <value> and <op>.
 // This allows users to provide a date and time as multiple CLI args (i.e. without quoting a value).
-func combineArgs(argsIn []string) []string {
+func combineArgs(argsIn []string) *calcArgs {
+	rv := &calcArgs{}
 	if len(argsIn) == 0 {
-		return nil
-	}
-	argsOut := make([]string, 0, len(argsIn))
-	var i int
-	if !IsOp(argsIn[0]) {
-		var arg0 string
-		arg0, i = getNextValueArg(argsIn)
-		argsOut = append(argsOut, arg0)
-	}
-	for i < len(argsIn) {
-		argsOut = append(argsOut, argsIn[i])
-		i++
-		if i >= len(argsIn) {
-			break
-		}
-		valArg, n := getNextValueArg(argsIn[i:])
-		argsOut = append(argsOut, valArg)
-		i += n
+		return rv
 	}
 
-	verbosef("combined args: %q", argsOut)
-	return argsOut
+	pipeAt := -1
+	lastWasVal := false
+	for _, arg := range argsIn {
+		switch {
+		case isPipeInd(arg):
+			rv.HavePipe = true
+			rv.All = append(rv.All, arg)
+			pipeAt = len(rv.All) - 1
+			lastWasVal = false
+		case IsOp(arg):
+			rv.All = append(rv.All, arg)
+			lastWasVal = false
+		case lastWasVal:
+			rv.All[len(rv.All)-1] += " " + arg
+		default:
+			rv.All = append(rv.All, arg)
+			lastWasVal = true
+		}
+	}
+
+	if rv.HavePipe {
+		if pipeAt > 0 {
+			rv.PrePipe = rv.All[:pipeAt]
+		}
+		if pipeAt+1 < len(rv.All) {
+			rv.PostPipe = rv.All[pipeAt+1:]
+		}
+	}
+
+	return rv
 }
 
-// getNextValueArg returns a string with the next value arg in it and the number of args entries it spans.
-func getNextValueArg(args []string) (string, int) {
-	for i, arg := range args {
-		if IsOp(arg) {
-			// E.g. args = [a b c +], i = 3 at +, so args[:i] = [a b c] and we're using 3 entries.
-			return strings.Join(args[:i], " "), i
-		}
-	}
-	return strings.Join(args, " "), len(args)
+// isPipeInd returns true if the provided arg is an indicator to use piped in data.
+func isPipeInd(arg string) bool {
+	return EqualFoldOneOf(arg, "-p", "--pipe")
 }
 
 // mainE actually runs this program, printing to the provided writer (e.g. os.Stdout) or returning an error as appropriate.
-func mainE(argsIn []string, stdout io.Writer) error {
+func mainE(argsIn []string, stdout io.Writer, stdin io.Reader) error {
 	if len(argsIn) == 0 {
-		argsIn = []string{"--help"}
+		if stdin != nil {
+			// If we have an stdin, and no other args were provided, we get everything from the pipe.
+			argsIn = []string{"--pipe"}
+		} else {
+			// If don't have stdin, and no args were provided, print help.
+			argsIn = []string{"--help"}
+		}
 	}
-	formula, stopNow, err := getArgs(argsIn, stdout)
+
+	args, stopNow, err := getArgs(argsIn, stdout)
 	if stopNow || err != nil {
 		return err
 	}
@@ -243,13 +275,45 @@ func mainE(argsIn []string, stdout io.Writer) error {
 		}
 	}
 
-	result, err := DoCalculation(formula)
-	if err != nil {
-		return err
+	var result *DTVal
+	if !args.HavePipe {
+		result, err = DoCalculation(args.All)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(stdout, result.FormattedString())
+		return nil
 	}
 
-	fmt.Fprintln(stdout, result.FormattedString())
+	// There's piped in lines. For each line, put it together and run the calc.
+	scanner := bufio.NewScanner(stdin)
+	for scanner.Scan() {
+		line := scanner.Text()
+		pipeArgs := combineArgs(strings.Fields(line))
+		formula := make([]string, 0, len(args.PrePipe)+len(pipeArgs.All)+len(args.PostPipe))
+		formula = append(formula, args.PrePipe...)
+		formula = append(formula, pipeArgs.All...)
+		formula = append(formula, args.PostPipe...)
+
+		result, err = DoCalculation(formula)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(stdout, result.FormattedString())
+	}
+
+	if err = scanner.Err(); err != nil {
+		return fmt.Errorf("error reading from stdin: %w", err)
+	}
+
 	return nil
+}
+
+// isCharDev returns true if the provided file is a character device.
+// This essentially returns true if there's stuff being piped in.
+func isCharDev(stdin *os.File) bool {
+	stat, err := stdin.Stat()
+	return err == nil && (stat.Mode()&os.ModeCharDevice) == 0
 }
 
 // main is the program's entry point.
@@ -258,7 +322,11 @@ func main() {
 		Verbose, _ = strconv.ParseBool(val)
 		verbosef("verbose environment variable detected")
 	}
-	if err := mainE(os.Args[1:], os.Stdout); err != nil {
+	var stdin io.Reader
+	if isCharDev(os.Stdin) {
+		stdin = os.Stdin
+	}
+	if err := mainE(os.Args[1:], os.Stdout, stdin); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}

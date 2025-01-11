@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +28,7 @@ func TestGetArgs(t *testing.T) {
 	tests := []struct {
 		name       string
 		argsIn     []string
-		expArgs    []string
+		expArgs    *CalcArgs
 		expBool    bool
 		expErr     string
 		expInPrint []string
@@ -63,12 +64,47 @@ func TestGetArgs(t *testing.T) {
 		{
 			name:    "formula with args to combine",
 			argsIn:  []string{"2006-04-12", "17:04:55", "-", "2006-04-12", "17:03:12"},
-			expArgs: []string{"2006-04-12 17:04:55", "-", "2006-04-12 17:03:12"},
+			expArgs: &CalcArgs{All: []string{"2006-04-12 17:04:55", "-", "2006-04-12 17:03:12"}},
 		},
 		{
 			name:    "flag in the middle of formula",
 			argsIn:  []string{"23m", "x", "-v", "44"},
-			expArgs: []string{"23m", "x", "44"},
+			expArgs: &CalcArgs{All: []string{"23m", "x", "44"}},
+		},
+		{
+			name:    "just --pipe",
+			argsIn:  []string{"--pipe"},
+			expArgs: &CalcArgs{All: []string{"--pipe"}, HavePipe: true},
+		},
+		{
+			name:   "formula with --pipe at start",
+			argsIn: []string{"--pipe", "+", "15m"},
+			expArgs: &CalcArgs{
+				All:      []string{"--pipe", "+", "15m"},
+				HavePipe: true,
+				PrePipe:  nil,
+				PostPipe: []string{"+", "15m"},
+			},
+		},
+		{
+			name:   "formula with --pipe at end",
+			argsIn: []string{"15m", "+", "--pipe"},
+			expArgs: &CalcArgs{
+				All:      []string{"15m", "+", "--pipe"},
+				HavePipe: true,
+				PrePipe:  []string{"15m", "+"},
+				PostPipe: nil,
+			},
+		},
+		{
+			name:   "formula with -p in middle",
+			argsIn: []string{"15m", "+", "--pipe", "44"},
+			expArgs: &CalcArgs{
+				All:      []string{"15m", "+", "--pipe", "44"},
+				HavePipe: true,
+				PrePipe:  []string{"15m", "+"},
+				PostPipe: []string{"44"},
+			},
 		},
 	}
 
@@ -78,8 +114,12 @@ func TestGetArgs(t *testing.T) {
 			defer SuppressStderrFn()()
 			Verbose = false
 
+			if tc.expArgs == nil {
+				tc.expArgs = &CalcArgs{}
+			}
+
 			var w bytes.Buffer
-			var actArgs []string
+			var actArgs *CalcArgs
 			var actBool bool
 			var err error
 			testFunc := func() {
@@ -475,6 +515,39 @@ func TestProcessFlags(t *testing.T) {
 			expOutFmt: "02 Jan 06",
 			expPO:     []*NamedFormat{MakeNamedFormat("User", "02 Jan 06 15:04:05 -0700")},
 		},
+
+		{
+			name:    "just --pipe",
+			argsIn:  []string{"--pipe"},
+			expArgs: []string{"--pipe"},
+		},
+		{
+			name:    "just -p",
+			argsIn:  []string{"-p"},
+			expArgs: []string{"-p"},
+		},
+		{
+			name:    "arg --pipe arg",
+			argsIn:  []string{"arg1", "--pipe", "arg2"},
+			expArgs: []string{"arg1", "--pipe", "arg2"},
+		},
+		{
+			name:    "arg -p arg",
+			argsIn:  []string{"arg1", "-p", "arg2"},
+			expArgs: []string{"arg1", "-p", "arg2"},
+		},
+		{
+			name:    "-v -p",
+			argsIn:  []string{"-v", "-p"},
+			expArgs: []string{"-p"},
+			expV:    true,
+		},
+		{
+			name:    "-p -v",
+			argsIn:  []string{"-p", "-v"},
+			expArgs: []string{"-p"},
+			expV:    true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -514,7 +587,7 @@ func TestCombineArgs(t *testing.T) {
 	tests := []struct {
 		name   string
 		argsIn []string
-		exp    []string
+		exp    *CalcArgs
 	}{
 		{
 			name:   "nil",
@@ -529,28 +602,128 @@ func TestCombineArgs(t *testing.T) {
 		{
 			name:   "one arg: op",
 			argsIn: []string{"+"},
-			exp:    []string{"+"},
+			exp:    &CalcArgs{All: []string{"+"}},
 		},
 		{
 			name:   "arg op arg op arg",
 			argsIn: []string{"1", "+", "2", "+", "3"},
-			exp:    []string{"1", "+", "2", "+", "3"},
+			exp:    &CalcArgs{All: []string{"1", "+", "2", "+", "3"}},
 		},
 		{
 			name:   "three args, op, two more",
 			argsIn: []string{"1", "2", "3", "+", "4", "5"},
-			exp:    []string{"1 2 3", "+", "4 5"},
+			exp:    &CalcArgs{All: []string{"1 2 3", "+", "4 5"}},
 		},
 		{
 			name:   "three args, op, two more, op",
 			argsIn: []string{"1", "2", "3", "+", "4", "5", "+"},
-			exp:    []string{"1 2 3", "+", "4 5", "+"},
+			exp:    &CalcArgs{All: []string{"1 2 3", "+", "4 5", "+"}},
+		},
+
+		{
+			name:   "just pipe",
+			argsIn: []string{"--pipe"},
+			exp:    &CalcArgs{All: []string{"--pipe"}, HavePipe: true},
+		},
+		{
+			name:   "arg pipe",
+			argsIn: []string{"1", "2", "-p"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2"},
+				PostPipe: nil,
+			},
+		},
+		{
+			name:   "arg op pipe",
+			argsIn: []string{"1", "2", "+", "-p"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "+", "-p"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "+"},
+				PostPipe: nil,
+			},
+		},
+		{
+			name:   "pipe arg",
+			argsIn: []string{"--pipe", "1", "2"},
+			exp: &CalcArgs{
+				All:      []string{"--pipe", "1 2"},
+				HavePipe: true,
+				PrePipe:  nil,
+				PostPipe: []string{"1 2"},
+			},
+		},
+		{
+			name:   "pipe op arg",
+			argsIn: []string{"--pipe", "+", "1", "2"},
+			exp: &CalcArgs{
+				All:      []string{"--pipe", "+", "1 2"},
+				HavePipe: true,
+				PrePipe:  nil,
+				PostPipe: []string{"+", "1 2"},
+			},
+		},
+		{
+			name:   "arg pipe arg",
+			argsIn: []string{"1", "2", "-p", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2"},
+				PostPipe: []string{"3 4"},
+			},
+		},
+		{
+			name:   "arg pipe op arg",
+			argsIn: []string{"1", "2", "-p", "+", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p", "+", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2"},
+				PostPipe: []string{"+", "3 4"},
+			},
+		},
+		{
+			name:   "arg op pipe arg",
+			argsIn: []string{"1", "2", "+", "-p", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "+", "-p", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "+"},
+				PostPipe: []string{"3 4"},
+			},
+		},
+		{
+			name:   "arg op pipe op arg",
+			argsIn: []string{"1", "2", "+", "-p", "x", "3", "4"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "+", "-p", "x", "3 4"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "+"},
+				PostPipe: []string{"x", "3 4"},
+			},
+		},
+		{
+			name:   "arg pipe arg pipe arg",
+			argsIn: []string{"1", "2", "-p", "3", "4", "-p", "5", "6"},
+			exp: &CalcArgs{
+				All:      []string{"1 2", "-p", "3 4", "-p", "5 6"},
+				HavePipe: true,
+				PrePipe:  []string{"1 2", "-p", "3 4"},
+				PostPipe: []string{"5 6"},
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var act []string
+			if tc.exp == nil {
+				tc.exp = &CalcArgs{}
+			}
+
+			var act *CalcArgs
 			testFunc := func() {
 				act = CombineArgs(tc.argsIn)
 			}
@@ -560,81 +733,52 @@ func TestCombineArgs(t *testing.T) {
 	}
 }
 
-func TestGetNextValueArg(t *testing.T) {
+func TestIsPipeInd(t *testing.T) {
 	tests := []struct {
-		name   string
-		args   []string
-		expStr string
-		expInt int
+		arg string
+		exp bool
 	}{
-		{
-			name:   "nil args",
-			args:   nil,
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "empty args",
-			args:   []string{},
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "one arg: is op",
-			args:   []string{"+"},
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "one arg: not op",
-			args:   []string{"3"},
-			expStr: "3",
-			expInt: 1,
-		},
-		{
-			name:   "two args: first is op",
-			args:   []string{"+", "3"},
-			expStr: "",
-			expInt: 0,
-		},
-		{
-			name:   "two args: second is op",
-			args:   []string{"3", "+"},
-			expStr: "3",
-			expInt: 1,
-		},
-		{
-			name:   "two args: no ops",
-			args:   []string{"3", "8"},
-			expStr: "3 8",
-			expInt: 2,
-		},
-		{
-			name:   "four args, no op",
-			args:   []string{"one", "two", "three", "fourteen"},
-			expStr: "one two three fourteen",
-			expInt: 4,
-		},
+		{arg: "", exp: false},
+		{arg: "-p", exp: true},
+		{arg: "-P", exp: true},
+		{arg: "--pipe", exp: true},
+		{arg: "--PIPE", exp: true},
+		{arg: "--Pipe", exp: true},
+		{arg: "--pope", exp: false},
+		{arg: "pipe", exp: false},
+		{arg: "p", exp: false},
+		{arg: "15m", exp: false},
+		{arg: "74", exp: false},
+		{arg: "2025-01-10", exp: false},
+		{arg: "16:30:15", exp: false},
+		{arg: "2025-01-10 16:30:15", exp: false},
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			var actStr string
-			var actInt int
+		name := tc.arg
+		if len(name) == 0 {
+			name = "empty"
+		}
+		t.Run(name, func(t *testing.T) {
+			var act bool
 			testFunc := func() {
-				actStr, actInt = GetNextValueArg(tc.args)
+				act = IsPipeInd(tc.arg)
 			}
-			require.NotPanics(t, testFunc, "getNextValueArg(%q)", tc.args)
-			assert.Equal(t, tc.expStr, actStr, "getNextValueArg(%q) string", tc.args)
-			assert.Equal(t, tc.expInt, actInt, "getNextValueArg(%q) int", tc.args)
+			require.NotPanics(t, testFunc, "IsPipeInd(%q)", tc.arg)
+			assert.Equal(t, tc.exp, act, "IsPipeInd(%q) result", tc.arg)
 		})
 	}
 }
 
+// TODO: func TestIsCharDev(t *testing.T)
+
 func TestMainE(t *testing.T) {
+	_, pipeArgErr := ParseDTVal("--pipe")
+
 	tests := []struct {
 		name        string
 		argsIn      []string
+		stdin       string
 		expErr      string
 		expResult   string
 		expInStdout []string
@@ -691,6 +835,30 @@ func TestMainE(t *testing.T) {
 			},
 			expResult: "2002-05-08 04:20:59.4 +0000",
 		},
+		{
+			name:      "no args, two formulas piped in",
+			argsIn:    nil,
+			stdin:     "15m - 5s\n15m + 5s",
+			expResult: "14m55s\n15m5s",
+		},
+		{
+			name:   "piped in partial formulas",
+			argsIn: []string{"2002-05-08", "4:20:00", "-0000", "-p", "+", "5s"},
+			stdin: strings.Join([]string{
+				"+ 15s",
+				"- 2002-05-08 1:15:03 -0000 x 2",
+			}, "\n"),
+			expResult: strings.Join([]string{
+				"2002-05-08 04:20:20 +0000",
+				"6h9m59s",
+			}, "\n"),
+		},
+		{
+			name:   "two pipe args",
+			argsIn: []string{"5m", "+", "--pipe", "-", "--pipe"},
+			stdin:  "10s\n11s",
+			expErr: pipeArgErr.Error(),
+		},
 	}
 
 	for _, tc := range tests {
@@ -710,10 +878,17 @@ func TestMainE(t *testing.T) {
 			}()
 			os.Stderr = stderrW
 
+			var stdin io.Reader
+			if len(tc.stdin) > 0 {
+				var stdinB bytes.Buffer
+				stdinB.WriteString(tc.stdin)
+				stdin = &stdinB
+			}
+
 			var stdoutB bytes.Buffer
 			var err error
 			testFunc := func() {
-				err = MainE(tc.argsIn, &stdoutB)
+				err = MainE(tc.argsIn, &stdoutB, stdin)
 			}
 			require.NotPanics(t, testFunc, "mainE(%q, w)", tc.argsIn)
 			stdout := stdoutB.String()
