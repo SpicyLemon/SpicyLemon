@@ -20,6 +20,7 @@ In most cases, the scripts/functions should work in other shells too, but that h
   * [beepbeep.sh](#user-content-beepbeepsh)
   * [change_word.sh](#user-content-change_wordsh)
   * [cpm.sh](#user-content-cpmsh)
+  * [delay_say.sh](#user-content-delay_saysh)
   * [dict.sh](#user-content-dictsh)
   * [echo_color.sh](#user-content-echo_colorsh)
   * [echo_do.sh](#user-content-echo_dosh)
@@ -278,11 +279,24 @@ Similarly, the --file <entry>, --dir <entry>, --entry <entry>, and --name <entry
 
 ```
 
+### `delay_say.sh`
+
+[delay_say.sh](delay_say.sh) - A function/script for saying something after a certain amount of time.
+
+Usage:
+```console
+$ delay_say 3 it has been three minutes
+$ delay_say 1.5 it has been one minute and thirty seconds
+$ delay_say 2m17s it has been two minutes and seventeen seconds
+```
+
 ### `dict.sh`
 
 [dict.sh](dict.sh) - A function/script for grepping a dict file.
 
-```usage
+Usage:
+
+```console
 $ dict banana
 banana
 cassabanana
