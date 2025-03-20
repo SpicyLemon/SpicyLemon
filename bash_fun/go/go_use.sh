@@ -19,11 +19,12 @@ go_use () {
     # When invoking this function to make a switch, a user would supply just the <version> as an arg.
     # If the <link path> is relative, it's relative to the result of `which go` (which for me is /opt/homebrew/bin/go).
     # The full version of 1.20 is 1.20.1. The others have the patch versions in their paths.
+    # No longer available because brew is an asshole.
+    # 1.18: ../Cellar/go@1.18/1.18.10/bin/go
+    # 1.20: /usr/local/go/bin/go
+    # 1.21: ../Cellar/go/1.21.4/bin/go
     list="$( cat << EOF
-  1.18: ../Cellar/go@1.18/1.18.10/bin/go
-  1.20: /usr/local/go/bin/go
-  1.21: ../Cellar/go/1.21.4/bin/go
-  1.23: ../Cellar/go/1.23.3/bin/go
+  1.23: ../Cellar/go@1.23/1.23.7/bin/go
 EOF
 
 )"
