@@ -29,7 +29,10 @@ Warning: Floating point numbers may result in unwanted rounding.'
 func Sum(args []string) (string, error) {
 	var totalInt *big.Int
 	var totalFloat *big.Float
-	floatRHSLen := 0
+	wholeDigits := 0
+	fractionalDigits := 0
+
+	prec := calculatePrec(args)
 
 	for _, arg := range args {
 		orig := arg
@@ -58,54 +61,47 @@ func Sum(args []string) (string, error) {
 			}
 		} else {
 			// Number has a ".", parse it as a float.
-			parts := strings.Split(arg, ".")
-			if len(parts[1]) > floatRHSLen {
-				floatRHSLen = len(parts[1])
+			argWholeLen, argFractLen := countDigits(arg)
+			if argWholeLen > wholeDigits {
+				wholeDigits = argWholeLen
+			}
+			if argFractLen > fractionalDigits {
+				fractionalDigits = argFractLen
 			}
 
-			// Through trial and error, it seems like precision should go up 4.25 for each digit provided.
-			// Ignoring any possible negative and the decimal gives an extra few digits
-			// so that hopefully the calculations stay accurate.
-			prec := precForLen(len(arg))
 			val, _, err := big.ParseFloat(arg, 0, prec, big.ToNearestEven)
 			if err != nil {
-				return "", fmt.Errorf("could not parse %s as float: %w", orig, err)
+				return "", fmt.Errorf("could not parse %q as float: %w", orig, err)
 			}
 			if totalFloat == nil {
-				verbosef("Floats:   %40s  from %q", val.Text('f', len(parts[1]))+strings.Repeat(" ", floatRHSLen-len(parts[1])), arg)
+				verbosef("Floats:   %40s  from %q (prec=%d, acc=%s) (%d,%d)",
+					val.Text('f', argFractLen)+strings.Repeat(" ", fractionalDigits-argFractLen), arg,
+					val.Prec(), val.Acc(), argWholeLen, argFractLen)
 				totalFloat = val
 			} else {
-				verbosef("Floats: + %40s  from %q", val.Text('f', len(parts[1])), arg)
-				// TODO: Correctly increase precision for edge case with very big and very small numbers.
-				totalFloat = new(big.Float).Add(totalFloat, val)
-				verbosef("Floats: = %40s", totalFloat.Text('f', floatRHSLen))
+				verbosef("Floats: + %40s  from %q (prec=%d, acc=%s) (%d,%d)",
+					val.Text('f', argFractLen)+strings.Repeat(" ", fractionalDigits-argFractLen), arg,
+					val.Prec(), val.Acc(), argWholeLen, argFractLen)
+				totalFloat = new(big.Float).SetPrec(prec).Add(totalFloat, val)
+				verbosef("Floats: = %40s (prec=%d, acc=%s) (%d,%d)",
+					totalFloat.Text('f', fractionalDigits), totalFloat.Prec(),
+					totalFloat.Acc(), wholeDigits, fractionalDigits)
 			}
 		}
 	}
 
 	if totalFloat != nil {
 		if totalInt != nil {
-			// Annoyingly, new(big.Float).Add doesn't properly combine the precisions when the int
-			// has lots of digits, and the float has few. E.g. if totalInt = 55819669568808150721
-			// and totalFloat = 3.5, new(big.Float).Add returns 55819669568808150724.0.
-			// So we have to recalculate the needed precision to keep all the digits.
 			sumInts := totalInt.String()
-			sumFloats := totalFloat.Text('f', floatRHSLen)
-			floatParts := strings.Split(sumFloats, ".")
-			finalDigitCount := len(sumInts)
-			if len(floatParts) > 0 && len(floatParts[0]) > finalDigitCount {
-				finalDigitCount = len(floatParts[0])
+			if len(sumInts) > wholeDigits {
+				wholeDigits = len(sumInts)
 			}
-			if len(floatParts) > 1 {
-				finalDigitCount += len(floatParts[1])
-			}
-			finalPrec := precForLen(finalDigitCount)
-			verbosef("Sum Ints:     %40s", sumInts+strings.Repeat(" ", floatRHSLen+1))
-			verbosef("Sum Floats: + %40s", sumFloats)
-			totalFloat = new(big.Float).SetPrec(finalPrec).Add(totalFloat, new(big.Float).SetInt(totalInt))
-			verbosef("Grand Sum:  = %40s", totalFloat.Text('f', floatRHSLen))
+			verbosef("Sum Ints:     %40s", sumInts+strings.Repeat(" ", fractionalDigits+1))
+			verbosef("Sum Floats: + %40s", totalFloat.Text('f', fractionalDigits))
+			totalFloat = new(big.Float).SetPrec(precForLen(wholeDigits+fractionalDigits+1)).Add(totalFloat, new(big.Float).SetInt(totalInt))
+			verbosef("Grand Sum:  = %40s", totalFloat.Text('f', fractionalDigits))
 		}
-		return totalFloat.Text('f', floatRHSLen), nil
+		return totalFloat.Text('f', fractionalDigits), nil
 	}
 	if totalInt != nil {
 		return totalInt.String(), nil
@@ -113,9 +109,45 @@ func Sum(args []string) (string, error) {
 	return "0", nil
 }
 
+// calculatePrec will calculate the precision needed to add all the floats together accurately.
+func calculatePrec(args []string) uint {
+	var wMax, fMax int
+	for _, arg := range args {
+		w, f := countDigits(arg)
+		if w > wMax {
+			wMax = w
+		}
+		if f > fMax {
+			fMax = f
+		}
+	}
+	// Add one to the length for extra growth room.
+	// Add one to the length for each 3 args too for the same reason.
+	return precForLen(wMax + fMax + 1 + len(args)/3)
+}
+
+// countDigits returns the number of whole and fractional digits in the provided number string.
+func countDigits(arg string) (whole int, fractional int) {
+	parts := strings.Split(arg, ".")
+	if len(parts) > 0 {
+		whole = len(parts[0])
+		if strings.HasPrefix(parts[0], "-") {
+			whole--
+		}
+	}
+	if len(parts) > 1 {
+		fractional = len(parts[1])
+	}
+	return
+}
+
 // precForLen returns a safe precision that can be used to represent the provided number of digits.
 func precForLen(digits int) uint {
-	return uint(digits * 17 / 4)
+	// Through trial and error, it seems like precision should go up 7 for each digit provided.
+	// Once I got to 7, all my unit tests finally passed. Before that, there were rounding errors
+	// affecting up to 5 digits. Also, I'm erring on the side of too much precision since I'm
+	// pretty sure more precision means it's more likely to get the correct answer.
+	return uint(digits * 7)
 }
 
 // mainE is the actual runner of this program, possibly returning an error.
@@ -130,7 +162,7 @@ func mainE(argsIn []string, stdout io.Writer, stdin io.Reader) error {
 		return err
 	}
 	if args.Pretty {
-		answer = MakePretty(answer)
+		answer = MakeNumberPretty(answer)
 	}
 	fmt.Fprintln(stdout, answer)
 	return nil
@@ -224,10 +256,10 @@ func equalFoldOneOf(arg string, options ...string) bool {
 	return false
 }
 
-// MakePretty takes in a number string and adds commas to the whole part.
+// MakeNumberPretty takes in a number string and adds commas to the whole part.
 // Examples: "1234567" -> "1,234,567", "12345.678901" -> "12,345.678901"
 // If the string already has commas, or has more than one period, the provided value is returned unchanged.
-func MakePretty(val string) string {
+func MakeNumberPretty(val string) string {
 	if len(val) <= 3 || strings.Contains(val, ",") {
 		return val
 	}
