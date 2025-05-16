@@ -41,4 +41,7 @@ endif
 test: go.sum
 	$(GO) test -mod=readonly $(ARGS) -tags='$(TAGS)' $(PACKAGES)
 
-.PHONY: test
+benchmark: go.sum
+	$(GO) test -mod=readonly $(ARGS) -tags='$(TAGS)' -bench="$(PACKAGES)"
+
+.PHONY: test benchmark
