@@ -21,7 +21,7 @@ Usage: big-sum <number 1> [<number 2> ...] [--pipe|-] [--pretty|-p] [--verbose|-
 The --pipe or - flag is implied if there are no arguments provided.
 The --pretty or -p flag will add commas to the result.
 
-Warning: Floating point numbers may result in unwanted rounding.'
+Warning: In rare circumstances, floating point numbers may result in unwanted rounding.
 `)
 }
 
