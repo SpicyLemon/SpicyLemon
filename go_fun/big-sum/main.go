@@ -540,7 +540,9 @@ func Sum4(args []string) (string, error) {
 		return totalInt.String() + "." + strings.Repeat("0", maxDigits), nil
 	}
 
-	prec := precForLen(maxDigits)
+	// Because we're not including the whole portions, we don't need as much precision per digit as the others.
+	// The tests all pass at 3.75 too, but a few fail at 3.66, so I went with 4 just to be a bit safe.
+	prec := uint(maxDigits * 4) // precForLen(maxDigits)
 	var totalFloat *big.Float
 	for i, fract := range fractionals {
 		if len(fract) == 0 {
