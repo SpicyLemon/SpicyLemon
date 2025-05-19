@@ -17,18 +17,21 @@
 # to create a new data row. If Sum4 is not the best, the dato is added to the Notes variable.
 # If doing verbose output, the data row is also printed.
 function processSumSet() {
-    bestAmt=Sum2;
-    secondAmt=0;
+    bestAmt=999999999;
+    secondAmt=999999999;
     sums[2]=Sum2;
     sums[3]=Sum3;
     sums[4]=Sum4;
-    for (i = 3; i <= 4; i++) {
-        amt=sums[i];
-        if (amt <= bestAmt) {
-            secondAmt=bestAmt;
-            bestAmt=amt;
-        } else if (secondAmt == 0 || amt < secondAmt) {
-            secondAmt=amt;
+    sums[5]=Sum5;
+    for (i = 2; i <= 5; i++) {
+        amt = sums[i];
+        if (amt != "" && amt > 0) {
+            if (amt <= bestAmt) {
+                secondAmt = bestAmt;
+                bestAmt = amt;
+            } else if (secondAmt == 0 || amt < secondAmt) {
+                secondAmt = amt;
+            }
         }
     }
 
@@ -41,11 +44,13 @@ function processSumSet() {
     } else if (bestAmt == Sum3) {
         best="\033[7;96mSum3\033[0m"; # Reversed and bright cyan for Sum3.
     } else if (bestAmt == Sum4) {
-        best="Sum4"; # Normal for Sum4.
+        best="\033[7;92mSum4\033[0m"; # Reversed and bright green for Sum4.
+    } else if (bestAmt == Sum5) {
+        best="Sum5"; # Normal for Sum5.
         noteworthy="";
     }
 
-    for (i = 2; i <= 4; i++) {
+    for (i = 2; i <= 5; i++) {
         if (sums[i] == bestAmt) {
             sums[i]=sprintf("\033[1m%9s\033[0m", sums[i]); # Highlight the largest.
         } else if (sums[i] != secondAmt) {
@@ -56,13 +61,13 @@ function processSumSet() {
 
     diff=secondAmt-bestAmt;
     diffP=diff*100/bestAmt;
-    row=sprintf("  %5s  %9s  %9s  %9s  %s  by %9s = %4.1f%%", LastCount, sums[2], sums[3], sums[4], best, diff, diffP);
+    row=sprintf("  %5s  %9s  %9s  %9s  %9s  %s  by %9s = %4.1f%%", LastCount, sums[2], sums[3], sums[4], sums[5], best, diff, diffP);
     if (verbose!="") {
         print row;
     }
     if (noteworthy!="") {
         if (Notes=="") {
-            Notes=sprintf("%21s    %5s  %9s  %9s  %9s  %s  (numbers are ns/op)\n", "Number Type   ", "Count", "Sum2", "Sum3", "Sum4", "Best");
+            Notes=sprintf("%21s    %5s  %9s  %9s  %9s  %9s  %s  (numbers are ns/op)\n", "Number Type   ", "Count", "Sum2", "Sum3", "Sum4", "Sum5", "Best");
         }
         Notes=Notes sprintf("%21s: ", LastGroup) row "\n";
     }
@@ -83,11 +88,12 @@ function processSumSet() {
         Sum2="";
         Sum3="";
         Sum4="";
+        Sum5="";
     }
 
     # If starting a new test group and doing verbose output, print a header for the data rows.
     if ($1!=LastGroup && verbose!="") {
-        printf "%s:\n  %5s  %9s  %9s  %9s  %s\n", $1, "Count", "Sum2", "Sum3", "Sum4", "Best";
+        printf "%s:\n  %5s  %9s  %9s  %9s  %9s  %s\n", $1, "Count", "Sum2", "Sum3", "Sum4", "Sum5", "Best";
     }
 
     # Set the appropriate sum variable.
@@ -97,6 +103,8 @@ function processSumSet() {
         Sum3=$5;
     } else if ($3=="Sum4") {
         Sum4=$5;
+    } else if ($3=="Sum5") {
+        Sum5=$5;
     } else {
         printf "ERROR: Unknown sum function name: %q\n", $3;
     }
@@ -117,6 +125,6 @@ END {
     if (Notes!="") {
         print Notes;
     } else {
-        print "Sum4 was the best on all test.";
+        print "Sum5 was the best on all test.";
     }
 }

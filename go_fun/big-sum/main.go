@@ -26,9 +26,9 @@ Warning: In rare circumstances, floating point numbers may result in unwanted ro
 }
 
 // Sum will parse each arg as a number and return a sum of all those numbers as a converted to a string.
-// By default it uses the Sum4 function which is clearly better than the others in most categories.
-// Sum2 and Sum3, in some of the benchmarks, performs better than Sum4, though, but only just barely.
-var Sum = Sum3
+// By default, it uses the Sum5 function which is clearly better than the others in most categories.
+// Sum2 and Sum4, in some of the benchmarks, performs better than Sum4, though, but only just barely.
+var Sum = Sum5
 
 // Sum1 will parse each arg as a number and return a sum of all those numbers as a converted to a string.
 // This version parses each arg as a single number while trying to maintain enough precision for everything.
@@ -699,6 +699,192 @@ func getCombinedString(totalInt *big.Int, totalFloat *big.Float, fractDigits int
 	verbosef("combining %q and %q for solution.", wholePart, fractionalPart)
 	fractionalPartParts := strings.Split(fractionalPart, ".")
 	return wholePart + "." + fractionalPartParts[1]
+}
+
+// Sum5 will parse each arg as a number and return a sum of all those numbers as a converted to a string.
+// This version adds all the ints, then all the int parts of the floats and lastly the fractional
+// part of the floats, but uses integers for the fractional part for all of it.
+func Sum5(args []string) (string, error) {
+	// First, add any integers and tuck any floats away for later.
+	var totalWhole *big.Int
+	var floats []string
+	for _, arg := range args {
+		if len(arg) == 0 {
+			continue
+		}
+		if strings.Contains(arg, ".") {
+			floats = append(floats, arg)
+			continue
+		}
+		num, ok := new(big.Int).SetString(strings.ReplaceAll(arg, ",", ""), 0)
+		if !ok {
+			return "", fmt.Errorf("could not parse %q as integer", arg)
+		}
+		verbosef("+ %25s %q", num, arg)
+		if totalWhole == nil {
+			totalWhole = num
+		} else {
+			totalWhole.Add(totalWhole, num)
+		}
+		verbosef("= %25s", totalWhole)
+	}
+
+	if len(floats) == 0 {
+		if totalWhole != nil {
+			return totalWhole.String(), nil
+		}
+		return "0", nil
+	}
+
+	// Add the integer portion of all the floats and identify the fractional parts for later.
+	fractionals := make([]string, len(floats))
+	maxDigits := 0
+	haveFractional := false
+	for i, arg := range floats {
+		parts := strings.SplitN(arg, ".", 2)
+		if len(parts[1]) > maxDigits {
+			maxDigits = len(parts[1])
+		}
+		if strings.TrimRight(parts[1], "0") != "" {
+			haveFractional = true
+			fractionals[i] = parts[1]
+		}
+
+		if len(parts[0]) == 0 || parts[0] == "-" || parts[0] == "0" || parts[0] == "-0" {
+			continue
+		}
+
+		num, ok := new(big.Int).SetString(strings.ReplaceAll(parts[0], ",", ""), 0)
+		if !ok {
+			return "", fmt.Errorf("could not parse %q as float: invalid integer part", arg)
+		}
+		verbosef("+ %25s from %q", num, arg)
+
+		if totalWhole == nil {
+			totalWhole = num
+		} else {
+			totalWhole.Add(totalWhole, num)
+		}
+		verbosef("= %25s", totalWhole)
+	}
+
+	zeros := strings.Repeat("0", maxDigits)
+	if !haveFractional {
+		// If we're here but didn't actually have any fractional portions, It means at least
+		// one number was provided with one or more zeros after the decimal. We want those
+		// included in the result, but we don't have to actually do all the math.
+		return totalWhole.String() + "." + zeros, nil
+	}
+
+	var totalFractional *big.Int
+	for i, fract := range fractionals {
+		if len(fract) == 0 {
+			continue
+		}
+
+		digits := len(fract)
+		if digits < maxDigits {
+			fract += zeros[:maxDigits-digits]
+		}
+		fract = strings.TrimLeft(fract, "0")
+		fractional, ok := new(big.Int).SetString(fract, 0)
+		if !ok {
+			return "", fmt.Errorf("could not parse %q as float: invalid fractional part", floats[i])
+		}
+		if strings.HasPrefix(floats[i], "-") {
+			fractional.Neg(fractional)
+		}
+		verbosef("+ %25s %25s from %q", "", fractional, floats[i])
+
+		if totalFractional == nil {
+			totalFractional = fractional
+		} else {
+			totalFractional.Add(totalFractional, fractional)
+		}
+		verbosef("= %25s %25s", totalWhole, totalFractional)
+	}
+
+	return getCombinedIntsString(totalWhole, totalFractional, zeros), nil
+}
+
+// getCombinedIntsString combines a whole and fractional total into a single string.
+func getCombinedIntsString(totalWhole *big.Int, totalFractional *big.Int, zeros string) string {
+	// If we've got both parts, move any whole amounts from the fractional to whole, and  make sure their signs match.
+	if totalWhole != nil && totalFractional != nil {
+		fractOne, ok := new(big.Int).SetString("1"+zeros, 0)
+		if !ok {
+			panic(fmt.Errorf("could not create big int from 1%s", zeros))
+		}
+
+		// First, split the fractional amount into its whole and purely fractional portions.
+		// E.g. totalFractional =  51, fractOne = 10, newWhole <=  5, newFract <=  1.
+		// Or   totalFractional = -51, fractOne = 10, newWhole <= -5, newFract <= -1.
+		newWhole, newFract := new(big.Int).QuoRem(totalFractional, fractOne, new(big.Int))
+		newWhole.Add(newWhole, totalWhole)
+
+		fractNeg := newFract.Sign() < 0
+		if (newWhole.Sign() < 0) != fractNeg {
+			// If they're different signs, adjust them so that they have the same sign.
+			// Essentially, we remove "one" from the fractional part and add it to the whole part.
+			if fractNeg {
+				// E.g. newFract = -3, fractOne = 10, newWhole = 5, representing 5 + -.3 = 4.7.
+				// newFract <= -3 - -10 = -3 + 10 = 7, newWhole <= 5 + -1 = 4, representing 4 + .7.
+				newFract.Sub(newFract, new(big.Int).Neg(fractOne))
+				newWhole.Add(newWhole, new(big.Int).SetInt64(-1))
+			} else {
+				// E.g. newFract = 3, fractOne = 10, newWhole = -5, representing -5 + .3 = -4.7.
+				// newFract <- 3 - 10 = -7, newWhole <= -5 + 1 = -4, representing -4 + -.7.
+				newFract.Sub(newFract, fractOne)
+				newWhole.Add(newWhole, new(big.Int).SetInt64(1))
+			}
+		}
+		totalWhole = newWhole
+		totalFractional = newFract
+	}
+
+	// If a part is zero, act like we don't have it so that we just use the other total.
+	if totalWhole != nil && totalWhole.Sign() == 0 {
+		totalWhole = nil
+	}
+	if totalFractional != nil && totalFractional.Sign() == 0 {
+		totalFractional = nil
+	}
+
+	// Handle the simple cases where we have only one (or zero) parts.
+	switch {
+	case totalWhole == nil && totalFractional == nil:
+		if len(zeros) > 0 {
+			return "0." + zeros
+		}
+		return "0"
+	case totalFractional == nil:
+		if len(zeros) > 0 {
+			return totalWhole.String() + "." + zeros
+		}
+		return totalWhole.String()
+	case totalWhole == nil:
+		fractStr := totalFractional.String()
+		neg := ""
+		if totalFractional.Sign() < 0 {
+			neg = "-"
+			fractStr = strings.TrimPrefix(fractStr, "-")
+		}
+		switch {
+		case len(fractStr) < len(zeros):
+			return neg + "0." + zeros[:len(zeros)-len(fractStr)] + fractStr
+		case len(fractStr) == len(zeros):
+			return neg + "0." + fractStr
+		}
+		return neg + fractStr[:len(fractStr)-len(zeros)] + "." + fractStr[len(fractStr)-len(zeros):]
+	}
+
+	// Okay, we've got both a whole and fractional part.
+	// Neither are zero and the fractional part does not have any whole amounts.
+	fractStr := strings.TrimPrefix(totalFractional.String(), "-")
+	if len(fractStr) < len(zeros) {
+		fractStr = zeros[:len(zeros)-len(fractStr)] + fractStr
+	}
+	return totalWhole.String() + "." + fractStr
 }
 
 // mainE is the actual runner of this program, possibly returning an error.

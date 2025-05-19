@@ -341,6 +341,7 @@ func BenchmarkSumFuncs(b *testing.B) {
 		{name: "Sum2", f: Sum2},
 		{name: "Sum3", f: Sum3},
 		{name: "Sum4", f: Sum4},
+		{name: "Sum5", f: Sum5},
 	}
 
 	type testCase struct {
@@ -1136,6 +1137,10 @@ func TestSum3(t *testing.T) {
 
 func TestSum4(t *testing.T) {
 	RunSumFuncTests(t, "Sum4", Sum4, true)
+}
+
+func TestSum5(t *testing.T) {
+	RunSumFuncTests(t, "Sum5", Sum5, true)
 }
 
 func TestMakeNumberPretty(t *testing.T) {
