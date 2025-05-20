@@ -344,6 +344,7 @@ EOF
         fi
     )
     [[ -n "$verbose" ]] && printf 'Done.\n' >&2
+    return 0
 }
 
 if [[ "$sourced" != 'YES' ]]; then
