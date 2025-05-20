@@ -490,7 +490,9 @@ else
 fi
 
 if command -v date-math > /dev/null 2>&1; then
-    dt_past=" = T+$( date-math --input-format 'Mon 2006-01-02 15:04:05 -0700 (MST)' "$current_time_disp" - "$old_time_disp" )"
+    if [[ -n "$old_time_disp" ]]; then
+        dt_past=" = T+$( date-math --input-format 'Mon 2006-01-02 15:04:05 -0700 (MST)' "$current_time_disp" - "$old_time_disp" )"
+    fi
     dt_desired=" = T-$( date-math --input-format 'Mon 2006-01-02 15:04:05 -0700 (MST)' "$desired_time_disp" - "$current_time_disp" )"
 fi
 
