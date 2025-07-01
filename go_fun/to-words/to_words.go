@@ -3,11 +3,14 @@ package to_words
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 )
 
-// ToWords converts the provided number into English words.
+// IntToWords converts the provided number into English words.
+//
 // Examples:
 //   - 0 => "zero"
 //   - 5 => "five"
@@ -17,11 +20,11 @@ import (
 //   - 111 => "one hundred eleven"
 //   - 54,321 => "fifty-four thousand three hundred twenty-one"
 //   - -1234 => "negative one thousand two hundred thirty-four"
-func ToWords(num int) string {
+func IntToWords(num int) string {
 	if num < 0 && num != math.MinInt {
 		// Can't negate a min int because it doesn't fit back into an int.
 		// For all others, we can do the normal thing and tack on "negative".
-		return "negative " + ToWords(-num)
+		return "negative " + IntToWords(-num)
 	}
 
 	// Handle the one digit cases and the two digit cases that use a single word.
@@ -89,38 +92,84 @@ func ToWords(num int) string {
 		// We know the tens digit isn't 0 or 1 since that's handled in the switch above.
 		// We also know the ones digit isn't zero for the same reason.
 		ones := num % 10
-		return ToWords(num-ones) + "-" + ToWords(ones)
+		return IntToWords(num-ones) + "-" + IntToWords(ones)
 	}
 
 	// Handle all the three digit cases.
 	if num > 0 && num < 1000 {
 		// We know the hundreds digit isn't zero since that's handled in the above if block.
-		lhs := ToWords(num/100) + " hundred"
+		lhs := IntToWords(num/100) + " hundred"
 		rhsv := num % 100
 		if rhsv == 0 {
 			return lhs
 		}
-		return lhs + " " + ToWords(rhsv)
+		return lhs + " " + IntToWords(rhsv)
 	}
 
 	// Handle anything over three digits by breaking it up into groups of three digits,
 	// getting the words for those three and adding the quantifiers to each.
 	// We know GroupsToWords won't return an error because there's no way an int has too many groups.
-	rv, _ := GroupsToWords(ToGroups(num))
+	rv, _ := GroupsToWords(IntToGroups(num))
 
-	// When num is min-int, we still need to add "negative" to the result.
-	if num < 0 {
-		return "negative " + rv
+	return rv
+}
+
+// StringToWords converts the provided number (in string form) into English words.
+//
+// Examples:
+//   - "0" => "zero"
+//   - "5" => "five"
+//   - "12" => "twelve"
+//   - "80" => "eighty"
+//   - "43" => "forty-three"
+//   - "111" => "one hundred eleven"
+//   - "54321" => "fifty-four thousand three hundred twenty-one"
+//   - "-1234" => "negative one thousand two hundred thirty-four"
+//
+// Returns an error if the provided string is not a number.
+// See also: MustStringToWords.
+func StringToWords(str string) (string, error) {
+	groups, err := StringToGroups(str)
+	if err != nil {
+		return "", err
+	}
+	rv, err := GroupsToWords(groups)
+	if err != nil {
+		return "", fmt.Errorf("could not convert %q to words: %w", str, err)
+	}
+	return rv, nil
+}
+
+// MustStringToWords converts the provided number (in string form) into English words.
+//
+// Examples:
+//   - "0" => "zero"
+//   - "5" => "five"
+//   - "12" => "twelve"
+//   - "80" => "eighty"
+//   - "43" => "forty-three"
+//   - "111" => "one hundred eleven"
+//   - "54321" => "fifty-four thousand three hundred twenty-one"
+//   - "-1234" => "negative one thousand two hundred thirty-four"
+//
+// Panics if the provided string is not a number.
+// See also: StringToWords.
+func MustStringToWords(str string) string {
+	rv, err := StringToWords(str)
+	if err != nil {
+		panic(err)
 	}
 	return rv
 }
 
 // GroupsToWords converts a slice of groups to words as if it were one whole number.
-// Maximum number of groups is 16 (for quattuordecillion).
 // e.g. [1, 2, 3] => "one million two thousand three".
+// If the number is to be negative, only groups[0] should be negative. Making any other
+// entries negative will cause the word "negative" to appear in weird places.
+// Maximum number of groups is 16 (for quattuordecillion).
 // Returns an error if there are zero groups or more groups than there are quantifiers.
 // See also: MustGroupsToWords.
-func GroupsToWords(groups []uint16) (string, error) {
+func GroupsToWords(groups []int16) (string, error) {
 	quants, err := GetQuantifiers(len(groups))
 	if err != nil {
 		return "", err
@@ -130,7 +179,7 @@ func GroupsToWords(groups []uint16) (string, error) {
 		if group == 0 && i != 0 {
 			continue
 		}
-		gw := ToWords(int(group))
+		gw := IntToWords(int(group))
 		if len(quants[i]) > 0 {
 			gw += " " + quants[i]
 		}
@@ -140,11 +189,13 @@ func GroupsToWords(groups []uint16) (string, error) {
 }
 
 // MustGroupsToWords converts a slice of groups to words as if it were one whole number.
-// Maximum number of groups is 16 (for quattuordecillion).
 // e.g. [1, 2, 3] => "one million two thousand three".
+// If the number is to be negative, only groups[0] should be negative. Making any other
+// entries negative will cause the word "negative" to appear in weird places.
+// Maximum number of groups is 16 (for quattuordecillion).
 // Panics if there are zero groups or more groups than there are quantifiers.
 // See also: GroupsToWords.
-func MustGroupsToWords(groups []uint16) string {
+func MustGroupsToWords(groups []int16) string {
 	rv, err := GroupsToWords(groups)
 	if err != nil {
 		panic(err)
@@ -152,28 +203,110 @@ func MustGroupsToWords(groups []uint16) string {
 	return rv
 }
 
-// ToGroups divides up the provided num into groups of three digits.
-// The only entry in the returned value that might not have three digits is the 0th, e.g. 12345 => [12, 345].
-// All returned values will be positive or zero (no negatives even if num is negative), e.g. -9001 => [9, 1].
-func ToGroups(num int) []uint16 {
+// IntToGroups divides up the provided num into groups of up to three digits.
+// The first group might come from fewer than three digits, but the rest come from three.
+// e.g. 12345 => [12, 345]
+// If num is negative, the first group will be negative, but the rest will be positive (or zero).
+func IntToGroups(num int) []int16 {
 	if num == 0 {
-		return []uint16{0}
+		return []int16{0}
 	}
-	// Add groups from right to left.
-	var rv []uint16
+	if num > -1000 && num < 1000 {
+		return []int16{int16(num)}
+	}
+
+	isNeg := num < 0
+
+	// Add groups from right to left since that math is easier.
+	var rv []int16
 	for num != 0 {
 		group := num % 1000
 		num = num / 1000
-		if group < 0 {
-			// We negate things here (instead of at the start) to handle when num is min-int.
-			// A negated min-int won't fit in an int. Here we know it'll now fit into an int though.
+		if num < 0 {
+			// This negation happens here because a negated min int won't fit into an int,
+			// so we can't negate the num until after it's been reduced. Also note that
+			// we don't use the isNeg bool here since we only want to do this once.
 			group = -group
 			num = -num
 		}
-		rv = append(rv, uint16(group))
+		rv = append(rv, int16(group))
 	}
+
 	// And reverse them so they're back in the same order as num.
 	slices.Reverse(rv)
+
+	// Negate the first entry if the num is negative.
+	if isNeg {
+		rv[0] *= -1
+	}
+
+	return rv
+}
+
+// wholeNumRx matches a positive or negative whole number.
+var wholeNumRx = regexp.MustCompile(`^-?[[:digit:]]+$`)
+
+// StringToGroups divides up the provided number string into groups of up to three digits.
+// The first group might come from fewer than three digits, but the rest come from three.
+// e.g. "12345" => [12, 345]
+// If the number is negative, the first group will be negative, but the rest will be positive (or zero).
+// Returns an error if there's a problem parsing the string into numbers.
+// See also: MustStringToGroups.
+func StringToGroups(str string) ([]int16, error) {
+	if !wholeNumRx.MatchString(str) {
+		return nil, fmt.Errorf("cannot split %q into groups: not a number", str)
+	}
+
+	isNeg := strings.HasPrefix(str, "-")
+	str = strings.TrimPrefix(str, "-")
+
+	lhsLen := len(str) % 3
+	if lhsLen == 0 {
+		lhsLen = 3
+	}
+	lhs := str[:lhsLen]
+	rhs := str[lhsLen:]
+	groupStrs := make([]string, 0, 1+len(rhs)/3)
+	groupStrs = append(groupStrs, lhs)
+	for i := range len(rhs) / 3 {
+		groupStrs = append(groupStrs, strings.TrimLeft(rhs[i*3:i*3+3], "0"))
+	}
+
+	rv := make([]int16, len(groupStrs))
+	for i, group := range groupStrs {
+		if len(group) == 0 {
+			rv[i] = 0
+			continue
+		}
+		// It shouldn't be possible to get these errors since we know str passes the wholeNumberRx, but just in case...
+		val, err := strconv.Atoi(group)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse %q (from %q) into integer: %w", group, str, err)
+		}
+		if val < 0 || val > 1000 {
+			return nil, fmt.Errorf("invalid value %d from group %q (from %q): must be between 0 and 999", val, group, str)
+		}
+		rv[i] = int16(val)
+	}
+
+	if isNeg {
+		rv[0] *= -1
+	}
+
+	return rv, nil
+}
+
+// MustStringToGroups divides up the provided number string into groups of up to three digits.
+// The first group might come from fewer than three digits, but the rest come from three.
+// e.g. "12345" => [12, 345]
+// If number is negative, the first group will be negative, but the rest will be positive (or zero).
+// Panics if there's a problem parsing the string into numbers.
+// See also: StringToGroups.
+func MustStringToGroups(str string) []int16 {
+	rv, err := StringToGroups(str)
+	if err != nil {
+		panic(err)
+	}
 	return rv
 }
 
