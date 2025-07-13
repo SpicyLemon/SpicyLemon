@@ -20,6 +20,8 @@ import (
 //   - 111 => "one hundred eleven"
 //   - 54,321 => "fifty-four thousand three hundred twenty-one"
 //   - -1234 => "negative one thousand two hundred thirty-four"
+//
+// See also: UintToWords, StringToWords.
 func IntToWords(num int) string {
 	if num < 0 && num != math.MinInt {
 		// Can't negate a min int because it doesn't fit back into an int.
@@ -114,6 +116,25 @@ func IntToWords(num int) string {
 	return rv
 }
 
+// UintToWords converts the provided number into English words.
+//
+// Examples:
+//   - 0 => "zero"
+//   - 5 => "five"
+//   - 12 => "twelve"
+//   - 80 => "eighty"
+//   - 43 => "forty-three"
+//   - 111 => "one hundred eleven"
+//   - 54,321 => "fifty-four thousand three hundred twenty-one"
+//
+// See also: IntToWords, StringToWords.
+func UintToWords(num uint) string {
+	if num <= math.MaxInt {
+		return IntToWords(int(num))
+	}
+	return MustStringToWords(strconv.FormatUint(uint64(num), 10))
+}
+
 // StringToWords converts the provided number (in string form) into English words.
 //
 // Examples:
@@ -127,7 +148,7 @@ func IntToWords(num int) string {
 //   - "-1234" => "negative one thousand two hundred thirty-four"
 //
 // Returns an error if the provided string is not a number.
-// See also: MustStringToWords.
+// See also: MustStringToWords, IntToWords, UintToWords.
 func StringToWords(str string) (string, error) {
 	groups, err := StringToGroups(str)
 	if err != nil {
