@@ -1183,10 +1183,16 @@ func TestStringToDigits(t *testing.T) {
 		{num: "-6.282", exp: "negative six point two eight two"},
 		{num: ".771", exp: "point seven seven one"},
 		{num: "-.801", exp: "negative point eight zero one"},
+		{num: "", exp: ""},
+		{num: "--123", exp: "negative negative one two three"},
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.num, func(t *testing.T) {
+		name := tc.num
+		if len(name) == 0 {
+			name = "empty string"
+		}
+		t.Run(name, func(t *testing.T) {
 			var act string
 			testFunc := func() {
 				act = StringToDigits(tc.num)

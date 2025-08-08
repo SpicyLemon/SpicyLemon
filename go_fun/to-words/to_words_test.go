@@ -1413,10 +1413,16 @@ func TestStringToWords(t *testing.T) {
 		{str: "-1000000000000000000000000000000000000000000000000",
 			expErr: "could not convert \"-1000000000000000000000000000000000000000000000000\" to words: cannot get quantifiers for 17 groups: must be between 1 and 16"},
 		{str: "12E45", expErr: "cannot split \"12E45\" into groups: not a number"},
+		{str: "", expErr: "cannot split \"\" into groups: not a number"},
+		{str: "--3", expErr: "cannot split \"--3\" into groups: not a number"},
 	}
 
 	for _, tc := range tests {
-		t.Run("normal: "+tc.str, func(t *testing.T) {
+		name := tc.str
+		if len(name) == 0 {
+			name = "empty string"
+		}
+		t.Run("normal: "+name, func(t *testing.T) {
 			var act string
 			var err error
 			testFunc := func() {
@@ -1431,7 +1437,7 @@ func TestStringToWords(t *testing.T) {
 			assert.Equal(t, tc.exp, act, "StringToWords(%q) result", tc.str)
 		})
 
-		t.Run("must: "+tc.str, func(t *testing.T) {
+		t.Run("must: "+name, func(t *testing.T) {
 			var act string
 			testFunc := func() {
 				act = MustStringToWords(tc.str)
@@ -1865,6 +1871,48 @@ func TestIntToGroups(t *testing.T) {
 	}
 }
 
+func TestWholeNumRx(t *testing.T) {
+	tests := []struct {
+		str string
+		exp bool
+	}{
+		{str: "", exp: false},
+		{str: "-", exp: false},
+		{str: "a", exp: false},
+		{str: "x", exp: false},
+		{str: ".", exp: false},
+		{str: "1", exp: true},
+		{str: "348732", exp: true},
+		{str: "3.5", exp: false},
+		{str: "-3.5", exp: false},
+		{str: "44.", exp: false},
+		{str: "-44.", exp: false},
+		{str: "0.3", exp: false},
+		{str: "-0.3", exp: false},
+		{str: ".83838", exp: false},
+		{str: "-.83838", exp: false},
+		{str: "-1", exp: true},
+		{str: "-918236", exp: true},
+		{str: "-918236 ", exp: false},
+		{str: "10e33 ", exp: false},
+	}
+
+	for _, tc := range tests {
+		name := tc.str
+		if len(name) == 0 {
+			name = "empty string"
+		}
+		t.Run(name, func(t *testing.T) {
+			var act bool
+			testFunc := func() {
+				act = wholeNumRx.MatchString(tc.str)
+			}
+			require.NotPanics(t, testFunc, "%s.MatchString(%q)", wholeNumRx, tc.str)
+			assert.Equal(t, tc.exp, act, "%s.MatchString(%q)", wholeNumRx, tc.str)
+		})
+	}
+}
+
 func TestStringToGroups(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -1876,6 +1924,7 @@ func TestStringToGroups(t *testing.T) {
 		{name: "white space", str: "   ", expErr: "cannot split \"   \" into groups: not a number"},
 		{name: "a letter", str: "x", expErr: "cannot split \"x\" into groups: not a number"},
 		{name: "a letter in a number", str: "123t456", expErr: "cannot split \"123t456\" into groups: not a number"},
+		{name: "two leading dashes", str: "--123", expErr: "cannot split \"--123\" into groups: not a number"},
 		{name: "zero", str: "0", exp: []int16{0}},
 		{name: "one digit", str: "1", exp: []int16{1}},
 		{name: "neg: one digit", str: "-1", exp: []int16{-1}},

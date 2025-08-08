@@ -374,7 +374,7 @@ func MustGetQuantifiers(groupCount int) []string {
 	return rv
 }
 
-// GetQuantifier gets the quantifier for the provided groupID.
+// GetQuantifier gets the quantifier (e,g, "thousand") for the provided groupID.
 // A groupID of 0 is the right-most set of 3 digits in a number, so the quantifier is "".
 // A groupID of 1 returns "thousand", 2 returns "million" etc.
 // Returns an error if the groupID is negative or more than the number of known quantifiers.
@@ -386,7 +386,7 @@ func GetQuantifier(groupID int) (string, error) {
 	return Quantifiers[len(Quantifiers)-1-groupID], nil
 }
 
-// MustGetQuantifier gets the quantifier for the provided groupID.
+// MustGetQuantifier gets the quantifier (e.g. "thousand") for the provided groupID.
 // A groupID of 0 is the right-most set of 3 digits in a number, so the quantifier is "".
 // A groupID of 1 returns "thousand", 2 returns "million" etc.
 // Panics if the groupID is negative or more than the number of known quantifiers.
