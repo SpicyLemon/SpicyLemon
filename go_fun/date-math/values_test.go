@@ -741,6 +741,62 @@ func TestParseTime(t *testing.T) {
 			}
 		})
 	}
+
+	// "now" and "today" don't quite fit into the above testing pattern.
+	// The expected values can't be hard-coded and not hard-coding them would just be rewriting the func.
+	// So here, we just make sure that they're close to correct.
+
+	t.Run("now", func(t *testing.T) {
+		defer ResetGlobalsFn()()
+		UsedInputFormats = nil
+
+		now := time.Now()
+		justBeforeNow := now.Add(-1 * time.Second)
+		justAfterNow := now.Add(1 * time.Second)
+
+		var actTime time.Time
+		var err error
+		testFunc := func() {
+			actTime, err = ParseTime("nOw") // Also testing case insensitivity.
+		}
+		require.NotPanics(t, testFunc, "ParseTime(%q)", "now")
+		assert.NoError(t, err, "ParseTime(%q) error", "now")
+		isNow := actTime.After(justBeforeNow) && actTime.Before(justAfterNow)
+		assert.True(t, isNow, "ParseTime(%q) result should be about right now:\n"+
+			"Just before now: %s\n"+
+			"Actual:          %s\n"+
+			"Just after now:  %s",
+			"now", justBeforeNow, actTime, justAfterNow)
+		assert.Empty(t, UsedInputFormats, "UsedInputFormats")
+	})
+
+	t.Run("today", func(t *testing.T) {
+		defer ResetGlobalsFn()()
+		UsedInputFormats = nil
+
+		now := time.Now()
+		justBeforeNow := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Add(-1 * time.Second)
+		justAfterNow := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location()).Add(1 * time.Second)
+
+		var actTime time.Time
+		var err error
+		testFunc := func() {
+			actTime, err = ParseTime("tOdAy") // Also testing case insensitivity.
+		}
+		require.NotPanics(t, testFunc, "ParseTime(%q)", "today")
+		assert.NoError(t, err, "ParseTime(%q) error", "today")
+		isNow := actTime.After(justBeforeNow) && actTime.Before(justAfterNow)
+		assert.True(t, isNow, "ParseTime(%q) result should be about right now:\n"+
+			"Just before now: %s\n"+
+			"Actual:          %s\n"+
+			"Just after now:  %s",
+			"now", justBeforeNow, actTime, justAfterNow)
+		assert.Equal(t, 0, actTime.Hour(), "hours")
+		assert.Equal(t, 0, actTime.Minute(), "minutes")
+		assert.Equal(t, 0, actTime.Second(), "seconds")
+		assert.Equal(t, 0, actTime.Nanosecond(), "nanoseconds")
+		assert.Empty(t, UsedInputFormats, "UsedInputFormats")
+	})
 }
 
 func TestParseEpoch(t *testing.T) {

@@ -22,6 +22,10 @@ A <value> can either be a <date>, <epoch>, <dur>, or <num>.
          To see all possible formats, execute: date-math formats
          Datetimes that do not have a time zone are assumed to be local which is
          controllable by setting the TZ environment variable.
+         The args "now" and "today" are also supported. The precision of "now"
+         depends on your system, but is at least accurate to the second.
+         The "today" value is the same as "now" but with zero hours, minutes,
+         seconds, and nanoseconds. Both will be in your local time zone.
   <epoch> A possibly signed number with optional fractional seconds.
           An <epoch> is treated as a <time> for the purposes of the calculations.
   <dur> A possibly signed sequence of decimal numbers, each with optional fraction

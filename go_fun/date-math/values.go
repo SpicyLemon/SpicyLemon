@@ -308,6 +308,14 @@ func ParseDTVal(arg string) (*DTVal, error) {
 
 // ParseTime attempts to convert the provided arg to a Time using the entries of FormatParseOrder.
 func ParseTime(arg string) (time.Time, error) {
+	if strings.EqualFold(arg, "now") {
+		return time.Now(), nil
+	}
+	if strings.EqualFold(arg, "today") {
+		now := time.Now()
+		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()), nil
+	}
+
 	errs := make([]error, len(FormatParseOrder))
 	var rv time.Time
 	for i, nf := range FormatParseOrder {
