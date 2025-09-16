@@ -325,6 +325,10 @@ func ParseTime(arg string) (time.Time, error) {
 			rv, errs[i] = time.ParseInLocation(nf.Format, arg, time.Local)
 		}
 		if errs[i] == nil {
+			if !nf.HasDate {
+				now := time.Now()
+				rv = time.Date(now.Year(), now.Month(), now.Day(), rv.Hour(), rv.Minute(), rv.Second(), rv.Nanosecond(), rv.Location())
+			}
 			RecordUsedInputFormat(nf)
 			return rv, nil
 		}

@@ -42,6 +42,8 @@ var (
 		DtFmtUnixDate,
 		DtFmtRFC3339Nano,
 		DtFmtDateTime,
+		DtFmtDateOnly,
+		DtFmtTimeOnly,
 		DtFmtRFC1123,
 		DtFmtRFC1123Z,
 		DtFmtRubyDate,

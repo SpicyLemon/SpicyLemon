@@ -597,6 +597,7 @@ func TestParseTime(t *testing.T) {
 	localTZNoDST := localDTNoDST.Format("MST")
 	localOffsetInDST := localDTInDST.Format("-0700")
 	localOffsetNoDST := localDTNoDST.Format("-0700")
+	now := time.Now()
 
 	tests := []struct {
 		name    string
@@ -662,6 +663,32 @@ func TestParseTime(t *testing.T) {
 			arg:     "2032-04-12 13:06:44.1002003",
 			expTime: time.Date(2032, 4, 12, 13, 6, 44, 100200300, time.Local),
 			fmtName: "DateTime",
+		},
+		// DateOnly    "2006-01-02"
+		{
+			name:    "DateOnly",
+			arg:     "2015-08-13",
+			expTime: time.Date(2015, 8, 13, 0, 0, 0, 0, time.Local),
+			fmtName: "DateOnly",
+		},
+		{
+			name:    "DateOnly old",
+			arg:     "1951-03-17",
+			expTime: time.Date(1951, 3, 17, 0, 0, 0, 0, time.Local),
+			fmtName: "DateOnly",
+		},
+		// TimeOnly    "15:04:05"
+		{
+			name:    "TimeOnly",
+			arg:     "03:35:41",
+			expTime: time.Date(now.Year(), now.Month(), now.Day(), 3, 35, 41, 0, time.Local),
+			fmtName: "TimeOnly",
+		},
+		{
+			name:    "TimeOnly with fractional seconds",
+			arg:     "18:01:03.9876",
+			expTime: time.Date(now.Year(), now.Month(), now.Day(), 18, 1, 3, 987600000, time.Local),
+			fmtName: "TimeOnly",
 		},
 		// RFC1123     "Mon, 02 Jan 2006 15:04:05 MST"
 		{
