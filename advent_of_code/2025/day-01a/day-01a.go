@@ -30,7 +30,7 @@ func Solve(params *Params) (string, error) {
 		dial.TakeTurn(turn)
 		Debugf("%s -> %2d", turn, dial.Cur)
 		if dial.IsZero() {
-			answer += 1
+			answer++
 		}
 	}
 	return fmt.Sprintf("%d", answer), nil
@@ -41,12 +41,12 @@ type Dial struct {
 	Cur int
 }
 
-func NewDial(max, start int) *Dial {
-	if start > max {
-		start, max = max, start
+func NewDial(big, start int) *Dial {
+	if start > big {
+		start, big = big, start
 	}
 	return &Dial{
-		Max: max,
+		Max: big,
 		Cur: start,
 	}
 }

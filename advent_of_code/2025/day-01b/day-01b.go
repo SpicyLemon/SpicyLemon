@@ -39,13 +39,13 @@ type Dial struct {
 	Zeros int
 }
 
-func NewDial(max, start int) *Dial {
-	if start > max {
-		start, max = max, start
+func NewDial(big, start int) *Dial {
+	if start > big {
+		start, big = big, start
 	}
 	return &Dial{
-		Max:  max,
-		Size: max + 1,
+		Max:  big,
+		Size: big + 1,
 		Cur:  start,
 	}
 }
@@ -87,7 +87,8 @@ func (d *Dial) TurnLeft(l int) {
 	d.Zeros += newZeros
 	if debug {
 		if newZeros > 0 {
-			Stderrf(" The dial is rotated left  %3d to point at %2d; during this rotation it points at zero %3d time(s).", l, d.Cur, newZeros)
+			Stderrf(" The dial is rotated left  %3d to point at %2d; during this rotation it points at zero %3d time(s).",
+				l, d.Cur, newZeros)
 		} else {
 			Stderrf(" The dial is rotated left  %3d to point at %2d.", l, d.Cur)
 		}
@@ -106,7 +107,8 @@ func (d *Dial) TurnRight(l int) {
 	d.Zeros += newZeros
 	if debug {
 		if newZeros > 0 {
-			Debugf("The dial is rotated right %3d to point at %2d; during this rotation it points at zero %3d time(s).", l, d.Cur, newZeros)
+			Debugf("The dial is rotated right %3d to point at %2d; during this rotation it points at zero %3d time(s).",
+				l, d.Cur, newZeros)
 		} else {
 			Debugf("The dial is rotated right %3d to point at %2d.", l, d.Cur)
 		}
