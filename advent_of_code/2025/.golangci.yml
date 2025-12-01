@@ -1,0 +1,93 @@
+run:
+  tests: false
+
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - decorder
+    - dogsled
+    - dupword
+    - durationcheck
+    - errcheck
+    - errorlint
+    - errname
+    - forcetypeassert
+    - goconst
+    - gocritic
+    - godot
+    - gofmt
+    - goheader
+    - goimports
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - nakedret
+    - nilerr
+    - nolintlint
+    - prealloc
+    - predeclared
+    - promlinter
+    - revive
+    - staticcheck
+    - stylecheck
+    - tenv
+    - tparallel
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+
+issues:
+  max-issues-per-linter: 10000
+  max-same-issues: 10000
+  exclude-rules:
+    - text: "ParseInput - result 1"
+      linters:
+        - unparam
+    - text: "use ALL_CAPS in Go names; use CamelCase"
+      # both "var-naming: don't use ALL_CAPS in Go names; use CamelCase" (revive)
+      # and  "ST1003: should not use ALL_CAPS in Go names; use CamelCase instead" (stylecheck)
+      linters:
+        - revive
+        - stylecheck
+
+linters-settings:
+  dogsled:
+    max-blank-identifiers: 3
+  godot:
+    exclude:
+      - "^ Usage:"
+    capital: true
+  govet:
+    shadow: true
+    settings:
+      printf:
+        funcs:
+          - Stdoutf
+          - Stderrf
+          - StdoutAsf
+          - StderrAsf
+          - Debugf
+          - DebugAsf
+          - DebugAlwaysf
+          - DebugAlwaysAsf
+  lll:
+    line-length: 140
+    tab-width: 4
+  misspell:
+    locale: US
+    ignore-words:
+    - cancelled
+  nolintlint:
+    allow-unused: false
+    require-explanation: false
+    require-specific: false
