@@ -79,6 +79,34 @@ const (
 	NilStr = "<nil>"
 )
 
+// ParseGridOfStrings parses multiple lines into a grid of 1-char strings.
+func ParseGridOfStrings(lines []string) [][]string {
+	rv := make([][]string, len(lines))
+	for y, line := range lines {
+		rv[y] = make([]string, len(line))
+		for x, r := range line {
+			rv[y][x] = string(r)
+		}
+	}
+	return rv
+}
+
+// ParseGridOfInts parses multiple lines into a grid of 1-digit numbers.
+func ParseGridOfInts(lines []string) ([][]int, error) {
+	rv := make([][]int, len(lines))
+	var err error
+	for y, line := range lines {
+		rv[y] = make([]int, len(line))
+		for x, r := range line {
+			rv[y][x], err = strconv.Atoi(string(r))
+			if err != nil {
+				return nil, fmt.Errorf("could not parse (%d, %d) = %q as int: %w", x, y, string(r), err)
+			}
+		}
+	}
+	return rv, nil
+}
+
 // SplitParseInts splits a string on whitespace and converts each part into an int.
 // Uses strings.Fields(s) for the splitting and strconv.Atoi to parse it to an int.
 // Leading and trailing whitespace on each entry are ignored.
