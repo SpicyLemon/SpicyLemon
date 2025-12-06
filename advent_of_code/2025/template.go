@@ -47,6 +47,7 @@ func ParseInput(lines []string) (*Input, error) {
 	defer FuncEnding(FuncStarting())
 	rv := Input{}
 	// TODO: Update this to parse the lines and create the puzzle input.
+	// ParseGridOfStrings(lines) or ParseGridOfInts(lines)
 	for i, line := range lines {
 		// SplitParseInts(line) []int  or  SplitParseIntsD(line, ",")
 		_, _ = i, line
@@ -75,8 +76,6 @@ const (
 	MAX_UINT32 = uint32(4_294_967_295)
 	MAX_UINT64 = uint64(18_446_744_073_709_551_615)
 	MAX_UINT   = uint(18_446_744_073_709_551_615)
-
-	NilStr = "<nil>"
 )
 
 // ParseGridOfStrings parses multiple lines into a grid of 1-char strings.
