@@ -33,6 +33,7 @@ type Input struct {
 }
 
 func (i Input) String() string {
+	// StringJoin(slice, sep)
 	// StringNumberJoin(slice, startAt, sep) string
 	// StringNumberJoinFunc(slice, stringer, startAt, sep) string
 	// SliceToStrings(slice) []string
