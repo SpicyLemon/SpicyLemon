@@ -1,11 +1,13 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -32,11 +34,64 @@ func Solve(params *Params) (string, error) {
 	return fmt.Sprintf("%d", answer), nil
 }
 
+var CountButtonsToJoltage = CountButtonsToJoltageV5
+
+type IndexedJoltage struct {
+	Joltage int
+	Index   int
+}
+
+func CountButtonsToJoltageV5(machine *Machine) int {
+	sortedJoltages := make([]*IndexedJoltage, len(machine.Joltage))
+	for i, joltage := range machine.Joltage {
+		sortedJoltages[i] = &IndexedJoltage{Joltage: joltage, Index: i}
+	}
+	slices.SortFunc(sortedJoltages, func(l, r *IndexedJoltage) int {
+		return cmp.Compare(r.Joltage, l.Joltage) // largest joltage first.
+	})
+
+	rv := 0
+	seen := make(map[int]bool)
+	for len(seen) < len(machine.Joltage) {
+		maxJoltage := sortedJoltages[0].Joltage
+		var maxJoltages []*IndexedJoltage
+		for _, iJolt := range sortedJoltages {
+			if iJolt.Joltage == maxJoltage {
+				maxJoltages = append(maxJoltages, iJolt)
+			} else {
+				break
+			}
+		}
+		sortedJoltages = sortedJoltages[len(maxJoltages):]
+
+		for _, iJolt := range maxJoltages {
+			for _, button := range machine.Buttons {
+				if button.Contains(iJolt.Index) {
+					for _, light := range button {
+						seen[light] = true
+					}
+				}
+			}
+		}
+
+		newJoltages := make([]*IndexedJoltage, 0, len(sortedJoltages))
+		for _, iJolt := range sortedJoltages {
+			if !seen[iJolt.Index] {
+				newJoltages = append(newJoltages, iJolt)
+			}
+		}
+		sortedJoltages = newJoltages
+
+		rv += maxJoltage
+	}
+
+	return rv
+}
+
+// jkey is used to create a map key in CountButtonsToJoltageV4.
 func jkey(joltages []int) string {
 	return fmt.Sprintf("%v", joltages)
 }
-
-var CountButtonsToJoltage = CountButtonsToJoltageV4
 
 // CountButtonsToJoltageV4 uses a map for the sets to speed up de-duplication.
 // It's still too slow to get an answer in a reasonable amount of time.
@@ -241,6 +296,15 @@ func (b Button) ApplyJoltage(joltage []int) []int {
 	return rv
 }
 
+func (b Button) Contains(i int) bool {
+	for _, light := range b {
+		if light == i {
+			return true
+		}
+	}
+	return false
+}
+
 type Machine struct {
 	Target  []byte
 	Buttons []Button
@@ -359,7 +423,7 @@ type Input struct {
 }
 
 func (i Input) String() string {
-	return StringNumberJoin(i.Machines, 1, "\n")
+	return StringNumberJoin(i.Machines, 0, "\n")
 }
 
 func ParseInput(lines []string) (*Input, error) {
