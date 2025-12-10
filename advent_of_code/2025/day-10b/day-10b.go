@@ -34,14 +34,15 @@ func Solve(params *Params) (string, error) {
 	return fmt.Sprintf("%d", answer), nil
 }
 
-var CountButtonsToJoltage = CountButtonsToJoltageV5
+var CountButtonsToJoltage = CountButtonsToJoltageV7
 
 type IndexedJoltage struct {
 	Joltage int
 	Index   int
 }
 
-func CountButtonsToJoltageV5(machine *Machine) int {
+func CountButtonsToJoltageV7(machine *Machine) int {
+	// Sort the joltages, highest to lowest, keepiing track of their original index.
 	sortedJoltages := make([]*IndexedJoltage, len(machine.Joltage))
 	for i, joltage := range machine.Joltage {
 		sortedJoltages[i] = &IndexedJoltage{Joltage: joltage, Index: i}
@@ -50,9 +51,12 @@ func CountButtonsToJoltageV5(machine *Machine) int {
 		return cmp.Compare(r.Joltage, l.Joltage) // largest joltage first.
 	})
 
+	// Loop until all lights have been seen.
+	// Using "lights" here to refer to the index position of the joltage.
 	rv := 0
 	seen := make(map[int]bool)
 	for len(seen) < len(machine.Joltage) {
+		// Get all the indexes that have the max joltage.
 		maxJoltage := sortedJoltages[0].Joltage
 		var maxJoltages []*IndexedJoltage
 		for _, iJolt := range sortedJoltages {
@@ -62,8 +66,109 @@ func CountButtonsToJoltageV5(machine *Machine) int {
 				break
 			}
 		}
-		sortedJoltages = sortedJoltages[len(maxJoltages):]
 
+		// Find all buttons that have all of the max joltage lights.
+		// Mark all lights that each such button controls as "seen".
+		for _, button := range machine.Buttons {
+			hasAll := true
+			for _, iJolt := range maxJoltages {
+				if !button.Contains(iJolt.Index) {
+					hasAll = false
+					break
+				}
+			}
+			if hasAll {
+				for _, light := range button {
+					seen[light] = true
+				}
+			}
+		}
+
+		// Put together a new list of sorted joltages that doesn't contain any that have already been seen.
+		newJoltages := make([]*IndexedJoltage, 0, len(sortedJoltages))
+		for _, iJolt := range sortedJoltages {
+			if !seen[iJolt.Index] {
+				newJoltages = append(newJoltages, iJolt)
+			}
+		}
+		sortedJoltages = newJoltages
+
+		rv += maxJoltage
+	}
+
+	return rv
+}
+
+func CountButtonsToJoltageV6(machine *Machine) int {
+	// Sort the joltages, highest to lowest, keepiing track of their original index.
+	sortedJoltages := make([]*IndexedJoltage, len(machine.Joltage))
+	for i, joltage := range machine.Joltage {
+		sortedJoltages[i] = &IndexedJoltage{Joltage: joltage, Index: i}
+	}
+	slices.SortFunc(sortedJoltages, func(l, r *IndexedJoltage) int {
+		return cmp.Compare(r.Joltage, l.Joltage) // largest joltage first.
+	})
+
+	// Loop until all lights have been seen.
+	// Using "lights" here to refer to the index position of the joltage.
+	rv := 0
+	seen := make(map[int]bool)
+	for len(seen) < len(machine.Joltage) {
+		maxJoltage := sortedJoltages[0].Joltage
+
+		// Find all buttons that have the max joltage light.
+		// Mark all lights that each such button controls as "seen".
+		for _, button := range machine.Buttons {
+			if button.Contains(sortedJoltages[0].Index) {
+				for _, light := range button {
+					seen[light] = true
+				}
+			}
+		}
+
+		// Put together a new list of sorted joltages that doesn't contain any that have already been seen.
+		newJoltages := make([]*IndexedJoltage, 0, len(sortedJoltages))
+		for _, iJolt := range sortedJoltages {
+			if !seen[iJolt.Index] {
+				newJoltages = append(newJoltages, iJolt)
+			}
+		}
+		sortedJoltages = newJoltages
+
+		rv += maxJoltage
+	}
+
+	return rv
+}
+
+func CountButtonsToJoltageV5(machine *Machine) int {
+	// Sort the joltages, highest to lowest, keepiing track of their original index.
+	sortedJoltages := make([]*IndexedJoltage, len(machine.Joltage))
+	for i, joltage := range machine.Joltage {
+		sortedJoltages[i] = &IndexedJoltage{Joltage: joltage, Index: i}
+	}
+	slices.SortFunc(sortedJoltages, func(l, r *IndexedJoltage) int {
+		return cmp.Compare(r.Joltage, l.Joltage) // largest joltage first.
+	})
+
+	// Loop until all lights have been seen.
+	// Using "lights" here to refer to the index position of the joltage.
+	rv := 0
+	seen := make(map[int]bool)
+	for len(seen) < len(machine.Joltage) {
+		// Get all the indexes that have the max joltage.
+		maxJoltage := sortedJoltages[0].Joltage
+		var maxJoltages []*IndexedJoltage
+		for _, iJolt := range sortedJoltages {
+			if iJolt.Joltage == maxJoltage {
+				maxJoltages = append(maxJoltages, iJolt)
+			} else {
+				break
+			}
+		}
+
+		// Find all buttons that have one of the max joltage lights.
+		// Mark all lights that each button controls as "seen".
 		for _, iJolt := range maxJoltages {
 			for _, button := range machine.Buttons {
 				if button.Contains(iJolt.Index) {
@@ -74,6 +179,7 @@ func CountButtonsToJoltageV5(machine *Machine) int {
 			}
 		}
 
+		// Put together a new list of sorted joltages that doesn't contain any that have already been seen.
 		newJoltages := make([]*IndexedJoltage, 0, len(sortedJoltages))
 		for _, iJolt := range sortedJoltages {
 			if !seen[iJolt.Index] {
