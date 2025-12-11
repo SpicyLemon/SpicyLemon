@@ -34,7 +34,419 @@ func Solve(params *Params) (string, error) {
 	return fmt.Sprintf("%d", answer), nil
 }
 
-var CountButtonsToJoltage = CountButtonsToJoltageV7
+var CountButtonsToJoltage = CountButtonsToJoltageV9
+
+func CountButtonsToJoltageV9(machine *Machine) int {
+	defer FuncEnding(FuncStarting(machine))
+	buttons := make([][]int, len(machine.Buttons))
+	for i, button := range machine.Buttons {
+		buttons[i] = []int(button)
+	}
+	sol := solveSystem(buttons, machine.Joltage)
+	rv := 0
+	for _, val := range sol {
+		rv += val
+	}
+	return rv
+}
+
+// solveSystem finds the minimum button presses to reach the given joltages.
+// Copied from https://github.com/ayoubzulfiqar/advent-of-code/blob/main/2025/Go/Day10/part_2.go because
+// my translated version (CountButtonsToJoltageV8) didn't work for some reason.
+func solveSystem(buttons [][]int, joltages []int) []int {
+	n := len(buttons)
+	m := len(joltages)
+
+	matrix := make([][]int, m)
+	for i := range matrix {
+		matrix[i] = make([]int, n+1)
+		for j := 0; j < n; j++ {
+			affects := false
+			for _, pos := range buttons[j] {
+				if pos == i {
+					affects = true
+					break
+				}
+			}
+			if affects {
+				matrix[i][j] = 1
+			}
+		}
+		matrix[i][n] = joltages[i]
+	}
+
+	pivotCols, reducedMatrix := GaussianElimination(matrix)
+	if reducedMatrix == nil {
+		return nil
+	}
+
+	pivotSet := make(map[int]bool)
+	for _, col := range pivotCols {
+		pivotSet[col] = true
+	}
+
+	freeVars := []int{}
+	for i := 0; i < n; i++ {
+		if !pivotSet[i] {
+			freeVars = append(freeVars, i)
+		}
+	}
+
+	bestSolution := make([]int, n)
+	bestSum := -1
+
+	trySolution := func(freeValues []int) {
+		solution := make([]int, n)
+		for i, varIdx := range freeVars {
+			if i < len(freeValues) {
+				solution[varIdx] = freeValues[i]
+			}
+		}
+
+		for i := len(pivotCols) - 1; i >= 0; i-- {
+			row := i
+			col := pivotCols[i]
+			total := reducedMatrix[row][n] // Constant term
+
+			for j := col + 1; j < n; j++ {
+				total -= reducedMatrix[row][j] * solution[j]
+			}
+
+			if reducedMatrix[row][col] == 0 {
+				return
+			}
+
+			if total%reducedMatrix[row][col] != 0 {
+				return
+			}
+
+			val := total / reducedMatrix[row][col]
+			if val < 0 {
+				return
+			}
+
+			solution[col] = val
+		}
+
+		for i := 0; i < m; i++ {
+			total := 0
+			for j := 0; j < n; j++ {
+				if solution[j] > 0 {
+					for _, pos := range buttons[j] {
+						if pos == i {
+							total += solution[j]
+							break
+						}
+					}
+				}
+			}
+			if total != joltages[i] {
+				return
+			}
+		}
+
+		totalPresses := 0
+		for _, val := range solution {
+			totalPresses += val
+		}
+
+		if bestSum == -1 || totalPresses < bestSum {
+			copy(bestSolution, solution)
+			bestSum = totalPresses
+		}
+	}
+
+	//nolint:gocritic // I don't feel like changing this to a switch.
+	if len(freeVars) == 0 {
+		trySolution([]int{})
+	} else if len(freeVars) == 1 {
+		maxVal := 0
+		for _, j := range joltages {
+			if j > maxVal {
+				maxVal = j
+			}
+		}
+		maxVal *= 3
+		for val := 0; val <= maxVal; val++ {
+			if bestSum != -1 && val > bestSum {
+				break
+			}
+			trySolution([]int{val})
+		}
+	} else if len(freeVars) == 2 {
+		maxVal := 0
+		for _, j := range joltages {
+			if j > maxVal {
+				maxVal = j
+			}
+		}
+		if maxVal < 200 {
+			maxVal = 200
+		}
+		for v1 := 0; v1 <= maxVal; v1++ {
+			for v2 := 0; v2 <= maxVal; v2++ {
+				if bestSum != -1 && v1+v2 > bestSum {
+					continue
+				}
+				trySolution([]int{v1, v2})
+			}
+		}
+	} else if len(freeVars) == 3 {
+		for v1 := 0; v1 < 250; v1++ {
+			for v2 := 0; v2 < 250; v2++ {
+				for v3 := 0; v3 < 250; v3++ {
+					if bestSum != -1 && v1+v2+v3 > bestSum {
+						continue
+					}
+					trySolution([]int{v1, v2, v3})
+				}
+			}
+		}
+	} else if len(freeVars) == 4 {
+		for v1 := 0; v1 < 30; v1++ {
+			for v2 := 0; v2 < 30; v2++ {
+				for v3 := 0; v3 < 30; v3++ {
+					for v4 := 0; v4 < 30; v4++ {
+						if bestSum != -1 && v1+v2+v3+v4 > bestSum {
+							continue
+						}
+						trySolution([]int{v1, v2, v3, v4})
+					}
+				}
+			}
+		}
+	} else {
+		trySolution(make([]int, len(freeVars)))
+	}
+
+	if bestSum == -1 {
+		return make([]int, n)
+	}
+
+	return bestSolution
+}
+
+func CountButtonsToJoltageV8(machine *Machine) int {
+	defer FuncEnding(FuncStarting(machine))
+	bCount := len(machine.Buttons)
+	jCount := len(machine.Joltage)
+
+	// Set up the equation matrix.
+	matrix := make([][]int, jCount)
+	for i := range matrix {
+		matrix[i] = make([]int, bCount+1)
+		for j, button := range machine.Buttons {
+			if button.Contains(i) {
+				matrix[i][j] = 1
+			}
+		}
+		matrix[i][bCount] = machine.Joltage[i]
+	}
+
+	pCols, rMat := GaussianElimination(matrix)
+
+	pSet := make(map[int]bool)
+	for _, col := range pCols {
+		pSet[col] = true
+	}
+
+	freeVars := make([]int, 0, bCount)
+	for i := 0; i < bCount; i++ {
+		if !pSet[i] {
+			freeVars = append(freeVars, i)
+		}
+	}
+
+	bestSolution := make([]int, bCount)
+	bestSum := -1
+
+	trySolution := func(freeValues []int) {
+		Debugf("trySolution(%v)", freeValues)
+		solution := make([]int, bCount)
+		for i, varIdx := range freeVars {
+			if i < len(freeValues) {
+				solution[varIdx] = freeValues[i]
+			}
+		}
+
+		for i := len(pCols) - 1; i >= 0; i-- {
+			row := i
+			col := pCols[i]
+			total := rMat[row][bCount]
+
+			for j := col + 1; j < bCount; j++ {
+				total -= rMat[row][j] * solution[j]
+			}
+
+			if rMat[row][col] == 0 {
+				return
+			}
+
+			if total%rMat[row][col] != 0 {
+				return
+			}
+
+			val := total / rMat[row][col]
+			if val < 0 {
+				return
+			}
+
+			solution[col] = val
+		}
+
+		for i := 0; i < jCount; i++ {
+			total := 0
+			for j := 0; j < bCount; j++ {
+				if solution[j] > 0 {
+					if machine.Buttons[j].Contains(i) {
+						total += solution[j]
+						break
+					}
+				}
+			}
+			if total != machine.Joltage[i] {
+				return
+			}
+		}
+
+		totalPresses := 0
+		for _, val := range solution {
+			totalPresses += val
+		}
+
+		if bestSum == -1 || totalPresses < bestSum {
+			copy(bestSolution, solution)
+			bestSum = totalPresses
+		}
+	}
+
+	switch len(freeVars) {
+	case 0:
+		trySolution([]int{})
+	case 1:
+		maxVal := 0
+		for _, j := range machine.Joltage {
+			if j > maxVal {
+				maxVal = j
+			}
+		}
+		maxVal *= 3
+		for val := 0; val <= maxVal; val++ {
+			if bestSum != -1 && val > bestSum {
+				break
+			}
+			trySolution([]int{val})
+		}
+	case 2:
+		maxVal := 0
+		for _, j := range machine.Joltage {
+			if j > maxVal {
+				maxVal = j
+			}
+		}
+		if maxVal < 200 {
+			maxVal = 200
+		}
+		for v1 := 0; v1 <= maxVal; v1++ {
+			for v2 := 0; v2 <= maxVal; v2++ {
+				if bestSum != -1 && v1+v2 > bestSum {
+					continue
+				}
+				trySolution([]int{v1, v2})
+			}
+		}
+	case 3:
+		maxVal := 250
+		for v1 := 0; v1 <= maxVal; v1++ {
+			for v2 := 0; v2 <= maxVal; v2++ {
+				for v3 := 0; v3 <= maxVal; v3++ {
+					if bestSum != -1 && v1+v2+v3 > bestSum {
+						continue
+					}
+					trySolution([]int{v1, v2, v3})
+				}
+			}
+		}
+	case 4:
+		maxVal := 30
+		for v1 := 0; v1 <= maxVal; v1++ {
+			for v2 := 0; v1 <= maxVal; v2++ {
+				for v3 := 0; v1 <= maxVal; v3++ {
+					for v4 := 0; v1 <= maxVal; v4++ {
+						if bestSum != -1 && v1+v2+v3+v4 > bestSum {
+							continue
+						}
+						trySolution([]int{v1, v2, v3, v4})
+					}
+				}
+			}
+		}
+	default:
+		trySolution(make([]int, len(freeVars)))
+	}
+
+	if bestSum == -1 {
+		return -999999999999999999
+	}
+
+	return bestSum
+}
+
+// GaussianElimination runs Gaussian Elimination on the provided equation matrix.
+// The matrix should have one row for each equation.
+// The matrix should have one column for each variable plus a column for the total.
+// It returns a slice of pivot columns and the reduced matrix.
+// Mostly copied from https://github.com/ayoubzulfiqar/advent-of-code/blob/main/2025/Go/Day10/part_2.go
+func GaussianElimination(matrix [][]int) ([]int, [][]int) {
+	defer FuncEnding(FuncStarting())
+	if len(matrix) == 0 {
+		return nil, nil
+	}
+	m := len(matrix)        // Number of equations.
+	n := len(matrix[0]) - 1 // Number of variables.
+
+	// Copy the provided matrix so we don't change the original as we reduce it.
+	rv := make([][]int, m)
+	for i := range matrix {
+		rv[i] = make([]int, n+1)
+		copy(rv[i], matrix[i])
+	}
+
+	var pivotCols []int
+	currentRow := 0
+
+	for col := 0; col < n && currentRow < m; col++ {
+		pivotRow := -1
+		for row := currentRow; row < m; row++ {
+			if rv[row][col] != 0 {
+				pivotRow = row
+				break
+			}
+		}
+
+		if pivotRow == -1 {
+			continue
+		}
+
+		rv[currentRow], rv[pivotRow] = rv[pivotRow], rv[currentRow]
+		pivotCols = append(pivotCols, col)
+
+		for row := currentRow + 1; row < m; row++ {
+			if rv[row][col] != 0 {
+				factor := rv[row][col]
+				pivotVal := rv[currentRow][col]
+
+				for j := col; j <= n; j++ {
+					rv[row][j] = rv[row][j]*pivotVal - rv[currentRow][j]*factor
+				}
+			}
+		}
+
+		currentRow++
+	}
+
+	return pivotCols, rv
+}
 
 type IndexedJoltage struct {
 	Joltage int
@@ -42,6 +454,7 @@ type IndexedJoltage struct {
 }
 
 func CountButtonsToJoltageV7(machine *Machine) int {
+	defer FuncEnding(FuncStarting(machine))
 	// Sort the joltages, highest to lowest, keepiing track of their original index.
 	sortedJoltages := make([]*IndexedJoltage, len(machine.Joltage))
 	for i, joltage := range machine.Joltage {
@@ -100,6 +513,7 @@ func CountButtonsToJoltageV7(machine *Machine) int {
 }
 
 func CountButtonsToJoltageV6(machine *Machine) int {
+	defer FuncEnding(FuncStarting(machine))
 	// Sort the joltages, highest to lowest, keepiing track of their original index.
 	sortedJoltages := make([]*IndexedJoltage, len(machine.Joltage))
 	for i, joltage := range machine.Joltage {
@@ -142,6 +556,7 @@ func CountButtonsToJoltageV6(machine *Machine) int {
 }
 
 func CountButtonsToJoltageV5(machine *Machine) int {
+	defer FuncEnding(FuncStarting(machine))
 	// Sort the joltages, highest to lowest, keepiing track of their original index.
 	sortedJoltages := make([]*IndexedJoltage, len(machine.Joltage))
 	for i, joltage := range machine.Joltage {
