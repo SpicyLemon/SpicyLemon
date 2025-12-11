@@ -64,7 +64,7 @@ func DoCountPaths(start, end, notThrough *Device) int {
 		Stderrf("Finding paths from %s", desc)
 	}
 
-	rv := CountPaths(NewCountMemo(), Path{start}, end, notThrough)
+	rv := CountPaths(NewMemo(), Path{start}, end, notThrough)
 
 	if verbose {
 		Stderrf("Paths from %s = %d.", desc, rv)
@@ -73,32 +73,32 @@ func DoCountPaths(start, end, notThrough *Device) int {
 	return rv
 }
 
-type CountMemo struct {
+type Memo struct {
 	Known map[string]int
 }
 
-func NewCountMemo() *CountMemo {
-	return &CountMemo{Known: make(map[string]int)}
+func NewMemo() *Memo {
+	return &Memo{Known: make(map[string]int)}
 }
 
-func (m *CountMemo) Finish(cur Path) (int, bool) {
+func (m *Memo) Finish(cur Path) (int, bool) {
 	name := cur[len(cur)-1].Name
 	rv, known := m.Known[name]
 	if !known {
 		Debugf("Nothing found yet for %s.", name)
 		return 0, false
 	}
-	Debugf("Previously found %d paths for %s.", name)
+	Debugf("Previously found %d paths for %s.", rv, name)
 	return rv, true
 }
 
-func (m *CountMemo) Record(cur Path, known int) {
+func (m *Memo) Record(cur Path, known int) {
 	name := cur[len(cur)-1].Name
 	m.Known[name] = known
 	Debugf("Remembering %s has %d paths.", name, known)
 }
 
-func CountPaths(m *CountMemo, cur Path, to, notThrough *Device) int {
+func CountPaths(m *Memo, cur Path, to, notThrough *Device) int {
 	defer FuncEnding(FuncStarting(cur, to.Name, notThrough.GetName()))
 	rv, known := m.Finish(cur)
 	if known {
@@ -108,115 +108,18 @@ func CountPaths(m *CountMemo, cur Path, to, notThrough *Device) int {
 	from := cur[len(cur)-1]
 	for _, dOut := range from.DOuts {
 		if notThrough != nil && dOut.Name == notThrough.Name {
-			Verbosef("Skipping path: %s %s", cur, dOut.Name)
+			Debugf("Skipping path: %s %s", cur, dOut.Name)
 			continue
 		}
 		next := cur.Copy()
 		next = append(next, dOut)
 		if dOut.Name == to.Name {
 			rv += 1
-			Verbosef("Found path: %s", next)
+			Debugf("Found path: %s", next)
 			continue
 		}
 		nexts := CountPaths(m, next, to, notThrough)
 		rv += nexts
-	}
-
-	m.Record(cur, rv)
-	return rv
-}
-
-func DoFindPaths(start, end, notThrough *Device) []Path {
-	var desc string
-	if verbose {
-		if notThrough != nil {
-			desc = fmt.Sprintf("%s to %s that do not go through %s.", start.Name, end.Name, notThrough.Name)
-		} else {
-			desc = fmt.Sprintf("%s to %s", start.Name, end.Name)
-		}
-		Stderrf("Finding paths from %s", desc)
-	}
-
-	rv := FindPaths(NewMemo(), Path{start}, end, notThrough)
-
-	if verbose {
-		Stderrf("Paths from %s (%d):", desc, len(rv))
-		if len(rv) > 0 {
-			Stderrf("%s", StringNumberJoin(rv, 1, "\n"))
-		}
-	}
-
-	return rv
-}
-
-type Memo struct {
-	Known map[string][]Path
-}
-
-func NewMemo() *Memo {
-	return &Memo{Known: make(map[string][]Path)}
-}
-
-func (m *Memo) Finish(cur Path) ([]Path, bool) {
-	name := cur[len(cur)-1].Name
-	nexts, known := m.Known[name]
-	if !known {
-		Debugf("Nothing found yet for %s.", name)
-		return nil, false
-	}
-	if nexts == nil {
-		Debugf("No paths exist from %s.", name)
-		return nil, true
-	}
-
-	rv := make([]Path, len(nexts))
-	for i, next := range nexts {
-		rv[i] = make(Path, 0, len(cur)+len(nexts)-1)
-		rv[i] = append(rv[i], cur...)
-		rv[i] = append(rv[i], next...)
-	}
-
-	Debugf("Previously found %d paths from %s.", len(rv), name)
-	return rv, true
-}
-
-func (m *Memo) Record(cur Path, known []Path) {
-	k := make([]Path, len(known))
-	for i, path := range known {
-		k[i] = path[len(cur):]
-		Debugf("Remembering %s[%d] = %s from %s", cur[len(cur)-1].Name, i, k[i], path)
-	}
-	m.Known[cur[len(cur)-1].Name] = k
-}
-
-func FindPaths(m *Memo, cur Path, to, notThrough *Device) []Path {
-	defer FuncEnding(FuncStarting(cur, to.Name, notThrough.GetName()))
-	rv, known := m.Finish(cur)
-	if known {
-		if verbose {
-			Stderrf("Found memo paths (%d):", len(rv))
-			if debug && len(rv) > 0 {
-				Stderrf("\n%s", StringNumberJoin(rv, 1, "\n"))
-			}
-		}
-		return rv
-	}
-
-	from := cur[len(cur)-1]
-	for _, dOut := range from.DOuts {
-		if notThrough != nil && dOut.Name == notThrough.Name {
-			Verbosef("Skipping path: %s %s", cur, dOut.Name)
-			continue
-		}
-		next := cur.Copy()
-		next = append(next, dOut)
-		if dOut.Name == to.Name {
-			rv = append(rv, next)
-			Verbosef("Found path: %s", next)
-			continue
-		}
-		nexts := FindPaths(m, next, to, notThrough)
-		rv = append(rv, nexts...)
 	}
 
 	m.Record(cur, rv)
