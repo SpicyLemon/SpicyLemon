@@ -30,25 +30,123 @@ func Solve(params *Params) (string, error) {
 	dac := dMap["dac"]
 	out := dMap["out"]
 
-	var svrDac, dacFft, fftOut, svrFft, fftDac, dacOut []Path
+	// var svrDac, dacFft, fftOut, svrFft, fftDac, dacOut []Path
+	var svrDac, dacFft, fftOut, svrFft, fftDac, dacOut int
 
 	// Find paths from fft to dac (if there are any).
 	// There will only be paths either from dac to fft, or fft to dac, but not both.
-	fftDac = DoFindPaths(fft, dac, nil)
+	fftDac = DoCountPaths(fft, dac, nil)
 
-	if len(fftDac) > 0 {
+	if fftDac > 0 {
 		// There were paths from fft to dac, so things have to go from svr to fft to dac to out.
-		svrFft = DoFindPaths(svr, fft, dac)
-		dacOut = DoFindPaths(dac, out, fft)
+		svrFft = DoCountPaths(svr, fft, dac)
+		dacOut = DoCountPaths(dac, out, fft)
 	} else {
 		// There weren't any paths from fft to dac, so things have to go from svr to dac to fft to out.
-		svrDac = DoFindPaths(svr, dac, fft)
-		dacFft = DoFindPaths(dac, fft, nil)
-		fftOut = DoFindPaths(fft, out, dac)
+		svrDac = DoCountPaths(svr, dac, fft)
+		dacFft = DoCountPaths(dac, fft, nil)
+		fftOut = DoCountPaths(fft, out, dac)
 	}
 
-	answer := len(svrFft)*len(fftDac)*len(dacOut) + len(svrDac)*len(dacFft)*len(fftOut)
+	// answer := len(svrFft)*len(fftDac)*len(dacOut) + len(svrDac)*len(dacFft)*len(fftOut)
+	answer := svrFft*fftDac*dacOut + svrDac*dacFft*fftOut
 	return fmt.Sprintf("%d", answer), nil
+}
+
+func DoCountPaths(start, end, notThrough *Device) int {
+	var desc string
+	if verbose {
+		if notThrough != nil {
+			desc = fmt.Sprintf("%s to %s that do not go through %s.", start.Name, end.Name, notThrough.Name)
+		} else {
+			desc = fmt.Sprintf("%s to %s", start.Name, end.Name)
+		}
+		Stderrf("Finding paths from %s", desc)
+	}
+
+	rv := CountPaths(NewCountMemo(), Path{start}, end, notThrough)
+
+	if verbose {
+		Stderrf("Paths from %s = %d.", desc, rv)
+	}
+
+	return rv
+}
+
+type CountMemo struct {
+	Known map[string]int
+}
+
+func NewCountMemo() *CountMemo {
+	return &CountMemo{Known: make(map[string]int)}
+}
+
+func (m *CountMemo) Finish(cur Path) (int, bool) {
+	name := cur[len(cur)-1].Name
+	rv, known := m.Known[name]
+	if !known {
+		Debugf("Nothing found yet for %s.", name)
+		return 0, false
+	}
+	Debugf("Previously found %d paths for %s.", name)
+	return rv, true
+}
+
+func (m *CountMemo) Record(cur Path, known int) {
+	name := cur[len(cur)-1].Name
+	m.Known[name] = known
+	Debugf("Remembering %s has %d paths.", name, known)
+}
+
+func CountPaths(m *CountMemo, cur Path, to, notThrough *Device) int {
+	defer FuncEnding(FuncStarting(cur, to.Name, notThrough.GetName()))
+	rv, known := m.Finish(cur)
+	if known {
+		return rv
+	}
+
+	from := cur[len(cur)-1]
+	for _, dOut := range from.DOuts {
+		if notThrough != nil && dOut.Name == notThrough.Name {
+			Verbosef("Skipping path: %s %s", cur, dOut.Name)
+			continue
+		}
+		next := cur.Copy()
+		next = append(next, dOut)
+		if dOut.Name == to.Name {
+			rv += 1
+			Verbosef("Found path: %s", next)
+			continue
+		}
+		nexts := CountPaths(m, next, to, notThrough)
+		rv += nexts
+	}
+
+	m.Record(cur, rv)
+	return rv
+}
+
+func DoFindPaths(start, end, notThrough *Device) []Path {
+	var desc string
+	if verbose {
+		if notThrough != nil {
+			desc = fmt.Sprintf("%s to %s that do not go through %s.", start.Name, end.Name, notThrough.Name)
+		} else {
+			desc = fmt.Sprintf("%s to %s", start.Name, end.Name)
+		}
+		Stderrf("Finding paths from %s", desc)
+	}
+
+	rv := FindPaths(NewMemo(), Path{start}, end, notThrough)
+
+	if verbose {
+		Stderrf("Paths from %s (%d):", desc, len(rv))
+		if len(rv) > 0 {
+			Stderrf("%s", StringNumberJoin(rv, 1, "\n"))
+		}
+	}
+
+	return rv
 }
 
 type Memo struct {
@@ -89,29 +187,6 @@ func (m *Memo) Record(cur Path, known []Path) {
 		Debugf("Remembering %s[%d] = %s from %s", cur[len(cur)-1].Name, i, k[i], path)
 	}
 	m.Known[cur[len(cur)-1].Name] = k
-}
-
-func DoFindPaths(start, end, notThrough *Device) []Path {
-	var desc string
-	if verbose {
-		if notThrough != nil {
-			desc = fmt.Sprintf("%s to %s that do not go through %s.", start.Name, end.Name, notThrough.Name)
-		} else {
-			desc = fmt.Sprintf("%s to %s", start.Name, end.Name)
-		}
-		Stderrf("Finding paths from %s", desc)
-	}
-
-	rv := FindPaths(NewMemo(), Path{start}, end, notThrough)
-
-	if verbose {
-		Stderrf("Paths from %s (%d):", desc, len(rv))
-		if len(rv) > 0 {
-			Stderrf("%s", StringNumberJoin(rv, 1, "\n"))
-		}
-	}
-
-	return rv
 }
 
 func FindPaths(m *Memo, cur Path, to, notThrough *Device) []Path {
