@@ -31,6 +31,7 @@ func Solve(params *Params) (string, error) {
 	}
 	if debug {
 		OutputAllShapeOrientations(sf)
+		OutputKnownSolutions(sf)
 	}
 	// TODO: Solve the problem!
 	answer := -999999999999999999
@@ -89,6 +90,50 @@ func OutputAllShapeOrientations(sf *ShapeFactory) {
 		sl := sf.MakeAllOrientations(id)
 		Stdoutf("\n%s", sl)
 	}
+}
+
+func OutputKnownSolutions(sf *ShapeFactory) {
+	tree1Str := "4x4: 0 0 0 0 2 0"
+	tree1, err := ParseTree(tree1Str)
+	if err != nil {
+		Stderrf("invalid tree string 1 %q: %w", tree1Str, err)
+		return
+	}
+	field1 := NewField(sf, tree1)
+	field1.Shapes[1].Shape.FlipH()
+	field1.Shapes[1].Loc = NewPoint(1, 1)
+	Stdoutf("Tree 1:\n%s", field1)
+
+	tree2Str := "12x5: 1 0 1 0 2 2"
+	tree2, err := ParseTree(tree2Str)
+	if err != nil {
+		Stderrf("invalid tree string 2 %q: %w", tree2Str, err)
+		return
+	}
+	field2 := NewField(sf, tree2)
+
+	field2.Shapes[0].Name = "A"
+	field2.Shapes[0].Loc = NewPoint(4, 0)
+
+	field2.Shapes[1].Name = "F"
+	field2.Shapes[1].Loc = NewPoint(6, 0)
+
+	field2.Shapes[2].Name = "B"
+	field2.Shapes[2].Loc = NewPoint(1, 1)
+	field2.Shapes[2].Shape.FlipH()
+
+	field2.Shapes[3].Name = "D"
+	field2.Shapes[3].Loc = NewPoint(0, 2)
+
+	field2.Shapes[4].Name = "E"
+	field2.Shapes[4].Loc = NewPoint(9, 0)
+	field2.Shapes[4].Shape.RotateCW()
+
+	field2.Shapes[5].Name = "C"
+	field2.Shapes[5].Loc = NewPoint(8, 2)
+	field2.Shapes[5].Shape.RotateCW()
+
+	Stdoutf("Tree 2:\n%s", field2)
 }
 
 type ShapeFactory struct {
@@ -387,7 +432,7 @@ func (s *Shape) AsPoints(upperLeft XY) []*Point {
 	for i, row := range s.Cells {
 		for j, cell := range row {
 			if cell {
-				rv = append(rv, NewPoint(x+i, y+j))
+				rv = append(rv, NewPoint(x+j, y+i))
 			}
 		}
 	}
