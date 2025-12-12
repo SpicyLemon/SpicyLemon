@@ -34,7 +34,7 @@ func Solve(params *Params) (string, error) {
 	return fmt.Sprintf("%d", answer), nil
 }
 
-var CountButtonsToJoltage = CountButtonsToJoltageV9
+var CountButtonsToJoltage = CountButtonsToJoltageV8
 
 func CountButtonsToJoltageV9(machine *Machine) int {
 	defer FuncEnding(FuncStarting(machine))
@@ -370,9 +370,9 @@ func CountButtonsToJoltageV8(machine *Machine) int {
 	case 4:
 		maxVal := 30
 		for v1 := 0; v1 <= maxVal; v1++ {
-			for v2 := 0; v1 <= maxVal; v2++ {
-				for v3 := 0; v1 <= maxVal; v3++ {
-					for v4 := 0; v1 <= maxVal; v4++ {
+			for v2 := 0; v2 <= maxVal; v2++ {
+				for v3 := 0; v3 <= maxVal; v3++ {
+					for v4 := 0; v4 <= maxVal; v4++ {
 						if bestSum != -1 && v1+v2+v3+v4 > bestSum {
 							continue
 						}
