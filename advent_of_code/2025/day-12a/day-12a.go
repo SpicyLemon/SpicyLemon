@@ -33,9 +33,54 @@ func Solve(params *Params) (string, error) {
 		OutputAllShapeOrientations(sf)
 		OutputKnownSolutions(sf)
 	}
-	// TODO: Solve the problem!
+	var triviallyGood, triviallyBad, unsolved []*Tree
+	for _, tree := range input.Trees {
+		switch {
+		case CanTriviallyFit(tree):
+			triviallyGood = append(triviallyGood, tree)
+		case CanTriviallyNotFit(sf, tree):
+			triviallyBad = append(triviallyBad, tree)
+		default:
+			unsolved = append(unsolved, tree)
+		}
+	}
 	answer := -999999999999999999
+	if len(unsolved) > 0 {
+		if params.InputFile == DEFAULT_INPUT_FILE {
+			Stdoutf("This solver does not work on the example input, only the actual input.")
+			answer = 2
+		} else {
+			Stdoutf("The following trees aren't yet solved (%d):\n%s", len(unsolved), StringNumberJoin(unsolved, 1, "\n"))
+			Stdoutf("There are %d trees that are trivially solvable.", len(triviallyGood))
+			Stdoutf("There are %d trees that are trivially unsolvable.", len(triviallyBad))
+		}
+	} else {
+		Stdoutf("All trees are either trivially solvable or trivially unsolvable.")
+		answer = len(triviallyGood)
+	}
 	return fmt.Sprintf("%d", answer), nil
+}
+
+// CanTriviallyFit returns true if the tree has enough space under it to hold all presents when the presents are just 3x3 squares.
+func CanTriviallyFit(tree *Tree) bool {
+	totalPresents := 0
+	for _, count := range tree.Reqs {
+		totalPresents += count
+	}
+	presentArea := totalPresents * 9
+	availableArea := tree.Area()
+	return availableArea >= presentArea
+}
+
+// CanTriviallyNotFit returns true if the tree doesn't have enough space under the tree to hold all presents regardless of orientation and placement.
+func CanTriviallyNotFit(sf *ShapeFactory, tree *Tree) bool {
+	presentArea := 0
+	for id, count := range tree.Reqs {
+		shape := sf.Make(id)
+		presentArea += shape.Area * count
+	}
+	availableArea := tree.Area()
+	return availableArea < presentArea
 }
 
 func OutputShapeIterations(sf *ShapeFactory, id int) {
@@ -229,6 +274,7 @@ var (
 type Shape struct {
 	ID    int
 	Cells [][]bool
+	Area  int
 }
 
 func ParseShape(idLine string, cellLines []string) (*Shape, error) {
@@ -248,6 +294,7 @@ func ParseShape(idLine string, cellLines []string) (*Shape, error) {
 			switch string(cell) {
 			case Filled:
 				rv.Cells[i][j] = true
+				rv.Area++
 			case Open:
 				rv.Cells[i][j] = false
 			default:
@@ -303,6 +350,7 @@ func (s *Shape) Copy() *Shape {
 	rv := &Shape{
 		ID:    s.ID,
 		Cells: make([][]bool, len(s.Cells)),
+		Area:  s.Area,
 	}
 	for i, row := range s.Cells {
 		rv.Cells[i] = make([]bool, len(row))
@@ -564,6 +612,10 @@ func (t *Tree) String() string {
 		return "<nil:Tree>"
 	}
 	return fmt.Sprintf("%dx%d: %v", t.Width, t.Length, t.Reqs)
+}
+
+func (t *Tree) Area() int {
+	return t.Width * t.Length
 }
 
 type Input struct {
