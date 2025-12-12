@@ -408,6 +408,10 @@ func NewPlacedShape(name string, shape *Shape) *PlacedShape {
 	}
 }
 
+func (p *PlacedShape) AsPoints() []*Point {
+	return p.Shape.AsPoints(p.Loc)
+}
+
 type Field struct {
 	Width  int
 	Length int
@@ -436,7 +440,7 @@ func NewField(sf *ShapeFactory, tree *Tree) *Field {
 func (f *Field) IsSolved() bool {
 	seen := make(map[int]map[int]bool)
 	for _, ps := range f.Shapes {
-		for _, p := range ps.AsPoints(ps.Loc) {
+		for _, p := range ps.AsPoints() {
 			if seen[p.Y] == nil {
 				seen[p.Y] = make(map[int]bool)
 			}
@@ -447,6 +451,35 @@ func (f *Field) IsSolved() bool {
 		}
 	}
 	return true
+}
+
+func (f *Field) String() string {
+	if f == nil {
+		return "<nil:Field>"
+	}
+
+	cells := make([][]string, f.Length)
+	for i := range cells {
+		cells[i] = make([]string, f.Width)
+		for j := range cells[i] {
+			cells[i][j] = Open
+		}
+	}
+
+	var dups []*Point
+	for _, ps := range f.Shapes {
+		for _, p := range ps.AsPoints() {
+			x, y := p.GetXY()
+			if x >= 0 && x < f.Width && y >= 0 && y < f.Length {
+				if cells[y][x] != Open {
+					dups = append(dups, p)
+				}
+				cells[y][x] = ps.Name
+			}
+		}
+	}
+
+	return CreateIndexedGridString(cells, dups, dups)
 }
 
 type Tree struct {
