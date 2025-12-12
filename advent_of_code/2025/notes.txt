@@ -14,8 +14,8 @@ Output Notes:
     Debugf(...) prints stuff if running with debug.
         debug is a global variable indicating if running with debug.
         To enable: invoke with --debug or set the DEBUG env var.
-    params.Verbosef(...) prints stuff if running verbosely (or with debug).
-        params.Verbose is the bool indicating verbosity.
+    Verbosef(...) prints stuff if running verbosely (or with debug).
+        verbose is the bool indicating verbosity.
         To enable: invoke with -v or --verbose.
     Don't use the fmt.Print. Use Stdoutf(...) or Stderrf(...) so you also get func and timing info.
         Both Debugf and params.Verbosef end up using Stderrf.
