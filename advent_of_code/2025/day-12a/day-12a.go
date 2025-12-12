@@ -381,6 +381,74 @@ func (s *Shape) FlipV() *Shape {
 	return s
 }
 
+func (s *Shape) AsPoints(upperLeft XY) []*Point {
+	x, y := upperLeft.GetXY()
+	rv := make([]*Point, 0, 9)
+	for i, row := range s.Cells {
+		for j, cell := range row {
+			if cell {
+				rv = append(rv, NewPoint(x+i, y+j))
+			}
+		}
+	}
+	return rv
+}
+
+type PlacedShape struct {
+	Name  string
+	Shape *Shape
+	Loc   *Point
+}
+
+func NewPlacedShape(name string, shape *Shape) *PlacedShape {
+	return &PlacedShape{
+		Name:  name,
+		Shape: shape,
+		Loc:   NewPoint(0, 0),
+	}
+}
+
+type Field struct {
+	Width  int
+	Length int
+	Shapes []*PlacedShape
+}
+
+var shapeNames = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~-_+=|¦:;!@#$¢£¥%^&*()[]{}<>«»/?¿÷°§¶¤"
+
+func NewField(sf *ShapeFactory, tree *Tree) *Field {
+	rv := &Field{
+		Width:  tree.Width,
+		Length: tree.Length,
+	}
+
+	for i, count := range tree.Reqs {
+		shape := sf.Make(i)
+		for i := 0; i < count; i++ {
+			name := string(shapeNames[i%len(shapeNames)])
+			rv.Shapes = append(rv.Shapes, NewPlacedShape(name, shape.Copy()))
+		}
+	}
+
+	return rv
+}
+
+func (f *Field) IsSolved() bool {
+	seen := make(map[int]map[int]bool)
+	for _, ps := range f.Shapes {
+		for _, p := range ps.AsPoints(ps.Loc) {
+			if seen[p.Y] == nil {
+				seen[p.Y] = make(map[int]bool)
+			}
+			if seen[p.Y][p.X] {
+				return false
+			}
+			seen[p.Y][p.X] = true
+		}
+	}
+	return true
+}
+
 type Tree struct {
 	Width  int
 	Length int
